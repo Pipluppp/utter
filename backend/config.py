@@ -1,0 +1,31 @@
+"""Application configuration from environment variables."""
+
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Environment
+ENV = os.getenv("ENV", "development")
+IS_PRODUCTION = ENV == "production"
+
+# Database
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./utter.db")
+
+# Uploads
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "./uploads"))
+REFERENCES_DIR = UPLOAD_DIR / "references"
+GENERATED_DIR = UPLOAD_DIR / "generated"
+
+# Create directories if they don't exist
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+REFERENCES_DIR.mkdir(parents=True, exist_ok=True)
+GENERATED_DIR.mkdir(parents=True, exist_ok=True)
+
+# Validation limits
+MAX_FILE_SIZE_MB = 50
+MIN_AUDIO_DURATION_SECONDS = 10
+MAX_AUDIO_DURATION_SECONDS = 300  # 5 minutes
+MAX_TEXT_LENGTH = 500
+ALLOWED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a"}
