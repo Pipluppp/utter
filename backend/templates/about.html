@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}About - Utter{% endblock %}
+
+{% block content %}
+<h1 class="title-page">How It Works</h1>
+
+<div class="about-content">
+    <h2>Voice Cloning</h2>
+    <p>To create a voice clone, simply upload a clean audio recording. The model analyzes the prosody, timbre, and
+        accent to create a digital replica.</p>
+
+    <h2>Constraints & Best Practices</h2>
+    <ul>
+        <li><strong>Audio Length:</strong> Reference audio should be between 10 seconds and 5 minutes.</li>
+        <li><strong>File Formats:</strong> We support WAV, MP3, and M4A.</li>
+        <li><strong>Quality:</strong> Use high-quality audio with minimal background noise for best results.</li>
+        <li><strong>Language:</strong> Currently optimized for English speech.</li>
+    </ul>
+
+    <h2>Privacy & Ethics</h2>
+    <p>Voice cloning technology should be used responsibly. Only clone voices you have permission to use. This project
+        runs entirely locally using open-source models.</p>
+</div>
+{% endblock %}

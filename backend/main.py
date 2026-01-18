@@ -9,7 +9,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
@@ -55,10 +55,10 @@ templates = Jinja2Templates(directory=templates_path)
 # HTML Routes
 # ============================================================================
 
-@app.get("/", response_class=RedirectResponse)
-async def root():
-    """Redirect to clone page."""
-    return RedirectResponse(url="/clone")
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    """Landing page."""
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/clone", response_class=HTMLResponse)
@@ -71,6 +71,12 @@ async def clone_page(request: Request):
 async def generate_page(request: Request):
     """Speech generation page."""
     return templates.TemplateResponse("generate.html", {"request": request})
+
+
+@app.get("/about", response_class=HTMLResponse)
+async def about_page(request: Request):
+    """About page."""
+    return templates.TemplateResponse("about.html", {"request": request})
 
 
 # ============================================================================

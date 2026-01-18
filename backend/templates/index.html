@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Utter - Voice Cloning{% endblock %}
+
+{% block content %}
+<div class="landing">
+    <div class="landing-hero">
+        <h1 class="landing-title">
+            <span class="landing-title-accent">Utter</span>Voice
+        </h1>
+        <p class="landing-tagline">Clone any voice. Generate speech.</p>
+
+        <a href="/about" class="landing-info-link">How it works & constraints →</a>
+    </div>
+
+    <div class="landing-actions">
+        <div class="landing-actions-label">Get Started</div>
+        <div class="landing-actions-grid">
+            <a href="/clone" class="landing-action">
+                <span class="landing-action-icon">↑</span>
+                <span class="landing-action-title">Clone Voice</span>
+                <span class="landing-action-desc">Upload audio to create a voice clone</span>
+            </a>
+            <a href="/generate" class="landing-action">
+                <span class="landing-action-icon">▶</span>
+                <span class="landing-action-title">Generate Speech</span>
+                <span class="landing-action-desc">Convert text to speech using cloned voices</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
