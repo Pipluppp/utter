@@ -19,6 +19,8 @@ from database import create_tables, get_session
 from models import Voice
 from services import storage
 from services.tts import generate_speech
+from services.audio import validate_reference_audio
+from services.text import validate_text
 from config import ALLOWED_AUDIO_EXTENSIONS, MAX_TEXT_LENGTH
 
 
@@ -108,6 +110,14 @@ async def api_clone(
     # Save audio file
     reference_path = await storage.save_reference(voice_id, audio)
     
+    # Validate audio duration (10s-5min for Echo-TTS)
+    validation = validate_reference_audio(reference_path)
+    if not validation["valid"]:
+        # Delete the saved file
+        import os
+        os.remove(reference_path)
+        raise HTTPException(status_code=400, detail=validation["message"])
+    
     # Create voice record
     voice = Voice(
         id=voice_id,
@@ -161,26 +171,24 @@ async def api_generate(
     if not voice:
         raise HTTPException(status_code=404, detail="Voice not found")
     
-    # Validate text
-    if not text:
-        raise HTTPException(status_code=400, detail="Please enter text to speak")
-    if len(text) > MAX_TEXT_LENGTH:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Text cannot exceed {MAX_TEXT_LENGTH} characters"
-        )
+    # Validate text (including byte-length for Echo-TTS)
+    text_validation = validate_text(text)
+    if not text_validation["valid"]:
+        raise HTTPException(status_code=400, detail=text_validation["message"])
     
     # Generate speech (mock for now)
     try:
         output_path = await generate_speech(voice_id, text)
         
-        # Convert to URL path
-        relative_path = Path(output_path).relative_to(uploads_path.parent)
-        audio_url = "/" + str(relative_path).replace("\\", "/")
+        # Convert to URL path - extract just the filename and build URL
+        output_filename = Path(output_path).name
+        audio_url = f"/uploads/generated/{output_filename}"
         
         return {"audio_url": audio_url}
     
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to generate speech. Please try again.")

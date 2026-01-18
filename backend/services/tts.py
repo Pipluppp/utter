@@ -1,45 +1,72 @@
 """
-Mock TTS service for local development.
+TTS service using Modal.com for GPU inference.
 
-This module provides a mock implementation that copies the reference audio
-as the "generated" output. For real TTS, you would integrate Modal.com here.
+This module connects to the deployed Echo-TTS model on Modal.com
+for real voice cloning.
 """
 
+import os
 import uuid
 from pathlib import Path
 
-from services.storage import get_reference_path, copy_file
+import modal
+
+from services.storage import get_reference_path
+from services.text import preprocess_text
 from config import GENERATED_DIR
+
+
+# Flag to use mock mode (for local development without Modal)
+USE_MOCK = os.getenv("TTS_MOCK", "false").lower() == "true"
+
+
+def _get_modal_tts():
+    """Get reference to Modal TTS class (lazy load)."""
+    return modal.Cls.from_name("utter-tts", "EchoTTS")
 
 
 async def generate_speech(voice_id: str, text: str) -> str:
     """
-    Generate speech from text using a cloned voice.
-    
-    MOCK IMPLEMENTATION: Returns the reference audio as the output.
-    For real TTS, this would call Modal.com with Echo-TTS.
+    Generate speech using Echo-TTS on Modal.com
     
     Args:
         voice_id: UUID of the cloned voice
-        text: Text to convert to speech (unused in mock)
+        text: Text to convert to speech
         
     Returns:
         Path to the generated audio file
     """
-    # Get the reference audio for this voice
+    # Get reference audio
     reference_path = get_reference_path(voice_id)
-    
     if reference_path is None:
         raise ValueError(f"Voice reference not found: {voice_id}")
     
+    # Read reference audio bytes
+    with open(reference_path, "rb") as f:
+        reference_bytes = f.read()
+    
     # Generate unique ID for this generation
     generation_id = str(uuid.uuid4())
+    output_path = GENERATED_DIR / f"{generation_id}.wav"
     
-    # Mock: Copy reference audio as the "generated" output
-    # In production, this would call Modal.com with Echo-TTS
-    output_ext = reference_path.suffix
-    output_path = GENERATED_DIR / f"{generation_id}{output_ext}"
-    
-    copy_file(reference_path, output_path)
+    if USE_MOCK:
+        # Mock mode: copy reference as output (for testing without Modal)
+        import shutil
+        shutil.copy2(reference_path, output_path)
+    else:
+        # Preprocess text for Echo-TTS
+        processed_text = preprocess_text(text)
+        
+        # Call Modal GPU endpoint
+        EchoTTS = _get_modal_tts()
+        tts = EchoTTS()
+        audio_bytes = tts.generate.remote(
+            text=processed_text,
+            reference_audio_bytes=reference_bytes
+        )
+        
+        # Save to generated directory
+        with open(output_path, "wb") as f:
+            f.write(audio_bytes)
     
     return str(output_path)

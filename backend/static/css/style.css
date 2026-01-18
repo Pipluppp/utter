@@ -298,6 +298,12 @@ body {
     border-color: var(--text);
     color: var(--text);
   }
+
+  &.success {
+    border-color: #22c55e;
+    color: #16a34a;
+    background: #f0fdf4;
+  }
 }
 
 .char-counter {

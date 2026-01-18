@@ -11,7 +11,17 @@ function showError(message) {
   const container = document.getElementById('error-container');
   if (container) {
     container.textContent = message;
-    container.classList.remove('hidden');
+    container.classList.remove('hidden', 'success');
+    container.classList.add('error');
+  }
+}
+
+function showSuccess(message) {
+  const container = document.getElementById('error-container');
+  if (container) {
+    container.textContent = message;
+    container.classList.remove('hidden', 'error');
+    container.classList.add('success');
   }
 }
 
@@ -19,6 +29,7 @@ function hideError() {
   const container = document.getElementById('error-container');
   if (container) {
     container.classList.add('hidden');
+    container.classList.remove('error', 'success');
   }
 }
 
@@ -142,8 +153,14 @@ function initClonePage() {
         throw new Error(data.detail || 'Failed to create voice');
       }
       
-      // Redirect to generate page
-      window.location.href = '/generate';
+      // Show success message
+      showSuccess(`Voice "${data.name}" created successfully! Redirecting...`);
+      submitBtn.textContent = 'Success!';
+      
+      // Redirect to generate page after a brief delay
+      setTimeout(() => {
+        window.location.href = '/generate';
+      }, 1500);
       
     } catch (error) {
       showError(error.message);
@@ -278,7 +295,7 @@ function initGeneratePage() {
     } finally {
       generateBtn.disabled = false;
       generateBtn.classList.remove('btn-loading');
-      generateBtn.textContent = '🔊 Generate Speech';
+      generateBtn.textContent = 'Generate Speech';
     }
   });
   
