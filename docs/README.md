@@ -7,24 +7,27 @@
 ## Quick Start
 
 ```bash
-# 1. Start PostgreSQL
-docker run --name utter-db -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=utter -p 5432:5432 -d postgres:15
-
-# 2. Install Python deps
+# 1. Install Python deps (use uv)
 cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+uv venv
+.venv\Scripts\activate  # Windows
+uv pip install -r requirements.txt
 
-# 3. Create .env
-cp .env.example .env
+# 2. Authenticate Modal (one time)
+python -m modal setup
+
+# 3. Deploy Echo-TTS to Modal
+python -m modal deploy ../modal_app/echo_tts.py
 
 # 4. Run server
 uvicorn main:app --reload
 
 # 5. Open browser
-# http://localhost:8000/clone
+# http://localhost:8000/clone → upload 10+ sec audio
+# http://localhost:8000/generate → select voice, enter text
 ```
+
+> **Note:** First generation takes ~30-60s (GPU cold start). Subsequent: ~5-10s.
 
 ---
 
@@ -63,9 +66,9 @@ uvicorn main:app --reload
 Upload audio (10s-5min)  ────────>  Select voice
 Enter voice name                    Enter text (500 chars)
 Click Create                        Click Generate
-                                    Wait 2-5 seconds
+                                    ⏳ First: 30-60s, Then: 5-10s
                                     Play audio
-                                    Download MP3
+                                    Download WAV
 ```
 
 ---

@@ -218,9 +218,18 @@ Expected state:
 |-------|--------|
 | Research & Planning | ✅ Complete |
 | Documentation | ✅ Complete |
-| Sprint 1: Clone Voice | ⬜ Not Started |
-| Sprint 2: Generate Speech | ⬜ Not Started |
+| Sprint 1: Clone Voice | ✅ Complete (local) |
+| Sprint 2: Generate Speech | ✅ Complete (local + Modal) |
 | Sprint 3: Deploy | ⬜ Not Started |
+
+**Last Updated**: 2026-01-19
+
+### What's Working Now
+- Voice cloning with audio validation (10s-5min)
+- Real speech generation via Echo-TTS on Modal.com
+- Audio playback and WAV download
+- SQLite database (local dev)
+- Local file storage
 
 ---
 
