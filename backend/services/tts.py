@@ -34,7 +34,7 @@ async def generate_speech(voice_id: str, text: str) -> str:
         text: Text to convert to speech
         
     Returns:
-        Path to the generated audio file
+        Path to the generated audio file (MP3)
     """
     # Get reference audio
     reference_path = get_reference_path(voice_id)
@@ -47,12 +47,15 @@ async def generate_speech(voice_id: str, text: str) -> str:
     
     # Generate unique ID for this generation
     generation_id = str(uuid.uuid4())
-    output_path = GENERATED_DIR / f"{generation_id}.wav"
+    output_path = GENERATED_DIR / f"{generation_id}.mp3"
     
     if USE_MOCK:
         # Mock mode: copy reference as output (for testing without Modal)
         import shutil
-        shutil.copy2(reference_path, output_path)
+        # For mock, keep as original format
+        mock_output = GENERATED_DIR / f"{generation_id}.wav"
+        shutil.copy2(reference_path, mock_output)
+        return str(mock_output)
     else:
         # Preprocess text for Echo-TTS
         processed_text = preprocess_text(text)
@@ -65,8 +68,9 @@ async def generate_speech(voice_id: str, text: str) -> str:
             reference_audio_bytes=reference_bytes
         )
         
-        # Save to generated directory
+        # Save to generated directory (now MP3)
         with open(output_path, "wb") as f:
             f.write(audio_bytes)
     
     return str(output_path)
+

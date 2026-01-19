@@ -66,11 +66,12 @@ class EchoTTS:
             reference_audio_bytes: WAV/MP3 file bytes
             
         Returns:
-            Generated audio as WAV bytes
+            Generated audio as MP3 bytes
         """
         import sys
         sys.path.insert(0, "/app/echo-tts")
         
+        import subprocess
         import torch
         import torchaudio
         import tempfile
@@ -118,16 +119,25 @@ class EchoTTS:
                 rng_seed=0,
             )
             
-            # Save to temp file (torchcodec doesn't support BytesIO)
-            output_temp_path = temp_path.replace(".wav", "_output.wav")
-            torchaudio.save(output_temp_path, audio_out[0].cpu(), 44100)
+            # Save WAV to temp file
+            wav_temp_path = temp_path.replace(".wav", "_output.wav")
+            torchaudio.save(wav_temp_path, audio_out[0].cpu(), 44100)
             
-            # Read back as bytes
-            with open(output_temp_path, "rb") as f:
+            # Convert to MP3 using ffmpeg
+            mp3_temp_path = wav_temp_path.replace(".wav", ".mp3")
+            subprocess.run([
+                "ffmpeg", "-y", "-i", wav_temp_path,
+                "-codec:a", "libmp3lame", "-qscale:a", "2",
+                mp3_temp_path
+            ], check=True, capture_output=True)
+            
+            # Read MP3 bytes
+            with open(mp3_temp_path, "rb") as f:
                 audio_bytes = f.read()
             
-            # Cleanup output temp file
-            os.unlink(output_temp_path)
+            # Cleanup temp files
+            os.unlink(wav_temp_path)
+            os.unlink(mp3_temp_path)
             
             return audio_bytes
         finally:

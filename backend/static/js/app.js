@@ -347,11 +347,17 @@ function initGeneratePage() {
     
     audioElement.addEventListener('timeupdate', () => {
       const current = audioElement.currentTime;
-      const duration = audioElement.duration || 0;
+      let duration = audioElement.duration || 0;
+      
+      // Handle Infinity duration (common with VBR MP3s or streaming)
+      if (!isFinite(duration)) {
+        duration = 0;
+      }
+      
       const percent = duration > 0 ? (current / duration) * 100 : 0;
       
       progressFill.style.width = `${percent}%`;
-      timeDisplay.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+      timeDisplay.textContent = `${formatTime(current)} / ${duration > 0 ? formatTime(duration) : '--:--'}`;
     });
     
     audioElement.addEventListener('ended', () => {
@@ -360,7 +366,9 @@ function initGeneratePage() {
     });
     
     audioElement.addEventListener('loadedmetadata', () => {
-      timeDisplay.textContent = `0:00 / ${formatTime(audioElement.duration)}`;
+      let duration = audioElement.duration;
+      if (!isFinite(duration)) duration = 0;
+      timeDisplay.textContent = `0:00 / ${duration > 0 ? formatTime(duration) : '--:--'}`;
     });
     
     // Click on progress bar to seek

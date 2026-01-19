@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}History - Utter{% endblock %}
+
+{% block content %}
+<h1 class="title-page">Generation History</h1>
+
+<div id="error-container" class="message hidden"></div>
+
+<div id="history-container" class="history-grid">
+    <div class="loading-placeholder">Loading history...</div>
+</div>
+
+<div class="history-empty hidden" id="empty-state">
+    <p>No generations yet.</p>
+    <a href="/generate" class="btn">Generate Your First Speech</a>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const container = document.getElementById('history-container');
+        const emptyState = document.getElementById('empty-state');
+
+        try {
+            const response = await fetch('/api/generations');
+            const data = await response.json();
+
+            if (data.generations.length === 0) {
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            container.innerHTML = data.generations.map(gen => `
+            <div class="history-card" data-id="${gen.id}">
+                <div class="history-card-header">
+                    <span class="history-card-voice">${gen.voice_name || 'Unknown Voice'}</span>
+                    <span class="history-card-date">${formatDate(gen.created_at)}</span>
+                </div>
+                <p class="history-card-text">${truncateText(gen.text, 100)}</p>
+                <div class="history-card-meta">
+                    <span class="history-card-duration">${formatDuration(gen.duration_seconds)}</span>
+                </div>
+                <div class="history-card-actions">
+                    <button class="btn btn-secondary play-btn" data-id="${gen.id}" data-url="/uploads/generated/${getFilename(gen.audio_path)}">
+                        Play
+                    </button>
+                    <a href="/uploads/generated/${getFilename(gen.audio_path)}" class="btn btn-secondary" download="speech.mp3">
+                        Download
+                    </a>
+                    <button class="btn btn-secondary delete-btn" data-id="${gen.id}">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        } catch (error) {
+            container.innerHTML = '<p class="message error">Failed to load history</p>';
+        }
+    });
+
+    function formatDate(isoString) {
+        if (!isoString) return '';
+        // Append Z to ensure it's treated as UTC if it's missing timezone info
+        if (!isoString.endsWith('Z')) isoString += 'Z';
+        const date = new Date(isoString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    }
+
+    function formatDuration(seconds) {
+        if (!seconds) return '';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return mins > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${secs}s`;
+    }
+
+    function truncateText(text, maxLen) {
+        if (!text) return '';
+        return text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
+    }
+
+    function getFilename(path) {
+        if (!path) return '';
+        return path.split(/[/\\]/).pop();
+    }
+
+    // Play button handler
+    document.addEventListener('click', (e) => {
+        const playBtn = e.target.closest('.play-btn');
+        if (!playBtn) return;
+
+        const audioUrl = playBtn.dataset.url;
+
+        // Stop any currently playing audio
+        let audio = document.getElementById('history-audio');
+        if (!audio) {
+            audio = document.createElement('audio');
+            audio.id = 'history-audio';
+            document.body.appendChild(audio);
+        }
+
+        // Toggle play/pause if same generation
+        if (audio.src.endsWith(audioUrl.split('/').pop()) && !audio.paused) {
+            audio.pause();
+            playBtn.textContent = 'Play';
+            playBtn.classList.remove('playing');
+            return;
+        }
+
+        // Reset all play buttons
+        document.querySelectorAll('.play-btn').forEach(btn => {
+            btn.textContent = 'Play';
+            btn.classList.remove('playing');
+        });
+
+        // Play new audio
+        audio.src = audioUrl;
+        audio.play();
+        playBtn.textContent = 'Stop';
+        playBtn.classList.add('playing');
+
+        audio.onended = () => {
+            playBtn.textContent = 'Play';
+            playBtn.classList.remove('playing');
+        };
+    });
+
+    // Delete button handler
+    document.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.delete-btn');
+        if (!deleteBtn) return;
+
+        const genId = deleteBtn.dataset.id;
+
+        if (!confirm('Delete this generation? This cannot be undone.')) {
+            return;
+        }
+
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = 'Deleting...';
+
+        try {
+            const response = await fetch(`/api/generations/${genId}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.detail || 'Failed to delete');
+            }
+
+            // Remove card from DOM
+            const card = deleteBtn.closest('.history-card');
+            card.remove();
+
+            // Check if any generations left
+            const container = document.getElementById('history-container');
+            if (container.children.length === 0) {
+                container.classList.add('hidden');
+                document.getElementById('empty-state').classList.remove('hidden');
+            }
+
+        } catch (error) {
+            alert('Failed to delete: ' + error.message);
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = 'Delete';
+        }
+    });
+</script>
+{% endblock %}
