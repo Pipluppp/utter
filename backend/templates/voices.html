@@ -48,6 +48,7 @@
                         Delete
                     </button>
                 </div>
+                <div id="waveform-${voice.id}" class="waveform-container hidden"></div>
             </div>
         `).join('');
 
@@ -74,38 +75,12 @@
         const voiceId = previewBtn.dataset.id;
         const previewUrl = `/api/voices/${voiceId}/preview`;
 
-        // Stop any currently playing preview
-        let audio = document.getElementById('preview-audio');
-        if (!audio) {
-            audio = document.createElement('audio');
-            audio.id = 'preview-audio';
-            document.body.appendChild(audio);
+        // Use global WaveformManager
+        if (window.waveformManager) {
+            window.waveformManager.play(`waveform-${voiceId}`, previewUrl, previewBtn);
+        } else {
+            console.error('WaveformManager not loaded');
         }
-
-        // Toggle play/pause if same voice
-        if (audio.src.includes(voiceId) && !audio.paused) {
-            audio.pause();
-            previewBtn.textContent = 'Preview';
-            previewBtn.classList.remove('playing');
-            return;
-        }
-
-        // Reset all preview buttons
-        document.querySelectorAll('.preview-btn').forEach(btn => {
-            btn.textContent = 'Preview';
-            btn.classList.remove('playing');
-        });
-
-        // Play new preview
-        audio.src = previewUrl;
-        audio.play();
-        previewBtn.textContent = 'Stop';
-        previewBtn.classList.add('playing');
-
-        audio.onended = () => {
-            previewBtn.textContent = 'Preview';
-            previewBtn.classList.remove('playing');
-        };
     });
 
     // Delete button handler

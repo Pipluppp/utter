@@ -52,6 +52,7 @@
                         Delete
                     </button>
                 </div>
+                <div id="waveform-${gen.id}" class="waveform-container hidden"></div>
             </div>
         `).join('');
 
@@ -96,39 +97,14 @@
         if (!playBtn) return;
 
         const audioUrl = playBtn.dataset.url;
+        const genId = playBtn.dataset.id;
 
-        // Stop any currently playing audio
-        let audio = document.getElementById('history-audio');
-        if (!audio) {
-            audio = document.createElement('audio');
-            audio.id = 'history-audio';
-            document.body.appendChild(audio);
+        // Use global WaveformManager
+        if (window.waveformManager) {
+            window.waveformManager.play(`waveform-${genId}`, audioUrl, playBtn);
+        } else {
+            console.error('WaveformManager not loaded');
         }
-
-        // Toggle play/pause if same generation
-        if (audio.src.endsWith(audioUrl.split('/').pop()) && !audio.paused) {
-            audio.pause();
-            playBtn.textContent = 'Play';
-            playBtn.classList.remove('playing');
-            return;
-        }
-
-        // Reset all play buttons
-        document.querySelectorAll('.play-btn').forEach(btn => {
-            btn.textContent = 'Play';
-            btn.classList.remove('playing');
-        });
-
-        // Play new audio
-        audio.src = audioUrl;
-        audio.play();
-        playBtn.textContent = 'Stop';
-        playBtn.classList.add('playing');
-
-        audio.onended = () => {
-            playBtn.textContent = 'Play';
-            playBtn.classList.remove('playing');
-        };
     });
 
     // Delete button handler
