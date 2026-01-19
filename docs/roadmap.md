@@ -222,12 +222,13 @@ Expected state:
 | Sprint 2: Generate Speech | ✅ Complete (local + Modal) |
 | Sprint 3: Deploy | ⬜ Not Started |
 
-**Last Updated**: 2026-01-19
+**Last Updated**: 2026-01-20
 
 ### What's Working Now
 - Voice cloning with audio validation (10s-5min)
 - Real speech generation via Echo-TTS on Modal.com
-- Audio playback and WAV download
+- Audio playback with **Waveform Visualization** (Wavesurfer.js)
+- Dot Matrix / Halftone UI aesthetics
 - SQLite database (local dev)
 - Local file storage
 

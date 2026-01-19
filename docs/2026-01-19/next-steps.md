@@ -43,7 +43,7 @@
 |-----|--------|--------|--------|
 | MP3 conversion | 30 min | 10x smaller files | ✅ Done |
 | Random seed | 15 min | Voice variation | ❌ Removed |
-| Waveform viz | 2 hr | Professional look | ⏳ Deferred |
+| Waveform viz | 2 hr | Professional look | ✅ Done |
 
 ---
 

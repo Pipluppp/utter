@@ -2,33 +2,27 @@
 
 ## Priority 1: Waveform Visualization (Implementation)
 **Goal**: Add professional audio visualization using `wavesurfer.js`.
-- [ ] Add `wavesurfer.js` library (CDN).
-- [ ] Update `generate.html` to replace simple progress bar.
-- [ ] Update `app.js` to initialize waveform.
-- [ ] Ensure minimal aesthetic (black/white).
+- [x] Add `wavesurfer.js` library (CDN).
+- [x] Update `generate.html` to replace simple progress bar.
+- [x] Update `app.js` to initialize waveform.
+- [x] Ensure minimal aesthetic (black/white).
 
-## Priority 2: Future Research (Echo-TTS)
-**Goal**: Deep dive into model capabilities before implementing advanced features.
+## Priority 2: Echo-TTS Power Features
+**Goal**: Implement advanced generation capabilities (long audio & settings).
+See [echo-tts-plan.md](./echo-tts-plan.md) for details.
 
 ### Text Chunking & Long Audio
-- Compare sentence splitting libraries (spacy vs nltk).
-- Test crossfading strategies manually.
-- Investigate speaker state persistence.
+- [ ] Implement backend text splitter (sentence boundary detection).
+- [ ] Implement audio stitching (ffmpeg).
+- [ ] Update frontend to handle longer timeouts/progress.
 
 ### Voice Settings
-- Benchmark `cfg_scale` ranges.
-- Test impact on different voice types.
-
----
-**Goal**: Add "nice-to-have" features deferred from previous sessions.
-
-- [ ] **Waveform Visualization**: Use `wavesurfer.js` for generated audio player.
-- [ ] **Delete Protection**: Add "Are you sure?" modal for deleting voices/history (currently uses native `confirm`).
+- [ ] Add `cfg_scale_text` and `cfg_scale_speaker` sliders.
+- [ ] Add `seed` input (random/fixed).
+- [ ] Update `/api/generate` to pass params to Modal.
 
 ---
 
 ## Known Issues/Tech Debt
-
 1.  **Cold Start**: First generation takes ~60s. (Mitigation: Added loading info message).
-2.  **Timezones**: Dates are stored as UTC but displayed in local time. (Fixed 2026-01-20).
-3.  **VBR MP3s**: Audio player duration can be initially `Infinity`. (Fixed 2026-01-20).
+2.  **Long Generation Blocking**: Synchronous HTTP request blocks for entire generation duration. (Fix: Async tasks or chunking).
