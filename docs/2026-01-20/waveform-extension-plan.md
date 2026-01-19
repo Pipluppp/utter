@@ -105,6 +105,6 @@ class WaveformManager {
     - *Mitigation*: Keep height small (48px is fine).
 
 ## Verification
-- [ ] Go to Voices -> Click Preview -> Waveform expands and plays.
-- [ ] Click another voice -> Old one closes, new one opens.
-- [ ] Go to History -> Click Play -> Waveform expands and plays.
+- [x] Go to Voices -> Click Preview -> Waveform expands and plays.
+- [x] Click another voice -> Old one closes, new one opens.
+- [x] Go to History -> Click Play -> Waveform expands and plays.

@@ -6,7 +6,7 @@
 - [x] Update `generate.html` to replace simple progress bar.
 - [x] Update `app.js` to initialize waveform.
 - [x] Ensure minimal aesthetic (black/white).
-- [ ] **Extend to Lists**: Implement waveform on `/voices` and `/history` (See [waveform-extension-plan.md](./waveform-extension-plan.md)).
+- [x] **Extend to Lists**: Implement waveform on `/voices` and `/history` (See [waveform-extension-plan.md](./waveform-extension-plan.md)).
 
 ## Priority 2: Echo-TTS Power Features
 **Goal**: Implement advanced generation capabilities (long audio & settings).

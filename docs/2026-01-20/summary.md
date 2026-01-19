@@ -9,6 +9,9 @@
 - [x] **Dot Matrix Texture**: Added a CSS radial gradient overlay (`body::before`) to create a "halftone" / "dot matrix" background effect.
     - Opacity: 0.15 for a subtle texture.
     - Pattern: Grid of dots to match the provided reference "vibes".
+- [x] **Waveform Extension**: Extended visualization to "Your Voices" and "History" lists using a singleton player pattern (`WaveformManager`).
+    - Performance: Only one active Wavesurfer instance to avoid memory issues.
+    - Features: Play/Stop toggle, loading state, visual feedback.
 
 ### Code
 - **Modified**: `templates/generate.html`, `static/js/app.js`, `static/css/style.css`
