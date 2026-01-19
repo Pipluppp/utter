@@ -151,7 +151,7 @@ body {
       margin: auto;
       width: 16px;
       height: 16px;
-      border: 2px solid var(--bg);
+      border: 2px solid var(--text);
       border-right-color: transparent;
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
