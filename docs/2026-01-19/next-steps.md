@@ -24,12 +24,12 @@
 ## Next Session: Power Features
 
 ### Priority 1: Generation History
-- [ ] Add `Generation` model to database
-- [ ] Store metadata on each generation
-- [ ] Create history page (`/history`)
-- [ ] Add re-download/replay functionality
+- [x] Add `Generation` model to database
+- [x] Store metadata on each generation
+- [x] Create history page (`/history`)
+- [x] Add re-download/replay functionality
 
-### Priority 2: Text Chunking
+### Priority 2: Text Chunking (Deferred)
 - [ ] Sentence boundary splitting
 - [ ] Sequential chunk generation
 - [ ] Audio concatenation with crossfade
@@ -39,11 +39,11 @@
 - [ ] Pass settings through to Modal
 
 ### Quick Wins
-| Win | Effort | Impact |
-|-----|--------|--------|
-| MP3 conversion | 30 min | 10x smaller files |
-| Random seed | 15 min | Voice variation |
-| Waveform viz | 2 hr | Professional look |
+| Win | Effort | Impact | Status |
+|-----|--------|--------|--------|
+| MP3 conversion | 30 min | 10x smaller files | ✅ Done |
+| Random seed | 15 min | Voice variation | ❌ Removed |
+| Waveform viz | 2 hr | Professional look | ⏳ Deferred |
 
 ---
 

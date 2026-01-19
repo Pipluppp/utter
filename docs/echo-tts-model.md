@@ -242,3 +242,19 @@ torchaudio.save("output.wav", audio_out[0].cpu(), 44100)
 - **HuggingFace Model**: https://huggingface.co/jordand/echo-tts-base
 - **Demo**: https://huggingface.co/spaces/jordand/echo-tts-preview
 - **Blog Post**: https://jordandarefsky.com/blog/2025/echo/
+
+---
+
+## 🔮 Future Research Required
+
+**Chunking & Long Form Audio**
+Implementing proper text chunking and sequential generation requires deep investigation into:
+- Sentence boundary detection that aligns with model's pause behavior.
+- Maintaining speaker state across chunks (does `pca_state` or `speaker_audio` need adjustment?).
+- Crossfading techniques to prevent clicks at boundaries.
+
+**Voice Settings**
+Fine-tuning `cfg_scale_text` and `cfg_scale_speaker` requires empirical testing to determine:
+- Safe ranges for "Emotion" vs "Stability".
+- Impact on inference speed.
+- Interaction with different voice types (deep vs high pitch).
