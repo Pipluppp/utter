@@ -342,42 +342,29 @@ body {
    Landing Page
    ============================================================================ */
 
-/* Liquid Glass Background - Full Width */
+/* Dot Matrix / Halftone Background */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   top: 60px;
-  /* Offset for header roughly, though header has bg now, this adds a physical gap/start */
   height: calc(100% - 60px);
   z-index: -1;
   pointer-events: none;
-  background:
-    /* Warp/Depth Layers to simulate liquid distortion */
-    radial-gradient(120% 100% at 50% 0%, transparent 40%, rgba(0, 0, 0, 0.06) 100%),
-    radial-gradient(60% 80% at 0% 50%, rgba(0, 0, 0, 0.04) 0%, transparent 80%),
-    radial-gradient(60% 80% at 100% 50%, rgba(0, 0, 0, 0.04) 0%, transparent 80%),
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(var(--text-faint) 1px, transparent 1px),
+    radial-gradient(var(--text-faint) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+  opacity: 0.15;
+}
 
-    /* Soft Ribs - Vertical Corrugation */
-    repeating-linear-gradient(90deg,
-      transparent 0,
-      transparent 20px,
-      rgba(0, 0, 0, 0.03) 20px,
-      rgba(0, 0, 0, 0.02) 40px),
-
-    /* Fine Ribs - Texture Detail */
-    repeating-linear-gradient(90deg,
-      transparent 0,
-      transparent 4px,
-      rgba(0, 0, 0, 0.02) 4px,
-      rgba(0, 0, 0, 0.02) 5px),
-
-    /* Base Lighting */
-    linear-gradient(180deg, var(--bg) 0%, var(--bg-muted) 100%);
-
-  /* Heavy blur creates the "glass" optical feel */
-  filter: blur(8px) contrast(1.1);
-  opacity: 0.90;
+.audio-player-waveform {
+  flex: 1;
+  height: 48px;
+  /* Ensure it takes up space so WaveSurfer can render */
+  min-width: 200px;
 }
 
 .landing {

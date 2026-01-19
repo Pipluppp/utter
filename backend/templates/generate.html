@@ -44,9 +44,7 @@
             </svg>
         </button>
 
-        <div class="audio-player-progress" id="progress-bar">
-            <div class="audio-player-progress-fill" id="progress-fill"></div>
-        </div>
+        <div id="waveform" class="audio-player-waveform"></div>
 
         <div class="audio-player-time" id="time-display">0:00 / 0:00</div>
 
@@ -59,4 +57,6 @@
 
     <audio id="audio-element" hidden></audio>
 </div>
+
+<script src="https://unpkg.com/wavesurfer.js@7"></script>
 {% endblock %}
