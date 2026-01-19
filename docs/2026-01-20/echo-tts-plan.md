@@ -43,9 +43,13 @@ Based on `modal_app/echo_tts.py` and repository knowledge:
 
 ### 1. Modal App Updates (`modal_app/echo_tts.py`)
 - [ ] Update `generate` method signature to accept:
-    - `cfg_text: float`
-    - `cfg_speaker: float`
-    - `seed: int`
+    - `cfg_text: float` (Default 3.0)
+    - `cfg_speaker: float` (Default 8.0)
+    - `seed: int` (Optional)
+    - `cfg_mode: str` (Enum: 'independent', 'apg', 'alternating', 'joint')
+    - `speaker_kv_scale: float` (Default 1.0 or 1.5 if enabled)
+    - `num_steps: int` (Default 40)
+    - `audio_format: str` ('wav' or 'mp3')
 - [ ] Pass these values to `sample_euler_cfg_independent_guidances`.
 
 ### 2. Backend Updates (`main.py`)
@@ -53,13 +57,21 @@ Based on `modal_app/echo_tts.py` and repository knowledge:
 - [ ] Pass settings to the TTS service.
 
 ### 3. Frontend Updates (`generate.html`, `app.js`)
-- [ ] **Advanced Settings UI**:
-    - Collapsible "Advanced Settings" section.
-    - **Sliders**:
-        - Text Guidance (1.0 - 10.0)
-        - Speaker Match (1.0 - 10.0)
-    - **Input**:
-        - Seed (Randomize / Fixed)
+- [ ] **Mode Toggle**: "Simple" vs "Advanced" tabs/switch.
+- [ ] **Simple Mode**:
+    - Just Text Prompt and Speaker Reference (existing).
+- [ ] **Advanced Mode Panel**:
+    - **Performance**:
+        - Steps Slider: `20` - `80` (Default `40`).
+    - **Guidance**:
+        - Text Scale: `1.0` - `10.0` (Default `3.0`).
+        - Speaker Scale: `1.0` - `10.0` (Default `8.0`).
+        - Mode: Dropdown [`Independent`, `APG`, `Alternating`, `Joint`].
+    - **Stability**:
+        - "Force Speaker Identity" Checkbox (sets KV scale to 1.5).
+        - Seed Input (Number).
+    - **Format** (Optional):
+        - WAV vs MP3 toggle.
 - [ ] Send these values in the JSON payload.
 
 ---

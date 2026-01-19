@@ -17,7 +17,8 @@ These are the critical limits you need to know when building your app:
 | **Sample rate** | 44.1 kHz | Output audio is high quality |
 
 > [!IMPORTANT]
-> **Text-to-duration behavior**: The model tries to fit ALL your text into 30 seconds. If you give it 2 paragraphs, it will speak faster to fit it in. If you give it one sentence, it speaks naturally and pads the rest with silence.
+> **Text-to-duration behavior**: The default model behavior tries to fit ALL your text into 30 seconds. If you give it 2 paragraphs, it will speak faster to fit it in. If you give it one sentence, it speaks naturally and pads the rest with silence.
+> **Note**: Advanced "Temporal Rescaling" parameters (k, sigma) can alter this behavior.
 
 ### Reference Audio (Voice Cloning) Limits
 
@@ -140,6 +141,15 @@ def chunk_text(text: str, max_words: int = 120) -> list[str]:
 | Inference Speed | ~1.45s for 30s audio (A100) |
 | Min VRAM | 8GB (with adjustments) |
 | Recommended VRAM | 16-24GB |
+| **Max Sequence** | 640 latents (~30s) |
+
+### Available Text Presets (Styles)
+The model has been observed to handle various text styles which act as "soft prompts" for prosody:
+- **Conversation**: `[S1] ... [S2] ...` (Natural turn-taking)
+- **Reading**: Narrative, descriptive text.
+- **Single (Disfluent)**: "Um, you know, I think, uh..." (Natural hesitation)
+- **Singing**: Lyrics with `(singing)` tags.
+- **Cartoon**: Expressive, exaggerated patterns.
 
 ---
 
@@ -168,12 +178,41 @@ DEFAULT_SAMPLE_LATENT_LENGTH = 576  # Instead of 640
 | `cfg_scale_speaker` | 8.0 | How closely to match speaker (higher = more similar) |
 | `sequence_length` | 640 | Latent length (~30s). Reduce for shorter output |
 
-### "Force Speaker" Mode
+### "Force Speaker" Mode (Speaker KV Scaling)
 
 If the model generates wrong voice for unusual text:
-- Enable `speaker_kv_scale` (default: 1.5 when enabled)
-- Range: 1.0 (off) → 1.5 (strong forcing)
-- Too high → artifacts and "overconditioning"
+- **Enable Speaker KV Scaling**: Scales speaker attention key-values.
+- **Use Case**: When model-generated audio does not match reference audio at all (i.e. ignores speaker-reference).
+- **Default value**: ~1.5 when enabled.
+
+---
+
+## ⚙️ Advanced Generation Parameters
+
+These parameters control the diffusion sampling and guidance process.
+
+### CFG Modes (Classifier-Free Guidance)
+The method used to combine conditional (text/speaker) and unconditional scores.
+1.  **Independent (Default)**: Standard CFG. separately scales text and speaker guidance. (3 NFE)
+2.  **Adaptive Projected Guidance (APG)**: More robust guidance, prevents artifacts at high scales. See [arXiv:2410.02416](https://arxiv.org/abs/2410.02416). (3 NFE)
+3.  **Alternating**: Alternates between different guidance types. (2 NFE - Faster)
+4.  **Joint-Unconditional**: optimization for speed. (2 NFE - Faster)
+
+### Guidance Scales
+- **Text CFG Scale** (Default: `3.0`): Strength of text conditioning. Higher = cleaner pronunciation, less creative prosody.
+- **Speaker CFG Scale** (Default: `8.0`): Strength of voice cloning. Higher = closer match to reference.
+- **CFG Min/Max t**: (0.0 - 1.0) Time range where CFG is applied. Default `Min=0.5`, `Max=1.0`.
+
+### Truncation & Temporal Rescaling
+Controls the "speed" and "pacing" of the generated audio relative to the text.
+- **Truncation Factor** (Default: `1.0`): Multiplier for initial noise. `< 1` can reduce artifacts.
+- **Rescale k** (Default: `1.0`): `< 1` = Sharpen (slower/clearer), `> 1` = Flatten (faster/smoother).
+- **Rescale Sigma** (Default: `3.0`): Sigma parameter for the schedule.
+
+### Other Settings
+- **Seed**: Random seed (Default: Random). Set to integer for reproducibility.
+- **Steps**: Sampling steps. Default `40`. Range `20` (fast) to `80` (high quality).
+- **Custom Shapes**: Advanced override for sequence lengths.
 
 ---
 

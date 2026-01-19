@@ -46,8 +46,18 @@ uv run uvicorn main:app --reload
 
 ---
 
-## Next Steps
+## Next Steps & Detailed Plans
 
-1. **Verify Implementation**: Test the full flow - Clone -> Generate -> History.
-2. **Text Chunking**: Logic to split long text and generate sequentially.
-3. **Voice Settings**: Add controls for speed/emotion (cfg_scales).
+We have documented detailed plans for the next major features:
+
+1. **[Echo-TTS Integration Plan](./echo-tts-plan.md)**
+   Covers **Text Chunking** (handling long text) and **Voice Settings** (Speed, Emotion/Guidance scales).
+
+2. **[Waveform Extension Plan](./waveform-extension-plan.md)**
+   Plan to bring the visual audio player (WaveSurfer) to the "Your Voices" and "History" lists for better playback.
+
+3. **[ElevenLabs UX Replication Plan](./elevenlabs-ux-replication-plan.md)**
+   A comprehensive UX/UI roadmap to elevate the app to a premium, "ElevenLabs-like" experience, including advanced project workflows.
+
+### Immediate Action
+- [ ] **Verify Implementation**: Test the full flow - Clone -> Generate -> History.
