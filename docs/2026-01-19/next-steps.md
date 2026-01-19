@@ -1,49 +1,65 @@
-# Next Development Steps
+# 2026-01-19 Session Summary
 
-> Features to work on in upcoming sessions
+## Accomplishments ✅
 
----
+### Priority 1: UX Polish
+- [x] Favicon - waveform icon, no more 404s
+- [x] Loading spinner with elapsed time counter
+- [x] Info message during generation wait
+- [x] Modern CSS: `clamp()` for fluid typography
 
-## Priority 1: UX Polish
+### Priority 2: Voice Management
+- [x] Voice list page (`/voices`)
+- [x] Delete voice (DB + filesystem cleanup)
+- [x] Preview playback with pulsing animation
+- [x] Generate pre-selects voice from URL param
 
-- [ ] Add favicon (404 currently)
-- [ ] Add loading spinner during generation
-- [ ] Better error messages from Modal
-- [ ] Add audio waveform visualization
-
----
-
-## Priority 2: Voice Management
-
-- [ ] Voice list page (view all cloned voices)
-- [ ] Delete voice functionality
-- [ ] Voice preview playback (play reference audio)
-
----
-
-## Priority 3: Power Features
-
-- [ ] Generation history (list past generations)
-- [ ] Longer text support (chunking for >30s)
-- [ ] Voice settings (cfg_scale sliders for control)
+### Commits Made
+1. `feat: add favicon to eliminate 404 spam`
+2. `feat: add loading UX with elapsed time counter and info message`
+3. `feat: add voice management with list, preview, delete and modern CSS improvements`
 
 ---
 
-## Quick Wins
+## Next Session: Power Features
 
+### Priority 1: Generation History
+- [ ] Add `Generation` model to database
+- [ ] Store metadata on each generation
+- [ ] Create history page (`/history`)
+- [ ] Add re-download/replay functionality
+
+### Priority 2: Text Chunking
+- [ ] Sentence boundary splitting
+- [ ] Sequential chunk generation
+- [ ] Audio concatenation with crossfade
+
+### Priority 3: Voice Settings
+- [ ] Add cfg_scale sliders to generate page
+- [ ] Pass settings through to Modal
+
+### Quick Wins
 | Win | Effort | Impact |
 |-----|--------|--------|
-| Favicon | 5 min | No more 404 spam |
-| Loading spinner | 15 min | Better UX during wait |
-| Voice list page | 1 hr | See all voices |
-| Delete voice | 30 min | Cleanup |
-| Waveform viz | 2 hr | Looks cool |
+| MP3 conversion | 30 min | 10x smaller files |
+| Random seed | 15 min | Voice variation |
+| Waveform viz | 2 hr | Professional look |
 
 ---
 
 ## Known Issues
 
-1. **Cold start latency** - First gen takes 30-60s
-2. **Large WAV files** - ~2MB for 30s (could convert to MP3)
-3. **No favicon** - 404 in logs
-4. **Fixed rng_seed=0** - Could randomize for variation
+1. **Cold start latency** - First gen 30-60s
+2. **Large WAV files** - Could convert to MP3
+3. **Fixed rng_seed=0** - Could randomize
+
+---
+
+## Start Dev Server
+
+```powershell
+cd c:\Users\Duncan\Desktop\utter\backend
+uv run uvicorn main:app --reload
+```
+
+Open: http://localhost:8000
