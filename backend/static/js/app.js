@@ -25,6 +25,15 @@ function showSuccess(message) {
   }
 }
 
+function showInfo(message) {
+  const container = document.getElementById('error-container');
+  if (container) {
+    container.textContent = message;
+    container.classList.remove('hidden', 'error', 'success');
+    container.classList.add('info');
+  }
+}
+
 function hideError() {
   const container = document.getElementById('error-container');
   if (container) {
@@ -257,10 +266,24 @@ function initGeneratePage() {
       return;
     }
     
-    // Show loading state
+    // Show loading state with elapsed time counter
     generateBtn.disabled = true;
     generateBtn.classList.add('btn-loading');
-    generateBtn.textContent = 'Generating...';
+    
+    let elapsedSeconds = 0;
+    const updateButtonText = () => {
+      generateBtn.textContent = `Generating... ${elapsedSeconds}s`;
+    };
+    updateButtonText();
+    
+    // Start elapsed time counter
+    const timerInterval = setInterval(() => {
+      elapsedSeconds++;
+      updateButtonText();
+    }, 1000);
+    
+    // Show helpful message for long waits
+    showInfo('First generation may take 30-60 seconds while the model warms up.');
     
     try {
       const response = await fetch('/api/generate', {
@@ -290,9 +313,13 @@ function initGeneratePage() {
       timeDisplay.textContent = '0:00 / 0:00';
       showPlayIcon();
       
+      // Hide the info message on success
+      hideError();
+      
     } catch (error) {
       showError(error.message);
     } finally {
+      clearInterval(timerInterval);
       generateBtn.disabled = false;
       generateBtn.classList.remove('btn-loading');
       generateBtn.textContent = 'Generate Speech';

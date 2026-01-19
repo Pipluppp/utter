@@ -307,6 +307,12 @@ body {
     color: #16a34a;
     background: #f0fdf4;
   }
+
+  &.info {
+    border-color: #3b82f6;
+    color: #2563eb;
+    background: #eff6ff;
+  }
 }
 
 .char-counter {
