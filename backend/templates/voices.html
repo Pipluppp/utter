@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Voices - Utter{% endblock %}
+
+{% block content %}
+<h1 class="title-page">Your Voices</h1>
+
+<div id="error-container" class="message hidden"></div>
+
+<div id="voices-container" class="voices-grid">
+    <div class="loading-placeholder">Loading voices...</div>
+</div>
+
+<div class="voices-empty hidden" id="empty-state">
+    <p>No voices yet.</p>
+    <a href="/clone" class="btn">Clone Your First Voice</a>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const container = document.getElementById('voices-container');
+        const emptyState = document.getElementById('empty-state');
+
+        try {
+            const response = await fetch('/api/voices');
+            const data = await response.json();
+
+            if (data.voices.length === 0) {
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            container.innerHTML = data.voices.map(voice => `
+            <div class="voice-card" data-id="${voice.id}">
+                <div class="voice-card-header">
+                    <h3 class="voice-card-name">${voice.name}</h3>
+                    <span class="voice-card-date">${formatDate(voice.created_at)}</span>
+                </div>
+                <div class="voice-card-actions">
+                    <button class="btn btn-secondary preview-btn" data-id="${voice.id}">
+                        Preview
+                    </button>
+                    <a href="/generate?voice=${voice.id}" class="btn">
+                        Generate
+                    </a>
+                    <button class="btn btn-secondary delete-btn" data-id="${voice.id}" data-name="${voice.name}">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        } catch (error) {
+            container.innerHTML = '<p class="message error">Failed to load voices</p>';
+        }
+    });
+
+    function formatDate(isoString) {
+        if (!isoString) return '';
+        const date = new Date(isoString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    }
+
+    // Preview button handler
+    document.addEventListener('click', (e) => {
+        const previewBtn = e.target.closest('.preview-btn');
+        if (!previewBtn) return;
+
+        const voiceId = previewBtn.dataset.id;
+        const previewUrl = `/api/voices/${voiceId}/preview`;
+
+        // Stop any currently playing preview
+        let audio = document.getElementById('preview-audio');
+        if (!audio) {
+            audio = document.createElement('audio');
+            audio.id = 'preview-audio';
+            document.body.appendChild(audio);
+        }
+
+        // Toggle play/pause if same voice
+        if (audio.src.includes(voiceId) && !audio.paused) {
+            audio.pause();
+            previewBtn.textContent = 'Preview';
+            previewBtn.classList.remove('playing');
+            return;
+        }
+
+        // Reset all preview buttons
+        document.querySelectorAll('.preview-btn').forEach(btn => {
+            btn.textContent = 'Preview';
+            btn.classList.remove('playing');
+        });
+
+        // Play new preview
+        audio.src = previewUrl;
+        audio.play();
+        previewBtn.textContent = 'Stop';
+        previewBtn.classList.add('playing');
+
+        audio.onended = () => {
+            previewBtn.textContent = 'Preview';
+            previewBtn.classList.remove('playing');
+        };
+    });
+
+    // Delete button handler
+    document.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.delete-btn');
+        if (!deleteBtn) return;
+
+        const voiceId = deleteBtn.dataset.id;
+        const voiceName = deleteBtn.dataset.name;
+
+        if (!confirm(`Delete voice "${voiceName}"? This cannot be undone.`)) {
+            return;
+        }
+
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = 'Deleting...';
+
+        try {
+            const response = await fetch(`/api/voices/${voiceId}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.detail || 'Failed to delete');
+            }
+
+            // Remove card from DOM
+            const card = deleteBtn.closest('.voice-card');
+            card.remove();
+
+            // Check if any voices left
+            const container = document.getElementById('voices-container');
+            if (container.children.length === 0) {
+                container.classList.add('hidden');
+                document.getElementById('empty-state').classList.remove('hidden');
+            }
+
+        } catch (error) {
+            alert('Failed to delete voice: ' + error.message);
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = 'Delete';
+        }
+    });
+</script>
+{% endblock %}

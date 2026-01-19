@@ -1,33 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Utter{% endblock %}</title>
   <meta name="description" content="Clone a voice and generate speech with Echo-TTS">
   <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
-  
+
   <!-- IBM Plex Mono Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  
+
   <!-- Styles -->
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
+
 <body>
   <header class="header">
     <a href="/" class="header-logo">UTTER</a>
     <nav class="header-nav">
       <a href="/clone" class="{% if request.url.path == '/clone' %}active{% endif %}">Clone</a>
+      <a href="/voices" class="{% if request.url.path == '/voices' %}active{% endif %}">Voices</a>
       <a href="/generate" class="{% if request.url.path == '/generate' %}active{% endif %}">Generate</a>
     </nav>
   </header>
-  
+
   <main class="container">
     {% block content %}{% endblock %}
   </main>
-  
+
   <script src="/static/js/app.js"></script>
 </body>
+
 </html>

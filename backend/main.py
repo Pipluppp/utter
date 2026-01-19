@@ -79,6 +79,12 @@ async def about_page(request: Request):
     return templates.TemplateResponse("about.html", {"request": request})
 
 
+@app.get("/voices", response_class=HTMLResponse)
+async def voices_page(request: Request):
+    """Voice management page."""
+    return templates.TemplateResponse("voices.html", {"request": request})
+
+
 # ============================================================================
 # API Routes
 # ============================================================================
@@ -149,6 +155,44 @@ async def api_voices(session: AsyncSession = Depends(get_session)):
     return {
         "voices": [voice.to_dict() for voice in voices]
     }
+
+
+@app.delete("/api/voices/{voice_id}")
+async def api_delete_voice(voice_id: str, session: AsyncSession = Depends(get_session)):
+    """Delete a voice and its reference audio."""
+    # Find voice
+    result = await session.execute(select(Voice).where(Voice.id == voice_id))
+    voice = result.scalar_one_or_none()
+    
+    if not voice:
+        raise HTTPException(status_code=404, detail="Voice not found")
+    
+    # Delete reference audio file
+    storage.delete_reference(voice_id)
+    
+    # Delete from database
+    await session.delete(voice)
+    await session.commit()
+    
+    return {"success": True, "message": f"Voice '{voice.name}' deleted"}
+
+
+@app.get("/api/voices/{voice_id}/preview")
+async def api_preview_voice(voice_id: str, session: AsyncSession = Depends(get_session)):
+    """Stream reference audio for preview playback."""
+    # Find voice
+    result = await session.execute(select(Voice).where(Voice.id == voice_id))
+    voice = result.scalar_one_or_none()
+    
+    if not voice:
+        raise HTTPException(status_code=404, detail="Voice not found")
+    
+    # Get reference audio path
+    reference_path = storage.get_reference_path(voice_id)
+    if not reference_path or not reference_path.exists():
+        raise HTTPException(status_code=404, detail="Reference audio not found")
+    
+    return FileResponse(reference_path, media_type="audio/wav")
 
 
 @app.post("/api/generate")

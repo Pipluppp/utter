@@ -224,6 +224,13 @@ function initGeneratePage() {
         voiceSelect.appendChild(option);
       });
       
+      // Pre-select voice from URL param (e.g., /generate?voice=xxx)
+      const urlParams = new URLSearchParams(window.location.search);
+      const voiceParam = urlParams.get('voice');
+      if (voiceParam && voiceSelect.querySelector(`option[value="${voiceParam}"]`)) {
+        voiceSelect.value = voiceParam;
+      }
+      
     } catch (error) {
       console.error('Failed to load voices:', error);
     }

@@ -80,7 +80,7 @@ body {
 }
 
 .title-page {
-  font-size: 24px;
+  font-size: clamp(20px, 4vw, 24px);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -394,9 +394,9 @@ body::before {
 }
 
 .landing-title {
-  font-size: 48px;
+  font-size: clamp(32px, 8vw, 48px);
   font-weight: 600;
-  letter-spacing: 4px;
+  letter-spacing: clamp(2px, 0.5vw, 4px);
   text-transform: uppercase;
   line-height: 1.1;
   margin-bottom: var(--space-2);
@@ -404,8 +404,8 @@ body::before {
 
 .landing-title-accent {
   display: block;
-  font-size: 64px;
-  letter-spacing: 8px;
+  font-size: clamp(40px, 10vw, 64px);
+  letter-spacing: clamp(4px, 1vw, 8px);
 }
 
 .landing-tagline {
@@ -489,15 +489,6 @@ body::before {
     min-height: calc(100vh - 140px);
   }
 
-  .landing-title {
-    font-size: 32px;
-  }
-
-  .landing-title-accent {
-    font-size: 48px;
-    letter-spacing: 4px;
-  }
-
   .landing-actions-grid {
     grid-template-columns: 1fr;
   }
@@ -542,6 +533,87 @@ body::before {
   margin-bottom: var(--space-1);
 }
 
+/* ============================================================================
+   Voice List Page
+   ============================================================================ */
+
+.voices-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.voice-card {
+  padding: var(--space-3);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.voice-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-2);
+}
+
+.voice-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.voice-card-date {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.voice-card-actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.voice-card-actions .btn {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  padding: 8px var(--space-2);
+}
+
+.voices-empty {
+  text-align: center;
+  padding: var(--space-6);
+  color: var(--text-muted);
+}
+
+.voices-empty p {
+  margin-bottom: var(--space-3);
+}
+
+.loading-placeholder {
+  text-align: center;
+  padding: var(--space-4);
+  color: var(--text-faint);
+}
+
+/* Preview button playing state */
+.preview-btn.playing {
+  animation: pulse-border 2.5s ease-in-out infinite;
+  border-color: var(--text);
+}
+
+@keyframes pulse-border {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(17, 17, 17, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(17, 17, 17, 0);
+  }
+}
+
 .hidden {
   display: none !important;
 }
@@ -555,10 +627,6 @@ body::before {
 @media (width <=480px) {
   .container {
     padding: var(--space-3) var(--space-2);
-  }
-
-  .title-page {
-    font-size: 20px;
   }
 
   .audio-player {

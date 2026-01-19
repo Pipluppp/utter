@@ -54,6 +54,19 @@ def get_reference_path(voice_id: str) -> Path | None:
     return None
 
 
+def delete_reference(voice_id: str) -> bool:
+    """
+    Delete reference audio file for a voice.
+    
+    Returns True if file was deleted, False if not found.
+    """
+    path = get_reference_path(voice_id)
+    if path and path.exists():
+        path.unlink()
+        return True
+    return False
+
+
 def copy_file(src: Path, dst: Path) -> None:
     """Copy a file from source to destination."""
     shutil.copy2(src, dst)
