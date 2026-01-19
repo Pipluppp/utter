@@ -195,8 +195,7 @@ function initGeneratePage() {
   const playBtn = document.getElementById('play-btn');
   const playIcon = document.getElementById('play-icon');
   const pauseIcon = document.getElementById('pause-icon');
-  const progressBar = document.getElementById('progress-bar');
-  const progressFill = document.getElementById('progress-fill');
+
   const timeDisplay = document.getElementById('time-display');
   const downloadBtn = document.getElementById('download-btn');
   
@@ -311,12 +310,16 @@ function initGeneratePage() {
       }
       
       // Show audio player
-      audioElement.src = data.audio_url;
       downloadBtn.href = data.audio_url;
       resultSection.classList.remove('hidden');
       
-      // Reset player state
-      progressFill.style.width = '0%';
+      // Initialize player
+      if (window.initWaveSurferForUtter) {
+        window.initWaveSurferForUtter(data.audio_url);
+      } else {
+        audioElement.src = data.audio_url;
+      }
+      
       timeDisplay.textContent = '0:00 / 0:00';
       showPlayIcon();
       
