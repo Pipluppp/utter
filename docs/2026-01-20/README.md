@@ -1,63 +1,49 @@
-# 2026-01-20 Session Summary
+# Session: 2026-01-20
 
-## Accomplishments ✅
-
-### Priority 1: Generation History
-- [x] **Database Model**: Added `Generation` model to store history.
-- [x] **API Endpoints**: `/api/generations` (GET) and delete functionality.
-- [x] **History Page**: Created `/history` to view, replay, and download past generations.
-- [x] **Tracking**: Auto-save generation metadata on every successful generation.
-
-### Priority 2: Quick Wins
-- [x] **MP3 Conversion**: Updated Modal app to convert WAV to MP3 using ffmpeg (10x smaller files).
-- [ ] ~~**Random Seed**:~~ Implemented but removed per user request.
-- [ ] ~~**Waveform**:~~ Deferred to keep session focused.
+Development session documentation for the Utter Voice Clone project.
 
 ---
 
-## ⚠️ Action Required Before Testing
+## 📋 Content Map
 
-Because we modified the Modal app and Database schema, you must perform these steps:
+### Status & Progress
+| Doc | Purpose |
+|-----|---------|
+| [next-steps.md](./next-steps.md) | Active task checklist with priorities |
+| [summary.md](./summary.md) | Session accomplishments overview |
 
-### 1. Redeploy Modal App
-The app now handles MP3 conversion on the GPU side.
+### Feature Plans
+| Doc | Feature | Status |
+|-----|---------|--------|
+| [echo-tts-plan.md](./echo-tts-plan.md) | Text chunking & voice settings | ✅ Phase 1 Done |
+| [waveform-extension-plan.md](./waveform-extension-plan.md) | Audio visualization | ✅ Complete |
+| [elevenlabs-ux-replication-plan.md](./elevenlabs-ux-replication-plan.md) | Premium UX roadmap | 📋 Planned |
 
-✅ **Deployed Successfully**
-
-### 2. Rebuild Database
-We added the `Generation` table. Since we don't have migrations yet, we need to rebuild.
-
-> [!IMPORTANT]
-> **Manual Step Required**: The server is currently locking `utter.db`. Please stop the server, delete the file, and restart.
-
-```powershell
-# Stop server (Ctrl+C)
-cd c:\Users\Duncan\Desktop\utter\backend
-del utter.db
-uv run uvicorn main:app --reload
-```
-
-### 3. Restart Server
-The server will recreate the database tables on startup.
-
-```powershell
-uv run uvicorn main:app --reload
-```
+### Research & Analysis
+| Doc | Topic |
+|-----|-------|
+| [performance-optimization-research.md](./performance-optimization-research.md) | Speed improvements (grounded in Echo-TTS docs) |
 
 ---
 
-## Next Steps & Detailed Plans
+## ✅ Completed This Session
 
-We have documented detailed plans for the next major features:
+1. **Generation History** - Database model, API, and History page
+2. **MP3 Conversion** - WAV→MP3 on Modal (10× smaller files)
+3. **Waveform Visualization** - WaveSurfer.js player across app
+4. **Text Chunking** - Long text support with audio stitching
 
-1. **[Echo-TTS Integration Plan](./echo-tts-plan.md)**
-   Covers **Text Chunking** (handling long text) and **Voice Settings** (Speed, Emotion/Guidance scales).
+---
 
-2. **[Waveform Extension Plan](./waveform-extension-plan.md)**
-   Plan to bring the visual audio player (WaveSurfer) to the "Your Voices" and "History" lists for better playback.
+## 🔜 Next Up
 
-3. **[ElevenLabs UX Replication Plan](./elevenlabs-ux-replication-plan.md)**
-   A comprehensive UX/UI roadmap to elevate the app to a premium, "ElevenLabs-like" experience, including advanced project workflows.
+From [next-steps.md](./next-steps.md):
 
-### Immediate Action
-- [ ] **Verify Implementation**: Test the full flow - Clone -> Generate -> History.
+- [ ] Voice Settings (cfg_scale sliders, seed input)
+- [ ] Performance optimization (reduce steps, parallel generation)
+
+---
+
+## 🔗 Related Docs
+
+- [../echo-tts-model.md](../echo-tts-model.md) - Model constraints reference
