@@ -7,6 +7,8 @@ for real voice cloning. Supports long text via chunking.
 
 import os
 import uuid
+import time
+import logging
 from pathlib import Path
 
 import modal
@@ -15,6 +17,18 @@ from services.storage import get_reference_path
 from services.text import preprocess_text, split_text_into_chunks
 from services.audio_stitch import stitch_audio_files
 from config import GENERATED_DIR
+
+
+# Configure logger for performance tracking
+logger = logging.getLogger("tts.perf")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s | %(levelname)s | %(message)s",
+        datefmt="%H:%M:%S"
+    ))
+    logger.addHandler(handler)
 
 
 # Flag to use mock mode (for local development without Modal)
@@ -91,26 +105,40 @@ async def generate_speech(voice_id: str, text: str) -> str:
     
     # Split text into chunks (handles short text too - returns single chunk)
     chunks = split_text_into_chunks(text)
+    num_chunks = len(chunks)
+    text_len = len(text)
     
     # Get Modal TTS instance
     EchoTTS = _get_modal_tts()
     tts = EchoTTS()
     
+    logger.info(f"🎤 Starting generation: {text_len} chars, {num_chunks} chunk(s)")
+    total_start = time.time()
+    
     if len(chunks) == 1:
         # Short text: direct generation
         output_path = GENERATED_DIR / f"{generation_id}.mp3"
+        
+        chunk_start = time.time()
         audio_bytes = tts.generate.remote(
             text=chunks[0],
             reference_audio_bytes=reference_bytes
         )
+        chunk_elapsed = time.time() - chunk_start
+        
         with open(output_path, "wb") as f:
             f.write(audio_bytes)
+        
+        total_elapsed = time.time() - total_start
+        logger.info(f"✅ Generated in {total_elapsed:.2f}s ({len(audio_bytes)} bytes) | {text_len} chars")
         return str(output_path)
     
     # Long text: generate each chunk and stitch
     chunk_paths = []
+    chunk_times = []
     
     for i, chunk_text in enumerate(chunks):
+        chunk_start = time.time()
         chunk_id = f"{generation_id}_chunk{i}"
         chunk_path = await _generate_single_chunk(
             tts_instance=tts,
@@ -118,7 +146,10 @@ async def generate_speech(voice_id: str, text: str) -> str:
             reference_bytes=reference_bytes,
             chunk_id=chunk_id
         )
+        chunk_elapsed = time.time() - chunk_start
+        chunk_times.append(chunk_elapsed)
         chunk_paths.append(chunk_path)
+        logger.info(f"  Chunk {i+1}/{num_chunks}: {chunk_elapsed:.2f}s ({len(chunk_text)} chars)")
     
     # Stitch all chunks together
     final_output_path = str(GENERATED_DIR / f"{generation_id}.mp3")
@@ -130,6 +161,10 @@ async def generate_speech(voice_id: str, text: str) -> str:
             os.unlink(path)
         except OSError:
             pass  # Ignore cleanup errors
+    
+    total_elapsed = time.time() - total_start
+    avg_chunk = sum(chunk_times) / len(chunk_times)
+    logger.info(f"✅ Generated {num_chunks} chunks in {total_elapsed:.2f}s (avg {avg_chunk:.2f}s/chunk) | {text_len} chars")
     
     return final_output_path
 

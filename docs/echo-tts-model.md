@@ -189,30 +189,39 @@ If the model generates wrong voice for unusual text:
 
 ## ⚙️ Advanced Generation Parameters
 
-These parameters control the diffusion sampling and guidance process.
+Reference configuration from the official Echo-TTS Gradient demo.
 
-### CFG Modes (Classifier-Free Guidance)
-The method used to combine conditional (text/speaker) and unconditional scores.
-1.  **Independent (Default)**: Standard CFG. separately scales text and speaker guidance. (3 NFE)
-2.  **Adaptive Projected Guidance (APG)**: More robust guidance, prevents artifacts at high scales. See [arXiv:2410.02416](https://arxiv.org/abs/2410.02416). (3 NFE)
-3.  **Alternating**: Alternates between different guidance types. (2 NFE - Faster)
-4.  **Joint-Unconditional**: optimization for speed. (2 NFE - Faster)
+### 1. Generation Controls
+| Parameter | Default | Range | Description |
+|-----------|---------|-------|-------------|
+| **Sampler Preset** | `default` | `Independent`, `High Speaker CFG` | Quick configuration presets. |
+| **RNG Seed** | `0` | Integer | Fixed seed for reproducibility. |
+| **Num Steps** | `40` | 20-80 | Sampling steps. Higher = better quality, slower. |
 
-### Guidance Scales
-- **Text CFG Scale** (Default: `3.0`): Strength of text conditioning. Higher = cleaner pronunciation, less creative prosody.
-- **Speaker CFG Scale** (Default: `8.0`): Strength of voice cloning. Higher = closer match to reference.
-- **CFG Min/Max t**: (0.0 - 1.0) Time range where CFG is applied. Default `Min=0.5`, `Max=1.0`.
+### 2. CFG (Classifier Free Guidance)
+| Parameter | Default | Option | Description |
+|-----------|---------|--------|-------------|
+| **CFG Mode** | `independent` | `independent` (3 NFE)<br>`apg-independent` (3 NFE)<br>`alternating` (2 NFE)<br>`joint-unconditional` (2 NFE) | Sampling strategy. "NFE" = Number of Function Evaluations (lower is faster). |
+| **Text CFG Scale** | `3.0` | Float | **Guidance strength for text**.<br>Higher = stricter adherence to text content.<br>Lower = more creative prosody. |
+| **Speaker CFG Scale** | `8.0` | Float | **Guidance strength for speaker**.<br>Higher = closer match to reference voice.<br>Lower = more variation. |
+| **CFG Min t** | `0.5` | 0.0 - 1.0 | Start time (t) for applying guidance. |
+| **CFG Max t** | `1.0` | 0.0 - 1.0 | End time (t) for applying guidance. |
 
-### Truncation & Temporal Rescaling
-Controls the "speed" and "pacing" of the generated audio relative to the text.
-- **Truncation Factor** (Default: `1.0`): Multiplier for initial noise. `< 1` can reduce artifacts.
-- **Rescale k** (Default: `1.0`): `< 1` = Sharpen (slower/clearer), `> 1` = Flatten (faster/smoother).
-- **Rescale Sigma** (Default: `3.0`): Sigma parameter for the schedule.
+### 3. Speaker KV Scaling (Force Speaker)
+*Use when model ignores the reference voice.*
+- **Enable Speaker KV Scaling**: Scales speaker attention key-values.
+- **Goal**: Forces the model to pay more attention to the reference during attention layers.
+- **Default**: Off (or ~1.5 scale when enabled).
 
-### Other Settings
-- **Seed**: Random seed (Default: Random). Set to integer for reproducibility.
-- **Steps**: Sampling steps. Default `40`. Range `20` (fast) to `80` (high quality).
-- **Custom Shapes**: Advanced override for sequence lengths.
+### 4. Truncation & Temporal Rescaling
+Controls the "pacing" and artifact reduction.
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| **Truncation Factor** | `1.0` | Multiplies initial noise. Values < 1.0 can reduce artifacts. |
+| **Rescale k** | `1.0` | **Sharpness vs Flatness**.<br>`< 1.0`: Sharpen (slower/clearer speech)<br>`> 1.0`: Flatten (faster/smoother speech)<br>`1.0`: Off |
+| **Rescale σ (Sigma)** | `3.0` | Sigma parameter for the rescaling schedule. |
+| **Custom Shapes** | Off | Advanced override for sequence lengths (Text/Speaker/Latent). |
 
 ---
 

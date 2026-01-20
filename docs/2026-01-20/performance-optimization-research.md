@@ -149,6 +149,44 @@ Shorter `sequence_length` can reduce compute per chunk, but requires matching te
 
 ---
 
+## Test Results (2026-01-21)
+
+### Configuration Tested
+
+| Parameter | Baseline | Optimized |
+|-----------|----------|-----------|
+| `num_steps` | 40 | 30 |
+| `rescale_k` | None | 1.0 |
+| `rescale_sigma` | None | 3.0 |
+
+### Performance Measurements
+
+| Test | Cold Start | Warm Start |
+|------|------------|------------|
+| Short text (~10 words) | 71.17s | **10.18s** |
+| Long text (~70 words) | N/A | **10.38s** |
+
+**Short test text**: "Hello, this is a test of the voice cloning system."  
+**Long test text**: ~70 words about Echo voice cloning (~327KB output)
+
+> [!NOTE]
+> Cold start includes ~60s for container spin-up + model loading. Warm inference is consistent at ~10s regardless of text length.
+
+### Analysis
+
+1. **Cold start overhead is significant** (~60s for model loading on A10G)
+2. **Warm inference is consistent**: ~10s for both short and long text
+3. **Text length has minimal impact** on generation time (model generates full 30s latent space)
+4. **Quality**: Audio files saved for manual review (`perf_test_short.mp3`, `perf_test_long.mp3`)
+
+### Next Steps
+
+- [ ] Listen to generated audio for quality/pacing
+- [ ] Compare against baseline (num_steps=40) if quality issues found
+- [ ] Consider `num_steps=25` for further speed gains if quality acceptable
+
+---
+
 ## References
 
 1. [Echo Blog Post - Sampling](https://jordandarefsky.com/blog/2025/echo/)

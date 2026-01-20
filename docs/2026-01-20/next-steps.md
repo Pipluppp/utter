@@ -18,9 +18,12 @@ See [echo-tts-plan.md](./echo-tts-plan.md) for details.
 - [x] Update frontend to handle longer timeouts/progress.
 
 ### Voice Settings
-- [ ] Add `cfg_scale_text` and `cfg_scale_speaker` sliders.
-- [ ] Add `seed` input (random/fixed).
-- [ ] Update `/api/generate` to pass params to Modal.
+*(Deferred to 2026-01-22 - see Advanced Mode plan)*
+
+## Priority 3: Performance & Reliability
+- [x] **Optimization**: Tuned Echo-TTS parameters (`num_steps=30`) for ~1.3x speedup.
+- [x] **Monitoring**: Added real-time performance logging to backend console.
+- [ ] **Async Generation**: Move long generation tasks to background worker (Celery/Redis) to avoid HTTP timeouts.
 
 ---
 

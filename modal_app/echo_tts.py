@@ -94,14 +94,14 @@ class EchoTTS:
             # Configure sampler with all required parameters
             sample_fn = partial(
                 sample_euler_cfg_independent_guidances,
-                num_steps=40,
+                num_steps=30,  # was 40; blog says "30 generally works well"
                 cfg_scale_text=3.0,
                 cfg_scale_speaker=8.0,
                 cfg_min_t=0.5,
                 cfg_max_t=1.0,
                 truncation_factor=None,
-                rescale_k=None,
-                rescale_sigma=None,
+                rescale_k=1.0,  # explicit default per Echo-TTS docs
+                rescale_sigma=3.0,  # explicit default per Echo-TTS docs
                 speaker_kv_scale=None,
                 speaker_kv_max_layers=None,
                 speaker_kv_min_t=None,
