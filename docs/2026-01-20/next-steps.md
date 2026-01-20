@@ -18,7 +18,8 @@ See [echo-tts-plan.md](./echo-tts-plan.md) for details.
 - [x] Update frontend to handle longer timeouts/progress.
 
 ### Voice Settings
-*(Deferred to 2026-01-22 - see Advanced Mode plan)*
+- [ ] **Advanced Mode**: [See Plan](../2026-01-22/advanced-mode-plan.md)
+- [ ] **Smart Editor**: [See Plan](../2026-01-22/smart-editor-plan.md)
 
 ## Priority 3: Performance & Reliability
 - [x] **Optimization**: Tuned Echo-TTS parameters (`num_steps=30`) for ~1.3x speedup.

@@ -4,8 +4,13 @@
 Implement an "Advanced Mode" toggle in the UI that exposes granular control over Echo-TTS generation parameters, matching the official Gradio demo's flexibility.
 
 ## UI UX Strategy
-- **Default (Simple)**: Minimal interface (Voice, Text) - *Current state*
-- **Advanced Toggle**: Hidden by default section/modal containing technical parameters.
+## UI UX Strategy (The Toggle)
+- **Default (Simple)**: Minimal interface (Voice, Text).
+- **Advanced Toggle**: Collapsible "⚙️ Advanced" panel.
+- **Controls**:
+  - **Sliders**: Precision controls for `CFG Scale`, `Steps`, `Rescale`.
+  - **Tooltips**: Functional explanations (e.g., "Higher stability = less emotion").
+- **State**: Persist settings between generations.
 
 ## Advanced Parameters Specification
 
