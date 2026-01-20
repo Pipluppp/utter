@@ -13,9 +13,9 @@
 See [echo-tts-plan.md](./echo-tts-plan.md) for details.
 
 ### Text Chunking & Long Audio
-- [ ] Implement backend text splitter (sentence boundary detection).
-- [ ] Implement audio stitching (ffmpeg).
-- [ ] Update frontend to handle longer timeouts/progress.
+- [x] Implement backend text splitter (sentence boundary detection).
+- [x] Implement audio stitching (ffmpeg).
+- [x] Update frontend to handle longer timeouts/progress.
 
 ### Voice Settings
 - [ ] Add `cfg_scale_text` and `cfg_scale_speaker` sliders.

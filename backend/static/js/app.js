@@ -237,10 +237,30 @@ function initGeneratePage() {
   
   // Character counter
   if (textInput && charCounter) {
+    const chunkInfo = document.getElementById('chunk-info');
+    
     textInput.addEventListener('input', () => {
       const length = textInput.value.length;
-      const max = 500;
+      const max = 5000;
       charCounter.textContent = `${length} / ${max}`;
+      
+      // Calculate estimated chunks and show info for long text
+      const wordCount = textInput.value.trim().split(/\s+/).filter(w => w).length;
+      const estimatedChunks = Math.ceil(wordCount / 70); // ~70 words per chunk
+      const estimatedSeconds = Math.round(wordCount / 2.5); // ~2.5 words per second
+      
+      if (chunkInfo) {
+        if (estimatedChunks > 1) {
+          const mins = Math.floor(estimatedSeconds / 60);
+          const secs = estimatedSeconds % 60;
+          const durationStr = mins > 0 ? `~${mins}m ${secs}s` : `~${secs}s`;
+          chunkInfo.textContent = `Long text: ${estimatedChunks} chunks, ${durationStr} audio`;
+          chunkInfo.classList.remove('hidden');
+          chunkInfo.classList.add('info');
+        } else {
+          chunkInfo.classList.add('hidden');
+        }
+      }
       
       if (length >= max) {
         charCounter.classList.add('error');

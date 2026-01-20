@@ -21,21 +21,21 @@ Based on `modal_app/echo_tts.py` and repository knowledge:
 
 ---
 
-## Phase 1: Text Chunking (Long Audio)
+## Phase 1: Text Chunking (Long Audio) ✅ DONE
 
 ### 1. Backend Logic (`services/tts.py` or new `services/chunking.py`)
-- [ ] **Sentence Splitting**: Implement a robust splitter (e.g., `spacy` or simple regex) to split text into < 30s chunks (approx 200-300 chars or by sentence).
-- [ ] **Batch Processing**:
+- [x] **Sentence Splitting**: Implement a robust splitter (e.g., `spacy` or simple regex) to split text into < 30s chunks (approx 200-300 chars or by sentence).
+- [x] **Batch Processing**:
     - Iterate through chunks.
     - Call `EchoTTS.generate` for each chunk.
-    - *Optimization*: Call in parallel using `asyncio` if Modal allows concurrent execution (Yes, `allow_concurrent_inputs` or just multiple calls).
-- [ ] **Audio Stitching**:
+    - *Note*: Serial processing for MVP simplicity.
+- [x] **Audio Stitching**:
     - Use `ffmpeg` to merge the resulting MP3 bytes/files.
     - Handle crossfades if possible to avoid clicks (optional for MVP).
 
 ### 2. Frontend Updates (`app.js`)
-- [ ] **Timeout**: Increase client-side timeout for `/api/generate` since long generations will take > 30s.
-- [ ] **Progress**: Ideally show "Generating chunk 1/5..." (requires streaming response or polling, maybe defer for "Async Generation" phase, but simple updates are good).
+- [x] **Timeout**: Increase client-side timeout for `/api/generate` since long generations will take > 30s.
+- [x] **Progress**: Shows chunk count and estimated duration before generation.
 
 ---
 
