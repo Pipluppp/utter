@@ -235,7 +235,36 @@ async def api_generate(
     
     # Generate speech
     try:
-        output_path = await generate_speech(voice_id, text)
+        # Check for stitching only (chunk mode)
+        chunk_mode = data.get("chunk_mode", False)
+        seed = data.get("seed")
+        
+        # Convert seed to int if present
+        if seed is not None:
+            try:
+                seed = int(seed)
+            except (ValueError, TypeError):
+                seed = None
+        
+        output_result = await generate_speech(voice_id, text, seed=seed)
+        
+        # Unpack result
+        # output_result is (final_path, chunk_paths)
+        if isinstance(output_result, tuple):
+            output_path, chunk_paths = output_result
+        else:
+            # Fallback if just string (shouldn't happen with new code)
+            output_path = output_result
+            chunk_paths = []
+            
+        # If chunk_mode was requested (only chunks needed), we could optimize?
+        # But for now we give everything.
+        
+        # Prepare URL lists
+        chunk_urls = []
+        for p in chunk_paths:
+             fname = Path(p).name
+             chunk_urls.append(f"/uploads/generated/{fname}")
         
         # Get audio duration
         duration = get_audio_duration(output_path)
@@ -254,7 +283,11 @@ async def api_generate(
         output_filename = Path(output_path).name
         audio_url = f"/uploads/generated/{output_filename}"
         
-        return {"audio_url": audio_url, "generation_id": generation.id}
+        return {
+            "audio_url": audio_url, 
+            "generation_id": generation.id,
+            "chunk_urls": chunk_urls
+        }
     
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -262,6 +295,74 @@ async def api_generate(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to generate speech. Please try again.")
+
+
+@app.post("/api/stitch")
+async def api_stitch(
+    request: Request,
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Stitch multiple audio files together.
+    
+    Expects JSON: { "audio_urls": ["/uploads/generated/abc.mp3", ...] }
+    Returns: { "audio_url": "..." }
+    """
+    from services.audio_stitch import stitch_audio_files
+    from config import GENERATED_DIR
+    
+    data = await request.json()
+    audio_urls = data.get("audio_urls", [])
+    
+    if not audio_urls:
+         raise HTTPException(status_code=400, detail="No audio URLs provided")
+         
+    # Convert URLs back to local paths
+    # URL format: /uploads/generated/xyz.mp3
+    # Local format: GENERATED_DIR / xyz.mp3 (which is uploads/generated/...)
+    
+    try:
+        input_paths = []
+        for url in audio_urls:
+            filename = Path(url).name
+            # Security check: ensure no path traversal
+            if "/" in filename or "\\" in filename or ".." in filename:
+                continue
+            
+            local_path = GENERATED_DIR / filename
+            if local_path.exists():
+                input_paths.append(str(local_path))
+        
+        if not input_paths:
+             raise HTTPException(status_code=400, detail="No valid audio files found")
+
+        # Generate output ID
+        output_id = str(uuid.uuid4())
+        output_path = str(GENERATED_DIR / f"{output_id}.mp3")
+        
+        stitch_audio_files(input_paths, output_path)
+        
+        # Determine duration? Optional.
+        # We don't save "Stitched" audio as a Generation record? 
+        # Maybe we should so it appears in history?
+        # Let's save it.
+        
+        duration = get_audio_duration(output_path)
+        
+        # Ideally we'd need a voice_id and text, but this is a composition...
+        # For now, create a "Stitched" record? Or just return the file.
+        # Returning file is safer for "temporary" edits. 
+        # But if we want it in history... let's just return the URL for now.
+        
+        output_filename = Path(output_path).name
+        audio_url = f"/uploads/generated/{output_filename}"
+        
+        return {"audio_url": audio_url, "id": output_id}
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Stitching failed: {str(e)}")
 
 
 @app.get("/api/generations")

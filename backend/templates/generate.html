@@ -3,6 +3,9 @@
 {% block title %}Generate Speech - Utter{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="/static/css/smart-editor.css">
+<script src="/static/js/smart-editor.js"></script>
+
 <h1 class="title-page">Generate Speech</h1>
 
 <form id="generate-form">
@@ -17,8 +20,11 @@
 
     <div class="form-group">
         <label class="input-label" for="text-input">Text</label>
-        <textarea class="textarea" id="text-input" placeholder="Enter text to speak... Long text is OK, it will be automatically split into chunks." maxlength="5000"
-            required></textarea>
+
+        <!-- Smart Editor Container (Replaces Textarea) -->
+        <div id="smart-editor"></div>
+
+        <!-- Hidden input for form submission if needed, but we gather via JS -->
         <div class="char-counter" id="char-counter">0 / 5000</div>
         <div class="chunk-info hidden" id="chunk-info"></div>
     </div>

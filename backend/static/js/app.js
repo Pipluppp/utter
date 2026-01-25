@@ -184,9 +184,13 @@ function initClonePage() {
 // Generate Page
 // ============================================================================
 
+// ============================================================================
+// Generate Page
+// ============================================================================
+
 function initGeneratePage() {
   const voiceSelect = document.getElementById('voice-select');
-  const textInput = document.getElementById('text-input');
+  const smartEditorContainer = document.getElementById('smart-editor');
   const charCounter = document.getElementById('char-counter');
   const form = document.getElementById('generate-form');
   const generateBtn = document.getElementById('generate-btn');
@@ -199,8 +203,52 @@ function initGeneratePage() {
   const timeDisplay = document.getElementById('time-display');
   const downloadBtn = document.getElementById('download-btn');
   
-  if (!voiceSelect) return;
+  if (!voiceSelect || !smartEditorContainer) return;
   
+  // Initialize Smart Editor
+  // Define callbacks for regeneration and stitching
+  const smartEditor = new SmartEditor(smartEditorContainer, {
+      onRegenerate: async (chunkText) => {
+          // Implement regeneration for a single chunk
+          const voiceId = voiceSelect.value;
+          if (!voiceId) throw new Error("No voice selected");
+          
+          const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              voice_id: voiceId,
+              text: chunkText,
+              chunk_mode: true
+            })
+          });
+          
+          if (!response.ok) throw new Error("Regeneration failed");
+          const data = await response.json();
+          // Expecting { chunk_urls: [...] } but simple regen of 1 chunk = 1 url
+          return {
+              url: data.chunk_urls[0],
+              seed: null // If API returned seed, we'd use it
+          };
+      },
+      onStitchRequest: async (audioUrls) => {
+          // Send stitching request
+          const response = await fetch('/api/stitch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ audio_urls: audioUrls })
+          });
+          if (!response.ok) throw new Error("Stitching failed");
+          const data = await response.json();
+          
+          // Update player
+          if (window.initWaveSurferForUtter) {
+              window.initWaveSurferForUtter(data.audio_url);
+          }
+          downloadBtn.href = data.audio_url;
+      }
+  });
+
   // Load voices
   loadVoices();
   
@@ -235,17 +283,18 @@ function initGeneratePage() {
     }
   }
   
-  // Character counter
-  if (textInput && charCounter) {
+  // Character counter monitoring (hook into SmartEditor textarea)
+  if (smartEditor.textarea && charCounter) {
     const chunkInfo = document.getElementById('chunk-info');
     
-    textInput.addEventListener('input', () => {
-      const length = textInput.value.length;
+    smartEditor.textarea.addEventListener('input', () => {
+      const text = smartEditor.getText();
+      const length = text.length;
       const max = 5000;
       charCounter.textContent = `${length} / ${max}`;
       
       // Calculate estimated chunks and show info for long text
-      const wordCount = textInput.value.trim().split(/\s+/).filter(w => w).length;
+      const wordCount = text.trim().split(/\s+/).filter(w => w).length;
       const estimatedChunks = Math.ceil(wordCount / 70); // ~70 words per chunk
       const estimatedSeconds = Math.round(wordCount / 2.5); // ~2.5 words per second
       
@@ -280,7 +329,7 @@ function initGeneratePage() {
     hideError();
     
     const voiceId = voiceSelect.value;
-    const text = textInput.value.trim();
+    const text = smartEditor.getText().trim();
     
     if (!voiceId) {
       showError('Please select a voice');
@@ -312,6 +361,9 @@ function initGeneratePage() {
     showInfo('First generation may take 30-60 seconds while the model warms up.');
     
     try {
+      // 1. Switch Smart Editor to View Mode
+      smartEditor.switchToViewMode();
+        
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
@@ -326,7 +378,16 @@ function initGeneratePage() {
       const data = await response.json();
       
       if (!response.ok) {
+        smartEditor.switchToEditMode(); // Revert on error
         throw new Error(data.detail || 'Failed to generate speech');
+      }
+      
+      // 2. Populate Smart Editor with Audio Chunks
+      if (data.chunk_urls) {
+          smartEditor.setChunkAudios(data.chunk_urls);
+      } else {
+          // Just one chunk?
+          smartEditor.setChunkAudios([data.audio_url]); 
       }
       
       // Show audio player
