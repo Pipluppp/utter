@@ -57,13 +57,14 @@ class EchoTTS:
         print("Models loaded!")
     
     @modal.method()
-    def generate(self, text: str, reference_audio_bytes: bytes) -> bytes:
+    def generate(self, text: str, reference_audio_bytes: bytes, rng_seed: int = None) -> bytes:
         """
         Generate speech from text using a reference voice.
         
         Args:
             text: Text to speak (already preprocessed with [S1] tag)
             reference_audio_bytes: WAV/MP3 file bytes
+            rng_seed: Optional random seed for generation (default: random)
             
         Returns:
             Generated audio as MP3 bytes
@@ -75,12 +76,17 @@ class EchoTTS:
         import torch
         import torchaudio
         import tempfile
+        import random
         from functools import partial
         from inference import (
             load_audio,
             sample_pipeline,
             sample_euler_cfg_independent_guidances,
         )
+        
+        # Determine seed
+        if rng_seed is None:
+            rng_seed = random.randint(0, 2**32 - 1)
         
         # Save reference audio bytes to temp file (load_audio expects a path)
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
@@ -116,7 +122,7 @@ class EchoTTS:
                 sample_fn=sample_fn,
                 text_prompt=text,
                 speaker_audio=speaker_audio,
-                rng_seed=0,
+                rng_seed=rng_seed,
             )
             
             # Save WAV to temp file
