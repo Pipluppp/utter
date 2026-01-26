@@ -1,8 +1,97 @@
 # Step 7: Troubleshooting
 
 > **Reference Guide**: Use this when encountering issues
+> **Last Updated**: 2026-01-27
 
 This guide covers common issues and their solutions when deploying Qwen3-TTS on Modal.
+
+---
+
+## Issues Encountered During Actual Deployment (2026-01-27)
+
+These issues were encountered and resolved during the initial deployment:
+
+### Windows Unicode Encoding Error
+
+**Symptom:**
+```
+'charmap' codec can't encode character '\u2713' in position 0
+```
+
+**Cause:** Modal CLI outputs Unicode checkmarks (✓) which Windows cmd.exe can't display.
+
+**Solution:** Pipe output through `cat`:
+```bash
+uv run modal deploy app.py 2>&1 | cat
+```
+
+---
+
+### FastAPI Import Error
+
+**Symptom:**
+```
+ModuleNotFoundError: No module named 'fastapi'
+```
+
+**Cause:** Modal parses the Python file locally before deploying. Top-level FastAPI imports fail because FastAPI isn't installed locally.
+
+**Solution:** Use lazy imports inside methods:
+```python
+# BAD
+from fastapi import HTTPException
+
+# GOOD - import inside methods
+def clone(self, request: dict):
+    from fastapi import HTTPException
+    # ...
+```
+
+---
+
+### Reference Audio URL Returns 403
+
+**Symptom:**
+```
+{"detail":"Generation failed: HTTP Error 403: Forbidden"}
+```
+
+**Cause:** The Qwen sample audio URL from Alibaba Cloud OSS is blocked or region-restricted.
+
+**Solution:** Use base64-encoded audio instead of URLs:
+```python
+import base64
+with open('audio.wav', 'rb') as f:
+    audio_b64 = base64.b64encode(f.read()).decode()
+# Use ref_audio_base64 instead of ref_audio_url
+```
+
+---
+
+### "File name too long" Error
+
+**Symptom:**
+```
+[Errno 36] File name too long: 'UklGRsy6BgBXQVZFZm10...'
+```
+
+**Cause:** qwen-tts library treats ref_audio as a file path. Base64 strings are too long to be file paths.
+
+**Solution:** Decode base64 and save to temp file before passing to model. This is now implemented in `_resolve_ref_audio()` method.
+
+---
+
+### Container Uses Old Code After Redeploy
+
+**Symptom:** Code changes don't take effect after `modal deploy`.
+
+**Cause:** Modal containers are cached and may not restart immediately.
+
+**Solution:** Stop the app before redeploying:
+```bash
+uv run modal app stop qwen3-tts-voice-clone
+uv run modal deploy app.py 2>&1 | cat
+```
 
 ---
 
@@ -12,19 +101,22 @@ Run these commands to gather diagnostic information:
 
 ```bash
 # Check Modal CLI version
-modal --version
+uv run modal --version
 
 # Check authentication
-modal profile current
+uv run modal profile current
 
 # Check app status
-modal app list
+uv run modal app list
 
-# View recent logs
-modal app logs qwen3-tts-voice-clone
+# View recent logs (pipe through cat on Windows)
+uv run modal app logs qwen3-tts-voice-clone 2>&1 | cat
 
 # Check volume contents
-modal volume ls qwen3-tts-models
+uv run modal volume ls qwen3-tts-models
+
+# Test health endpoint
+curl https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-health.modal.run
 ```
 
 ---

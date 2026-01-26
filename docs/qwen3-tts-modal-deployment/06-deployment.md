@@ -1,9 +1,38 @@
 # Step 6: Deployment
 
-> **Time Required**: ~5 minutes (deploy), ~2-5 minutes (first cold start)
+> **Time Required**: ~5 minutes (deploy), ~90 seconds (first cold start)
 > **Prerequisites**: Completed [Step 5: API Endpoints](./05-api-endpoints.md)
+> **Last Updated**: 2026-01-27
 
 This guide covers deploying the service to Modal and testing the live endpoints.
+
+---
+
+## Actual Deployment (2026-01-27)
+
+The 1.7B model has been deployed. Live endpoints:
+
+| Endpoint | URL |
+|----------|-----|
+| Clone | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run` |
+| Clone Batch | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone-batch.modal.run` |
+| Health | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-health.modal.run` |
+| Languages | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-languages.modal.run` |
+
+---
+
+## Important: Windows Deployment Commands
+
+On Windows, Modal CLI outputs Unicode characters that cause encoding errors. Always pipe through `cat`:
+
+```bash
+# Instead of: modal deploy app.py
+# Use:
+cd modal_app/qwen3_tts
+uv run modal deploy app.py 2>&1 | cat
+```
+
+This project uses `uv` for package management, so prefix all modal commands with `uv run`.
 
 ---
 
@@ -69,15 +98,36 @@ curl https://your-workspace--qwen3-tts-voice-clone-qwen3ttsservice-languages-dev
 
 ### Test Voice Clone Endpoint
 
+**Important**: The Qwen sample audio URL returns 403 Forbidden. Use base64-encoded audio instead.
+
+**Using the test script** (recommended):
 ```bash
-curl -X POST https://your-workspace--qwen3-tts-voice-clone-qwen3ttsservice-clone-dev.modal.run \
+cd test
+python test_qwen3_tts.py
+```
+
+**Using curl with base64** (create JSON file first):
+```python
+# Create test_request.json with Python:
+import base64, json
+with open('test/2026-01-26/audio.wav', 'rb') as f:
+    audio_b64 = base64.b64encode(f.read()).decode()
+with open('test/2026-01-26/audio_text.txt') as f:
+    ref_text = f.read().strip()
+with open('test_request.json', 'w') as f:
+    json.dump({
+        'text': 'Hello, this is a test.',
+        'language': 'English',
+        'ref_audio_base64': audio_b64,
+        'ref_text': ref_text
+    }, f)
+```
+
+Then:
+```bash
+curl -X POST https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run \
   -H "Content-Type: application/json" \
-  -d '{
-    "text": "Hello, this is a test of voice cloning.",
-    "language": "English",
-    "ref_audio_url": "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone.wav",
-    "ref_text": "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
-  }' \
+  -d @test_request.json \
   --output test_output.wav
 ```
 

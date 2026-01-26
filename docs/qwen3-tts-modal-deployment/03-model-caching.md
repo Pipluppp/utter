@@ -2,8 +2,27 @@
 
 > **Time Required**: ~15-30 minutes (download time depends on network)
 > **Prerequisites**: Completed [Step 2: Image Building](./02-image-building.md)
+> **Last Updated**: 2026-01-27
 
 This guide covers pre-downloading Qwen3-TTS models to a Modal Volume to avoid cold-start delays.
+
+---
+
+## Download Status (2026-01-27)
+
+| Model | Status | Size | Notes |
+|-------|--------|------|-------|
+| Qwen3-TTS-12Hz-1.7B-Base | Complete | 4.23 GB | 40 files |
+| Qwen3-TTS-Tokenizer-12Hz | Complete | 0.64 GB | 19 files |
+| Qwen3-TTS-12Hz-0.6B-Base | Pending | ~1.5 GB | |
+
+**Volume name**: `qwen3-tts-models`
+
+**Actual download command used**:
+```bash
+cd modal_app/qwen3_tts
+uv run modal run download_models.py --model-size 1.7B 2>&1 | cat
+```
 
 ---
 

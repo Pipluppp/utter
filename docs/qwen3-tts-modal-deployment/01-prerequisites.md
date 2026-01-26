@@ -2,8 +2,34 @@
 
 > **Time Required**: ~10 minutes
 > **Prerequisites**: Python 3.9+, pip, Terminal access
+> **Last Updated**: 2026-01-27
 
 This guide walks through setting up your Modal.com account, CLI, secrets, and volumes.
+
+---
+
+## Completion Status (2026-01-27)
+
+| Step | Status | Notes |
+|------|--------|-------|
+| Modal CLI | Complete | Using `uv run modal` |
+| Modal Authentication | Complete | Workspace: `duncab013` |
+| HuggingFace Secret | Complete | `huggingface-secret` |
+| Modal Volume | Complete | `qwen3-tts-models` |
+
+All prerequisites are complete. Proceed to [Step 2: Image Building](./02-image-building.md).
+
+---
+
+## Note: This Project Uses uv
+
+This project uses `uv` for Python package management. Prefix all modal commands with `uv run`:
+
+```bash
+# Instead of: modal deploy app.py
+# Use:
+uv run modal deploy app.py
+```
 
 ---
 
