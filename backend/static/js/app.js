@@ -58,10 +58,19 @@ function initClonePage() {
   const fileInfo = document.getElementById('file-info');
   const form = document.getElementById('clone-form');
   const submitBtn = document.getElementById('submit-btn');
-  
+  const transcriptInput = document.getElementById('transcript');
+  const transcriptCounter = document.getElementById('transcript-counter');
+
   if (!dropzone || !audioInput) return;
-  
+
   let selectedFile = null;
+
+  // Transcript character counter
+  if (transcriptInput && transcriptCounter) {
+    transcriptInput.addEventListener('input', () => {
+      transcriptCounter.textContent = `${transcriptInput.value.length} chars`;
+    });
+  }
   
   // Click to browse
   dropzone.addEventListener('click', () => {
@@ -134,22 +143,32 @@ function initClonePage() {
       showError('Please select an audio file');
       return;
     }
-    
+
     const voiceName = document.getElementById('voice-name').value.trim();
     if (!voiceName) {
       showError('Please enter a voice name');
       return;
     }
-    
+
+    const transcript = document.getElementById('transcript').value.trim();
+    if (!transcript || transcript.length < 10) {
+      showError('Please provide a transcript of the reference audio (at least 10 characters)');
+      return;
+    }
+
+    const language = document.getElementById('language-select').value;
+
     // Show loading state
     submitBtn.disabled = true;
     submitBtn.classList.add('btn-loading');
     submitBtn.textContent = 'Creating...';
-    
+
     try {
       const formData = new FormData();
       formData.append('name', voiceName);
       formData.append('audio', selectedFile);
+      formData.append('transcript', transcript);
+      formData.append('language', language);
       
       const response = await fetch('/api/clone', {
         method: 'POST',
@@ -237,31 +256,11 @@ function initGeneratePage() {
   
   // Character counter
   if (textInput && charCounter) {
-    const chunkInfo = document.getElementById('chunk-info');
-    
     textInput.addEventListener('input', () => {
       const length = textInput.value.length;
       const max = 5000;
       charCounter.textContent = `${length} / ${max}`;
-      
-      // Calculate estimated chunks and show info for long text
-      const wordCount = textInput.value.trim().split(/\s+/).filter(w => w).length;
-      const estimatedChunks = Math.ceil(wordCount / 70); // ~70 words per chunk
-      const estimatedSeconds = Math.round(wordCount / 2.5); // ~2.5 words per second
-      
-      if (chunkInfo) {
-        if (estimatedChunks > 1) {
-          const mins = Math.floor(estimatedSeconds / 60);
-          const secs = estimatedSeconds % 60;
-          const durationStr = mins > 0 ? `~${mins}m ${secs}s` : `~${secs}s`;
-          chunkInfo.textContent = `Long text: ${estimatedChunks} chunks, ${durationStr} audio`;
-          chunkInfo.classList.remove('hidden');
-          chunkInfo.classList.add('info');
-        } else {
-          chunkInfo.classList.add('hidden');
-        }
-      }
-      
+
       if (length >= max) {
         charCounter.classList.add('error');
         charCounter.classList.remove('warning');
@@ -281,36 +280,38 @@ function initGeneratePage() {
     
     const voiceId = voiceSelect.value;
     const text = textInput.value.trim();
-    
+    const languageSelect = document.getElementById('language-select');
+    const language = languageSelect ? languageSelect.value : 'Auto';
+
     if (!voiceId) {
       showError('Please select a voice');
       return;
     }
-    
+
     if (!text) {
       showError('Please enter text to speak');
       return;
     }
-    
+
     // Show loading state with elapsed time counter
     generateBtn.disabled = true;
     generateBtn.classList.add('btn-loading');
-    
+
     let elapsedSeconds = 0;
     const updateButtonText = () => {
       generateBtn.textContent = `Generating... ${elapsedSeconds}s`;
     };
     updateButtonText();
-    
+
     // Start elapsed time counter
     const timerInterval = setInterval(() => {
       elapsedSeconds++;
       updateButtonText();
     }, 1000);
-    
+
     // Show helpful message for long waits
-    showInfo('First generation may take 30-60 seconds while the model warms up.');
-    
+    showInfo('First generation may take 30-90 seconds while the model warms up.');
+
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -319,7 +320,8 @@ function initGeneratePage() {
         },
         body: JSON.stringify({
           voice_id: voiceId,
-          text: text
+          text: text,
+          language: language
         })
       });
       

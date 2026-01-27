@@ -26,6 +26,31 @@
             required>
     </div>
 
+    <div class="form-group">
+        <label class="input-label" for="transcript">Reference Transcript</label>
+        <textarea class="textarea" id="transcript" name="transcript"
+            placeholder="Type or paste what is being said in the audio file. This helps the model learn the voice accurately."
+            style="min-height: 100px;" required></textarea>
+        <div class="char-counter" id="transcript-counter">0 chars</div>
+    </div>
+
+    <div class="form-group">
+        <label class="input-label" for="language-select">Language</label>
+        <select class="select" id="language-select" name="language">
+            <option value="Auto" selected>Auto-detect</option>
+            <option value="English">English</option>
+            <option value="Chinese">Chinese</option>
+            <option value="Japanese">Japanese</option>
+            <option value="Korean">Korean</option>
+            <option value="German">German</option>
+            <option value="French">French</option>
+            <option value="Russian">Russian</option>
+            <option value="Portuguese">Portuguese</option>
+            <option value="Spanish">Spanish</option>
+            <option value="Italian">Italian</option>
+        </select>
+    </div>
+
     <button type="submit" class="btn btn-block" id="submit-btn">
         Create Voice Clone
     </button>

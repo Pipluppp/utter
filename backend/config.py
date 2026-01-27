@@ -27,5 +27,15 @@ GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 MAX_FILE_SIZE_MB = 50
 MIN_AUDIO_DURATION_SECONDS = 10
 MAX_AUDIO_DURATION_SECONDS = 300  # 5 minutes
-MAX_TEXT_LENGTH = 500
+MAX_TEXT_LENGTH = 5000
 ALLOWED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a"}
+
+# TTS Provider
+TTS_PROVIDER = os.getenv("TTS_PROVIDER", "echo")
+QWEN_MODAL_ENDPOINT = os.getenv("QWEN_MODAL_ENDPOINT", "")
+
+# Supported languages (Qwen3-TTS)
+SUPPORTED_LANGUAGES = [
+    "Auto", "Chinese", "English", "Japanese", "Korean",
+    "German", "French", "Russian", "Portuguese", "Spanish", "Italian"
+]

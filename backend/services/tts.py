@@ -1,8 +1,7 @@
 """
-TTS service using Modal.com for GPU inference.
+TTS service router.
 
-This module connects to the deployed Echo-TTS model on Modal.com
-for real voice cloning. Supports long text via chunking.
+Dispatches to the configured TTS provider (Echo-TTS or Qwen3-TTS).
 """
 
 import os
@@ -11,12 +10,8 @@ import time
 import logging
 from pathlib import Path
 
-import modal
-
 from services.storage import get_reference_path
-from services.text import preprocess_text, split_text_into_chunks
-from services.audio_stitch import stitch_audio_files
-from config import GENERATED_DIR
+from config import GENERATED_DIR, TTS_PROVIDER
 
 
 # Configure logger for performance tracking
@@ -35,136 +30,125 @@ if not logger.handlers:
 USE_MOCK = os.getenv("TTS_MOCK", "false").lower() == "true"
 
 
-def _get_modal_tts():
-    """Get reference to Modal TTS class (lazy load)."""
-    return modal.Cls.from_name("utter-tts", "EchoTTS")
-
-
-async def _generate_single_chunk(
-    tts_instance,
+async def generate_speech(
+    voice_id: str,
     text: str,
-    reference_bytes: bytes,
-    chunk_id: str
+    ref_text: str | None = None,
+    language: str = "Auto",
 ) -> str:
     """
-    Generate a single chunk of audio.
-    
-    Args:
-        tts_instance: Modal TTS instance
-        text: Preprocessed text chunk
-        reference_bytes: Reference audio bytes
-        chunk_id: Unique ID for this chunk
-        
-    Returns:
-        Path to the generated chunk MP3 file
-    """
-    output_path = GENERATED_DIR / f"{chunk_id}.mp3"
-    
-    audio_bytes = tts_instance.generate.remote(
-        text=text,
-        reference_audio_bytes=reference_bytes
-    )
-    
-    with open(output_path, "wb") as f:
-        f.write(audio_bytes)
-    
-    return str(output_path)
+    Generate speech using the configured TTS provider.
 
-
-async def generate_speech(voice_id: str, text: str) -> str:
-    """
-    Generate speech using Echo-TTS on Modal.com.
-    
-    Automatically handles long text by chunking and stitching.
-    
     Args:
         voice_id: UUID of the cloned voice
         text: Text to convert to speech
-        
+        ref_text: Transcript of reference audio (required for Qwen)
+        language: Language code (used by Qwen, ignored by Echo)
+
     Returns:
-        Path to the generated audio file (MP3)
+        Path to the generated audio file
     """
-    # Get reference audio
-    reference_path = get_reference_path(voice_id)
-    if reference_path is None:
-        raise ValueError(f"Voice reference not found: {voice_id}")
-    
-    # Read reference audio bytes
-    with open(reference_path, "rb") as f:
-        reference_bytes = f.read()
-    
-    # Generate unique ID for this generation
-    generation_id = str(uuid.uuid4())
-    
     if USE_MOCK:
-        # Mock mode: copy reference as output (for testing without Modal)
         import shutil
+        reference_path = get_reference_path(voice_id)
+        if reference_path is None:
+            raise ValueError(f"Voice reference not found: {voice_id}")
+        generation_id = str(uuid.uuid4())
         mock_output = GENERATED_DIR / f"{generation_id}.wav"
         shutil.copy2(reference_path, mock_output)
         return str(mock_output)
-    
-    # Split text into chunks (handles short text too - returns single chunk)
+
+    if TTS_PROVIDER == "qwen":
+        from services.tts_qwen import generate_speech_qwen
+        if not ref_text:
+            raise ValueError("Reference transcript is required for Qwen3-TTS")
+        return await generate_speech_qwen(voice_id, text, ref_text, language)
+
+    # Default: Echo-TTS
+    return await _generate_speech_echo(voice_id, text)
+
+
+async def _generate_speech_echo(voice_id: str, text: str) -> str:
+    """
+    Generate speech using Echo-TTS on Modal.com.
+
+    Supports long text via chunking and stitching.
+    """
+    import modal
+    from services.text import preprocess_text, split_text_into_chunks
+    from services.audio_stitch import stitch_audio_files
+
+    reference_path = get_reference_path(voice_id)
+    if reference_path is None:
+        raise ValueError(f"Voice reference not found: {voice_id}")
+
+    with open(reference_path, "rb") as f:
+        reference_bytes = f.read()
+
+    generation_id = str(uuid.uuid4())
+
     chunks = split_text_into_chunks(text)
     num_chunks = len(chunks)
     text_len = len(text)
-    
-    # Get Modal TTS instance
-    EchoTTS = _get_modal_tts()
+
+    EchoTTS = modal.Cls.from_name("utter-tts", "EchoTTS")
     tts = EchoTTS()
-    
-    logger.info(f"🎤 Starting generation: {text_len} chars, {num_chunks} chunk(s)")
+
+    logger.info(f"Starting Echo generation: {text_len} chars, {num_chunks} chunk(s)")
     total_start = time.time()
-    
+
     if len(chunks) == 1:
-        # Short text: direct generation
         output_path = GENERATED_DIR / f"{generation_id}.mp3"
-        
+
         chunk_start = time.time()
         audio_bytes = tts.generate.remote(
             text=chunks[0],
             reference_audio_bytes=reference_bytes
         )
         chunk_elapsed = time.time() - chunk_start
-        
+
         with open(output_path, "wb") as f:
             f.write(audio_bytes)
-        
+
         total_elapsed = time.time() - total_start
-        logger.info(f"✅ Generated in {total_elapsed:.2f}s ({len(audio_bytes)} bytes) | {text_len} chars")
+        logger.info(f"Generated in {total_elapsed:.2f}s ({len(audio_bytes)} bytes) | {text_len} chars")
         return str(output_path)
-    
+
     # Long text: generate each chunk and stitch
     chunk_paths = []
     chunk_times = []
-    
+
     for i, chunk_text in enumerate(chunks):
         chunk_start = time.time()
         chunk_id = f"{generation_id}_chunk{i}"
-        chunk_path = await _generate_single_chunk(
-            tts_instance=tts,
+        chunk_output = GENERATED_DIR / f"{chunk_id}.mp3"
+
+        audio_bytes = tts.generate.remote(
             text=chunk_text,
-            reference_bytes=reference_bytes,
-            chunk_id=chunk_id
+            reference_audio_bytes=reference_bytes
         )
+
+        with open(chunk_output, "wb") as f:
+            f.write(audio_bytes)
+
         chunk_elapsed = time.time() - chunk_start
         chunk_times.append(chunk_elapsed)
-        chunk_paths.append(chunk_path)
+        chunk_paths.append(str(chunk_output))
         logger.info(f"  Chunk {i+1}/{num_chunks}: {chunk_elapsed:.2f}s ({len(chunk_text)} chars)")
-    
+
     # Stitch all chunks together
     final_output_path = str(GENERATED_DIR / f"{generation_id}.mp3")
     stitch_audio_files(chunk_paths, final_output_path)
-    
+
     # Cleanup individual chunk files
     for path in chunk_paths:
         try:
             os.unlink(path)
         except OSError:
-            pass  # Ignore cleanup errors
-    
+            pass
+
     total_elapsed = time.time() - total_start
     avg_chunk = sum(chunk_times) / len(chunk_times)
-    logger.info(f"✅ Generated {num_chunks} chunks in {total_elapsed:.2f}s (avg {avg_chunk:.2f}s/chunk) | {text_len} chars")
-    
-    return final_output_path
+    logger.info(f"Generated {num_chunks} chunks in {total_elapsed:.2f}s (avg {avg_chunk:.2f}s/chunk) | {text_len} chars")
 
+    return final_output_path

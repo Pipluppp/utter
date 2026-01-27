@@ -22,7 +22,7 @@ from services import storage
 from services.audio import get_audio_duration, validate_reference_audio
 from services.tts import generate_speech
 from services.text import validate_text
-from config import ALLOWED_AUDIO_EXTENSIONS
+from config import ALLOWED_AUDIO_EXTENSIONS, SUPPORTED_LANGUAGES, TTS_PROVIDER
 
 
 @asynccontextmanager
@@ -100,53 +100,70 @@ async def history_page(request: Request):
 async def api_clone(
     name: str = Form(...),
     audio: UploadFile = File(...),
+    transcript: str = Form(""),
+    language: str = Form("Auto"),
     session: AsyncSession = Depends(get_session)
 ):
     """
     Create a new voice clone from uploaded audio.
-    
+
     - **name**: Name for the cloned voice (1-100 chars)
     - **audio**: Audio file (WAV, MP3, M4A)
+    - **transcript**: Transcript of the reference audio (required for Qwen3-TTS)
+    - **language**: Language of the voice (default: Auto)
     """
     # Validate name
     if not name or len(name.strip()) == 0:
         raise HTTPException(status_code=400, detail="Please enter a voice name")
     if len(name) > 100:
         raise HTTPException(status_code=400, detail="Voice name must be 100 characters or less")
-    
+
+    # Validate transcript for Qwen provider
+    transcript = transcript.strip()
+    if TTS_PROVIDER == "qwen" and len(transcript) < 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Please provide a transcript of the reference audio (at least 10 characters)"
+        )
+
+    # Validate language
+    if language not in SUPPORTED_LANGUAGES:
+        raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
+
     # Validate file type
     if audio.filename:
         ext = Path(audio.filename).suffix.lower()
         if ext not in ALLOWED_AUDIO_EXTENSIONS:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=f"File must be WAV, MP3, or M4A (got {ext})"
             )
-    
+
     # Generate voice ID
     voice_id = str(uuid.uuid4())
-    
+
     # Save audio file
     reference_path = await storage.save_reference(voice_id, audio)
-    
-    # Validate audio duration (10s-5min for Echo-TTS)
+
+    # Validate audio duration
     validation = validate_reference_audio(reference_path)
     if not validation["valid"]:
-        # Delete the saved file
         import os
         os.remove(reference_path)
         raise HTTPException(status_code=400, detail=validation["message"])
-    
+
     # Create voice record
     voice = Voice(
         id=voice_id,
         name=name.strip(),
-        reference_path=reference_path
+        reference_path=reference_path,
+        reference_transcript=transcript or None,
+        language=language,
     )
-    
+
     session.add(voice)
     await session.commit()
-    
+
     return JSONResponse(
         status_code=201,
         content={"id": voice_id, "name": voice.name}
@@ -209,53 +226,72 @@ async def api_generate(
 ):
     """
     Generate speech from text using a cloned voice.
-    
+
     This is a synchronous endpoint - it blocks until audio is ready.
     """
     data = await request.json()
-    
+
     voice_id = data.get("voice_id")
     text = data.get("text", "").strip()
-    
+    language = data.get("language", "Auto")
+
     # Validate voice_id
     if not voice_id:
         raise HTTPException(status_code=400, detail="Please select a voice")
-    
+
+    # Validate language
+    if language not in SUPPORTED_LANGUAGES:
+        raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
+
     # Check voice exists
     result = await session.execute(select(Voice).where(Voice.id == voice_id))
     voice = result.scalar_one_or_none()
-    
+
     if not voice:
         raise HTTPException(status_code=404, detail="Voice not found")
-    
-    # Validate text (including byte-length for Echo-TTS)
+
+    # Validate text
     text_validation = validate_text(text)
     if not text_validation["valid"]:
         raise HTTPException(status_code=400, detail=text_validation["message"])
-    
+
+    # For Qwen, ensure voice has a transcript
+    ref_text = voice.reference_transcript
+    if TTS_PROVIDER == "qwen" and not ref_text:
+        raise HTTPException(
+            status_code=400,
+            detail="This voice has no reference transcript. Re-clone with a transcript to use Qwen3-TTS."
+        )
+
     # Generate speech
     try:
-        output_path = await generate_speech(voice_id, text)
-        
+        output_path = await generate_speech(
+            voice_id=voice_id,
+            text=text,
+            ref_text=ref_text,
+            language=language,
+        )
+
         # Get audio duration
         duration = get_audio_duration(output_path)
-        
+
         # Save generation record
         generation = Generation(
             voice_id=voice_id,
             text=text,
             audio_path=output_path,
-            duration_seconds=duration
+            duration_seconds=duration,
+            language=language,
         )
         session.add(generation)
         await session.commit()
-        
-        # Convert to URL path - extract just the filename and build URL
+
+        # Convert to URL path
         output_filename = Path(output_path).name
         audio_url = f"/uploads/generated/{output_filename}"
-        
+
         return {"audio_url": audio_url, "generation_id": generation.id}
-    
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -286,17 +322,27 @@ async def api_delete_generation(generation_id: str, session: AsyncSession = Depe
     # Find generation
     result = await session.execute(select(Generation).where(Generation.id == generation_id))
     generation = result.scalar_one_or_none()
-    
+
     if not generation:
         raise HTTPException(status_code=404, detail="Generation not found")
-    
+
     # Delete audio file
     audio_path = Path(generation.audio_path)
     if audio_path.exists():
         audio_path.unlink()
-    
+
     # Delete from database
     await session.delete(generation)
     await session.commit()
-    
+
     return {"success": True, "message": "Generation deleted"}
+
+
+@app.get("/api/languages")
+async def api_languages():
+    """Return supported languages for TTS generation."""
+    return {
+        "languages": SUPPORTED_LANGUAGES,
+        "default": "Auto",
+        "provider": TTS_PROVIDER,
+    }

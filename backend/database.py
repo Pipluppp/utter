@@ -1,5 +1,6 @@
 """Database setup with SQLAlchemy async."""
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
@@ -18,9 +19,23 @@ class Base(DeclarativeBase):
 
 
 async def create_tables():
-    """Create all database tables."""
+    """Create all database tables and run migrations."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Migrate existing tables — add columns that may not exist yet.
+    # Each ALTER TABLE is wrapped in try/except so it's safe to re-run.
+    migrations = [
+        "ALTER TABLE voices ADD COLUMN reference_transcript TEXT",
+        "ALTER TABLE voices ADD COLUMN language VARCHAR(20) NOT NULL DEFAULT 'Auto'",
+        "ALTER TABLE generations ADD COLUMN language VARCHAR(20) NOT NULL DEFAULT 'Auto'",
+    ]
+    async with engine.begin() as conn:
+        for stmt in migrations:
+            try:
+                await conn.execute(text(stmt))
+            except Exception:
+                pass  # Column already exists
 
 
 async def get_session() -> AsyncSession:

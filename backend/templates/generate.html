@@ -16,15 +16,31 @@
     </div>
 
     <div class="form-group">
+        <label class="input-label" for="language-select">Language</label>
+        <select class="select" id="language-select">
+            <option value="Auto" selected>Auto-detect</option>
+            <option value="English">English</option>
+            <option value="Chinese">Chinese</option>
+            <option value="Japanese">Japanese</option>
+            <option value="Korean">Korean</option>
+            <option value="German">German</option>
+            <option value="French">French</option>
+            <option value="Russian">Russian</option>
+            <option value="Portuguese">Portuguese</option>
+            <option value="Spanish">Spanish</option>
+            <option value="Italian">Italian</option>
+        </select>
+    </div>
+
+    <div class="form-group">
         <label class="input-label" for="text-input">Text</label>
-        <textarea class="textarea" id="text-input" placeholder="Enter text to speak... Long text is OK, it will be automatically split into chunks." maxlength="5000"
+        <textarea class="textarea" id="text-input" placeholder="Enter text to speak..." maxlength="5000"
             required></textarea>
         <div class="char-counter" id="char-counter">0 / 5000</div>
-        <div class="chunk-info hidden" id="chunk-info"></div>
     </div>
 
     <div class="message">
-        Tips: Use commas for pauses. End sentences with periods. Long text will be split and generated in chunks.
+        Tips: Use commas for pauses. End sentences with periods.
     </div>
 
     <button type="submit" class="btn btn-block" id="generate-btn">
