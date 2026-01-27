@@ -8,9 +8,11 @@ This guide covers deploying the service to Modal and testing the live endpoints.
 
 ---
 
-## Actual Deployment (2026-01-27)
+## Actual Deployment (2026-01-28)
 
-The 1.7B model has been deployed. Live endpoints:
+The 1.7B and 0.6B models have been deployed. Live endpoints:
+
+### 1.7B Model (A10G)
 
 | Endpoint | URL |
 |----------|-----|
@@ -18,6 +20,14 @@ The 1.7B model has been deployed. Live endpoints:
 | Clone Batch | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone-batch.modal.run` |
 | Health | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-health.modal.run` |
 | Languages | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-languages.modal.run` |
+
+### 0.6B Model (T4)
+
+| Endpoint | URL |
+|----------|-----|
+| Clone | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-clone.modal.run` |
+| Health | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-health.modal.run` |
+| Languages | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-languages.modal.run` |
 
 ---
 

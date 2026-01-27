@@ -3,9 +3,9 @@
 > **Created**: 2026-01-27
 > **Updated**: 2026-01-28
 > **Purpose**: Transition document for implementation tasks
-> **Prerequisites**: 1.7B model deployed and tested
+> **Prerequisites**: 1.7B and 0.6B models deployed and tested
 
-This document tracks the Qwen3-TTS implementation tasks. Tasks 1 and 3 are complete. Task 2 (Voice Design) is deferred.
+This document tracks the Qwen3-TTS implementation tasks. Tasks 1 and 3 are complete. Task 2 (Voice Design) is deferred. New optimization and frontend tasks have been added.
 
 ---
 
@@ -16,6 +16,47 @@ This document tracks the Qwen3-TTS implementation tasks. Tasks 1 and 3 are compl
 | 1. Deploy 0.6B Model | High | **COMPLETE** | None |
 | 2. Deploy Voice Design Model | Medium | Deferred | Research needed |
 | 3. Utter Backend Integration | High | **COMPLETE** | Task 1 |
+| 4. Flash Attention Optimization | High | **Planned** | Task 1 |
+| 5. Advanced Frontend Features | Medium | **Planned** | Task 3 |
+
+---
+
+## Task 4: Flash Attention Optimization
+
+### Status: PLANNED
+
+**Objective**: Enable Flash Attention 2 on the 0.6B model to improve inference speed on Modal.
+
+### Context
+Currently, we rely on SDPA (Scaled Dot-Product Attention) fallback because compiling `flash-attn` on Modal is slow/error-prone. However, for the 0.6B model running on T4 GPUs, we want to maximize performance.
+
+### Implementation Plan
+1. **Create CUDA-based Image**:
+   - Use `nvidia/cuda:12.4.1-devel-ubuntu22.04` base image
+   - Pre-compile `flash-attn` or find a compatible pre-built wheel
+2. **Benchmark**:
+   - Compare inference time: SDPA vs Flash Attention 2
+   - Compare cold start time: Debian-slim vs CUDA-devel image
+3. **Deploy**:
+   - If performance gain justifies the build complexity, update `app_06b.py`
+
+### Expected Outcome
+- Reduced latency for 0.6B model generation
+- Validated setup for "fastest possible" inference on Modal
+
+---
+
+## Task 5: Advanced Frontend Features
+
+### Status: PLANNED
+
+**Objective**: Enhance the Utter frontend to fully leverage Qwen3-TTS capabilities.
+
+### Planned Features
+1. **Language Flag/Icon**: Visually indicate the language of voices/generations.
+2. **Improved Transcript UI**: Better text area for inputting transcripts during cloning.
+3. **Generation Metadata**: Show which model (Echo vs Qwen 0.6B vs 1.7B) was used for a generation.
+4. **Playback Speed**: Add speed controls to the audio player.
 
 ---
 
@@ -268,6 +309,8 @@ QWEN_MODAL_ENDPOINT=https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clo
 1. **Task 1 (0.6B)** - COMPLETE. T4 GPU, ~32s cold start.
 2. **Task 3 (Integration)** - COMPLETE. Full backend + frontend wired to Qwen3-TTS via Modal.
 3. **Task 2 (Voice Design)** - DEFERRED. Can be added when needed.
+4. **Task 4 (Flash Attention)** - PLANNED. Optimization for 0.6B.
+5. **Task 5 (Frontend)** - PLANNED. UI enhancements.
 
 ---
 

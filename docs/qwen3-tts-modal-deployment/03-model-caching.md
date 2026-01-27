@@ -14,7 +14,7 @@ This guide covers pre-downloading Qwen3-TTS models to a Modal Volume to avoid co
 |-------|--------|------|-------|
 | Qwen3-TTS-12Hz-1.7B-Base | Complete | 4.23 GB | 40 files |
 | Qwen3-TTS-Tokenizer-12Hz | Complete | 0.64 GB | 19 files |
-| Qwen3-TTS-12Hz-0.6B-Base | Pending | ~1.5 GB | |
+| Qwen3-TTS-12Hz-0.6B-Base | Complete | 2.34 GB | 40 files |
 
 **Volume name**: `qwen3-tts-models`
 
