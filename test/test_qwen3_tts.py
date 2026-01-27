@@ -3,13 +3,10 @@ Test script for Qwen3-TTS Modal API using local reference files.
 
 Usage:
     cd test
-    python test_qwen3_tts.py
-
-    # With custom text
-    python test_qwen3_tts.py --text "Hello, world!"
-
-    # Skip health check (faster if container is warm)
-    python test_qwen3_tts.py --skip-health
+    uv run --with requests python test_qwen3_tts.py                 # Test 1.7B (default)
+    uv run --with requests python test_qwen3_tts.py --model 0.6B    # Test 0.6B
+    uv run --with requests python test_qwen3_tts.py --text "Hello!"
+    uv run --with requests python test_qwen3_tts.py --skip-health
 """
 
 import argparse
@@ -23,20 +20,30 @@ try:
     import requests
 except ImportError:
     print("Error: requests library not installed.")
-    print("Install with: pip install requests")
+    print("Install with: uv run --with requests python test_qwen3_tts.py")
     sys.exit(1)
 
 
-# Default endpoints (1.7B model)
-ENDPOINTS = {
-    "clone": "https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run",
-    "health": "https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-health.modal.run",
-    "languages": "https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-languages.modal.run",
+# Endpoints by model size
+MODEL_ENDPOINTS = {
+    "1.7B": {
+        "clone": "https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run",
+        "health": "https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-health.modal.run",
+        "languages": "https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-languages.modal.run",
+    },
+    "0.6B": {
+        "clone": "https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-clone.modal.run",
+        "health": "https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-health.modal.run",
+        "languages": "https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-languages.modal.run",
+    },
 }
 
+# Active endpoints (set by --model arg)
+ENDPOINTS = MODEL_ENDPOINTS["1.7B"]
+
 # Default test reference files
-DEFAULT_REF_AUDIO = Path(__file__).parent / "2026-01-26" / "audio.wav"
-DEFAULT_REF_TEXT = Path(__file__).parent / "2026-01-26" / "audio_text.txt"
+DEFAULT_REF_AUDIO = Path(__file__).parent / "reference" / "audio.wav"
+DEFAULT_REF_TEXT = Path(__file__).parent / "reference" / "audio_text.txt"
 
 
 def test_health() -> bool:
@@ -155,6 +162,12 @@ def test_clone(
 def main():
     parser = argparse.ArgumentParser(description="Test Qwen3-TTS Modal API")
     parser.add_argument(
+        "--model",
+        choices=["1.7B", "0.6B"],
+        default="1.7B",
+        help="Model size to test (default: 1.7B)",
+    )
+    parser.add_argument(
         "--text",
         default="Hello, this is a test of the Qwen3 text to speech voice cloning system. The quick brown fox jumps over the lazy dog.",
         help="Text to synthesize",
@@ -174,8 +187,8 @@ def main():
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("output.wav"),
-        help="Output file path",
+        default=None,
+        help="Output file path (default: outputs/<model>/clone_output.wav)",
     )
     parser.add_argument(
         "--language",
@@ -190,8 +203,18 @@ def main():
 
     args = parser.parse_args()
 
+    # Set endpoints based on model selection
+    global ENDPOINTS
+    ENDPOINTS = MODEL_ENDPOINTS[args.model]
+
+    # Set default output path based on model
+    if args.output is None:
+        output_dir = Path(__file__).parent / "outputs" / args.model
+        output_dir.mkdir(parents=True, exist_ok=True)
+        args.output = output_dir / "clone_output.wav"
+
     print("=" * 60)
-    print("Qwen3-TTS Modal API Test")
+    print(f"Qwen3-TTS Modal API Test ({args.model})")
     print("=" * 60)
     print()
 
