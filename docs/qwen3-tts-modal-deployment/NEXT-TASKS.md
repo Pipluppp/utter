@@ -1,28 +1,29 @@
 # Qwen3-TTS: Next Implementation Tasks
 
 > **Created**: 2026-01-27
-> **Purpose**: Transition document for upcoming implementation tasks
+> **Updated**: 2026-01-28
+> **Purpose**: Transition document for implementation tasks
 > **Prerequisites**: 1.7B model deployed and tested
 
-This document provides complete context for the three remaining tasks in the Qwen3-TTS implementation.
+This document tracks the Qwen3-TTS implementation tasks. Tasks 1 and 3 are complete. Task 2 (Voice Design) is deferred.
 
 ---
 
 ## Task Overview
 
-| Task | Priority | Estimated Effort | Dependencies |
-|------|----------|------------------|--------------|
-| 1. Deploy 0.6B Model | High | 30 min | None |
-| 2. Deploy Voice Design Model | Medium | 1-2 hours | Research needed |
-| 3. Utter Backend Integration | High | 2-4 hours | Task 1 (optional) |
+| Task | Priority | Status | Dependencies |
+|------|----------|--------|--------------|
+| 1. Deploy 0.6B Model | High | **COMPLETE** | None |
+| 2. Deploy Voice Design Model | Medium | Deferred | Research needed |
+| 3. Utter Backend Integration | High | **COMPLETE** | Task 1 |
 
 ---
 
-## Task 1: Deploy 0.6B Model
+## Task 1: Deploy 0.6B Model — COMPLETE
 
-### Readiness: READY
+### Status: COMPLETE (2026-01-28)
 
-All infrastructure and patterns are established from the 1.7B deployment.
+Deployed to Modal on T4 GPU. See [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md) for endpoints and details.
 
 ### Why Deploy 0.6B?
 
@@ -151,11 +152,11 @@ def generate_voice_design(
 
 ---
 
-## Task 3: Utter Backend Integration
+## Task 3: Utter Backend Integration — COMPLETE
 
-### Readiness: READY (after schema design decision)
+### Status: COMPLETE (2026-01-28)
 
-Complete integration guide exists at [08-utter-integration.md](./08-utter-integration.md).
+Full backend and frontend integration implemented. See [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md) for details.
 
 ### Key Changes Required
 
@@ -262,11 +263,11 @@ QWEN_MODAL_ENDPOINT=https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clo
 
 ---
 
-## Recommended Task Order
+## Completion Summary
 
-1. **Task 1 (0.6B)** - Quick win, establishes multi-model pattern
-2. **Task 3 (Integration)** - Enables Utter to use deployed 1.7B
-3. **Task 2 (Voice Design)** - Can be added after core integration works
+1. **Task 1 (0.6B)** - COMPLETE. T4 GPU, ~32s cold start.
+2. **Task 3 (Integration)** - COMPLETE. Full backend + frontend wired to Qwen3-TTS via Modal.
+3. **Task 2 (Voice Design)** - DEFERRED. Can be added when needed.
 
 ---
 
@@ -288,27 +289,25 @@ From [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md):
 
 | Resource | Location |
 |----------|----------|
-| Reference audio | `test/2026-01-26/audio.wav` |
-| Reference transcript | `test/2026-01-26/audio_text.txt` |
+| Reference audio | `test/reference/audio.wav` |
+| Reference transcript | `test/reference/audio_text.txt` |
 | Test script | `test/test_qwen3_tts.py` |
 | Test client | `modal_app/qwen3_tts/test_client.py` |
 
 ---
 
-## Questions to Resolve
+## Questions Resolved
 
-Before starting each task, consider:
+### For 0.6B Deployment (COMPLETE)
+- Should 0.6B and 1.7B share the same volume? **Yes** — shared `qwen3-tts-models` volume
+- Should they have the same API structure? **Yes** — identical API surface
 
-### For 0.6B Deployment
-- Should 0.6B and 1.7B share the same volume? (Yes, they already do)
-- Should they have the same API structure? (Yes, for consistency)
+### For Voice Design (DEFERRED)
+- Is VoiceDesign model publicly available? — Still needs research
+- What are the input parameters? — Still needs research
+- Can it run alongside Base model on same GPU? — Still needs research
 
-### For Voice Design
-- Is VoiceDesign model publicly available?
-- What are the input parameters?
-- Can it run alongside Base model on same GPU?
-
-### For Integration
-- Should we support both Echo-TTS and Qwen3-TTS simultaneously? (Yes, via TTS_PROVIDER)
-- How to handle existing voices without transcripts? (Nullable column, require for new)
-- Should we auto-migrate existing DB? (Yes, with nullable columns)
+### For Integration (COMPLETE)
+- Should we support both Echo-TTS and Qwen3-TTS simultaneously? **Yes** — `TTS_PROVIDER` env var
+- How to handle existing voices without transcripts? **Nullable column** — old voices work with Echo, Qwen requires transcript at generation time
+- Should we auto-migrate existing DB? **Yes** — `ALTER TABLE ADD COLUMN` at startup with try/except

@@ -1,13 +1,13 @@
 # Qwen3-TTS Modal Deployment - Implementation Status
 
-> **Last Updated**: 2026-01-27
-> **Status**: 1.7B Model Deployed and Tested
+> **Last Updated**: 2026-01-28
+> **Status**: Fully Deployed and Integrated into Utter
 
 ---
 
 ## Summary
 
-The Qwen3-TTS 1.7B voice cloning service has been successfully deployed to Modal.com. This document tracks implementation progress, pain points encountered, and lessons learned for future deployments (0.6B model, voice design model).
+The Qwen3-TTS 1.7B and 0.6B voice cloning services have been deployed to Modal.com and fully integrated into the Utter web application. This document tracks implementation progress, pain points encountered, and lessons learned.
 
 ---
 
@@ -21,11 +21,12 @@ The Qwen3-TTS 1.7B voice cloning service has been successfully deployed to Modal
 | 1.7B Model Download | Complete | 2026-01-27 | 4.23 GB |
 | Tokenizer Download | Complete | 2026-01-27 | 0.64 GB |
 | 1.7B Service Deploy | Complete | 2026-01-27 | A10G GPU |
-| API Testing | Complete | 2026-01-27 | All endpoints working |
-| 0.6B Model Download | Pending | | |
-| 0.6B Service Deploy | Pending | | |
-| Voice Design Model | Pending | | |
-| Utter Integration | Pending | | |
+| 1.7B API Testing | Complete | 2026-01-27 | All endpoints working |
+| 0.6B Model Download | Complete | 2026-01-28 | 2.34 GB |
+| 0.6B Service Deploy | Complete | 2026-01-28 | T4 GPU |
+| 0.6B API Testing | Complete | 2026-01-28 | Clone endpoint verified |
+| Voice Design Model | Skipped | | Not needed for MVP |
+| Utter Integration | Complete | 2026-01-28 | Backend + frontend done |
 
 ---
 
@@ -42,19 +43,64 @@ The Qwen3-TTS 1.7B voice cloning service has been successfully deployed to Modal
 
 ---
 
+## Live Endpoints (0.6B)
+
+| Endpoint | URL | Method |
+|----------|-----|--------|
+| Clone | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-clone.modal.run` | POST |
+| Health | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-health.modal.run` | GET |
+| Languages | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-languages.modal.run` | GET |
+
+**Modal Dashboard**: https://modal.com/apps/duncab013/main/deployed/qwen3-tts-voice-clone-06b
+
+### Model Comparison
+
+| Property | 0.6B | 1.7B |
+|----------|------|------|
+| GPU | Tesla T4 (16 GB) | A10G (24 GB) |
+| Cold start | ~32s | ~90s |
+| Attention | SDPA | SDPA |
+| Model size on volume | 2.34 GB | 4.23 GB |
+
+---
+
 ## Implementation Files
 
 ```
 modal_app/qwen3_tts/
 ├── __init__.py               # Package initialization (v1.0.0)
-├── app.py                    # Main Modal app with Qwen3TTSService class
+├── app.py                    # 1.7B Modal app (A10G GPU)
+├── app_06b.py                # 0.6B Modal app (T4 GPU)
 ├── config.py                 # Configuration constants
 ├── download_models.py        # Model download script for Modal volume
-└── test_client.py            # API test client
+└── test_client.py            # API test client (generic, takes --endpoint)
 
-test/2026-01-26/              # Test reference files
-├── audio.wav                 # Reference audio (multi-sentence)
-└── audio_text.txt            # Transcript (14 sentences)
+test/
+├── test_qwen3_tts.py         # Test script (supports --model 1.7B/0.6B)
+├── reference/
+│   ├── audio.wav             # Reference audio (multi-sentence)
+│   └── audio_text.txt        # Transcript (14 sentences)
+└── outputs/
+    ├── 1.7B/
+    │   └── clone_output.wav  # Generated output from 1.7B model
+    └── 0.6B/
+        └── clone_output.wav  # Generated output from 0.6B model
+
+backend/                        # Utter integration files (modified/new)
+├── .env                        # TTS_PROVIDER=qwen, QWEN_MODAL_ENDPOINT
+├── config.py                   # Added TTS_PROVIDER, SUPPORTED_LANGUAGES
+├── models.py                   # Added reference_transcript, language columns
+├── database.py                 # Added ALTER TABLE auto-migration
+├── main.py                     # Updated clone/generate, added /api/languages
+├── requirements.txt            # Added httpx>=0.27.0
+├── services/
+│   ├── tts.py                  # Rewritten as provider router
+│   └── tts_qwen.py            # NEW — async Qwen3-TTS Modal client
+├── templates/
+│   ├── clone.html              # Added transcript textarea + language
+│   └── generate.html           # Added language dropdown
+└── static/js/
+    └── app.js                  # Updated forms for transcript + language
 ```
 
 ---
@@ -185,7 +231,7 @@ Or wait for the 5-minute idle timeout to expire.
 
 ## Test Reference Files
 
-Located in `test/2026-01-26/`:
+Located in `test/reference/`:
 
 **audio.wav**: Multi-sentence reference audio for voice cloning
 
@@ -223,11 +269,11 @@ import json
 import requests
 
 # Read reference audio
-with open('test/2026-01-26/audio.wav', 'rb') as f:
+with open('test/reference/audio.wav', 'rb') as f:
     audio_b64 = base64.b64encode(f.read()).decode('utf-8')
 
 # Read transcript
-with open('test/2026-01-26/audio_text.txt', 'r') as f:
+with open('test/reference/audio_text.txt', 'r') as f:
     ref_text = f.read().strip()
 
 # Make request
@@ -275,6 +321,11 @@ REQUEST_TIMEOUT = 300  # 5 minutes
 │   ├── model.safetensors        # 3.68 GB
 │   ├── speech_tokenizer/        # 650 MB
 │   └── ...
+├── Qwen3-TTS-12Hz-0.6B-Base/    # 40 files, 2.34 GB
+│   ├── config.json
+│   ├── model.safetensors        # 1.74 GB
+│   ├── speech_tokenizer/        # 650 MB
+│   └── ...
 ├── Qwen3-TTS-Tokenizer-12Hz/    # 19 files, 0.64 GB
 └── huggingface/                 # Cache directory
 ```
@@ -285,45 +336,54 @@ REQUEST_TIMEOUT = 300  # 5 minutes
 
 See [NEXT-TASKS.md](./NEXT-TASKS.md) for detailed planning and prompting guidance.
 
-### Task 1: 0.6B Deployment - READY
+### Task 1: 0.6B Deployment - COMPLETE
 
-**Readiness**: All infrastructure established. Just need to download and deploy.
+Deployed 2026-01-28. T4 GPU, ~32s cold start, same API as 1.7B.
 
-| Requirement | Status |
-|-------------|--------|
-| Modal volume exists | Yes (`qwen3-tts-models`) |
-| Download script ready | Yes (`download_models.py --model-size 0.6B`) |
-| App template exists | Yes (`app.py` - just change MODEL_ID and GPU_TYPE) |
-| GPU configured in config.py | Yes (T4 for 0.6B) |
-| Pain points documented | Yes |
+### Task 2: Voice Design Model - SKIPPED
 
-### Task 2: Voice Design Model - NEEDS RESEARCH
+Skipping for now to focus on core Utter integration.
 
-**Readiness**: Pattern established, but model API needs verification.
+### Task 3: Utter Backend Integration - COMPLETE
 
-| Requirement | Status |
-|-------------|--------|
-| Model exists on HuggingFace | Needs verification |
-| API method documented | Needs research |
-| VRAM requirements known | Needs research |
-| Deployment pattern established | Yes (follow 1.7B pattern) |
+Completed 2026-01-28. Full backend and frontend integration of Qwen3-TTS into the Utter web application.
 
-### Task 3: Utter Integration - READY
+**What was built:**
 
-**Readiness**: Comprehensive guide exists (904 lines).
-
-| Requirement | Status |
-|-------------|--------|
-| Integration guide | Yes (`08-utter-integration.md`) |
-| Schema changes documented | Yes (add transcript, language) |
-| Service code template | Yes (in guide) |
-| Frontend changes documented | Yes (transcript input, language select) |
-| API endpoint changes documented | Yes |
-| Live endpoint to integrate | Yes (1.7B deployed) |
+| Component | File(s) | Description |
+|-----------|---------|-------------|
+| Config | `backend/config.py`, `backend/.env` | `TTS_PROVIDER`, `QWEN_MODAL_ENDPOINT`, `SUPPORTED_LANGUAGES` |
+| DB schema | `backend/models.py`, `backend/database.py` | Added `reference_transcript`, `language` columns + auto-migration |
+| Qwen TTS service | `backend/services/tts_qwen.py` (NEW) | Async httpx client, base64 audio, calls Modal endpoint |
+| TTS router | `backend/services/tts.py` | Dispatches to Echo or Qwen based on `TTS_PROVIDER` |
+| API endpoints | `backend/main.py` | Updated `/api/clone`, `/api/generate`; added `/api/languages` |
+| Clone frontend | `backend/templates/clone.html`, `app.js` | Transcript textarea, language dropdown, validation |
+| Generate frontend | `backend/templates/generate.html`, `app.js` | Language dropdown, elapsed timer, no chunking |
+| Dependencies | `backend/requirements.txt` | Added `httpx>=0.27.0` |
 
 ---
 
 ## Changelog
+
+### 2026-01-28
+- Deployed 0.6B model to Modal (T4 GPU, `app_06b.py`)
+- Downloaded 0.6B model to shared volume (2.34 GB)
+- Tested 0.6B clone endpoint with local reference audio
+- Restructured `test/` directory: `reference/`, `outputs/1.7B/`, `outputs/0.6B/`
+- Updated `test_qwen3_tts.py` to support `--model 1.7B/0.6B` flag
+- **Utter Backend Integration** (Task 3):
+  - Added `TTS_PROVIDER` / `QWEN_MODAL_ENDPOINT` config with `.env` support
+  - Added `reference_transcript` and `language` columns to Voice/Generation models
+  - Created `backend/services/tts_qwen.py` — async httpx client for Modal endpoint
+  - Rewrote `backend/services/tts.py` as provider router (Echo vs Qwen)
+  - Updated `/api/clone` to accept transcript + language form fields
+  - Updated `/api/generate` to pass ref_text + language to TTS service
+  - Added `GET /api/languages` endpoint
+  - Updated `clone.html` with transcript textarea + language dropdown
+  - Updated `generate.html` with language dropdown
+  - Updated `app.js` for new form fields, validation, and elapsed time counter
+  - Added `httpx>=0.27.0` to `requirements.txt`
+  - Verified app boots cleanly with `uv run uvicorn main:app`
 
 ### 2026-01-27
 - Initial deployment of 1.7B model

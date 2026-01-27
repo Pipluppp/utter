@@ -2,7 +2,7 @@
 
 > **Target Models**: `Qwen3-TTS-12Hz-1.7B-Base`, `Qwen3-TTS-12Hz-0.6B-Base`
 > **Platform**: Modal.com Serverless GPU Infrastructure
-> **Last Updated**: 2026-01-27
+> **Last Updated**: 2026-01-28
 
 ---
 
@@ -12,15 +12,19 @@
 |-----------|--------|-------|
 | 1.7B Model Download | Complete | 4.23 GB in Modal volume |
 | 1.7B Service Deployment | Complete | A10G GPU, SDPA attention |
-| API Endpoints | Complete | `/clone`, `/clone-batch`, `/health`, `/languages` |
-| 0.6B Model Download | Pending | |
-| 0.6B Service Deployment | Pending | |
-| Voice Design Model | Pending | |
-| Utter Backend Integration | Pending | |
+| API Endpoints (1.7B) | Complete | `/clone`, `/clone-batch`, `/health`, `/languages` |
+| 0.6B Model Download | Complete | 2.34 GB in Modal volume |
+| 0.6B Service Deployment | Complete | T4 GPU, SDPA attention |
+| Voice Design Model | Deferred | Not needed for MVP |
+| Utter Backend Integration | Complete | Backend + frontend wired to Qwen3-TTS |
 
 **Live Endpoints (1.7B)**:
 - Clone: `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run`
 - Health: `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-health.modal.run`
+
+**Live Endpoints (0.6B)**:
+- Clone: `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-clone.modal.run`
+- Health: `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-health.modal.run`
 
 See [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md) for detailed implementation notes and pain points.
 
@@ -162,14 +166,32 @@ The implementation is located at `modal_app/qwen3_tts/`:
 ```
 modal_app/qwen3_tts/
 ├── __init__.py               # Package initialization
-├── app.py                    # Main Modal application with Qwen3TTSService
+├── app.py                    # 1.7B Modal app (A10G GPU)
+├── app_06b.py                # 0.6B Modal app (T4 GPU)
 ├── config.py                 # Configuration constants
 ├── download_models.py        # Model download script
 └── test_client.py            # API testing utilities
 
-test/2026-01-26/              # Test reference files
-├── audio.wav                 # Reference audio for testing
-└── audio_text.txt            # Transcript of reference audio
+test/
+├── test_qwen3_tts.py         # Test script (supports --model 1.7B/0.6B)
+├── reference/
+│   ├── audio.wav             # Reference audio for testing
+│   └── audio_text.txt        # Transcript of reference audio
+└── outputs/
+    ├── 1.7B/clone_output.wav
+    └── 0.6B/clone_output.wav
+
+backend/                       # Utter integration (key files)
+├── .env                       # TTS_PROVIDER=qwen, endpoint config
+├── config.py                  # SUPPORTED_LANGUAGES, TTS_PROVIDER
+├── models.py                  # Voice + Generation models with new columns
+├── services/
+│   ├── tts.py                 # Provider router (Echo vs Qwen)
+│   └── tts_qwen.py           # Async Qwen3-TTS Modal client
+├── templates/
+│   ├── clone.html             # Transcript + language inputs
+│   └── generate.html          # Language dropdown
+└── static/js/app.js           # Frontend form handling
 ```
 
 ---
@@ -199,15 +221,15 @@ Models are pre-downloaded to a Modal Volume to avoid cold-start downloads. The `
 
 ---
 
-## Next Tasks & How to Continue
+## Task Status
 
-Three tasks remain for full Qwen3-TTS integration. See [NEXT-TASKS.md](./NEXT-TASKS.md) for detailed planning.
+See [NEXT-TASKS.md](./NEXT-TASKS.md) for detailed task history.
 
 | Task | Status | Documentation |
 |------|--------|---------------|
-| Deploy 0.6B Model | Ready | [NEXT-TASKS.md](./NEXT-TASKS.md#task-1-deploy-06b-model) |
-| Deploy Voice Design Model | Needs Research | [NEXT-TASKS.md](./NEXT-TASKS.md#task-2-deploy-voice-design-model) |
-| Utter Backend Integration | Ready | [08-utter-integration.md](./08-utter-integration.md) |
+| Deploy 0.6B Model | **Complete** | [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md) |
+| Deploy Voice Design Model | Deferred | [NEXT-TASKS.md](./NEXT-TASKS.md#task-2-deploy-voice-design-model) |
+| Utter Backend Integration | **Complete** | [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md) |
 
 ---
 
@@ -215,22 +237,7 @@ Three tasks remain for full Qwen3-TTS integration. See [NEXT-TASKS.md](./NEXT-TA
 
 When starting a new session to work on these tasks, use the following prompts to provide proper context.
 
-### For 0.6B Model Deployment
-
-```
-Deploy the Qwen3-TTS 0.6B model to Modal following the pattern established
-for the 1.7B model.
-
-Context files to read:
-- @docs/qwen3-tts-modal-deployment/NEXT-TASKS.md (Task 1 section)
-- @docs/qwen3-tts-modal-deployment/IMPLEMENTATION-STATUS.md (pain points)
-- @modal_app/qwen3_tts/app.py (existing 1.7B implementation)
-- @modal_app/qwen3_tts/config.py (model configuration)
-
-Key differences: Use T4 GPU instead of A10G, model is ~1.5GB instead of 4.23GB.
-```
-
-### For Voice Design Model Deployment
+### For Voice Design Model Deployment (Future)
 
 ```
 Research and deploy the Qwen3-TTS Voice Design model for generating voices
@@ -247,26 +254,6 @@ Research needed:
 3. Determine if it can share GPU with Base model
 ```
 
-### For Utter Backend Integration
-
-```
-Integrate the deployed Qwen3-TTS Modal API into the Utter backend application.
-
-Context files to read:
-- @docs/qwen3-tts-modal-deployment/08-utter-integration.md (complete guide)
-- @docs/qwen3-tts-modal-deployment/NEXT-TASKS.md (Task 3 section)
-- @backend/models.py (current database schema)
-- @backend/main.py (current API endpoints)
-- @backend/services/tts.py (current TTS service)
-
-Key changes needed:
-1. Add reference_transcript and language columns to Voice model
-2. Create backend/services/tts_qwen.py for Qwen3-TTS calls
-3. Update /api/clone to accept transcript
-4. Update /api/generate to use Qwen3-TTS
-5. Update frontend forms for transcript input
-```
-
 ### General Context Prompt
 
 For any Qwen3-TTS related work, start with:
@@ -277,15 +264,19 @@ Working on Qwen3-TTS voice cloning for the Utter application.
 Key context:
 - @docs/qwen3-tts-modal-deployment/README.md (overview)
 - @docs/qwen3-tts-modal-deployment/IMPLEMENTATION-STATUS.md (current state)
-- @docs/qwen3-tts-modal-deployment/NEXT-TASKS.md (upcoming work)
+- @docs/qwen3-tts-modal-deployment/NEXT-TASKS.md (task history)
 
 Live 1.7B endpoints:
 - Clone: https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run
 - Health: https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-health.modal.run
 
+Live 0.6B endpoints:
+- Clone: https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-clone.modal.run
+- Health: https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-health.modal.run
+
 Test files:
-- @test/2026-01-26/audio.wav (reference audio)
-- @test/2026-01-26/audio_text.txt (transcript)
+- @test/reference/audio.wav (reference audio)
+- @test/reference/audio_text.txt (transcript)
 ```
 
 ---
