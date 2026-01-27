@@ -13,7 +13,7 @@ import uuid
 import httpx
 
 from services.storage import get_reference_path
-from config import GENERATED_DIR, QWEN_MODAL_ENDPOINT
+from config import GENERATED_DIR, QWEN_MODAL_ENDPOINT, QWEN_MODAL_ENDPOINT_1_7B, QWEN_MODAL_ENDPOINT_0_6B
 
 logger = logging.getLogger("tts.qwen")
 logger.setLevel(logging.INFO)
@@ -31,6 +31,7 @@ async def generate_speech_qwen(
     text: str,
     ref_text: str,
     language: str = "Auto",
+    model: str = "1.7B",
 ) -> str:
     """
     Generate speech using Qwen3-TTS on Modal.com.
@@ -40,12 +41,19 @@ async def generate_speech_qwen(
         text: Text to convert to speech
         ref_text: Transcript of the reference audio
         language: Language code (e.g. "English", "Auto")
+        model: Model size ("1.7B" or "0.6B")
 
     Returns:
         Path to the generated WAV file
     """
-    if not QWEN_MODAL_ENDPOINT:
-        raise ValueError("QWEN_MODAL_ENDPOINT not configured in .env")
+    # Select endpoint
+    if model == "0.6B":
+        endpoint = QWEN_MODAL_ENDPOINT_0_6B
+    else:
+        endpoint = QWEN_MODAL_ENDPOINT_1_7B
+
+    if not endpoint:
+        raise ValueError(f"QWEN_MODAL_ENDPOINT_{model.replace('.', '_')} not configured")
 
     # Get reference audio
     reference_path = get_reference_path(voice_id)
@@ -66,11 +74,11 @@ async def generate_speech_qwen(
         "max_new_tokens": 2048,
     }
 
-    logger.info(f"Generating via Qwen3-TTS: {len(text)} chars, lang={language}")
+    logger.info(f"Generating via Qwen3-TTS ({model}): {len(text)} chars, lang={language}")
     start = time.time()
 
     async with httpx.AsyncClient(timeout=300.0) as client:
-        response = await client.post(QWEN_MODAL_ENDPOINT, json=payload)
+        response = await client.post(endpoint, json=payload)
 
     elapsed = time.time() - start
 

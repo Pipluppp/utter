@@ -60,10 +60,50 @@ function initClonePage() {
   const submitBtn = document.getElementById('submit-btn');
   const transcriptInput = document.getElementById('transcript');
   const transcriptCounter = document.getElementById('transcript-counter');
+  const tryExampleBtn = document.getElementById('try-example-btn');
 
   if (!dropzone || !audioInput) return;
 
   let selectedFile = null;
+
+  // Try Example Button
+  if (tryExampleBtn) {
+    tryExampleBtn.addEventListener('click', async () => {
+      hideError();
+      tryExampleBtn.disabled = true;
+      tryExampleBtn.textContent = 'Loading Example...';
+
+      try {
+        // Fetch example text
+        const textRes = await fetch('/static/examples/audio_text.txt');
+        if (!textRes.ok) throw new Error('Failed to load example text');
+        const text = await textRes.text();
+
+        // Fetch example audio
+        const audioRes = await fetch('/static/examples/audio.wav');
+        if (!audioRes.ok) throw new Error('Failed to load example audio');
+        const blob = await audioRes.blob();
+        const file = new File([blob], "example_audio.wav", { type: "audio/wav" });
+
+        // Populate form
+        document.getElementById('voice-name').value = "Example Voice";
+        if (transcriptInput) {
+            transcriptInput.value = text;
+            transcriptInput.dispatchEvent(new Event('input'));
+        }
+        
+        // Handle file selection
+        handleFileSelect(file);
+        
+        showInfo('Example loaded! Click "Create Voice Clone" to continue.');
+      } catch (err) {
+        showError('Could not load example: ' + err.message);
+      } finally {
+        tryExampleBtn.disabled = false;
+        tryExampleBtn.textContent = 'Try Example Voice';
+      }
+    });
+  }
 
   // Transcript character counter
   if (transcriptInput && transcriptCounter) {
@@ -282,6 +322,8 @@ function initGeneratePage() {
     const text = textInput.value.trim();
     const languageSelect = document.getElementById('language-select');
     const language = languageSelect ? languageSelect.value : 'Auto';
+    const modelSelect = document.getElementById('model-select');
+    const model = modelSelect ? modelSelect.value : '1.7B';
 
     if (!voiceId) {
       showError('Please select a voice');
@@ -321,7 +363,8 @@ function initGeneratePage() {
         body: JSON.stringify({
           voice_id: voiceId,
           text: text,
-          language: language
+          language: language,
+          model: model
         })
       });
       

@@ -35,6 +35,7 @@ async def generate_speech(
     text: str,
     ref_text: str | None = None,
     language: str = "Auto",
+    model: str = "1.7B",
 ) -> str:
     """
     Generate speech using the configured TTS provider.
@@ -44,6 +45,7 @@ async def generate_speech(
         text: Text to convert to speech
         ref_text: Transcript of reference audio (required for Qwen)
         language: Language code (used by Qwen, ignored by Echo)
+        model: Model size ("1.7B" or "0.6B")
 
     Returns:
         Path to the generated audio file
@@ -62,7 +64,7 @@ async def generate_speech(
         from services.tts_qwen import generate_speech_qwen
         if not ref_text:
             raise ValueError("Reference transcript is required for Qwen3-TTS")
-        return await generate_speech_qwen(voice_id, text, ref_text, language)
+        return await generate_speech_qwen(voice_id, text, ref_text, language, model)
 
     # Default: Echo-TTS
     return await _generate_speech_echo(voice_id, text)

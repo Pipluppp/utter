@@ -234,6 +234,7 @@ async def api_generate(
     voice_id = data.get("voice_id")
     text = data.get("text", "").strip()
     language = data.get("language", "Auto")
+    model = data.get("model", "1.7B")
 
     # Validate voice_id
     if not voice_id:
@@ -270,6 +271,7 @@ async def api_generate(
             text=text,
             ref_text=ref_text,
             language=language,
+            model=model,
         )
 
         # Get audio duration
