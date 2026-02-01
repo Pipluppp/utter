@@ -1,0 +1,132 @@
+{
+  "timestamp": "20260202_020129",
+  "endpoints": {
+    "design": "https://duncab013--qwen3-tts-voice-design-voicedesignservice-design.modal.run",
+    "health": "https://duncab013--qwen3-tts-voice-design-voicedesignservice-health.modal.run",
+    "languages": "https://duncab013--qwen3-tts-voice-design-voicedesignservice-languages.modal.run",
+    "clone": "https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-clone.modal.run"
+  },
+  "health": {
+    "endpoint": "health",
+    "success": true,
+    "latency_ms": 42389.1,
+    "response": {
+      "status": "healthy",
+      "model": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+      "model_type": "VoiceDesign",
+      "gpu": "NVIDIA A10",
+      "attention_implementation": "sdpa",
+      "supported_languages": [
+        "Auto",
+        "Chinese",
+        "English",
+        "Japanese",
+        "Korean",
+        "German",
+        "French",
+        "Russian",
+        "Portuguese",
+        "Spanish",
+        "Italian"
+      ]
+    },
+    "error": null,
+    "status_code": 200
+  },
+  "languages": {
+    "endpoint": "languages",
+    "success": true,
+    "latency_ms": 1498.1,
+    "languages": [
+      "Auto",
+      "Chinese",
+      "English",
+      "Japanese",
+      "Korean",
+      "German",
+      "French",
+      "Russian",
+      "Portuguese",
+      "Spanish",
+      "Italian"
+    ],
+    "error": null,
+    "status_code": 200
+  },
+  "voice_designs": [
+    {
+      "id": "friendly_female",
+      "description": "Warm friendly female",
+      "success": true,
+      "latency_ms": 15984.5,
+      "audio_size_bytes": 286934,
+      "output_file": "test\\outputs\\voice-design-verification\\friendly_female.wav",
+      "is_cold_start": false,
+      "error": null,
+      "status_code": 200
+    },
+    {
+      "id": "authoritative_male",
+      "description": "News anchor male",
+      "success": true,
+      "latency_ms": 10687.0,
+      "audio_size_bytes": 248534,
+      "output_file": "test\\outputs\\voice-design-verification\\authoritative_male.wav",
+      "is_cold_start": false,
+      "error": null,
+      "status_code": 200
+    },
+    {
+      "id": "energetic_young",
+      "description": "Energetic YouTuber",
+      "success": true,
+      "latency_ms": 9612.6,
+      "audio_size_bytes": 217814,
+      "output_file": "test\\outputs\\voice-design-verification\\energetic_young.wav",
+      "is_cold_start": false,
+      "error": null,
+      "status_code": 200
+    },
+    {
+      "id": "calm_meditation",
+      "description": "Meditation guide",
+      "success": true,
+      "latency_ms": 26612.9,
+      "audio_size_bytes": 667094,
+      "output_file": "test\\outputs\\voice-design-verification\\calm_meditation.wav",
+      "is_cold_start": false,
+      "error": null,
+      "status_code": 200
+    },
+    {
+      "id": "british_narrator",
+      "description": "British narrator",
+      "success": true,
+      "latency_ms": 10639.4,
+      "audio_size_bytes": 237014,
+      "output_file": "test\\outputs\\voice-design-verification\\british_narrator.wav",
+      "is_cold_start": false,
+      "error": null,
+      "status_code": 200
+    }
+  ],
+  "integration": {
+    "endpoint": "design_to_clone",
+    "success": true,
+    "design_latency_ms": 15984.5,
+    "clone_latency_ms": 53964.8,
+    "total_latency_ms": 69949.3,
+    "output_file": "test\\outputs\\voice-design-verification\\design_to_clone_integration.wav",
+    "error": null,
+    "status_code": 200,
+    "audio_size_bytes": 606012
+  },
+  "summary": {
+    "total_tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "cold_start_latency_ms": null,
+    "avg_warm_latency_ms": 14707.3,
+    "total_audio_bytes": 1657390
+  }
+}
