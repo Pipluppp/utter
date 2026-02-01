@@ -126,7 +126,7 @@ models_volume = modal.Volume.from_name(
     scaledown_window=CONTAINER_IDLE_TIMEOUT,
     volumes={MODELS_DIR: models_volume},
     secrets=[modal.Secret.from_name("huggingface-secret")],
-    timeout=300,  # 5 minute request timeout
+    timeout=900,  # 15 minute request timeout (long texts need more time)
 )
 @modal.concurrent(max_inputs=MAX_CONCURRENT_INPUTS)
 class Qwen3TTSService:

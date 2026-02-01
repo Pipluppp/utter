@@ -1,13 +1,13 @@
 # Qwen3-TTS Modal Deployment - Implementation Status
 
-> **Last Updated**: 2026-01-28
-> **Status**: Fully Deployed and Integrated into Utter
+> **Last Updated**: 2026-02-02
+> **Status**: Fully Deployed — 1.7B (A10G) + 0.6B (T4), both using SDPA
 
 ---
 
 ## Summary
 
-The Qwen3-TTS 1.7B and 0.6B voice cloning services have been deployed to Modal.com and fully integrated into the Utter web application. This document tracks implementation progress, pain points encountered, and lessons learned.
+The Qwen3-TTS 1.7B and 0.6B voice cloning services have been deployed to Modal.com and fully integrated into the Utter web application. Both deployments use SDPA attention (standardized after benchmarking showed it outperforms Flash Attention 2).
 
 ---
 
@@ -15,22 +15,47 @@ The Qwen3-TTS 1.7B and 0.6B voice cloning services have been deployed to Modal.c
 
 | Component | Status | Date | Notes |
 |-----------|--------|------|-------|
-| Modal CLI Setup | Complete | 2026-01-27 | Using `uv run modal` |
-| HuggingFace Secret | Complete | 2026-01-27 | `huggingface-secret` |
-| Modal Volume | Complete | 2026-01-27 | `qwen3-tts-models` |
-| 1.7B Model Download | Complete | 2026-01-27 | 4.23 GB |
-| Tokenizer Download | Complete | 2026-01-27 | 0.64 GB |
-| 1.7B Service Deploy | Complete | 2026-01-27 | A10G GPU |
-| 1.7B API Testing | Complete | 2026-01-27 | All endpoints working |
-| 0.6B Model Download | Complete | 2026-01-28 | 2.34 GB |
-| 0.6B Service Deploy | Complete | 2026-01-28 | T4 GPU |
-| 0.6B API Testing | Complete | 2026-01-28 | Clone endpoint verified |
+| Modal CLI Setup | ✅ Complete | 2026-01-27 | Using `uv run modal` |
+| HuggingFace Secret | ✅ Complete | 2026-01-27 | `huggingface-secret` |
+| Modal Volume | ✅ Complete | 2026-01-27 | `qwen3-tts-models` |
+| 1.7B Model Download | ✅ Complete | 2026-01-27 | 4.23 GB |
+| 1.7B Service (SDPA) | ✅ **Deployed** | 2026-01-27 | A10G GPU, production |
+| 0.6B Model Download | ✅ Complete | 2026-01-28 | 2.34 GB |
+| 0.6B Service (SDPA) | ✅ **Deployed** | 2026-02-02 | T4 GPU, cost-optimized |
+| Utter Integration | ✅ Complete | 2026-01-28 | Backend + frontend done |
+| FA2 Benchmark | ✅ Complete | 2026-02-01 | SDPA 18-22% faster |
+| FA2 Deployment | 🛑 **Stopped** | 2026-02-02 | Removed after benchmarking |
+| 1.7B vs 0.6B Benchmark | ✅ Complete | 2026-02-02 | See results below |
 | Voice Design Model | Skipped | | Not needed for MVP |
-| Utter Integration | Complete | 2026-01-28 | Backend + frontend done |
 
 ---
 
-## Live Endpoints (1.7B)
+## Benchmark Results (2026-02-02)
+
+### 1.7B vs 0.6B Model Comparison
+
+| Model | GPU | Cold Start | Short (56 chars) | Medium (800 chars) |
+|-------|-----|------------|------------------|-------------------|
+| **Qwen3-TTS-12Hz-1.7B-Base** | NVIDIA A10G | 108s | **14.6s** | **113s** |
+| **Qwen3-TTS-12Hz-0.6B-Base** | Tesla T4 | **43s** | 17.4s | 176s |
+
+**Key Findings:**
+- 0.6B has 2.5x faster cold start
+- 1.7B is 20-56% faster for generation
+- Choose based on workload pattern
+
+### SDPA vs FA2 (2026-02-01)
+
+| Metric | SDPA | FA2 | Winner |
+|--------|------|-----|--------|
+| Cold Start | 68s | 83s | SDPA (22% faster) |
+| Long Text | 5.5 min | 6.5 min | SDPA (18% faster) |
+
+---
+
+## Live Endpoints
+
+### Production: 1.7B on A10G (SDPA)
 
 | Endpoint | URL | Method |
 |----------|-----|--------|
@@ -41,9 +66,7 @@ The Qwen3-TTS 1.7B and 0.6B voice cloning services have been deployed to Modal.c
 
 **Modal Dashboard**: https://modal.com/apps/duncab013/main/deployed/qwen3-tts-voice-clone
 
----
-
-## Live Endpoints (0.6B)
+### Cost-Optimized: 0.6B on T4 (SDPA)
 
 | Endpoint | URL | Method |
 |----------|-----|--------|
@@ -55,12 +78,36 @@ The Qwen3-TTS 1.7B and 0.6B voice cloning services have been deployed to Modal.c
 
 ### Model Comparison
 
-| Property | 0.6B | 1.7B |
-|----------|------|------|
-| GPU | Tesla T4 (16 GB) | A10G (24 GB) |
-| Cold start | ~32s | ~90s |
-| Attention | SDPA | SDPA |
-| Model size on volume | 2.34 GB | 4.23 GB |
+| Property | 0.6B (T4) | 1.7B (A10G) |
+|----------|-----------|-------------|
+| GPU | Tesla T4 (16 GB) | NVIDIA A10G (24 GB) |
+| GPU Cost | ~$0.59/hr | ~$1.10/hr |
+| Cold start | ~43s | ~108s |
+| Short text (56 chars) | ~17s | ~15s |
+| Medium text (800 chars) | ~176s | ~113s |
+| Warm (short text) | N/A | ~10.5s | ~11.1s |
+| Warm (long text) | N/A | ~35.6s | ~39.7s |
+| Attention | SDPA | SDPA | flash_attention_2 |
+| PyTorch | 2.10 | 2.10 | 2.9 (pinned) |
+| Model size on volume | 2.34 GB | 4.23 GB | 4.23 GB |
+
+### FA2 vs SDPA Benchmark Summary — Final Results
+
+Comprehensive benchmarking completed 2026-02-02:
+
+| Test | SDPA | FA2 | Winner |
+|------|------|-----|--------|
+| Cold Start | 68s | 83s | **SDPA (22% faster)** |
+| Short text (~50 chars) | ~10s | ~10s | Tie |
+| Medium text (~200 chars) | ~30s | ~27s | Mixed |
+| Long text (~500 chars) | ~85s | ~67s | Mixed |
+| Very long text (2600 chars) | **337s (5.5min)** | 393s (6.5min) | **SDPA (18% faster)** |
+
+**Key Finding**: Looking at actual Modal.com GPU execution times (not just API response), SDPA is consistently 18% faster than FA2 for TTS workloads.
+
+**Decision**: Standardize on SDPA for all deployments. FA2 variant will be stopped.
+
+See [FA2-BENCHMARK-REPORT.md](./optimization/FA2-BENCHMARK-REPORT.md) for full details.
 
 ---
 
@@ -69,22 +116,35 @@ The Qwen3-TTS 1.7B and 0.6B voice cloning services have been deployed to Modal.c
 ```
 modal_app/qwen3_tts/
 ├── __init__.py               # Package initialization (v1.0.0)
-├── app.py                    # 1.7B Modal app (A10G GPU)
+├── app.py                    # 1.7B Modal app (A10G GPU, SDPA)
+├── app_fa2.py                # 1.7B Modal app (A10G GPU, Flash Attention 2)
 ├── app_06b.py                # 0.6B Modal app (T4 GPU)
 ├── config.py                 # Configuration constants
 ├── download_models.py        # Model download script for Modal volume
 └── test_client.py            # API test client (generic, takes --endpoint)
 
 test/
-├── test_qwen3_tts.py         # Test script (supports --model 1.7B/0.6B)
+├── test_qwen3_tts.py         # Test script (supports --model 1.7B/1.7B-FA2/0.6B)
+├── compare_fa2_sdpa.py       # SDPA vs FA2 latency comparison script
 ├── reference/
 │   ├── audio.wav             # Reference audio (multi-sentence)
 │   └── audio_text.txt        # Transcript (14 sentences)
 └── outputs/
     ├── 1.7B/
     │   └── clone_output.wav  # Generated output from 1.7B model
-    └── 0.6B/
-        └── clone_output.wav  # Generated output from 0.6B model
+    ├── 0.6B/
+    │   └── clone_output.wav  # Generated output from 0.6B model
+    ├── SDPA/                  # FA2 comparison outputs
+    │   ├── cold_start.wav
+    │   ├── short.wav
+    │   ├── medium.wav
+    │   └── long.wav
+    ├── FA2/                   # FA2 comparison outputs
+    │   ├── cold_start.wav
+    │   ├── short.wav
+    │   ├── medium.wav
+    │   └── long.wav
+    └── comparison_results.json # Detailed timing data
 
 backend/                        # Utter integration files (modified/new)
 ├── .env                        # TTS_PROVIDER=qwen, QWEN_MODAL_ENDPOINT
@@ -364,6 +424,71 @@ Completed 2026-01-28. Full backend and frontend integration of Qwen3-TTS into th
 ---
 
 ## Changelog
+
+### 2026-02-02
+- **Modal Timeout Fix**:
+  - Increased function timeout from 300s to 900s (15 minutes) in `app.py` and `app_fa2.py`
+  - Required for very long text generation (2000+ characters)
+  - Updated test runner default timeout to match
+- **Very Long Text Benchmark** (`test/scripts/run_comparison.py --text long`):
+  - Input: 2594 characters (tokenization tutorial)
+  - SDPA: 337.17s (5.5min actual GPU time)
+  - FA2: 392.87s (6.5min actual GPU time)
+  - **SDPA is 18% faster** — decisive result from actual Modal execution times
+- **Final Decision: Standardize on SDPA**:
+  - SDPA outperforms FA2 for TTS workloads (18% faster, 22% faster cold start)
+  - FA2 optimizations don't apply to short TTS sequences (~500-2000 tokens)
+  - PyTorch 2.10's native SDPA is highly optimized
+  - Simpler deployment (no flash-attn wheel, no torch version pinning)
+- **Deployment Plan**:
+  - Keep: `qwen3-tts-voice-clone` (1.7B SDPA) — Production
+  - Stop: `qwen3-tts-voice-clone-fa2` (1.7B FA2) — Free endpoints
+  - Redeploy: `qwen3-tts-voice-clone-06b` (0.6B SDPA) — Lighter workloads
+- **Documentation Updates**:
+  - Updated `FA2-BENCHMARK-REPORT.md` with Test 3 results and final recommendations
+  - Updated `README.md` with benchmark conclusions
+  - Updated `IMPLEMENTATION-STATUS.md` with deployment plan
+  - Updated `test/README.md` with expected performance data
+- **Generated Outputs**:
+  - `test/outputs/SDPA/long.wav` (7.68 MB, ~2.8 min audio)
+  - `test/outputs/FA2/long.wav` (7.73 MB, ~2.8 min audio)
+  - `test/results/comparison_20260202_000334.json`
+
+### 2026-02-01
+- **Flash Attention 2 Deployment** (Task from `flash-attention-optimization-plan.md`):
+  - Updated `modal_app/qwen3_tts/app_fa2.py` with pre-built wheel approach (no compilation needed)
+  - Pinned torch 2.9.0 to match available flash-attn wheel (v2.8.3)
+  - Used pre-built wheel from GitHub releases (253.8 MB, cxx11abiTRUE variant)
+  - Deployed to Modal as `qwen3-tts-voice-clone-fa2`
+  - Stopped 0.6B deployment to free up web endpoints (8 endpoint limit on free tier)
+  - Health check verified: `attention_implementation: "flash_attention_2"`
+- **Latency Benchmark — Test 1** (`test/compare_fa2_sdpa.py`):
+  - Tested combined clone+generate performance
+  - Cold start: SDPA 68.4s vs FA2 83.3s (FA2 22% slower)
+  - Warm short (39 chars): SDPA 10.49s vs FA2 11.11s
+  - Warm medium (97 chars): SDPA 17.88s vs FA2 18.81s
+  - Warm long (255 chars): SDPA 35.61s vs FA2 39.67s
+  - Saved to `test/outputs/comparison_results.json`
+- **Latency Benchmark — Test 2** (`test/compare_generation_only.py`):
+  - Tested generation-focused performance with 4 text lengths
+  - Tiny (12 chars): FA2 14% faster (6.76s vs 7.88s)
+  - Short (44 chars): FA2 13% faster (11.10s vs 12.82s)
+  - Medium (187 chars): FA2 13% faster (27.34s vs 31.52s)
+  - Long (506 chars): FA2 23% faster (66.82s vs 86.48s)
+  - Note: Results noisy due to Modal container restarts
+  - Saved to `test/outputs/generation_benchmark_results.json`
+- **Audio Output Files Generated**:
+  - `test/outputs/SDPA/` — cold_start.wav, short.wav, medium.wav, long.wav
+  - `test/outputs/FA2/` — cold_start.wav, short.wav, medium.wav, long.wav
+- **New Test Scripts**:
+  - `test/compare_fa2_sdpa.py` — Combined clone+generate benchmark
+  - `test/compare_generation_only.py` — Generation-focused benchmark with throughput metrics
+- **Documentation Updates**:
+  - Created `FA2-BENCHMARK-REPORT.md` — Comprehensive report with all raw timing data
+  - Updated `flash-attention-optimization-plan.md` — Added benchmark results section
+  - Updated `IMPLEMENTATION-STATUS.md` — Added FA2 endpoints and comparison tables
+  - Updated `test_qwen3_tts.py` — Added `--model 1.7B-FA2` support
+- **Key Finding**: FA2 shows 13-23% speedup for generation (longer text = more benefit), but cold start is 22% slower. Recommend SDPA for production, FA2 for batch/long-text scenarios.
 
 ### 2026-01-28
 - Deployed 0.6B model to Modal (T4 GPU, `app_06b.py`)

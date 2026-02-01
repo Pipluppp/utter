@@ -37,13 +37,23 @@ MAX_CONCURRENT_INPUTS = 10
 
 # Supported languages
 SUPPORTED_LANGUAGES = [
-    "Auto", "Chinese", "English", "Japanese", "Korean",
-    "German", "French", "Russian", "Portuguese", "Spanish", "Italian"
+    "Auto",
+    "Chinese",
+    "English",
+    "Japanese",
+    "Korean",
+    "German",
+    "French",
+    "Russian",
+    "Portuguese",
+    "Spanish",
+    "Italian",
 ]
 
 # =============================================================================
 # Image Definition
 # =============================================================================
+
 
 def create_image() -> modal.Image:
     """
@@ -60,12 +70,14 @@ def create_image() -> modal.Image:
         "ffmpeg",
     )
 
-    image = image.env({
-        "HF_HOME": HF_CACHE_DIR,
-        "TRANSFORMERS_CACHE": HF_CACHE_DIR,
-        "HF_HUB_CACHE": HF_CACHE_DIR,
-        "TOKENIZERS_PARALLELISM": "false",
-    })
+    image = image.env(
+        {
+            "HF_HOME": HF_CACHE_DIR,
+            "TRANSFORMERS_CACHE": HF_CACHE_DIR,
+            "HF_HUB_CACHE": HF_CACHE_DIR,
+            "TOKENIZERS_PARALLELISM": "false",
+        }
+    )
 
     image = image.pip_install(
         "qwen-tts",
@@ -86,21 +98,19 @@ image = create_image()
 
 app = modal.App("qwen3-tts-voice-clone-06b", image=image)
 
-models_volume = modal.Volume.from_name(
-    "qwen3-tts-models",
-    create_if_missing=True
-)
+models_volume = modal.Volume.from_name("qwen3-tts-models", create_if_missing=True)
 
 # =============================================================================
 # Service Class
 # =============================================================================
+
 
 @app.cls(
     gpu=GPU_TYPE,
     scaledown_window=CONTAINER_IDLE_TIMEOUT,
     volumes={MODELS_DIR: models_volume},
     secrets=[modal.Secret.from_name("huggingface-secret")],
-    timeout=300,
+    timeout=900,  # 15 minutes - increased for long text generation
 )
 @modal.concurrent(max_inputs=MAX_CONCURRENT_INPUTS)
 class Qwen3TTSService:
@@ -155,12 +165,14 @@ class Qwen3TTSService:
         if importlib.util.find_spec("flash_attn") is not None:
             try:
                 import flash_attn
+
                 print(f"Flash Attention found: v{flash_attn.__version__}")
                 return "flash_attention_2"
             except ImportError:
                 pass
 
         import torch
+
         if hasattr(torch.nn.functional, "scaled_dot_product_attention"):
             print("Using PyTorch native SDPA")
             return "sdpa"
@@ -297,8 +309,14 @@ class Qwen3TTSService:
             "model_id": MODEL_ID,
             "model_name": MODEL_NAME,
             "attention_implementation": self.attn_impl,
-            "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "none",
-            "gpu_memory_gb": torch.cuda.get_device_properties(0).total_memory / 1e9 if torch.cuda.is_available() else 0,
+            "gpu": (
+                torch.cuda.get_device_name(0) if torch.cuda.is_available() else "none"
+            ),
+            "gpu_memory_gb": (
+                torch.cuda.get_device_properties(0).total_memory / 1e9
+                if torch.cuda.is_available()
+                else 0
+            ),
             "supported_languages": SUPPORTED_LANGUAGES,
         }
 
@@ -328,7 +346,7 @@ class Qwen3TTSService:
             raise HTTPException(
                 status_code=400,
                 detail=f"Unsupported language: {language}. "
-                       f"Supported: {', '.join(SUPPORTED_LANGUAGES)}"
+                f"Supported: {', '.join(SUPPORTED_LANGUAGES)}",
             )
 
         if ref_audio_url:
@@ -338,7 +356,7 @@ class Qwen3TTSService:
         else:
             raise HTTPException(
                 status_code=400,
-                detail="Either 'ref_audio_url' or 'ref_audio_base64' is required"
+                detail="Either 'ref_audio_url' or 'ref_audio_base64' is required",
             )
 
         try:
@@ -350,10 +368,7 @@ class Qwen3TTSService:
                 max_new_tokens=max_new_tokens,
             )
         except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Generation failed: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
         return StreamingResponse(
             io.BytesIO(audio_bytes),
@@ -361,7 +376,7 @@ class Qwen3TTSService:
             headers={
                 "Content-Disposition": "attachment; filename=output.wav",
                 "Content-Length": str(len(audio_bytes)),
-            }
+            },
         )
 
     @modal.fastapi_endpoint(docs=True, method="POST")
@@ -383,15 +398,13 @@ class Qwen3TTSService:
             raise HTTPException(status_code=400, detail="'ref_text' is required")
         if len(texts) != len(languages):
             raise HTTPException(
-                status_code=400,
-                detail="Length of 'texts' must match 'languages'"
+                status_code=400, detail="Length of 'texts' must match 'languages'"
             )
 
         for lang in languages:
             if lang not in SUPPORTED_LANGUAGES:
                 raise HTTPException(
-                    status_code=400,
-                    detail=f"Unsupported language: {lang}"
+                    status_code=400, detail=f"Unsupported language: {lang}"
                 )
 
         if ref_audio_url:
@@ -401,7 +414,7 @@ class Qwen3TTSService:
         else:
             raise HTTPException(
                 status_code=400,
-                detail="Either 'ref_audio_url' or 'ref_audio_base64' is required"
+                detail="Either 'ref_audio_url' or 'ref_audio_base64' is required",
             )
 
         try:
@@ -414,8 +427,7 @@ class Qwen3TTSService:
             )
         except Exception as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"Batch generation failed: {str(e)}"
+                status_code=500, detail=f"Batch generation failed: {str(e)}"
             )
 
         return {
@@ -429,7 +441,7 @@ class Qwen3TTSService:
                     "size_bytes": len(audio_bytes),
                 }
                 for i, audio_bytes in enumerate(audio_bytes_list)
-            ]
+            ],
         }
 
     @modal.fastapi_endpoint(docs=True, method="GET")
@@ -459,6 +471,7 @@ class Qwen3TTSService:
 # Local Entrypoint (for testing)
 # =============================================================================
 
+
 @app.local_entrypoint()
 def main():
     """
@@ -470,13 +483,17 @@ def main():
     print("Testing Qwen3-TTS 0.6B Service")
     print("=" * 60)
 
-    ref_audio = "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone.wav"
+    ref_audio = (
+        "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone.wav"
+    )
     ref_text = (
         "Okay. Yeah. I resent you. I love you. I respect you. "
         "But you know what? You blew it! And thanks to you."
     )
 
-    test_text = "Hello, this is a test of the Qwen3 text to speech voice cloning system."
+    test_text = (
+        "Hello, this is a test of the Qwen3 text to speech voice cloning system."
+    )
 
     service = Qwen3TTSService()
 

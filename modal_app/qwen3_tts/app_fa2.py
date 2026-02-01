@@ -2,16 +2,21 @@
 Qwen3-TTS Voice Cloning API on Modal.com — Flash Attention 2 Variant
 
 Identical to app.py but uses:
-- CUDA devel base image (for flash-attn compilation)
-- flash-attn package for Flash Attention 2
+- Pre-built flash-attn wheel (no compilation needed)
+- Pinned torch 2.9.0 (to match available flash-attn wheel)
 - Forces flash_attention_2 attention implementation
 
 Deploy alongside app.py for side-by-side performance comparison.
+
+Strategy: Pin torch 2.9 + install pre-built flash-attn wheel.
+This avoids the slow source compilation that takes 30min-hours.
+See: docs/qwen3-tts-modal-deployment/flash-attention-optimization-plan.md
 
 Sources:
 - Modal Chatterbox example: https://modal.com/docs/examples/chatterbox_tts
 - Qwen3-TTS GitHub: https://github.com/QwenLM/Qwen3-TTS
 - Qwen3-TTS HuggingFace: https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base
+- Flash Attention releases: https://github.com/Dao-AILab/flash-attention/releases
 """
 
 import io
@@ -57,15 +62,14 @@ def create_image() -> modal.Image:
     """
     Build Modal container image for Qwen3-TTS with Flash Attention 2.
 
-    Uses CUDA devel base image to compile flash-attn from source.
+    Strategy: Pin torch 2.9 + install pre-built flash-attn wheel.
+    This avoids the slow source compilation that takes 30min-hours.
+    See: docs/qwen3-tts-modal-deployment/flash-attention-optimization-plan.md
     """
-    # CUDA devel image required for flash-attn compilation
-    image = modal.Image.from_registry(
-        "nvidia/cuda:12.4.1-devel-ubuntu22.04",
-        add_python="3.12",
-    )
+    # Stay on debian_slim — no CUDA devel image needed since we use pre-built wheel
+    image = modal.Image.debian_slim(python_version="3.12")
 
-    # Install system dependencies
+    # Install system dependencies (same as app.py)
     image = image.apt_install(
         "sox",
         "libsox-fmt-all",
@@ -81,20 +85,34 @@ def create_image() -> modal.Image:
         "TOKENIZERS_PARALLELISM": "false",
     })
 
-    # Install Python packages
+    # IMPORTANT: Pin torch 2.9 FIRST, before qwen-tts.
+    # qwen-tts==0.0.5 depends on transformers==4.57.3 which would pull torch 2.10.0.
+    # torch 2.10 has no pre-built flash-attn wheel. torch 2.9 does.
+    # By installing torch 2.9 first, pip won't upgrade it when installing qwen-tts.
+    image = image.pip_install(
+        "torch==2.9.0",
+        "torchaudio==2.9.0",
+    )
+
+    # Install Python packages (same as app.py, minus torchaudio which is pinned above)
     image = image.pip_install(
         "qwen-tts",
         "fastapi[standard]",
         "soundfile",
-        "torchaudio",
         "numpy<2.0",
     )
 
-    # Flash Attention 2 — needs CUDA devel headers + build deps for compilation
-    image = image.pip_install("wheel", "setuptools", "packaging", "ninja")
+    # Flash Attention 2 — pre-built wheel from GitHub releases.
+    # Installs in seconds. No compilation, no CUDA devel image needed.
+    # Wheel spec: flash-attn 2.8.3, CUDA 12, torch 2.9, Python 3.12, x86_64
+    # Source: https://github.com/Dao-AILab/flash-attention/releases/tag/v2.8.3
+    #
+    # NOTE on cxx11abi: Start with TRUE (Modal default). If flash-attn fails
+    # to import at runtime, switch to the FALSE variant URL below:
+    # "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiFALSE-cp312-cp312-linux_x86_64.whl"
     image = image.pip_install(
-        "flash-attn",
-        extra_options="--no-build-isolation",
+        "https://github.com/Dao-AILab/flash-attention/releases/download/"
+        "v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl"
     )
 
     return image
@@ -122,7 +140,7 @@ models_volume = modal.Volume.from_name(
     scaledown_window=CONTAINER_IDLE_TIMEOUT,
     volumes={MODELS_DIR: models_volume},
     secrets=[modal.Secret.from_name("huggingface-secret")],
-    timeout=300,  # 5 minute request timeout
+    timeout=900,  # 15 minute request timeout (long texts need more time)
 )
 @modal.concurrent(max_inputs=MAX_CONCURRENT_INPUTS)
 class Qwen3TTSService:
