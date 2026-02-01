@@ -26,6 +26,7 @@
       <a href="/voices" class="{% if request.url.path == '/voices' %}active{% endif %}">Voices</a>
       <a href="/generate" class="{% if request.url.path == '/generate' %}active{% endif %}">Generate</a>
       <a href="/history" class="{% if request.url.path == '/history' %}active{% endif %}">History</a>
+      <a href="/about" class="{% if request.url.path == '/about' %}active{% endif %}">About</a>
     </nav>
   </header>
 
@@ -33,7 +34,23 @@
     {% block content %}{% endblock %}
   </main>
 
+  <!-- Global Task Modal (shows when navigating away during generation) -->
+  <div id="global-task-modal" class="task-modal hidden">
+    <div class="task-modal-content">
+      <div class="task-modal-icon">⏳</div>
+      <div class="task-modal-info">
+        <div class="task-modal-title">Processing...</div>
+        <div class="task-modal-meta">
+          <span class="task-modal-status">Processing...</span>
+          <span class="task-modal-time">0:00 elapsed</span>
+        </div>
+      </div>
+      <button class="task-modal-dismiss" title="Dismiss">×</button>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/wavesurfer.js@7"></script>
+  <script src="/static/js/task-manager.js"></script>
   <script src="/static/js/waveform-manager.js"></script>
   <script src="/static/js/app.js"></script>
 </body>
