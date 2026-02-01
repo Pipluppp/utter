@@ -6,6 +6,22 @@
 <h1 class="title-page">Design a New Voice</h1>
 <p class="subtitle">Create a custom voice by describing how you want it to sound. No audio upload needed.</p>
 
+<details class="page-guide">
+    <summary>
+        <span>ℹ️ Tips for Best Results</span>
+        <span class="page-guide-chevron">▼</span>
+    </summary>
+    <div class="page-guide-content">
+        <ul>
+            <li><strong>Description:</strong> Be specific about tone, gender, age, and accent</li>
+            <li><strong>Preview text:</strong> Keep it short (under 500 chars) for faster previews</li>
+            <li><strong>Processing time:</strong> 15–45 seconds per preview</li>
+            <li><strong>Saving:</strong> The preview audio becomes the reference for long-form generation</li>
+        </ul>
+        <p><strong>Good example:</strong> "A warm, friendly female voice with a gentle British accent"</p>
+    </div>
+</details>
+
 <form id="design-form">
     <div id="error-container" class="message hidden"></div>
     <div id="success-container" class="message message-success hidden"></div>
@@ -71,6 +87,19 @@
         </button>
     </div>
 </form>
+
+<!-- Generation Progress (shown during generation) -->
+<div class="generation-progress hidden" id="design-progress">
+    <div class="progress-spinner"></div>
+    <div class="progress-info">
+        <div class="progress-title">Designing voice...</div>
+        <div class="progress-time">
+            <span class="progress-elapsed" id="design-elapsed">0:00</span>
+            <span class="progress-elapsed-label">elapsed</span>
+        </div>
+        <div class="progress-hint">Voice design typically takes 15–45 seconds</div>
+    </div>
+</div>
 
 <!-- Example Prompts -->
 <div class="examples-section">
@@ -170,7 +199,86 @@
             successContainer.classList.add('hidden');
         }
 
-        // Generate Preview
+        // Helper to display preview audio from base64 or blob
+        function displayPreviewAudio(audioBlob) {
+            previewAudioBlob = audioBlob;
+            const audioUrl = URL.createObjectURL(previewAudioBlob);
+
+            // Show preview section
+            previewSection.style.display = 'block';
+
+            // Initialize or update wavesurfer
+            if (previewWavesurfer) {
+                previewWavesurfer.destroy();
+            }
+
+            previewWavesurfer = WaveSurfer.create({
+                container: '#preview-waveform',
+                waveColor: '#a0a0a0',
+                progressColor: '#111111',
+                cursorColor: 'transparent',
+                barWidth: 2,
+                barGap: 2,
+                barRadius: 0,
+                height: 48,
+                normalize: true,
+            });
+
+            previewWavesurfer.load(audioUrl);
+
+            const playBtn = document.getElementById('preview-play-btn');
+            const timeDisplay = document.getElementById('preview-time');
+
+            previewWavesurfer.on('ready', () => {
+                playBtn.disabled = false;
+                const duration = previewWavesurfer.getDuration();
+                timeDisplay.textContent = `0:00 / ${formatTime(duration)}`;
+            });
+
+            previewWavesurfer.on('audioprocess', () => {
+                const current = previewWavesurfer.getCurrentTime();
+                const duration = previewWavesurfer.getDuration();
+                timeDisplay.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+            });
+
+            previewWavesurfer.on('play', () => {
+                playBtn.querySelector('.play-icon').textContent = '⏸';
+            });
+
+            previewWavesurfer.on('pause', () => {
+                playBtn.querySelector('.play-icon').textContent = '▶';
+            });
+
+            // Remove existing listener to avoid duplicates
+            const newPlayBtn = playBtn.cloneNode(true);
+            playBtn.parentNode.replaceChild(newPlayBtn, playBtn);
+            newPlayBtn.addEventListener('click', () => {
+                previewWavesurfer.playPause();
+            });
+
+            // Enable save button
+            saveVoiceBtn.disabled = false;
+        }
+
+        // Reset UI to default state
+        function resetGenerateUI() {
+            if (window._designTimerInterval) {
+                clearInterval(window._designTimerInterval);
+                window._designTimerInterval = null;
+            }
+
+            // Hide progress section
+            const progressSection = document.getElementById('design-progress');
+            if (progressSection) {
+                progressSection.classList.add('hidden');
+            }
+
+            generatePreviewBtn.disabled = false;
+            generatePreviewBtn.classList.remove('btn-loading');
+            generatePreviewBtn.textContent = 'Generate Preview';
+        }
+
+        // Generate Preview - using async task system
         generatePreviewBtn.addEventListener('click', async () => {
             hideMessages();
 
@@ -190,81 +298,164 @@
             generatePreviewBtn.disabled = true;
             generatePreviewBtn.classList.add('btn-loading');
 
+            // Show progress section
+            const progressSection = document.getElementById('design-progress');
+            const progressElapsed = document.getElementById('design-elapsed');
+            if (progressSection) {
+                progressSection.classList.remove('hidden');
+            }
+
+            // Track elapsed time
+            const startTime = Date.now();
+            const updateTimer = () => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const mins = Math.floor(elapsed / 60);
+                const secs = elapsed % 60;
+                const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+                generatePreviewBtn.textContent = `Generating... ${timeStr}`;
+                if (progressElapsed) {
+                    progressElapsed.textContent = timeStr;
+                }
+            };
+            updateTimer();
+            window._designTimerInterval = setInterval(updateTimer, 1000);
+
             try {
+                // Start the async task
                 const response = await fetch('/api/voices/design/preview', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text, language, instruct })
                 });
 
+                const data = await response.json();
+
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Failed to generate preview');
+                    throw new Error(data.detail || 'Failed to start preview generation');
                 }
 
-                previewAudioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(previewAudioBlob);
-
-                // Show preview section
-                previewSection.style.display = 'block';
-
-                // Initialize or update wavesurfer
-                if (previewWavesurfer) {
-                    previewWavesurfer.destroy();
+                // Start task tracking with backend task ID
+                if (window.taskManager && data.task_id) {
+                    const formState = {
+                        voiceName: nameInput.value,
+                        instruct,
+                        text,
+                        language
+                    };
+                    window.taskManager.startTask(
+                        data.task_id,
+                        'design',
+                        '/design',
+                        'Generating voice preview...',
+                        formState
+                    );
                 }
 
-                previewWavesurfer = WaveSurfer.create({
-                    container: '#preview-waveform',
-                    waveColor: '#a0a0a0',
-                    progressColor: '#111111',
-                    cursorColor: 'transparent',
-                    barWidth: 2,
-                    barGap: 2,
-                    barRadius: 0,
-                    height: 48,
-                    normalize: true,
-                });
-
-                previewWavesurfer.load(audioUrl);
-
-                const playBtn = document.getElementById('preview-play-btn');
-                const timeDisplay = document.getElementById('preview-time');
-
-                previewWavesurfer.on('ready', () => {
-                    playBtn.disabled = false;
-                    const duration = previewWavesurfer.getDuration();
-                    timeDisplay.textContent = `0:00 / ${formatTime(duration)}`;
-                });
-
-                previewWavesurfer.on('audioprocess', () => {
-                    const current = previewWavesurfer.getCurrentTime();
-                    const duration = previewWavesurfer.getDuration();
-                    timeDisplay.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
-                });
-
-                previewWavesurfer.on('play', () => {
-                    playBtn.querySelector('.play-icon').textContent = '⏸';
-                });
-
-                previewWavesurfer.on('pause', () => {
-                    playBtn.querySelector('.play-icon').textContent = '▶';
-                });
-
-                playBtn.addEventListener('click', () => {
-                    previewWavesurfer.playPause();
-                });
-
-                // Enable save button
-                saveVoiceBtn.disabled = false;
-                showSuccess('Preview generated! Listen and save if you like it.');
+                // Task manager will poll and dispatch 'taskComplete' event
 
             } catch (error) {
+                resetGenerateUI();
                 showError(error.message);
-            } finally {
-                generatePreviewBtn.disabled = false;
-                generatePreviewBtn.classList.remove('btn-loading');
             }
         });
+
+        // Listen for task completion from TaskManager
+        window.addEventListener('taskComplete', (e) => {
+            const { status, result, error, storedTask } = e.detail;
+
+            // Only handle design tasks for this page
+            if (storedTask.type !== 'design' || storedTask.originPage !== '/design') {
+                return;
+            }
+
+            resetGenerateUI();
+
+            if (status === 'completed' && result && result.audio_base64) {
+                // Convert base64 to blob
+                const byteCharacters = atob(result.audio_base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const audioBlob = new Blob([byteArray], { type: 'audio/wav' });
+
+                displayPreviewAudio(audioBlob);
+                showSuccess('Preview generated! Listen and save if you like it.');
+
+            } else if (status === 'failed') {
+                showError(error || 'Preview generation failed. Please try again.');
+            }
+        });
+
+        // Check if returning to page with active task
+        function checkAndRestoreActiveTask() {
+            if (!window.taskManager) return;
+
+            const task = window.taskManager.getTask();
+            if (!task || task.type !== 'design' || task.originPage !== '/design') {
+                return;
+            }
+
+            // Restore form state
+            const formState = task.formState;
+            if (formState) {
+                if (formState.voiceName) nameInput.value = formState.voiceName;
+                if (formState.instruct) {
+                    descriptionInput.value = formState.instruct;
+                    updateCounter(descriptionInput, descriptionCounter, 500);
+                }
+                if (formState.text) {
+                    previewTextInput.value = formState.text;
+                    updateCounter(previewTextInput, previewCounter, 500);
+                }
+                if (formState.language) languageSelect.value = formState.language;
+            }
+
+            // If task already completed, event will fire shortly
+            if (task.status === 'completed' || task.status === 'failed') {
+                generatePreviewBtn.disabled = true;
+                generatePreviewBtn.textContent = 'Loading result...';
+                return;
+            }
+
+            // Task still in progress - show loading state with progress section
+            const progressSection = document.getElementById('design-progress');
+            const progressElapsed = document.getElementById('design-elapsed');
+
+            if (progressSection) {
+                progressSection.classList.remove('hidden');
+            }
+
+            generatePreviewBtn.disabled = true;
+            generatePreviewBtn.classList.add('btn-loading');
+
+            // Start timer from original start time
+            const startTime = task.startedAt;
+            window._designTimerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const mins = Math.floor(elapsed / 60);
+                const secs = elapsed % 60;
+                const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+                generatePreviewBtn.textContent = `Generating... ${timeStr}`;
+                if (progressElapsed) {
+                    progressElapsed.textContent = timeStr;
+                }
+            }, 1000);
+
+            // Immediate update
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const mins = Math.floor(elapsed / 60);
+            const secs = elapsed % 60;
+            const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+            generatePreviewBtn.textContent = `Generating... ${timeStr}`;
+            if (progressElapsed) {
+                progressElapsed.textContent = timeStr;
+            }
+        }
+
+        // Initialize on page load
+        checkAndRestoreActiveTask();
 
         // Save Voice
         form.addEventListener('submit', async (e) => {

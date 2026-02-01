@@ -5,6 +5,22 @@
 {% block content %}
 <h1 class="title-page">Clone Your Voice</h1>
 
+<details class="page-guide">
+    <summary>
+        <span>ℹ️ Tips for Best Results</span>
+        <span class="page-guide-chevron">▼</span>
+    </summary>
+    <div class="page-guide-content">
+        <ul>
+            <li><strong>Audio length:</strong> 10 seconds to 5 minutes</li>
+            <li><strong>Quality:</strong> Clear audio with minimal background noise works best</li>
+            <li><strong>Transcript:</strong> Accurate transcript significantly improves voice matching</li>
+            <li><strong>Processing time:</strong> 10–30 seconds typically</li>
+        </ul>
+        <p><strong>Supported formats:</strong> WAV, MP3, M4A (max 50MB)</p>
+    </div>
+</details>
+
 <form id="clone-form">
     <div id="error-container" class="message hidden"></div>
 
@@ -61,4 +77,17 @@
         Create Voice Clone
     </button>
 </form>
+
+<!-- Clone Progress (shown during cloning) -->
+<div class="generation-progress hidden" id="clone-progress">
+    <div class="progress-spinner"></div>
+    <div class="progress-info">
+        <div class="progress-title">Creating voice clone...</div>
+        <div class="progress-time">
+            <span class="progress-elapsed" id="clone-elapsed">0:00</span>
+            <span class="progress-elapsed-label">elapsed</span>
+        </div>
+        <div class="progress-hint">This typically takes 10–30 seconds</div>
+    </div>
+</div>
 {% endblock %}

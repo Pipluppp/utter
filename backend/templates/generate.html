@@ -5,6 +5,21 @@
 {% block content %}
 <h1 class="title-page">Generate Speech</h1>
 
+<details class="page-guide">
+    <summary>
+        <span>ℹ️ Tips for Best Results</span>
+        <span class="page-guide-chevron">▼</span>
+    </summary>
+    <div class="page-guide-content">
+        <ul>
+            <li><strong>Max text:</strong> 5,000 characters per generation</li>
+            <li><strong>Punctuation:</strong> Use periods for pauses, commas for brief breaks</li>
+            <li><strong>First generation:</strong> May take longer while the system warms up</li>
+            <li><strong>Subsequent:</strong> Faster after the first generation</li>
+        </ul>
+    </div>
+</details>
+
 <form id="generate-form">
     <div id="error-container" class="message hidden"></div>
 
@@ -47,6 +62,19 @@
         Generate Speech
     </button>
 </form>
+
+<!-- Generation Progress (shown during generation) -->
+<div class="generation-progress hidden" id="generation-progress">
+    <div class="progress-spinner"></div>
+    <div class="progress-info">
+        <div class="progress-title">Generating speech...</div>
+        <div class="progress-time">
+            <span class="progress-elapsed" id="progress-elapsed">0:00</span>
+            <span class="progress-elapsed-label">elapsed</span>
+        </div>
+        <div class="progress-hint">First generation may take 30–90s while the GPU warms up</div>
+    </div>
+</div>
 
 <div class="result-section hidden" id="result-section">
     <div class="divider"></div>
