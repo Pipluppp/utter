@@ -3,23 +3,47 @@
 {% block title %}About - Utter{% endblock %}
 
 {% block content %}
-<h1 class="title-page">How It Works</h1>
+<h1 class="title-page">About Utter</h1>
 
 <div class="about-content">
-    <h2>Voice Cloning</h2>
-    <p>To create a voice clone, simply upload a clean audio recording. The model analyzes the prosody, timbre, and
-        accent to create a digital replica.</p>
+    <section class="about-section">
+        <h2>What is Utter?</h2>
+        <p>Utter is an AI-powered voice platform that lets you clone existing voices and design entirely new ones.
+            Generate natural-sounding speech in 10 languages.</p>
+    </section>
 
-    <h2>Constraints & Best Practices</h2>
-    <ul>
-        <li><strong>Audio Length:</strong> Reference audio should be between 10 seconds and 5 minutes.</li>
-        <li><strong>File Formats:</strong> We support WAV, MP3, and M4A.</li>
-        <li><strong>Quality:</strong> Use high-quality audio with minimal background noise for best results.</li>
-        <li><strong>Language:</strong> Currently optimized for English speech.</li>
-    </ul>
+    <section class="about-section">
+        <h2>Features</h2>
+        <table class="about-table">
+            <tr>
+                <td><strong>Clone</strong></td>
+                <td>Upload 10s–5min of audio to create a voice replica. Requires transcript.</td>
+            </tr>
+            <tr>
+                <td><strong>Design</strong></td>
+                <td>Describe a voice in plain text—no audio needed. Great for creating new personas.</td>
+            </tr>
+            <tr>
+                <td><strong>Generate</strong></td>
+                <td>Convert up to 5,000 characters of text to speech using any saved voice.</td>
+            </tr>
+        </table>
+    </section>
 
-    <h2>Privacy & Ethics</h2>
-    <p>Voice cloning technology should be used responsibly. Only clone voices you have permission to use. This project
-        runs entirely locally using open-source models.</p>
+    <section class="about-section">
+        <h2>Supported Languages</h2>
+        <p>English, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Spanish, Italian</p>
+        <p>Language auto-detection is available, or you can specify explicitly for best results.</p>
+    </section>
+
+    <section class="about-section">
+        <h2>Privacy & Ethics</h2>
+        <p>Voice cloning technology should be used responsibly:</p>
+        <ul>
+            <li>Only clone voices you have explicit permission to use</li>
+            <li>Audio files are stored securely for your use only</li>
+            <li>Your data is not used to train our models</li>
+        </ul>
+    </section>
 </div>
 {% endblock %}
