@@ -19,6 +19,8 @@ class Voice(Base):
     reference_path: Mapped[str] = mapped_column(String(500), nullable=False)
     reference_transcript: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     language: Mapped[str] = mapped_column(String(20), nullable=False, default="Auto")
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default="uploaded")  # "uploaded" | "designed"
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Voice design instruct
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -28,6 +30,8 @@ class Voice(Base):
             "name": self.name,
             "reference_transcript": self.reference_transcript,
             "language": self.language,
+            "source": self.source,
+            "description": self.description,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
 

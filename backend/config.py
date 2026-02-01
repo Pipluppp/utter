@@ -35,6 +35,7 @@ TTS_PROVIDER = os.getenv("TTS_PROVIDER", "echo")
 QWEN_MODAL_ENDPOINT = os.getenv("QWEN_MODAL_ENDPOINT", "https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run")
 QWEN_MODAL_ENDPOINT_1_7B = os.getenv("QWEN_MODAL_ENDPOINT_1_7B", "https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run")
 QWEN_MODAL_ENDPOINT_0_6B = os.getenv("QWEN_MODAL_ENDPOINT_0_6B", "https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-clone.modal.run")
+QWEN_MODAL_ENDPOINT_VOICE_DESIGN = os.getenv("QWEN_MODAL_ENDPOINT_VOICE_DESIGN", "https://duncab013--qwen3-tts-voice-design-voicedesignservice-design.modal.run")
 
 # Supported languages (Qwen3-TTS)
 SUPPORTED_LANGUAGES = [

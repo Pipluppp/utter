@@ -92,6 +92,12 @@ async def history_page(request: Request):
     return templates.TemplateResponse("history.html", {"request": request})
 
 
+@app.get("/design", response_class=HTMLResponse)
+async def design_page(request: Request):
+    """Voice design page - create voices from text descriptions."""
+    return templates.TemplateResponse("design.html", {"request": request})
+
+
 # ============================================================================
 # API Routes
 # ============================================================================
@@ -234,7 +240,7 @@ async def api_generate(
     voice_id = data.get("voice_id")
     text = data.get("text", "").strip()
     language = data.get("language", "Auto")
-    model = data.get("model", "1.7B")
+    model = data.get("model", "0.6B")  # Default to 0.6B (1.7B-Base is stopped)
 
     # Validate voice_id
     if not voice_id:
@@ -348,3 +354,147 @@ async def api_languages():
         "default": "Auto",
         "provider": TTS_PROVIDER,
     }
+
+
+# ============================================================================
+# Voice Design API Routes
+# ============================================================================
+
+@app.post("/api/voices/design/preview")
+async def api_design_preview(request: Request):
+    """
+    Generate a preview of a designed voice without saving.
+    
+    Returns audio bytes for preview playback.
+    """
+    from services.tts_qwen import design_voice
+    
+    data = await request.json()
+    
+    text = data.get("text", "").strip()
+    language = data.get("language", "English")
+    instruct = data.get("instruct", "").strip()
+    
+    # Validate inputs
+    if not text:
+        raise HTTPException(status_code=400, detail="Preview text is required")
+    if len(text) > 500:
+        raise HTTPException(status_code=400, detail="Preview text must be 500 characters or less")
+    
+    if not instruct:
+        raise HTTPException(status_code=400, detail="Voice description is required")
+    if len(instruct) > 500:
+        raise HTTPException(status_code=400, detail="Voice description must be 500 characters or less")
+    
+    if language not in SUPPORTED_LANGUAGES:
+        raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
+    
+    try:
+        audio_bytes = await design_voice(
+            text=text,
+            language=language,
+            instruct=instruct,
+        )
+        
+        from fastapi.responses import Response
+        return Response(
+            content=audio_bytes,
+            media_type="audio/wav",
+            headers={"Content-Disposition": "attachment; filename=preview.wav"}
+        )
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to design voice. Please try again.")
+
+
+@app.post("/api/voices/design")
+async def api_design_voice(
+    name: str = Form(...),
+    text: str = Form(...),
+    language: str = Form("English"),
+    instruct: str = Form(...),
+    audio: UploadFile = File(...),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Save a designed voice with its preview audio.
+    
+    Accepts the preview audio blob directly from the frontend,
+    ensuring the saved voice matches exactly what was previewed.
+    The designed voice can then be used with the cloning model for long-form generation.
+    """
+    from config import REFERENCES_DIR
+    
+    name = name.strip()
+    text = text.strip()
+    instruct = instruct.strip()
+    
+    # Validate inputs
+    if not name:
+        raise HTTPException(status_code=400, detail="Voice name is required")
+    if len(name) > 100:
+        raise HTTPException(status_code=400, detail="Voice name must be 100 characters or less")
+    
+    if not text:
+        raise HTTPException(status_code=400, detail="Preview text is required")
+    if len(text) > 500:
+        raise HTTPException(status_code=400, detail="Preview text must be 500 characters or less")
+    
+    if not instruct:
+        raise HTTPException(status_code=400, detail="Voice description is required")
+    if len(instruct) > 500:
+        raise HTTPException(status_code=400, detail="Voice description must be 500 characters or less")
+    
+    if language not in SUPPORTED_LANGUAGES:
+        raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
+    
+    try:
+        # Read the preview audio sent from frontend (no regeneration needed)
+        audio_bytes = await audio.read()
+        
+        if not audio_bytes:
+            raise HTTPException(status_code=400, detail="Audio preview is required")
+        
+        # Create voice ID and save audio as reference
+        voice_id = str(uuid.uuid4())
+        reference_path = REFERENCES_DIR / f"{voice_id}.wav"
+        
+        with open(reference_path, "wb") as f:
+            f.write(audio_bytes)
+        
+        # Create voice record
+        voice = Voice(
+            id=voice_id,
+            name=name,
+            reference_path=str(reference_path),
+            reference_transcript=text,  # Preview text becomes the transcript
+            language=language,
+            source="designed",
+            description=instruct,
+        )
+        
+        session.add(voice)
+        await session.commit()
+        
+        return JSONResponse(
+            status_code=201,
+            content={
+                "id": voice_id,
+                "name": name,
+                "description": instruct,
+                "language": language,
+                "source": "designed",
+                "preview_url": f"/api/voices/{voice_id}/preview",
+            }
+        )
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to design voice. Please try again.")

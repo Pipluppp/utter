@@ -28,6 +28,8 @@ async def create_tables():
     migrations = [
         "ALTER TABLE voices ADD COLUMN reference_transcript TEXT",
         "ALTER TABLE voices ADD COLUMN language VARCHAR(20) NOT NULL DEFAULT 'Auto'",
+        "ALTER TABLE voices ADD COLUMN source VARCHAR(20) NOT NULL DEFAULT 'uploaded'",
+        "ALTER TABLE voices ADD COLUMN description TEXT",
         "ALTER TABLE generations ADD COLUMN language VARCHAR(20) NOT NULL DEFAULT 'Auto'",
     ]
     async with engine.begin() as conn:
