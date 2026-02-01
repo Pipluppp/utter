@@ -19,10 +19,11 @@ logger = logging.getLogger("tts.perf")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter(
-        "%(asctime)s | %(levelname)s | %(message)s",
-        datefmt="%H:%M:%S"
-    ))
+    handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s | %(levelname)s | %(message)s", datefmt="%H:%M:%S"
+        )
+    )
     logger.addHandler(handler)
 
 
@@ -52,6 +53,7 @@ async def generate_speech(
     """
     if USE_MOCK:
         import shutil
+
         reference_path = get_reference_path(voice_id)
         if reference_path is None:
             raise ValueError(f"Voice reference not found: {voice_id}")
@@ -62,6 +64,7 @@ async def generate_speech(
 
     if TTS_PROVIDER == "qwen":
         from services.tts_qwen import generate_speech_qwen
+
         if not ref_text:
             raise ValueError("Reference transcript is required for Qwen3-TTS")
         return await generate_speech_qwen(voice_id, text, ref_text, language, model)
@@ -104,8 +107,7 @@ async def _generate_speech_echo(voice_id: str, text: str) -> str:
 
         chunk_start = time.time()
         audio_bytes = tts.generate.remote(
-            text=chunks[0],
-            reference_audio_bytes=reference_bytes
+            text=chunks[0], reference_audio_bytes=reference_bytes
         )
         chunk_elapsed = time.time() - chunk_start
 
@@ -113,7 +115,9 @@ async def _generate_speech_echo(voice_id: str, text: str) -> str:
             f.write(audio_bytes)
 
         total_elapsed = time.time() - total_start
-        logger.info(f"Generated in {total_elapsed:.2f}s ({len(audio_bytes)} bytes) | {text_len} chars")
+        logger.info(
+            f"Generated in {total_elapsed:.2f}s ({len(audio_bytes)} bytes) | {text_len} chars"
+        )
         return str(output_path)
 
     # Long text: generate each chunk and stitch
@@ -126,8 +130,7 @@ async def _generate_speech_echo(voice_id: str, text: str) -> str:
         chunk_output = GENERATED_DIR / f"{chunk_id}.mp3"
 
         audio_bytes = tts.generate.remote(
-            text=chunk_text,
-            reference_audio_bytes=reference_bytes
+            text=chunk_text, reference_audio_bytes=reference_bytes
         )
 
         with open(chunk_output, "wb") as f:
@@ -136,7 +139,9 @@ async def _generate_speech_echo(voice_id: str, text: str) -> str:
         chunk_elapsed = time.time() - chunk_start
         chunk_times.append(chunk_elapsed)
         chunk_paths.append(str(chunk_output))
-        logger.info(f"  Chunk {i+1}/{num_chunks}: {chunk_elapsed:.2f}s ({len(chunk_text)} chars)")
+        logger.info(
+            f"  Chunk {i+1}/{num_chunks}: {chunk_elapsed:.2f}s ({len(chunk_text)} chars)"
+        )
 
     # Stitch all chunks together
     final_output_path = str(GENERATED_DIR / f"{generation_id}.mp3")
@@ -151,6 +156,8 @@ async def _generate_speech_echo(voice_id: str, text: str) -> str:
 
     total_elapsed = time.time() - total_start
     avg_chunk = sum(chunk_times) / len(chunk_times)
-    logger.info(f"Generated {num_chunks} chunks in {total_elapsed:.2f}s (avg {avg_chunk:.2f}s/chunk) | {text_len} chars")
+    logger.info(
+        f"Generated {num_chunks} chunks in {total_elapsed:.2f}s (avg {avg_chunk:.2f}s/chunk) | {text_len} chars"
+    )
 
     return final_output_path

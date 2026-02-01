@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Utter Voice Clone",
     description="Clone a voice → Generate speech",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Mount static files
@@ -55,6 +55,7 @@ templates = Jinja2Templates(directory=templates_path)
 # ============================================================================
 # HTML Routes
 # ============================================================================
+
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
@@ -102,13 +103,14 @@ async def design_page(request: Request):
 # API Routes
 # ============================================================================
 
+
 @app.post("/api/clone")
 async def api_clone(
     name: str = Form(...),
     audio: UploadFile = File(...),
     transcript: str = Form(""),
     language: str = Form("Auto"),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
 ):
     """
     Create a new voice clone from uploaded audio.
@@ -122,14 +124,16 @@ async def api_clone(
     if not name or len(name.strip()) == 0:
         raise HTTPException(status_code=400, detail="Please enter a voice name")
     if len(name) > 100:
-        raise HTTPException(status_code=400, detail="Voice name must be 100 characters or less")
+        raise HTTPException(
+            status_code=400, detail="Voice name must be 100 characters or less"
+        )
 
     # Validate transcript for Qwen provider
     transcript = transcript.strip()
     if TTS_PROVIDER == "qwen" and len(transcript) < 10:
         raise HTTPException(
             status_code=400,
-            detail="Please provide a transcript of the reference audio (at least 10 characters)"
+            detail="Please provide a transcript of the reference audio (at least 10 characters)",
         )
 
     # Validate language
@@ -141,8 +145,7 @@ async def api_clone(
         ext = Path(audio.filename).suffix.lower()
         if ext not in ALLOWED_AUDIO_EXTENSIONS:
             raise HTTPException(
-                status_code=400,
-                detail=f"File must be WAV, MP3, or M4A (got {ext})"
+                status_code=400, detail=f"File must be WAV, MP3, or M4A (got {ext})"
             )
 
     # Generate voice ID
@@ -155,6 +158,7 @@ async def api_clone(
     validation = validate_reference_audio(reference_path)
     if not validation["valid"]:
         import os
+
         os.remove(reference_path)
         raise HTTPException(status_code=400, detail=validation["message"])
 
@@ -170,10 +174,7 @@ async def api_clone(
     session.add(voice)
     await session.commit()
 
-    return JSONResponse(
-        status_code=201,
-        content={"id": voice_id, "name": voice.name}
-    )
+    return JSONResponse(status_code=201, content={"id": voice_id, "name": voice.name})
 
 
 @app.get("/api/voices")
@@ -181,10 +182,8 @@ async def api_voices(session: AsyncSession = Depends(get_session)):
     """List all available voices."""
     result = await session.execute(select(Voice).order_by(Voice.created_at.desc()))
     voices = result.scalars().all()
-    
-    return {
-        "voices": [voice.to_dict() for voice in voices]
-    }
+
+    return {"voices": [voice.to_dict() for voice in voices]}
 
 
 @app.delete("/api/voices/{voice_id}")
@@ -193,43 +192,42 @@ async def api_delete_voice(voice_id: str, session: AsyncSession = Depends(get_se
     # Find voice
     result = await session.execute(select(Voice).where(Voice.id == voice_id))
     voice = result.scalar_one_or_none()
-    
+
     if not voice:
         raise HTTPException(status_code=404, detail="Voice not found")
-    
+
     # Delete reference audio file
     storage.delete_reference(voice_id)
-    
+
     # Delete from database
     await session.delete(voice)
     await session.commit()
-    
+
     return {"success": True, "message": f"Voice '{voice.name}' deleted"}
 
 
 @app.get("/api/voices/{voice_id}/preview")
-async def api_preview_voice(voice_id: str, session: AsyncSession = Depends(get_session)):
+async def api_preview_voice(
+    voice_id: str, session: AsyncSession = Depends(get_session)
+):
     """Stream reference audio for preview playback."""
     # Find voice
     result = await session.execute(select(Voice).where(Voice.id == voice_id))
     voice = result.scalar_one_or_none()
-    
+
     if not voice:
         raise HTTPException(status_code=404, detail="Voice not found")
-    
+
     # Get reference audio path
     reference_path = storage.get_reference_path(voice_id)
     if not reference_path or not reference_path.exists():
         raise HTTPException(status_code=404, detail="Reference audio not found")
-    
+
     return FileResponse(reference_path, media_type="audio/wav")
 
 
 @app.post("/api/generate")
-async def api_generate(
-    request: Request,
-    session: AsyncSession = Depends(get_session)
-):
+async def api_generate(request: Request, session: AsyncSession = Depends(get_session)):
     """
     Generate speech from text using a cloned voice.
 
@@ -267,7 +265,7 @@ async def api_generate(
     if TTS_PROVIDER == "qwen" and not ref_text:
         raise HTTPException(
             status_code=400,
-            detail="This voice has no reference transcript. Re-clone with a transcript to use Qwen3-TTS."
+            detail="This voice has no reference transcript. Re-clone with a transcript to use Qwen3-TTS.",
         )
 
     # Generate speech
@@ -304,8 +302,11 @@ async def api_generate(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         import traceback
+
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Failed to generate speech. Please try again.")
+        raise HTTPException(
+            status_code=500, detail="Failed to generate speech. Please try again."
+        )
 
 
 @app.get("/api/generations")
@@ -318,17 +319,19 @@ async def api_generations(session: AsyncSession = Depends(get_session)):
         .limit(50)
     )
     generations = result.scalars().all()
-    
-    return {
-        "generations": [gen.to_dict() for gen in generations]
-    }
+
+    return {"generations": [gen.to_dict() for gen in generations]}
 
 
 @app.delete("/api/generations/{generation_id}")
-async def api_delete_generation(generation_id: str, session: AsyncSession = Depends(get_session)):
+async def api_delete_generation(
+    generation_id: str, session: AsyncSession = Depends(get_session)
+):
     """Delete a generation and its audio file."""
     # Find generation
-    result = await session.execute(select(Generation).where(Generation.id == generation_id))
+    result = await session.execute(
+        select(Generation).where(Generation.id == generation_id)
+    )
     generation = result.scalar_one_or_none()
 
     if not generation:
@@ -360,55 +363,64 @@ async def api_languages():
 # Voice Design API Routes
 # ============================================================================
 
+
 @app.post("/api/voices/design/preview")
 async def api_design_preview(request: Request):
     """
     Generate a preview of a designed voice without saving.
-    
+
     Returns audio bytes for preview playback.
     """
     from services.tts_qwen import design_voice
-    
+
     data = await request.json()
-    
+
     text = data.get("text", "").strip()
     language = data.get("language", "English")
     instruct = data.get("instruct", "").strip()
-    
+
     # Validate inputs
     if not text:
         raise HTTPException(status_code=400, detail="Preview text is required")
     if len(text) > 500:
-        raise HTTPException(status_code=400, detail="Preview text must be 500 characters or less")
-    
+        raise HTTPException(
+            status_code=400, detail="Preview text must be 500 characters or less"
+        )
+
     if not instruct:
         raise HTTPException(status_code=400, detail="Voice description is required")
     if len(instruct) > 500:
-        raise HTTPException(status_code=400, detail="Voice description must be 500 characters or less")
-    
+        raise HTTPException(
+            status_code=400, detail="Voice description must be 500 characters or less"
+        )
+
     if language not in SUPPORTED_LANGUAGES:
         raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
-    
+
     try:
         audio_bytes = await design_voice(
             text=text,
             language=language,
             instruct=instruct,
         )
-        
+
         from fastapi.responses import Response
+
         return Response(
             content=audio_bytes,
             media_type="audio/wav",
-            headers={"Content-Disposition": "attachment; filename=preview.wav"}
+            headers={"Content-Disposition": "attachment; filename=preview.wav"},
         )
-        
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         import traceback
+
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Failed to design voice. Please try again.")
+        raise HTTPException(
+            status_code=500, detail="Failed to design voice. Please try again."
+        )
 
 
 @app.post("/api/voices/design")
@@ -418,54 +430,60 @@ async def api_design_voice(
     language: str = Form("English"),
     instruct: str = Form(...),
     audio: UploadFile = File(...),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
 ):
     """
     Save a designed voice with its preview audio.
-    
+
     Accepts the preview audio blob directly from the frontend,
     ensuring the saved voice matches exactly what was previewed.
     The designed voice can then be used with the cloning model for long-form generation.
     """
     from config import REFERENCES_DIR
-    
+
     name = name.strip()
     text = text.strip()
     instruct = instruct.strip()
-    
+
     # Validate inputs
     if not name:
         raise HTTPException(status_code=400, detail="Voice name is required")
     if len(name) > 100:
-        raise HTTPException(status_code=400, detail="Voice name must be 100 characters or less")
-    
+        raise HTTPException(
+            status_code=400, detail="Voice name must be 100 characters or less"
+        )
+
     if not text:
         raise HTTPException(status_code=400, detail="Preview text is required")
     if len(text) > 500:
-        raise HTTPException(status_code=400, detail="Preview text must be 500 characters or less")
-    
+        raise HTTPException(
+            status_code=400, detail="Preview text must be 500 characters or less"
+        )
+
     if not instruct:
         raise HTTPException(status_code=400, detail="Voice description is required")
     if len(instruct) > 500:
-        raise HTTPException(status_code=400, detail="Voice description must be 500 characters or less")
-    
+        raise HTTPException(
+            status_code=400, detail="Voice description must be 500 characters or less"
+        )
+
     if language not in SUPPORTED_LANGUAGES:
         raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
-    
+
     try:
         # Read the preview audio sent from frontend (no regeneration needed)
         audio_bytes = await audio.read()
-        
+
         if not audio_bytes:
             raise HTTPException(status_code=400, detail="Audio preview is required")
-        
+
         # Create voice ID and save audio as reference
         voice_id = str(uuid.uuid4())
         reference_path = REFERENCES_DIR / f"{voice_id}.wav"
-        
+
         with open(reference_path, "wb") as f:
             f.write(audio_bytes)
-        
+
         # Create voice record
         voice = Voice(
             id=voice_id,
@@ -476,10 +494,10 @@ async def api_design_voice(
             source="designed",
             description=instruct,
         )
-        
+
         session.add(voice)
         await session.commit()
-        
+
         return JSONResponse(
             status_code=201,
             content={
@@ -489,12 +507,15 @@ async def api_design_voice(
                 "language": language,
                 "source": "designed",
                 "preview_url": f"/api/voices/{voice_id}/preview",
-            }
+            },
         )
-        
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         import traceback
+
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Failed to design voice. Please try again.")
+        raise HTTPException(
+            status_code=500, detail="Failed to design voice. Please try again."
+        )

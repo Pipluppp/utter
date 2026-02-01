@@ -14,13 +14,19 @@ class Voice(Base):
 
     __tablename__ = "voices"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     reference_path: Mapped[str] = mapped_column(String(500), nullable=False)
     reference_transcript: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     language: Mapped[str] = mapped_column(String(20), nullable=False, default="Auto")
-    source: Mapped[str] = mapped_column(String(20), nullable=False, default="uploaded")  # "uploaded" | "designed"
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Voice design instruct
+    source: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="uploaded"
+    )  # "uploaded" | "designed"
+    description: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True
+    )  # Voice design instruct
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -32,7 +38,7 @@ class Voice(Base):
             "language": self.language,
             "source": self.source,
             "description": self.description,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 
@@ -41,8 +47,12 @@ class Generation(Base):
 
     __tablename__ = "generations"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    voice_id: Mapped[str] = mapped_column(String(36), ForeignKey("voices.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    voice_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("voices.id", ondelete="CASCADE"), nullable=False
+    )
     text: Mapped[str] = mapped_column(Text, nullable=False)
     audio_path: Mapped[str] = mapped_column(String(500), nullable=False)
     duration_seconds: Mapped[float] = mapped_column(Float, nullable=True)
@@ -62,5 +72,5 @@ class Generation(Base):
             "audio_path": self.audio_path,
             "duration_seconds": self.duration_seconds,
             "language": self.language,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }

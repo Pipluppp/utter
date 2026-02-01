@@ -26,10 +26,11 @@ logger = logging.getLogger("tts.qwen")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter(
-        "%(asctime)s | %(levelname)s | %(message)s",
-        datefmt="%H:%M:%S"
-    ))
+    handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s | %(levelname)s | %(message)s", datefmt="%H:%M:%S"
+        )
+    )
     logger.addHandler(handler)
 
 
@@ -60,7 +61,9 @@ async def generate_speech_qwen(
         endpoint = QWEN_MODAL_ENDPOINT_0_6B
 
     if not endpoint:
-        raise ValueError(f"QWEN_MODAL_ENDPOINT_{model.replace('.', '_')} not configured")
+        raise ValueError(
+            f"QWEN_MODAL_ENDPOINT_{model.replace('.', '_')} not configured"
+        )
 
     # Get reference audio
     reference_path = get_reference_path(voice_id)
@@ -81,7 +84,9 @@ async def generate_speech_qwen(
         "max_new_tokens": 2048,
     }
 
-    logger.info(f"Generating via Qwen3-TTS ({model}): {len(text)} chars, lang={language}")
+    logger.info(
+        f"Generating via Qwen3-TTS ({model}): {len(text)} chars, lang={language}"
+    )
     start = time.time()
 
     async with httpx.AsyncClient(timeout=300.0) as client:
