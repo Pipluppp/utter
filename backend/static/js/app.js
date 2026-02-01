@@ -198,10 +198,40 @@ function initClonePage() {
 
     const language = document.getElementById('language-select').value;
 
+    // Get progress elements
+    const progressSection = document.getElementById('clone-progress');
+    const progressElapsed = document.getElementById('clone-elapsed');
+
     // Show loading state
     submitBtn.disabled = true;
     submitBtn.classList.add('btn-loading');
-    submitBtn.textContent = 'Creating...';
+    
+    // Show progress section
+    if (progressSection) {
+      progressSection.classList.remove('hidden');
+    }
+
+    // Start task tracking for navigation persistence
+    if (window.taskManager) {
+      window.taskManager.startTask('clone', '/clone', `Cloning "${voiceName}"`);
+    }
+
+    // Start elapsed time counter
+    const startTime = Date.now();
+    const updateTimer = () => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+      
+      submitBtn.textContent = `Creating... ${timeStr}`;
+      if (progressElapsed) {
+        progressElapsed.textContent = timeStr;
+      }
+    };
+    
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
 
     try {
       const formData = new FormData();
@@ -221,6 +251,19 @@ function initClonePage() {
         throw new Error(data.detail || 'Failed to create voice');
       }
       
+      // Stop timer
+      clearInterval(timerInterval);
+      
+      // Hide progress section
+      if (progressSection) {
+        progressSection.classList.add('hidden');
+      }
+
+      // Complete task tracking
+      if (window.taskManager) {
+        window.taskManager.completeTask();
+      }
+
       // Show success message
       showSuccess(`Voice "${data.name}" created successfully! Redirecting...`);
       submitBtn.textContent = 'Success!';
@@ -231,6 +274,19 @@ function initClonePage() {
       }, 1500);
       
     } catch (error) {
+      // Stop timer
+      clearInterval(timerInterval);
+      
+      // Hide progress section
+      if (progressSection) {
+        progressSection.classList.add('hidden');
+      }
+
+      // Complete task tracking on error
+      if (window.taskManager) {
+        window.taskManager.completeTask();
+      }
+
       showError(error.message);
       submitBtn.disabled = false;
       submitBtn.classList.remove('btn-loading');
@@ -260,8 +316,10 @@ function initGeneratePage() {
   
   if (!voiceSelect) return;
   
-  // Load voices
-  loadVoices();
+  // Load voices, then check for active task
+  loadVoices().then(() => {
+    checkAndRestoreActiveTask();
+  });
   
   async function loadVoices() {
     try {
@@ -293,6 +351,83 @@ function initGeneratePage() {
       console.error('Failed to load voices:', error);
     }
   }
+
+  // Check if returning to page with active task and restore state
+  function checkAndRestoreActiveTask() {
+    if (!window.taskManager) return;
+    
+    const task = window.taskManager.getTask();
+    if (!task || task.type !== 'generate' || task.originPage !== '/generate') {
+      return;
+    }
+
+    // We have a generate task for this page - restore form state
+    const formState = task.formState;
+    
+    if (formState) {
+      // Restore form state
+      if (formState.voiceId && voiceSelect.querySelector(`option[value="${formState.voiceId}"]`)) {
+        voiceSelect.value = formState.voiceId;
+      }
+      if (formState.text) {
+        textInput.value = formState.text;
+        textInput.dispatchEvent(new Event('input'));
+      }
+      const languageSelect = document.getElementById('language-select');
+      if (formState.language && languageSelect) {
+        languageSelect.value = formState.language;
+      }
+    }
+
+    // If task is already completed, the taskComplete event will be dispatched by TaskManager
+    // after this function returns. The event listener will handle showing the result.
+    // We just need to show a brief loading state.
+    
+    if (task.status === 'completed' || task.status === 'failed') {
+      // Task already done - event will fire shortly, just show brief loading
+      generateBtn.disabled = true;
+      generateBtn.textContent = 'Loading result...';
+      return;
+    }
+
+    // Task still in progress - show loading state with timer
+    const progressSection = document.getElementById('generation-progress');
+    const progressElapsed = document.getElementById('progress-elapsed');
+    
+    if (progressSection) {
+      progressSection.classList.remove('hidden');
+    }
+    
+    generateBtn.disabled = true;
+    generateBtn.classList.add('btn-loading');
+    generateBtn.textContent = 'Generating...';
+
+    // Start timer from original start time
+    const startTime = task.startedAt;
+    window._generateTimerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+      
+      generateBtn.textContent = `Generating... ${timeStr}`;
+      if (progressElapsed) {
+        progressElapsed.textContent = timeStr;
+      }
+    }, 1000);
+    
+    // Trigger immediate timer update
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+    const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+    generateBtn.textContent = `Generating... ${timeStr}`;
+    if (progressElapsed) {
+      progressElapsed.textContent = timeStr;
+    }
+    
+    showInfo('Generation in progress. Result will appear when ready.');
+  }
   
   // Character counter
   if (textInput && charCounter) {
@@ -313,16 +448,23 @@ function initGeneratePage() {
     });
   }
   
-  // Form submission
+  // Form submission - starts async task and polls for completion
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideError();
+    
+    // If this is a restored task, clear it first
+    if (generateBtn.dataset.isRestored === 'true') {
+      if (window.taskManager) {
+        window.taskManager.clearTask();
+      }
+      delete generateBtn.dataset.isRestored;
+    }
     
     const voiceId = voiceSelect.value;
     const text = textInput.value.trim();
     const languageSelect = document.getElementById('language-select');
     const language = languageSelect ? languageSelect.value : 'Auto';
-    // Always use 0.6B model (fastest config)
     const model = '0.6B';
 
     if (!voiceId) {
@@ -335,31 +477,42 @@ function initGeneratePage() {
       return;
     }
 
-    // Show loading state with elapsed time counter
+    // Get progress elements
+    const progressSection = document.getElementById('generation-progress');
+    const progressElapsed = document.getElementById('progress-elapsed');
+
+    // Show loading state
     generateBtn.disabled = true;
     generateBtn.classList.add('btn-loading');
+    generateBtn.textContent = 'Generating...';
 
-    let elapsedSeconds = 0;
-    const updateButtonText = () => {
-      generateBtn.textContent = `Generating... ${elapsedSeconds}s`;
+    // Show progress section
+    if (progressSection) {
+      progressSection.classList.remove('hidden');
+    }
+
+    // Start elapsed time counter on the button
+    const startTime = Date.now();
+    const updateTimer = () => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+      
+      generateBtn.textContent = `Generating... ${timeStr}`;
+      if (progressElapsed) {
+        progressElapsed.textContent = timeStr;
+      }
     };
-    updateButtonText();
-
-    // Start elapsed time counter
-    const timerInterval = setInterval(() => {
-      elapsedSeconds++;
-      updateButtonText();
-    }, 1000);
-
-    // Show helpful message for long waits
-    showInfo('First generation may take 30-90 seconds while the model warms up.');
+    
+    updateTimer();
+    window._generateTimerInterval = setInterval(updateTimer, 1000);
 
     try {
+      // Step 1: Start the task (returns immediately with task_id)
       const response = await fetch('/api/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           voice_id: voiceId,
           text: text,
@@ -371,33 +524,87 @@ function initGeneratePage() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.detail || 'Failed to generate speech');
+        throw new Error(data.detail || 'Failed to start generation');
       }
       
-      // Show audio player
-      downloadBtn.href = data.audio_url;
+      // Step 2: Start task tracking with backend task ID
+      const textPreview = text.length > 30 ? text.slice(0, 30) + '...' : text;
+      if (window.taskManager && data.task_id) {
+        const formState = { voiceId, text, language };
+        window.taskManager.startTask(
+          data.task_id,
+          'generate',
+          '/generate',
+          `Generating "${textPreview}"`,
+          formState
+        );
+      }
+      
+      // Task manager will poll and dispatch 'taskComplete' event
+      // See handleTaskComplete listener below
+      
+    } catch (error) {
+      // Immediate error (validation, network, etc.)
+      clearInterval(window._generateTimerInterval);
+      window._generateTimerInterval = null;
+      
+      if (progressSection) {
+        progressSection.classList.add('hidden');
+      }
+      
+      generateBtn.disabled = false;
+      generateBtn.classList.remove('btn-loading');
+      generateBtn.textContent = 'Generate Speech';
+      
+      showError(error.message);
+    }
+  });
+  
+  // Listen for task completion from TaskManager
+  window.addEventListener('taskComplete', (e) => {
+    const { status, result, error, storedTask } = e.detail;
+    
+    // Only handle generate tasks for this page
+    if (storedTask.type !== 'generate' || storedTask.originPage !== '/generate') {
+      return;
+    }
+    
+    // Clear timer
+    if (window._generateTimerInterval) {
+      clearInterval(window._generateTimerInterval);
+      window._generateTimerInterval = null;
+    }
+    
+    // Hide progress section
+    const progressSection = document.getElementById('generation-progress');
+    if (progressSection) {
+      progressSection.classList.add('hidden');
+    }
+    
+    // Reset button
+    generateBtn.disabled = false;
+    generateBtn.classList.remove('btn-loading');
+    generateBtn.textContent = 'Generate Speech';
+    
+    if (status === 'completed' && result) {
+      // Success! Show audio player
+      downloadBtn.href = result.audio_url;
       resultSection.classList.remove('hidden');
       
       // Initialize player
       if (window.initWaveSurferForUtter) {
-        window.initWaveSurferForUtter(data.audio_url);
+        window.initWaveSurferForUtter(result.audio_url);
       } else {
-        audioElement.src = data.audio_url;
+        audioElement.src = result.audio_url;
       }
       
       timeDisplay.textContent = '0:00 / 0:00';
       showPlayIcon();
-      
-      // Hide the info message on success
       hideError();
       
-    } catch (error) {
-      showError(error.message);
-    } finally {
-      clearInterval(timerInterval);
-      generateBtn.disabled = false;
-      generateBtn.classList.remove('btn-loading');
-      generateBtn.textContent = 'Generate Speech';
+    } else if (status === 'failed') {
+      // Show error
+      showError(error || 'Generation failed. Please try again.');
     }
   });
   
