@@ -1,0 +1,6 @@
+{
+  "text": "Hello, this is a test of the Qwen3 text to speech voice cloning system.",
+  "language": "English",
+  "ref_audio_url": "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone.wav",
+  "ref_text": "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
+}

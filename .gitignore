@@ -41,6 +41,12 @@ uploads/
 *.swp
 *.swo
 
+# Claude AI
+.claude/
+
+# Windows device name artifacts
+nul
+
 # OS
 .DS_Store
 Thumbs.db
@@ -52,7 +58,3 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
-
-*.mp4
-*.wav
-*.mp3
