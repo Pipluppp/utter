@@ -35,7 +35,7 @@ async def generate_speech(
     text: str,
     ref_text: str | None = None,
     language: str = "Auto",
-    model: str = "1.7B",
+    model: str = "0.6B",
 ) -> str:
     """
     Generate speech using the configured TTS provider.
@@ -45,7 +45,7 @@ async def generate_speech(
         text: Text to convert to speech
         ref_text: Transcript of reference audio (required for Qwen)
         language: Language code (used by Qwen, ignored by Echo)
-        model: Model size ("1.7B" or "0.6B")
+        model: Model size ("0.6B" default, "1.7B" available but stopped)
 
     Returns:
         Path to the generated audio file

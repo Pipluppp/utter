@@ -322,8 +322,8 @@ function initGeneratePage() {
     const text = textInput.value.trim();
     const languageSelect = document.getElementById('language-select');
     const language = languageSelect ? languageSelect.value : 'Auto';
-    const modelSelect = document.getElementById('model-select');
-    const model = modelSelect ? modelSelect.value : '1.7B';
+    // Always use 0.6B model (fastest config)
+    const model = '0.6B';
 
     if (!voiceId) {
       showError('Please select a voice');
