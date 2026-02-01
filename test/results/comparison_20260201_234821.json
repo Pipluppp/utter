@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-02-01T23:48:21.781832",
+  "texts": [
+    "long"
+  ],
+  "variants": [
+    "SDPA",
+    "FA2"
+  ],
+  "results": [
+    {
+      "text_name": "long",
+      "text_chars": 2594,
+      "text_preview": "This tutorial covers the process of tokenization in large language models. Tokenization is one of the less enjoyable aspects of working with large language models, but it\u2019s necessary to understand in ",
+      "variants": {
+        "SDPA": {
+          "error": "modal-http: internal error: function execution timed out\n",
+          "time": 300.97985887527466
+        },
+        "FA2": {
+          "error": "modal-http: internal error: function was terminated by signal\n",
+          "time": 277.4112825393677
+        }
+      }
+    }
+  ]
+}

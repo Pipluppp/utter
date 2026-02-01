@@ -11,30 +11,38 @@
 | Component | Status | Notes |
 |-----------|--------|-------|
 | 1.7B Model Download | ✅ Complete | 4.23 GB in Modal volume |
-| 1.7B Service (SDPA) | ✅ **Deployed** | A10G GPU, production recommended |
+| 1.7B Service (SDPA) | 🛑 Stopped | Benchmarked, stopped to free endpoints |
 | 0.6B Model Download | ✅ Complete | 2.34 GB in Modal volume |
-| 0.6B Service (SDPA) | ✅ **Deployed** | T4 GPU, cost-optimized |
+| 0.6B Service (SDPA) | ✅ **Deployed** | A10G GPU — ⭐ **Fastest config** |
 | API Endpoints | ✅ Complete | `/clone`, `/clone-batch`, `/health`, `/languages` |
 | Utter Backend Integration | ✅ Complete | Backend + frontend wired to Qwen3-TTS |
 | FA2 Benchmark | ✅ Complete | SDPA faster — FA2 stopped |
-| 1.7B vs 0.6B Benchmark | ✅ Complete | See results below |
+| Full GPU/Model Benchmark | ✅ Complete | See results below |
 | Voice Design Model | Deferred | Not needed for MVP |
 
 ---
 
 ## Benchmark Results
 
-### 1.7B vs 0.6B Model Comparison (2026-02-02)
+### Complete Model & GPU Comparison (2026-02-02)
+
+All configurations use **SDPA** (Scaled Dot-Product Attention).
 
 | Model | GPU | Cold Start | Short (56 chars) | Medium (800 chars) |
 |-------|-----|------------|------------------|-------------------|
-| **Qwen3-TTS-12Hz-1.7B-Base** | NVIDIA A10G | 108s | **14.6s** | **113s** |
-| **Qwen3-TTS-12Hz-0.6B-Base** | Tesla T4 | **43s** | 17.4s | 176s |
+| **Qwen3-TTS-12Hz-0.6B-Base** | NVIDIA A10G | **29s** | **11.1s** | **87.6s** |
+| **Qwen3-TTS-12Hz-1.7B-Base** | NVIDIA A10G | 108s | 14.6s | 113s |
+| **Qwen3-TTS-12Hz-0.6B-Base** | Tesla T4 | 43s | 17.4s | 176s |
 
-**Key Findings:**
-- **0.6B cold start is 2.5x faster** — smaller model loads quicker
-- **1.7B generation is 20-56% faster** — A10G compensates for larger model
-- **Both produce high-quality audio**
+### Key Finding: 0.6B on A10G is Fastest
+
+| Comparison | Speed Improvement |
+|------------|-------------------|
+| 0.6B A10G vs 1.7B A10G (cold start) | **3.7x faster** |
+| 0.6B A10G vs 1.7B A10G (medium text) | **22% faster** |
+| 0.6B A10G vs 0.6B T4 (medium text) | **50% faster** |
+
+**Why smaller model wins:** The 0.6B model loads faster and generates tokens faster. The A10G has plenty of VRAM for both models, so model size is the bottleneck, not GPU memory.
 
 ### SDPA vs FA2 Comparison (2026-02-01)
 
@@ -51,25 +59,21 @@ See [FA2-BENCHMARK-REPORT.md](./optimization/FA2-BENCHMARK-REPORT.md) for detail
 
 ## Live Endpoints
 
-### Production: 1.7B on A10G (SDPA)
-
-Best for latency-sensitive workloads.
-
-| Endpoint | URL |
-|----------|-----|
-| Clone | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run` |
-| Health | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-health.modal.run` |
-| Languages | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-languages.modal.run` |
-
-### Cost-Optimized: 0.6B on T4 (SDPA)
-
-Best for bursty traffic (faster cold starts) or cost-sensitive workloads.
+### Current: 0.6B on A10G (SDPA) ⭐ Fastest
 
 | Endpoint | URL |
 |----------|-----|
 | Clone | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-clone.modal.run` |
 | Health | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-health.modal.run` |
 | Languages | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-languages.modal.run` |
+
+### Stopped: 1.7B on A10G (SDPA)
+
+Stopped to free Modal endpoints. Can be redeployed with:
+```bash
+cd modal_app/qwen3_tts
+uv run modal deploy app.py
+```
 
 See [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md) for detailed implementation notes and pain points.
 

@@ -1,13 +1,13 @@
 # Qwen3-TTS Modal Deployment - Implementation Status
 
 > **Last Updated**: 2026-02-02
-> **Status**: Fully Deployed — 1.7B (A10G) + 0.6B (T4), both using SDPA
+> **Status**: 0.6B on A10G deployed (fastest config) — 1.7B stopped to free endpoints
 
 ---
 
 ## Summary
 
-The Qwen3-TTS 1.7B and 0.6B voice cloning services have been deployed to Modal.com and fully integrated into the Utter web application. Both deployments use SDPA attention (standardized after benchmarking showed it outperforms Flash Attention 2).
+After comprehensive benchmarking, **0.6B on A10G** is the fastest configuration. The 1.7B deployment has been stopped to free Modal endpoints. Both models use SDPA attention.
 
 ---
 
@@ -19,30 +19,36 @@ The Qwen3-TTS 1.7B and 0.6B voice cloning services have been deployed to Modal.c
 | HuggingFace Secret | ✅ Complete | 2026-01-27 | `huggingface-secret` |
 | Modal Volume | ✅ Complete | 2026-01-27 | `qwen3-tts-models` |
 | 1.7B Model Download | ✅ Complete | 2026-01-27 | 4.23 GB |
-| 1.7B Service (SDPA) | ✅ **Deployed** | 2026-01-27 | A10G GPU, production |
+| 1.7B Service (SDPA) | 🛑 **Stopped** | 2026-02-02 | Stopped to free endpoints |
 | 0.6B Model Download | ✅ Complete | 2026-01-28 | 2.34 GB |
-| 0.6B Service (SDPA) | ✅ **Deployed** | 2026-02-02 | T4 GPU, cost-optimized |
+| 0.6B Service (SDPA) | ✅ **Deployed** | 2026-02-02 | A10G GPU — ⭐ Fastest |
 | Utter Integration | ✅ Complete | 2026-01-28 | Backend + frontend done |
 | FA2 Benchmark | ✅ Complete | 2026-02-01 | SDPA 18-22% faster |
 | FA2 Deployment | 🛑 **Stopped** | 2026-02-02 | Removed after benchmarking |
-| 1.7B vs 0.6B Benchmark | ✅ Complete | 2026-02-02 | See results below |
+| Full GPU/Model Benchmark | ✅ Complete | 2026-02-02 | See results below |
 | Voice Design Model | Skipped | | Not needed for MVP |
 
 ---
 
 ## Benchmark Results (2026-02-02)
 
-### 1.7B vs 0.6B Model Comparison
+### Complete Model & GPU Comparison
+
+All configurations use SDPA attention.
 
 | Model | GPU | Cold Start | Short (56 chars) | Medium (800 chars) |
 |-------|-----|------------|------------------|-------------------|
-| **Qwen3-TTS-12Hz-1.7B-Base** | NVIDIA A10G | 108s | **14.6s** | **113s** |
-| **Qwen3-TTS-12Hz-0.6B-Base** | Tesla T4 | **43s** | 17.4s | 176s |
+| **Qwen3-TTS-12Hz-0.6B-Base** | NVIDIA A10G | **29s** | **11.1s** | **87.6s** |
+| **Qwen3-TTS-12Hz-1.7B-Base** | NVIDIA A10G | 108s | 14.6s | 113s |
+| **Qwen3-TTS-12Hz-0.6B-Base** | Tesla T4 | 43s | 17.4s | 176s |
 
-**Key Findings:**
-- 0.6B has 2.5x faster cold start
-- 1.7B is 20-56% faster for generation
-- Choose based on workload pattern
+### Key Finding: 0.6B on A10G Wins
+
+| Comparison | Speed Improvement |
+|------------|-------------------|
+| 0.6B A10G vs 1.7B A10G (cold start) | **3.7x faster** |
+| 0.6B A10G vs 1.7B A10G (medium text) | **22% faster** |
+| 0.6B A10G vs 0.6B T4 (medium text) | **50% faster** |
 
 ### SDPA vs FA2 (2026-02-01)
 
@@ -55,41 +61,31 @@ The Qwen3-TTS 1.7B and 0.6B voice cloning services have been deployed to Modal.c
 
 ## Live Endpoints
 
-### Production: 1.7B on A10G (SDPA)
-
-| Endpoint | URL | Method |
-|----------|-----|--------|
-| Clone | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run` | POST |
-| Clone Batch | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone-batch.modal.run` | POST |
-| Health | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-health.modal.run` | GET |
-| Languages | `https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-languages.modal.run` | GET |
-
-**Modal Dashboard**: https://modal.com/apps/duncab013/main/deployed/qwen3-tts-voice-clone
-
-### Cost-Optimized: 0.6B on T4 (SDPA)
+### Current: 0.6B on A10G (SDPA) ⭐ Fastest
 
 | Endpoint | URL | Method |
 |----------|-----|--------|
 | Clone | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-clone.modal.run` | POST |
+| Clone Batch | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-clone-batch.modal.run` | POST |
 | Health | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-health.modal.run` | GET |
 | Languages | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-languages.modal.run` | GET |
 
 **Modal Dashboard**: https://modal.com/apps/duncab013/main/deployed/qwen3-tts-voice-clone-06b
 
-### Model Comparison
+### Stopped: 1.7B on A10G (SDPA)
 
-| Property | 0.6B (T4) | 1.7B (A10G) |
-|----------|-----------|-------------|
-| GPU | Tesla T4 (16 GB) | NVIDIA A10G (24 GB) |
-| GPU Cost | ~$0.59/hr | ~$1.10/hr |
-| Cold start | ~43s | ~108s |
-| Short text (56 chars) | ~17s | ~15s |
-| Medium text (800 chars) | ~176s | ~113s |
-| Warm (short text) | N/A | ~10.5s | ~11.1s |
-| Warm (long text) | N/A | ~35.6s | ~39.7s |
-| Attention | SDPA | SDPA | flash_attention_2 |
-| PyTorch | 2.10 | 2.10 | 2.9 (pinned) |
-| Model size on volume | 2.34 GB | 4.23 GB | 4.23 GB |
+Can be redeployed with: `cd modal_app/qwen3_tts && uv run modal deploy app.py`
+
+### Configuration Comparison
+
+| Property | 0.6B (A10G) ⭐ | 0.6B (T4) | 1.7B (A10G) |
+|----------|--------------|-----------|-------------|
+| GPU | NVIDIA A10G (24 GB) | Tesla T4 (16 GB) | NVIDIA A10G (24 GB) |
+| GPU Cost | ~$1.10/hr | ~$0.59/hr | ~$1.10/hr |
+| Cold start | **29s** | 43s | 108s |
+| Short text (56 chars) | **11.1s** | 17.4s | 14.6s |
+| Medium text (800 chars) | **87.6s** | 176s | 113s |
+| Model size | 2.34 GB | 2.34 GB | 4.23 GB |
 
 ### FA2 vs SDPA Benchmark Summary — Final Results
 

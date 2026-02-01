@@ -1,0 +1,148 @@
+{
+  "timestamp": "2026-02-02T00:21:15.832774",
+  "num_runs": 3,
+  "models": {
+    "1.7B": {
+      "name": "1.7B (A10G, SDPA)",
+      "health": {
+        "status": "healthy",
+        "model": "Qwen3-TTS-12Hz-1.7B-Base",
+        "gpu": "NVIDIA A10G",
+        "attention_implementation": "sdpa",
+        "supported_languages": [
+          "Auto",
+          "Chinese",
+          "English",
+          "Japanese",
+          "Korean",
+          "German",
+          "French",
+          "Russian",
+          "Portuguese",
+          "Spanish",
+          "Italian"
+        ]
+      },
+      "tests": {
+        "short": {
+          "text_length": 56,
+          "runs": [
+            {
+              "time": 12.963447570800781,
+              "audio_size": 188022
+            },
+            {
+              "time": 17.591303825378418,
+              "audio_size": 207204
+            },
+            {
+              "time": 13.127736806869507,
+              "audio_size": 199530
+            }
+          ]
+        },
+        "medium": {
+          "text_length": 800,
+          "runs": [
+            {
+              "time": 109.05788540840149,
+              "audio_size": 2397676
+            },
+            {
+              "time": 112.31776690483093,
+              "audio_size": 2451406
+            },
+            {
+              "time": 118.14396286010742,
+              "audio_size": 2359298
+            }
+          ]
+        }
+      },
+      "cold_start": {
+        "time": 107.95310068130493,
+        "audio_size": 107458
+      }
+    },
+    "0.6B": {
+      "name": "0.6B (T4, SDPA)",
+      "health": {
+        "status": "healthy",
+        "model": "Qwen3-TTS-12Hz-0.6B-Base",
+        "gpu": "Tesla T4",
+        "attention_implementation": "sdpa",
+        "supported_languages": [
+          "Auto",
+          "Chinese",
+          "English",
+          "Japanese",
+          "Korean",
+          "German",
+          "French",
+          "Russian",
+          "Portuguese",
+          "Spanish",
+          "Italian"
+        ]
+      },
+      "tests": {
+        "short": {
+          "text_length": 56,
+          "runs": [
+            {
+              "time": 17.62381386756897,
+              "audio_size": 176512
+            },
+            {
+              "time": 17.514857053756714,
+              "audio_size": 180348
+            },
+            {
+              "time": 17.11675500869751,
+              "audio_size": 184184
+            }
+          ]
+        },
+        "medium": {
+          "text_length": 800,
+          "runs": [
+            {
+              "time": 211.71929621696472,
+              "audio_size": 2520488
+            },
+            {
+              "time": 160.08556842803955,
+              "audio_size": 2554538
+            },
+            {
+              "time": 156.6737401485443,
+              "audio_size": 2535840
+            }
+          ]
+        }
+      },
+      "cold_start": {
+        "time": 43.019259214401245,
+        "audio_size": 122802
+      }
+    }
+  },
+  "summary": [
+    {
+      "text": "short",
+      "chars": 56,
+      "1.7B_time": 14.560829401016235,
+      "1.7B_size": 199530,
+      "0.6B_time": 17.418475310007732,
+      "0.6B_size": 184184
+    },
+    {
+      "text": "medium",
+      "chars": 800,
+      "1.7B_time": 113.17320505777995,
+      "1.7B_size": 2359298,
+      "0.6B_time": 176.15953493118286,
+      "0.6B_size": 2535840
+    }
+  ]
+}

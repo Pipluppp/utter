@@ -1,8 +1,8 @@
 """
 Qwen3-TTS Voice Cloning API on Modal.com (0.6B Model)
 
-Lighter/faster variant using the 0.6B parameter model on T4 GPU.
-Same API as the 1.7B app, lower cost and faster inference.
+0.6B parameter model on A10G GPU for benchmarking comparison.
+Same API as the 1.7B app.
 
 Sources:
 - Modal Chatterbox example: https://modal.com/docs/examples/chatterbox_tts
@@ -28,8 +28,8 @@ MODEL_NAME = MODEL_ID.split("/")[-1]  # "Qwen3-TTS-12Hz-0.6B-Base"
 MODELS_DIR = "/vol/models"
 HF_CACHE_DIR = f"{MODELS_DIR}/huggingface"
 
-# GPU selection - T4 for 0.6B model (~2-3 GB VRAM needed)
-GPU_TYPE = "T4"
+# GPU selection - A10G for 0.6B model (benchmarking on same GPU as 1.7B)
+GPU_TYPE = "A10G"
 
 # Container settings
 CONTAINER_IDLE_TIMEOUT = 300  # 5 minutes

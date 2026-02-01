@@ -1,0 +1,240 @@
+{
+  "timestamp": "2026-02-01T23:02:56.153506",
+  "test_type": "generation_focused",
+  "num_runs": 3,
+  "variants": {
+    "SDPA": {
+      "name": "1.7B SDPA",
+      "health": {
+        "status": "healthy",
+        "model": "Qwen3-TTS-12Hz-1.7B-Base",
+        "gpu": "NVIDIA A10G",
+        "attention_implementation": "sdpa",
+        "supported_languages": [
+          "Auto",
+          "Chinese",
+          "English",
+          "Japanese",
+          "Korean",
+          "German",
+          "French",
+          "Russian",
+          "Portuguese",
+          "Spanish",
+          "Italian"
+        ]
+      },
+      "warmup": {
+        "time": 53.63636326789856,
+        "audio_size": 188022
+      },
+      "generations": [
+        {
+          "length": "tiny",
+          "text": "Hello world.",
+          "text_chars": 12,
+          "runs": [
+            {
+              "time": 8.406766653060913,
+              "audio_size": 72932,
+              "chars_per_sec": 1.4274215635128622
+            },
+            {
+              "time": 8.514348030090332,
+              "audio_size": 72932,
+              "chars_per_sec": 1.4093856579025332
+            },
+            {
+              "time": 6.720853328704834,
+              "audio_size": 38406,
+              "chars_per_sec": 1.7854875583652265
+            }
+          ]
+        },
+        {
+          "length": "short",
+          "text": "The quick brown fox jumps over the lazy dog.",
+          "text_chars": 44,
+          "runs": [
+            {
+              "time": 12.501601457595825,
+              "audio_size": 153494,
+              "chars_per_sec": 3.51954908731042
+            },
+            {
+              "time": 12.644709348678589,
+              "audio_size": 145820,
+              "chars_per_sec": 3.479716202776787
+            },
+            {
+              "time": 13.313114643096924,
+              "audio_size": 161166,
+              "chars_per_sec": 3.3050117256231055
+            }
+          ]
+        },
+        {
+          "length": "medium",
+          "text": "In a world where technology continues to advance at an unprecedented pace, the importance of understanding artificial intelligence and its implications for society has never been greater.",
+          "text_chars": 187,
+          "runs": [
+            {
+              "time": 31.041370153427124,
+              "audio_size": 529338,
+              "chars_per_sec": 6.024218617790434
+            },
+            {
+              "time": 31.90395736694336,
+              "audio_size": 560026,
+              "chars_per_sec": 5.861341834469609
+            },
+            {
+              "time": 31.626112461090088,
+              "audio_size": 556190,
+              "chars_per_sec": 5.9128354846036775
+            }
+          ]
+        },
+        {
+          "length": "long",
+          "text": "The development of large language models has revolutionized the field of natural language processing, enabling machines to understand and generate human-like text with remarkable accuracy. These models, trained on vast amounts of data, can perform a wide variety of tasks including translation, summarization, question answering, and creative writing. However, with great power comes great responsibility, and researchers must carefully consider the ethical implications of deploying such powerful systems.",
+          "text_chars": 506,
+          "runs": [
+            {
+              "time": 99.32506513595581,
+              "audio_size": 1530416,
+              "chars_per_sec": 5.094383772186697
+            },
+            {
+              "time": 79.9374144077301,
+              "audio_size": 1534254,
+              "chars_per_sec": 6.329952047474141
+            },
+            {
+              "time": 80.16973948478699,
+              "audio_size": 1534254,
+              "chars_per_sec": 6.311608385555732
+            }
+          ]
+        }
+      ]
+    },
+    "FA2": {
+      "name": "1.7B Flash Attention 2",
+      "health": {
+        "status": "healthy",
+        "model": "Qwen3-TTS-12Hz-1.7B-Base",
+        "variant": "fa2",
+        "gpu": "NVIDIA A10G",
+        "attention_implementation": "flash_attention_2",
+        "supported_languages": [
+          "Auto",
+          "Chinese",
+          "English",
+          "Japanese",
+          "Korean",
+          "German",
+          "French",
+          "Russian",
+          "Portuguese",
+          "Spanish",
+          "Italian"
+        ]
+      },
+      "warmup": {
+        "time": 35.93145227432251,
+        "audio_size": 161166
+      },
+      "generations": [
+        {
+          "length": "tiny",
+          "text": "Hello world.",
+          "text_chars": 12,
+          "runs": [
+            {
+              "time": 6.957971811294556,
+              "audio_size": 53750,
+              "chars_per_sec": 1.724640502354573
+            },
+            {
+              "time": 6.3140599727630615,
+              "audio_size": 38406,
+              "chars_per_sec": 1.9005204340415451
+            },
+            {
+              "time": 7.002455949783325,
+              "audio_size": 53750,
+              "chars_per_sec": 1.713684468143111
+            }
+          ]
+        },
+        {
+          "length": "short",
+          "text": "The quick brown fox jumps over the lazy dog.",
+          "text_chars": 44,
+          "runs": [
+            {
+              "time": 10.298263788223267,
+              "audio_size": 138148,
+              "chars_per_sec": 4.272564861886414
+            },
+            {
+              "time": 11.893310785293579,
+              "audio_size": 165002,
+              "chars_per_sec": 3.699558583334698
+            },
+            {
+              "time": 52.205647706985474,
+              "audio_size": 145820,
+              "chars_per_sec": 0.8428206895728735
+            }
+          ]
+        },
+        {
+          "length": "medium",
+          "text": "In a world where technology continues to advance at an unprecedented pace, the importance of understanding artificial intelligence and its implications for society has never been greater.",
+          "text_chars": 187,
+          "runs": [
+            {
+              "time": 26.31138515472412,
+              "audio_size": 540846,
+              "chars_per_sec": 7.107189488517855
+            },
+            {
+              "time": 28.353110790252686,
+              "audio_size": 540846,
+              "chars_per_sec": 6.595396229477839
+            },
+            {
+              "time": 27.363585233688354,
+              "audio_size": 560026,
+              "chars_per_sec": 6.83389981257928
+            }
+          ]
+        },
+        {
+          "length": "long",
+          "text": "The development of large language models has revolutionized the field of natural language processing, enabling machines to understand and generate human-like text with remarkable accuracy. These models, trained on vast amounts of data, can perform a wide variety of tasks including translation, summarization, question answering, and creative writing. However, with great power comes great responsibility, and researchers must carefully consider the ethical implications of deploying such powerful systems.",
+          "text_chars": 506,
+          "runs": [
+            {
+              "time": 66.59326100349426,
+              "audio_size": 1503558,
+              "chars_per_sec": 7.598366446920948
+            },
+            {
+              "time": 181.83020663261414,
+              "audio_size": 1495884,
+              "chars_per_sec": 2.7828159543500233
+            },
+            {
+              "time": 67.04309701919556,
+              "audio_size": 1507394,
+              "chars_per_sec": 7.547384033513902
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

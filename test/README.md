@@ -17,27 +17,39 @@ Test scripts and benchmark data for Qwen3-TTS voice cloning on Modal.com.
 
 ## Benchmark Results
 
-### Model Comparison: 1.7B vs 0.6B (2026-02-02)
+### Complete Model & GPU Comparison (2026-02-02)
 
-Both models use **SDPA** (Scaled Dot-Product Attention) — the recommended attention implementation.
+All configurations use **SDPA** (Scaled Dot-Product Attention).
 
 | Model | GPU | Cold Start | Short (56 chars) | Medium (800 chars) |
 |-------|-----|------------|------------------|-------------------|
-| **Qwen3-TTS-12Hz-1.7B-Base** | NVIDIA A10G | 108s | **14.6s** | **113s** |
-| **Qwen3-TTS-12Hz-0.6B-Base** | Tesla T4 | **43s** | 17.4s | 176s |
+| **Qwen3-TTS-12Hz-1.7B-Base** | NVIDIA A10G | 108s | 14.6s | 113s |
+| **Qwen3-TTS-12Hz-0.6B-Base** | NVIDIA A10G | **29s** | **11.1s** | **87.6s** |
+| **Qwen3-TTS-12Hz-0.6B-Base** | Tesla T4 | 43s | 17.4s | 176s |
 
-**Key Findings:**
-- **0.6B has 2.5x faster cold start** — smaller model loads much quicker
-- **1.7B is 20-56% faster for generation** — more powerful GPU compensates for larger model
-- **Both produce high-quality audio** — 0.6B is suitable for cost-sensitive workloads
+### Key Findings
 
-**Recommendation:**
-- **Production (latency-sensitive):** Use 1.7B on A10G
-- **Cost-optimized / bursty traffic:** Use 0.6B on T4 (faster cold starts, lower GPU cost)
+**0.6B on A10G is the fastest configuration:**
+- **Cold start: 29s** — 3.7x faster than 1.7B, 1.5x faster than 0.6B on T4
+- **Short text: 11.1s** — 24% faster than 1.7B, 36% faster than 0.6B on T4
+- **Medium text: 87.6s** — 22% faster than 1.7B, 50% faster than 0.6B on T4
+
+**Why 0.6B beats 1.7B on the same GPU:**
+- Smaller model = faster loading (cold start)
+- Smaller model = faster inference per token
+- A10G has plenty of VRAM for both models — no bottleneck there
+
+### Recommendation
+
+| Use Case | Recommended Config | Why |
+|----------|-------------------|-----|
+| **Best performance** | 0.6B on A10G | Fastest generation, fast cold start |
+| **Best quality** | 1.7B on A10G | Larger model may have better voice quality |
+| **Cost-optimized** | 0.6B on T4 | T4 costs ~$0.59/hr vs A10G ~$1.10/hr |
 
 ### Attention Implementation: SDPA vs FA2 (2026-02-01)
 
-Tested on 1.7B model only (0.6B runs on T4 which doesn't support Flash Attention 2).
+Tested on 1.7B model only.
 
 | Metric | SDPA | FA2 | Winner |
 |--------|------|-----|--------|
@@ -68,15 +80,20 @@ test/
 │
 ├── outputs/                       # Generated audio samples
 │   │
-│   ├── 1.7B-A10G-SDPA/           # Qwen3-TTS-12Hz-1.7B-Base on NVIDIA A10G
-│   │   ├── warmup.wav             # Cold start test
-│   │   ├── short.wav              # Short text generation
-│   │   └── medium.wav             # Medium text generation
+│   ├── 0.6B-A10G-SDPA/           # Qwen3-TTS-12Hz-0.6B-Base on NVIDIA A10G ⭐ FASTEST
+│   │   ├── warmup.wav
+│   │   ├── short.wav
+│   │   └── medium.wav
 │   │
-│   ├── 0.6B-T4-SDPA/             # Qwen3-TTS-12Hz-0.6B-Base on Tesla T4
-│   │   ├── warmup.wav             # Cold start test
-│   │   ├── short.wav              # Short text generation
-│   │   └── medium.wav             # Medium text generation
+│   ├── 1.7B-A10G-SDPA/           # Qwen3-TTS-12Hz-1.7B-Base on NVIDIA A10G
+│   │   ├── warmup.wav
+│   │   ├── short.wav
+│   │   └── medium.wav
+│   │
+│   ├── 0.6B-T4-SDPA/             # Qwen3-TTS-12Hz-0.6B-Base on Tesla T4 (cost-optimized)
+│   │   ├── warmup.wav
+│   │   ├── short.wav
+│   │   └── medium.wav
 │   │
 │   ├── SDPA/                      # 1.7B SDPA vs FA2 comparison (legacy)
 │   │   └── *.wav
@@ -149,12 +166,13 @@ Note: FA2 deployment has been stopped. This script is kept for reference.
 
 Output folders follow the pattern: `{MODEL}-{GPU}-{ATTENTION}`
 
-| Folder | Model | GPU | Attention |
-|--------|-------|-----|-----------|
-| `1.7B-A10G-SDPA/` | Qwen3-TTS-12Hz-1.7B-Base | NVIDIA A10G | SDPA |
-| `0.6B-T4-SDPA/` | Qwen3-TTS-12Hz-0.6B-Base | Tesla T4 | SDPA |
-| `SDPA/` | 1.7B (legacy naming) | A10G | SDPA |
-| `FA2/` | 1.7B (legacy naming) | A10G | Flash Attention 2 |
+| Folder | Model | GPU | Attention | Status |
+|--------|-------|-----|-----------|--------|
+| `0.6B-A10G-SDPA/` | Qwen3-TTS-12Hz-0.6B-Base | NVIDIA A10G | SDPA | ⭐ **Fastest** |
+| `1.7B-A10G-SDPA/` | Qwen3-TTS-12Hz-1.7B-Base | NVIDIA A10G | SDPA | Best quality |
+| `0.6B-T4-SDPA/` | Qwen3-TTS-12Hz-0.6B-Base | Tesla T4 | SDPA | Cost-optimized |
+| `SDPA/` | 1.7B (legacy naming) | A10G | SDPA | Legacy |
+| `FA2/` | 1.7B (legacy naming) | A10G | Flash Attention 2 | Stopped |
 
 ### Audio Files
 

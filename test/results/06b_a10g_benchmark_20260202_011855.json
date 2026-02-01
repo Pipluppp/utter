@@ -1,0 +1,66 @@
+{
+  "timestamp": "2026-02-02T01:13:13.219008",
+  "model": "Qwen3-TTS-12Hz-0.6B-Base",
+  "gpu": "A10G",
+  "attention": "SDPA",
+  "num_runs": 3,
+  "tests": {
+    "short": {
+      "text_length": 56,
+      "runs": [
+        {
+          "time": 11.876444339752197,
+          "audio_size": 214876
+        },
+        {
+          "time": 10.950275659561157,
+          "audio_size": 180348
+        },
+        {
+          "time": 10.573143482208252,
+          "audio_size": 176512
+        }
+      ]
+    },
+    "medium": {
+      "text_length": 800,
+      "runs": [
+        {
+          "time": 88.25887966156006,
+          "audio_size": 2474432
+        },
+        {
+          "time": 87.97931146621704,
+          "audio_size": 2455244
+        },
+        {
+          "time": 86.44216561317444,
+          "audio_size": 2374648
+        }
+      ]
+    }
+  },
+  "health": {
+    "status": "healthy",
+    "model": "Qwen3-TTS-12Hz-0.6B-Base",
+    "gpu": "NVIDIA A10",
+    "attention_implementation": "sdpa",
+    "supported_languages": [
+      "Auto",
+      "Chinese",
+      "English",
+      "Japanese",
+      "Korean",
+      "German",
+      "French",
+      "Russian",
+      "Portuguese",
+      "Spanish",
+      "Italian"
+    ]
+  },
+  "cold_start": {
+    "time": 28.53668451309204,
+    "audio_size": 122802
+  }
+}

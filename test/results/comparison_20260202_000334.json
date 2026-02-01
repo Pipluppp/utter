@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-02-02T00:03:34.175091",
+  "texts": [
+    "long"
+  ],
+  "variants": [
+    "SDPA",
+    "FA2"
+  ],
+  "results": [
+    {
+      "text_name": "long",
+      "text_chars": 2594,
+      "text_preview": "This tutorial covers the process of tokenization in large language models. Tokenization is one of the less enjoyable aspects of working with large language models, but it\u2019s necessary to understand in ",
+      "variants": {
+        "SDPA": {
+          "time": 337.1698462963104,
+          "chars_per_sec": 7.693451915982872,
+          "audio_size": 7676064,
+          "output_file": "outputs\\SDPA\\long.wav"
+        },
+        "FA2": {
+          "time": 392.87097239494324,
+          "chars_per_sec": 6.602676660449013,
+          "audio_size": 7729808,
+          "output_file": "outputs\\FA2\\long.wav"
+        }
+      }
+    }
+  ]
+}
