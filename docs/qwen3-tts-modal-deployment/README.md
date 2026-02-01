@@ -10,15 +10,17 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| 1.7B Model Download | ✅ Complete | 4.23 GB in Modal volume |
-| 1.7B Service (SDPA) | 🛑 Stopped | Benchmarked, stopped to free endpoints |
-| 0.6B Model Download | ✅ Complete | 2.34 GB in Modal volume |
-| 0.6B Service (SDPA) | ✅ **Deployed** | A10G GPU — ⭐ **Fastest config** |
+| 1.7B-Base Model Download | ✅ Complete | 4.23 GB in Modal volume |
+| 1.7B-Base Service (SDPA) | 🛑 Stopped | Benchmarked, stopped to free endpoints |
+| 0.6B-Base Model Download | ✅ Complete | 2.34 GB in Modal volume |
+| 0.6B-Base Service (SDPA) | ✅ **Deployed** | A10G GPU — ⭐ **Fastest config** |
+| **1.7B-VoiceDesign** | 🔜 **Ready** | `app_voice_design.py` created |
+| VoiceDesign Model Download | ⏳ Pending | ~4.5 GB estimated |
+| VoiceDesign Service | ⏳ Pending | Deploy with `modal deploy app_voice_design.py` |
 | API Endpoints | ✅ Complete | `/clone`, `/clone-batch`, `/health`, `/languages` |
 | Utter Backend Integration | ✅ Complete | Backend + frontend wired to Qwen3-TTS |
 | FA2 Benchmark | ✅ Complete | SDPA faster — FA2 stopped |
 | Full GPU/Model Benchmark | ✅ Complete | See results below |
-| Voice Design Model | Deferred | Not needed for MVP |
 
 ---
 
@@ -59,7 +61,7 @@ See [FA2-BENCHMARK-REPORT.md](./optimization/FA2-BENCHMARK-REPORT.md) for detail
 
 ## Live Endpoints
 
-### Current: 0.6B on A10G (SDPA) ⭐ Fastest
+### Current: 0.6B-Base on A10G (SDPA) ⭐ Voice Cloning
 
 | Endpoint | URL |
 |----------|-----|
@@ -67,7 +69,41 @@ See [FA2-BENCHMARK-REPORT.md](./optimization/FA2-BENCHMARK-REPORT.md) for detail
 | Health | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-health.modal.run` |
 | Languages | `https://duncab013--qwen3-tts-voice-clone-06b-qwen3ttsservice-languages.modal.run` |
 
-### Stopped: 1.7B on A10G (SDPA)
+### Pending: 1.7B-VoiceDesign (Voice Creation from Text)
+
+Creates new voices from natural language descriptions. **No reference audio needed.**
+
+| Endpoint | URL (after deployment) |
+|----------|-----|
+| Design | `https://duncab013--qwen3-tts-voice-design-voicedesignservice-design.modal.run` |
+| Health | `https://duncab013--qwen3-tts-voice-design-voicedesignservice-health.modal.run` |
+| Languages | `https://duncab013--qwen3-tts-voice-design-voicedesignservice-languages.modal.run` |
+
+**Deploy VoiceDesign:**
+```bash
+cd modal_app/qwen3_tts
+uv run modal deploy app_voice_design.py
+```
+
+**Example Request:**
+```bash
+curl -X POST \
+  "https://duncab013--qwen3-tts-voice-design-voicedesignservice-design.modal.run" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Hello! This is a preview of my designed voice.",
+    "language": "English",
+    "instruct": "A warm, friendly female voice with a gentle tone"
+  }' \
+  --output designed_voice.wav
+```
+
+**Integration Flow:**
+```
+User describes voice → VoiceDesign generates preview → Save as reference → Use with 0.6B-Base for long-form
+```
+
+### Stopped: 1.7B-Base on A10G (SDPA)
 
 Stopped to free Modal endpoints. Can be redeployed with:
 ```bash
@@ -130,14 +166,15 @@ This guide provides complete instructions for deploying Qwen3-TTS voice cloning 
 
 ### Model Specifications
 
-| Property | 0.6B-Base | 1.7B-Base |
-|----------|-----------|-----------|
-| Parameters | 0.6 billion | 1.7 billion |
-| VRAM (bf16) | ~2-3 GB | ~5-6 GB |
-| Recommended GPU | T4 (16GB) | T4/A10G |
-| Frame Rate | 12 Hz | 12 Hz |
-| Codebooks | 16 × 2048 | 16 × 2048 |
-| Quality | Good | Best |
+| Property | 0.6B-Base | 1.7B-Base | 1.7B-VoiceDesign |
+|----------|-----------|-----------|------------------|
+| Parameters | 0.6 billion | 1.7 billion | 1.7 billion |
+| VRAM (bf16) | ~2-3 GB | ~5-6 GB | ~5-6 GB |
+| Recommended GPU | T4 (16GB) | T4/A10G | A10G |
+| Frame Rate | 12 Hz | 12 Hz | 12 Hz |
+| Codebooks | 16 × 2048 | 16 × 2048 | 16 × 2048 |
+| Quality | Good | Best | Best |
+| Use Case | Voice Cloning | Voice Cloning | **Voice Creation** |
 
 **Supported Languages**: Chinese, English, Japanese, Korean, German, French, Russian, Portuguese, Spanish, Italian
 
@@ -243,9 +280,10 @@ curl -X POST https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.moda
 ```
 modal_app/qwen3_tts/
 ├── __init__.py               # Package initialization
-├── app.py                    # 1.7B Modal app (A10G, SDPA)
-├── app_fa2.py                # 1.7B Modal app (A10G, Flash Attention 2)
-├── app_06b.py                # 0.6B Modal app (T4)
+├── app.py                    # 1.7B-Base Modal app (A10G, SDPA)
+├── app_fa2.py                # 1.7B-Base Modal app (A10G, Flash Attention 2)
+├── app_06b.py                # 0.6B-Base Modal app (A10G, SDPA) ⭐ Active
+├── app_voice_design.py       # 1.7B-VoiceDesign Modal app (A10G, SDPA) 🔜 NEW
 ├── config.py                 # Configuration constants
 ├── download_models.py        # Model download script
 └── test_client.py            # API testing utilities

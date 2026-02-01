@@ -1,13 +1,15 @@
 # Qwen3-TTS Modal Deployment - Implementation Status
 
 > **Last Updated**: 2026-02-02
-> **Status**: 0.6B on A10G deployed (fastest config) — 1.7B stopped to free endpoints
+> **Status**: 0.6B-Base on A10G deployed ⭐ | VoiceDesign ready to deploy
 
 ---
 
 ## Summary
 
-After comprehensive benchmarking, **0.6B on A10G** is the fastest configuration. The 1.7B deployment has been stopped to free Modal endpoints. Both models use SDPA attention.
+After comprehensive benchmarking, **0.6B on A10G** is the fastest configuration for voice cloning. The 1.7B-Base deployment has been stopped to free Modal endpoints. Both models use SDPA attention.
+
+**NEW**: VoiceDesign model (`app_voice_design.py`) is ready for deployment. Creates voices from text descriptions.
 
 ---
 
@@ -18,15 +20,20 @@ After comprehensive benchmarking, **0.6B on A10G** is the fastest configuration.
 | Modal CLI Setup | ✅ Complete | 2026-01-27 | Using `uv run modal` |
 | HuggingFace Secret | ✅ Complete | 2026-01-27 | `huggingface-secret` |
 | Modal Volume | ✅ Complete | 2026-01-27 | `qwen3-tts-models` |
-| 1.7B Model Download | ✅ Complete | 2026-01-27 | 4.23 GB |
-| 1.7B Service (SDPA) | 🛑 **Stopped** | 2026-02-02 | Stopped to free endpoints |
-| 0.6B Model Download | ✅ Complete | 2026-01-28 | 2.34 GB |
-| 0.6B Service (SDPA) | ✅ **Deployed** | 2026-02-02 | A10G GPU — ⭐ Fastest |
+| 1.7B-Base Model Download | ✅ Complete | 2026-01-27 | 4.23 GB |
+| 1.7B-Base Service (SDPA) | 🛑 **Stopped** | 2026-02-02 | Stopped to free endpoints |
+| 0.6B-Base Model Download | ✅ Complete | 2026-01-28 | 2.34 GB |
+| 0.6B-Base Service (SDPA) | ✅ **Deployed** | 2026-02-02 | A10G GPU — ⭐ Fastest |
 | Utter Integration | ✅ Complete | 2026-01-28 | Backend + frontend done |
 | FA2 Benchmark | ✅ Complete | 2026-02-01 | SDPA 18-22% faster |
 | FA2 Deployment | 🛑 **Stopped** | 2026-02-02 | Removed after benchmarking |
 | Full GPU/Model Benchmark | ✅ Complete | 2026-02-02 | See results below |
-| Voice Design Model | Skipped | | Not needed for MVP |
+| **1.7B-VoiceDesign** | ✅ **Deployed** | 2026-02-02 | `app_voice_design.py` |
+| VoiceDesign Model Download | ✅ Complete | 2026-02-02 | Auto-downloaded on first run |
+| VoiceDesign Service | ✅ **Deployed** | 2026-02-02 | A10G GPU, SDPA |
+| VoiceDesign Verification | ✅ Complete | 2026-02-02 | 8/8 tests passed |
+| VoiceDesign Backend | ✅ Complete | 2026-02-02 | API routes + tts_qwen.py |
+| VoiceDesign Frontend | ✅ Complete | 2026-02-02 | design.html template |
 
 ---
 
