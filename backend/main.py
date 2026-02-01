@@ -5,10 +5,23 @@ A voice cloning app inspired by ElevenLabs, powered by Echo-TTS.
 """
 
 import uuid
+import asyncio
 from pathlib import Path
+from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
+from typing import Dict, Any, Optional
+from enum import Enum
 
-from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException, Depends
+from fastapi import (
+    FastAPI,
+    Request,
+    UploadFile,
+    File,
+    Form,
+    HTTPException,
+    Depends,
+    BackgroundTasks,
+)
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -25,11 +38,97 @@ from services.text import validate_text
 from config import ALLOWED_AUDIO_EXTENSIONS, SUPPORTED_LANGUAGES, TTS_PROVIDER
 
 
+# ============================================================================
+# Task Management System
+# ============================================================================
+
+
+class TaskStatus(str, Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class TaskStore:
+    """In-memory store for tracking async tasks."""
+
+    def __init__(self):
+        self._tasks: Dict[str, Dict[str, Any]] = {}
+        self._cleanup_interval = 300  # 5 minutes
+        self._task_ttl = 600  # 10 minutes
+
+    def create_task(self, task_type: str, metadata: Optional[Dict] = None) -> str:
+        """Create a new task and return its ID."""
+        task_id = str(uuid.uuid4())
+        self._tasks[task_id] = {
+            "id": task_id,
+            "type": task_type,
+            "status": TaskStatus.PENDING,
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat(),
+            "metadata": metadata or {},
+            "result": None,
+            "error": None,
+        }
+        return task_id
+
+    def update_task(
+        self, task_id: str, status: TaskStatus, result: Any = None, error: str = None
+    ):
+        """Update task status and result."""
+        if task_id in self._tasks:
+            self._tasks[task_id]["status"] = status
+            self._tasks[task_id]["updated_at"] = datetime.utcnow().isoformat()
+            if result is not None:
+                self._tasks[task_id]["result"] = result
+            if error is not None:
+                self._tasks[task_id]["error"] = error
+
+    def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """Get task by ID."""
+        return self._tasks.get(task_id)
+
+    def delete_task(self, task_id: str):
+        """Delete a task."""
+        self._tasks.pop(task_id, None)
+
+    def cleanup_old_tasks(self):
+        """Remove tasks older than TTL."""
+        now = datetime.utcnow()
+        expired = []
+        for task_id, task in self._tasks.items():
+            created = datetime.fromisoformat(task["created_at"])
+            if (now - created).total_seconds() > self._task_ttl:
+                expired.append(task_id)
+        for task_id in expired:
+            del self._tasks[task_id]
+
+
+# Global task store
+task_store = TaskStore()
+
+
+async def periodic_cleanup():
+    """Background task to periodically clean up old tasks."""
+    while True:
+        await asyncio.sleep(300)  # Every 5 minutes
+        task_store.cleanup_old_tasks()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan - create tables on startup."""
+    """Application lifespan - create tables on startup, start cleanup task."""
     await create_tables()
+    # Start background cleanup task
+    cleanup_task = asyncio.create_task(periodic_cleanup())
     yield
+    # Cancel cleanup task on shutdown
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
 
 
 app = FastAPI(
@@ -229,9 +328,9 @@ async def api_preview_voice(
 @app.post("/api/generate")
 async def api_generate(request: Request, session: AsyncSession = Depends(get_session)):
     """
-    Generate speech from text using a cloned voice.
+    Start speech generation task.
 
-    This is a synchronous endpoint - it blocks until audio is ready.
+    Returns a task_id immediately. Poll /api/tasks/{task_id} for status.
     """
     data = await request.json()
 
@@ -268,7 +367,34 @@ async def api_generate(request: Request, session: AsyncSession = Depends(get_ses
             detail="This voice has no reference transcript. Re-clone with a transcript to use Qwen3-TTS.",
         )
 
-    # Generate speech
+    # Create task
+    task_id = task_store.create_task(
+        task_type="generate",
+        metadata={
+            "voice_id": voice_id,
+            "voice_name": voice.name,
+            "text_preview": text[:50] + "..." if len(text) > 50 else text,
+            "language": language,
+        },
+    )
+
+    # Start background generation
+    asyncio.create_task(
+        _process_generation(task_id, voice_id, text, ref_text, language, model)
+    )
+
+    # Return task_id immediately
+    return {"task_id": task_id, "status": TaskStatus.PENDING}
+
+
+async def _process_generation(
+    task_id: str, voice_id: str, text: str, ref_text: str, language: str, model: str
+):
+    """Background task to process speech generation."""
+    from database import async_session_factory
+
+    task_store.update_task(task_id, TaskStatus.PROCESSING)
+
     try:
         output_path = await generate_speech(
             voice_id=voice_id,
@@ -281,32 +407,72 @@ async def api_generate(request: Request, session: AsyncSession = Depends(get_ses
         # Get audio duration
         duration = get_audio_duration(output_path)
 
-        # Save generation record
-        generation = Generation(
-            voice_id=voice_id,
-            text=text,
-            audio_path=output_path,
-            duration_seconds=duration,
-            language=language,
-        )
-        session.add(generation)
-        await session.commit()
+        # Save generation record using a new session
+        async with async_session_factory() as session:
+            generation = Generation(
+                voice_id=voice_id,
+                text=text,
+                audio_path=output_path,
+                duration_seconds=duration,
+                language=language,
+            )
+            session.add(generation)
+            await session.commit()
+            generation_id = generation.id
 
         # Convert to URL path
         output_filename = Path(output_path).name
         audio_url = f"/uploads/generated/{output_filename}"
 
-        return {"audio_url": audio_url, "generation_id": generation.id}
+        task_store.update_task(
+            task_id,
+            TaskStatus.COMPLETED,
+            result={
+                "audio_url": audio_url,
+                "generation_id": generation_id,
+                "duration": duration,
+            },
+        )
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        task_store.update_task(task_id, TaskStatus.FAILED, error=str(e))
     except Exception as e:
         import traceback
 
         traceback.print_exc()
-        raise HTTPException(
-            status_code=500, detail="Failed to generate speech. Please try again."
+        task_store.update_task(
+            task_id,
+            TaskStatus.FAILED,
+            error="Failed to generate speech. Please try again.",
         )
+
+
+@app.get("/api/tasks/{task_id}")
+async def api_get_task(task_id: str):
+    """
+    Get task status by ID.
+
+    Poll this endpoint to check generation progress.
+    Returns status: pending, processing, completed, or failed.
+    """
+    task = task_store.get_task(task_id)
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    return task
+
+
+@app.delete("/api/tasks/{task_id}")
+async def api_delete_task(task_id: str):
+    """Delete/cancel a task."""
+    task = task_store.get_task(task_id)
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    task_store.delete_task(task_id)
+    return {"deleted": True}
 
 
 @app.get("/api/generations")
@@ -367,12 +533,11 @@ async def api_languages():
 @app.post("/api/voices/design/preview")
 async def api_design_preview(request: Request):
     """
-    Generate a preview of a designed voice without saving.
+    Start async preview generation task.
 
-    Returns audio bytes for preview playback.
+    Returns a task_id immediately. Poll /api/tasks/{task_id} for status.
+    When complete, fetch audio from /api/tasks/{task_id}/audio.
     """
-    from services.tts_qwen import design_voice
-
     data = await request.json()
 
     text = data.get("text", "").strip()
@@ -397,6 +562,33 @@ async def api_design_preview(request: Request):
     if language not in SUPPORTED_LANGUAGES:
         raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
 
+    # Create task
+    task_id = task_store.create_task(
+        task_type="design_preview",
+        metadata={
+            "instruct_preview": (
+                instruct[:50] + "..." if len(instruct) > 50 else instruct
+            ),
+            "language": language,
+        },
+    )
+
+    # Start background generation
+    asyncio.create_task(_process_design_preview(task_id, text, language, instruct))
+
+    # Return task_id immediately
+    return {"task_id": task_id, "status": TaskStatus.PENDING}
+
+
+async def _process_design_preview(
+    task_id: str, text: str, language: str, instruct: str
+):
+    """Background task to process voice design preview."""
+    from services.tts_qwen import design_voice
+    import base64
+
+    task_store.update_task(task_id, TaskStatus.PROCESSING)
+
     try:
         audio_bytes = await design_voice(
             text=text,
@@ -404,22 +596,29 @@ async def api_design_preview(request: Request):
             instruct=instruct,
         )
 
-        from fastapi.responses import Response
+        # Save audio to temp file and store path in result
+        # We'll use base64 encoding for the audio data
+        audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
 
-        return Response(
-            content=audio_bytes,
-            media_type="audio/wav",
-            headers={"Content-Disposition": "attachment; filename=preview.wav"},
+        task_store.update_task(
+            task_id,
+            TaskStatus.COMPLETED,
+            result={
+                "audio_base64": audio_base64,
+                "audio_size": len(audio_bytes),
+            },
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        task_store.update_task(task_id, TaskStatus.FAILED, error=str(e))
     except Exception as e:
         import traceback
 
         traceback.print_exc()
-        raise HTTPException(
-            status_code=500, detail="Failed to design voice. Please try again."
+        task_store.update_task(
+            task_id,
+            TaskStatus.FAILED,
+            error="Failed to design voice. Please try again.",
         )
 
 

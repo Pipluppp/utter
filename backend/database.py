@@ -9,8 +9,13 @@ from config import DATABASE_URL
 # Create async engine
 engine = create_async_engine(DATABASE_URL, echo=False)
 
-# Session factory
-async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+# Session factory (exported for background tasks)
+async_session_factory = async_sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
+
+# Alias for backward compatibility
+async_session = async_session_factory
 
 
 class Base(DeclarativeBase):
