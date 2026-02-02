@@ -37,25 +37,26 @@
 │                                                                 │
 │   /clone         → Upload voice reference                       │
 │   /generate      → Enter text, generate speech                  │
+│   /design        → Create voice from description                │
 └─────────────────────────────────┬───────────────────────────────┘
                                   │ HTTP
                                   ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      FASTAPI SERVER                             │
 │                                                                 │
-│   Serves HTML:     GET /clone, GET /generate                    │
+│   Serves HTML:     GET /clone, GET /generate, GET /design       │
 │   API endpoints:   POST /api/clone, POST /api/generate          │
 │   Static files:    /static/css/*, /static/js/*                  │
 │                                                                 │
-│   Generation is SYNCHRONOUS (blocks until audio ready)          │
+│   Generation is ASYNCHRONOUS (task polling pattern)             │
 └───────────────┬─────────────────┬─────────────────┬─────────────┘
                 │                 │                 │
                 ▼                 ▼                 ▼
          ┌───────────┐     ┌───────────┐     ┌───────────┐
-         │  Modal    │     │ PostgreSQL│     │  Storage  │
+         │  Modal    │     │  SQLite   │     │  Storage  │
          │  (GPU)    │     │           │     │           │
          │           │     │ voices    │     │ .wav/.mp3 │
-         │ Echo-TTS  │     │   - id    │     │ files     │
+         │ Qwen3-TTS │     │   - id    │     │ files     │
          │ inference │     │   - name  │     │           │
          │           │     │   - ref   │     │           │
          └───────────┘     └───────────┘     └───────────┘
@@ -126,7 +127,9 @@ utter/
 │   │       └── app.js
 │   └── requirements.txt
 ├── modal_app/
-│   ├── echo_tts.py             # Modal GPU deployment
+│   ├── qwen3_tts/          # Qwen3-TTS Modal deployment
+│   │   ├── app.py          # 0.6B model for cloning/generation
+│   │   └── app_voice_design.py  # VoiceDesign model
 │   └── requirements.txt
 ├── uploads/                     # Local dev storage (gitignored)
 │   ├── references/
@@ -297,47 +300,46 @@ pip install modal
 modal token new
 ```
 
-### 2. Deploy Echo-TTS
+### 2. Deploy Qwen3-TTS
 
 ```bash
-cd modal_app
-modal deploy echo_tts.py
+cd modal_app/qwen3_tts
+modal deploy app.py
 ```
 
 ### 3. Test
 
 ```bash
-modal run echo_tts.py::test_generate
+modal run app.py::test_generate
 ```
 
 ### Modal Code Structure
 
 ```python
-# modal_app/echo_tts.py
+# modal_app/qwen3_tts/app.py
 import modal
 
-app = modal.App("utter-tts")
+app = modal.App("utter-qwen3-tts")
 
 image = modal.Image.debian_slim(python_version="3.11").pip_install(
-    "torch==2.1.0",
-    "torchaudio==2.1.0", 
+    "torch",
+    "torchaudio", 
     "transformers",
-    "scipy",
-).run_commands(
-    "pip install git+https://github.com/jordandare/echo-tts.git"
+    "qwen-tts",
 )
 
 @app.cls(gpu="A10G", image=image, container_idle_timeout=300)
-class EchoTTS:
+class Qwen3TTS:
     @modal.enter()
     def load_model(self):
-        from inference import load_model_from_hf, load_fish_ae_from_hf, load_pca_state_from_hf
-        self.model = load_model_from_hf()
-        self.fish_ae = load_fish_ae_from_hf()
-        self.pca_state = load_pca_state_from_hf()
+        from qwen_tts import Qwen3TTSModel
+        self.model = Qwen3TTSModel.from_pretrained(
+            "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+            device_map="cuda"
+        )
     
     @modal.method()
-    def generate(self, text: str, reference_audio_bytes: bytes) -> bytes:
+    def generate(self, text: str, ref_audio_base64: str, ref_text: str) -> bytes:
         # Implementation here
         pass
 ```
