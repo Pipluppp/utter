@@ -1,9 +1,12 @@
 # Utter Deployment Architecture Plan
 
-> **Date**: 2026-02-02  
-> **Scope**: Production deployment architecture with Supabase, Modal.com, and CDN  
-> **Goal**: Scalable, cost-effective deployment supporting auth, billing, and multi-tenancy  
-> **Reference**: See [features.md](../features.md) for complete feature documentation
+> **Date**: 2026-02-02
+> **Status**: Planning (Modal long-running tasks implemented)
+> **Scope**: Production deployment architecture with Supabase, Modal.com, and CDN
+> **Goal**: Scalable, cost-effective deployment supporting auth, billing, and multi-tenancy
+> **References**:
+> - [features.md](../features.md) - Complete feature documentation
+> - [Long-Running Tasks](../../modal_app/qwen3_tts/LONG_RUNNING_TASKS.md) - Modal spawn/poll implementation
 
 ---
 

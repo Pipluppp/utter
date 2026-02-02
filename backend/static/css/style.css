@@ -863,6 +863,61 @@ body::before {
   animation: none;
 }
 
+/* Task modal cancelled state */
+.task-modal.task-cancelled::before {
+  background: #f59e0b;
+  animation: none;
+}
+
+.task-modal.task-cancelled .task-modal-title {
+  color: #f59e0b;
+}
+
+/* Task modal actions container */
+.task-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Cancel button */
+.task-modal-cancel {
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.task-modal-cancel:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Long task indicator */
+.task-modal-long-task {
+  margin-top: 6px;
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.long-task-indicator {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.long-task-estimate {
+  color: var(--text-muted);
+}
+
 /* ============================================================================
    Landing Page (Marketing Style)
    ============================================================================ */
@@ -1083,6 +1138,13 @@ body::before {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.progress-status {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-style: italic;
 }
 
 .progress-time {

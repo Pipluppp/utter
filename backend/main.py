@@ -48,17 +48,28 @@ class TaskStatus(str, Enum):
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 class TaskStore:
-    """In-memory store for tracking async tasks."""
+    """In-memory store for tracking async tasks.
+
+    Supports both short and long-running tasks with different TTLs.
+    Long-running tasks (using Modal jobs) have extended timeouts.
+    """
 
     def __init__(self):
         self._tasks: Dict[str, Dict[str, Any]] = {}
-        self._cleanup_interval = 300  # 5 minutes
-        self._task_ttl = 600  # 10 minutes
+        self._cleanup_interval = 600  # 10 minutes
+        self._task_ttl_short = 600  # 10 minutes for short tasks
+        self._task_ttl_long = 3600  # 1 hour for long tasks
 
-    def create_task(self, task_type: str, metadata: Optional[Dict] = None) -> str:
+    def create_task(
+        self,
+        task_type: str,
+        metadata: Optional[Dict] = None,
+        is_long_running: bool = False,
+    ) -> str:
         """Create a new task and return its ID."""
         task_id = str(uuid.uuid4())
         self._tasks[task_id] = {
@@ -70,6 +81,15 @@ class TaskStore:
             "metadata": metadata or {},
             "result": None,
             "error": None,
+            # Modal-specific tracking
+            "modal_status": None,
+            "modal_elapsed_seconds": 0,
+            "modal_poll_count": 0,
+            # Job-based tracking (for long-running tasks)
+            "is_long_running": is_long_running,
+            "modal_job_id": None,
+            "estimated_duration_minutes": None,
+            "cancellation_requested": False,
         }
         return task_id
 
@@ -85,6 +105,39 @@ class TaskStore:
             if error is not None:
                 self._tasks[task_id]["error"] = error
 
+    def update_modal_status(
+        self,
+        task_id: str,
+        modal_status: str,
+        elapsed_seconds: float = 0,
+        poll_count: int = 0,
+    ):
+        """Update Modal-specific status info for real-time tracking."""
+        if task_id in self._tasks:
+            self._tasks[task_id]["modal_status"] = modal_status
+            self._tasks[task_id]["modal_elapsed_seconds"] = round(elapsed_seconds, 1)
+            self._tasks[task_id]["modal_poll_count"] = poll_count
+            self._tasks[task_id]["updated_at"] = datetime.utcnow().isoformat()
+
+    def set_modal_job_id(self, task_id: str, job_id: str):
+        """Set the Modal job ID for job-based tasks."""
+        if task_id in self._tasks:
+            self._tasks[task_id]["modal_job_id"] = job_id
+            self._tasks[task_id]["updated_at"] = datetime.utcnow().isoformat()
+
+    def request_cancellation(self, task_id: str) -> bool:
+        """Request cancellation of a task. Returns True if task exists."""
+        if task_id in self._tasks:
+            self._tasks[task_id]["cancellation_requested"] = True
+            self._tasks[task_id]["updated_at"] = datetime.utcnow().isoformat()
+            return True
+        return False
+
+    def is_cancellation_requested(self, task_id: str) -> bool:
+        """Check if cancellation was requested for a task."""
+        task = self._tasks.get(task_id)
+        return task.get("cancellation_requested", False) if task else False
+
     def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         """Get task by ID."""
         return self._tasks.get(task_id)
@@ -94,19 +147,48 @@ class TaskStore:
         self._tasks.pop(task_id, None)
 
     def cleanup_old_tasks(self):
-        """Remove tasks older than TTL."""
+        """Remove tasks older than their respective TTL."""
         now = datetime.utcnow()
         expired = []
         for task_id, task in self._tasks.items():
             created = datetime.fromisoformat(task["created_at"])
-            if (now - created).total_seconds() > self._task_ttl:
+            age_seconds = (now - created).total_seconds()
+
+            # Use longer TTL for long-running tasks
+            ttl = (
+                self._task_ttl_long
+                if task.get("is_long_running")
+                else self._task_ttl_short
+            )
+
+            # Don't expire tasks that are still processing
+            if task["status"] in (TaskStatus.PENDING, TaskStatus.PROCESSING):
+                continue
+
+            if age_seconds > ttl:
                 expired.append(task_id)
+
         for task_id in expired:
             del self._tasks[task_id]
 
 
 # Global task store
 task_store = TaskStore()
+
+
+def _modal_status_callback(request_id: str, state):
+    """
+    Callback to receive Modal API status updates.
+
+    Updates the task store with real-time status from Modal requests.
+    This allows the frontend to see detailed progress (queued, processing, polling).
+    """
+    task_store.update_modal_status(
+        task_id=request_id,
+        modal_status=state.status.value,
+        elapsed_seconds=state.elapsed_seconds,
+        poll_count=state.poll_count,
+    )
 
 
 async def periodic_cleanup():
@@ -120,6 +202,12 @@ async def periodic_cleanup():
 async def lifespan(app: FastAPI):
     """Application lifespan - create tables on startup, start cleanup task."""
     await create_tables()
+
+    # Wire up Modal status tracking
+    from services.tts_qwen import set_status_callback
+
+    set_status_callback(_modal_status_callback)
+
     # Start background cleanup task
     cleanup_task = asyncio.create_task(periodic_cleanup())
     yield
@@ -367,42 +455,81 @@ async def api_generate(request: Request, session: AsyncSession = Depends(get_ses
             detail="This voice has no reference transcript. Re-clone with a transcript to use Qwen3-TTS.",
         )
 
+    # Determine if this is a long-running task
+    from services.tts import is_long_text
+    from services.tts_qwen import estimate_generation_time
+
+    is_long_running = is_long_text(text)
+    estimated_minutes = estimate_generation_time(text) if is_long_running else None
+
     # Create task
     task_id = task_store.create_task(
         task_type="generate",
         metadata={
             "voice_id": voice_id,
             "voice_name": voice.name,
+            "text_length": len(text),
             "text_preview": text[:50] + "..." if len(text) > 50 else text,
             "language": language,
+            "estimated_duration_minutes": estimated_minutes,
         },
+        is_long_running=is_long_running,
     )
 
     # Start background generation
     asyncio.create_task(
-        _process_generation(task_id, voice_id, text, ref_text, language, model)
+        _process_generation(
+            task_id, voice_id, text, ref_text, language, model, is_long_running
+        )
     )
 
-    # Return task_id immediately
-    return {"task_id": task_id, "status": TaskStatus.PENDING}
+    # Return task_id immediately with additional info for long tasks
+    return {
+        "task_id": task_id,
+        "status": TaskStatus.PENDING,
+        "is_long_running": is_long_running,
+        "estimated_duration_minutes": estimated_minutes,
+    }
 
 
 async def _process_generation(
-    task_id: str, voice_id: str, text: str, ref_text: str, language: str, model: str
+    task_id: str,
+    voice_id: str,
+    text: str,
+    ref_text: str,
+    language: str,
+    model: str,
+    is_long_running: bool = False,
 ):
     """Background task to process speech generation."""
     from database import async_session_factory
+    from services.tts import generate_speech, generate_speech_job
 
     task_store.update_task(task_id, TaskStatus.PROCESSING)
 
     try:
-        output_path = await generate_speech(
-            voice_id=voice_id,
-            text=text,
-            ref_text=ref_text,
-            language=language,
-            model=model,
-        )
+        if is_long_running:
+            # Use job-based generation for long texts
+            output_path, job_id = await generate_speech_job(
+                voice_id=voice_id,
+                text=text,
+                ref_text=ref_text,
+                language=language,
+                task_id=task_id,
+                cancellation_checker=task_store.is_cancellation_requested,
+            )
+            # Store job_id for potential cancellation
+            task_store.set_modal_job_id(task_id, job_id)
+        else:
+            # Use direct generation for shorter texts
+            output_path = await generate_speech(
+                voice_id=voice_id,
+                text=text,
+                ref_text=ref_text,
+                language=language,
+                model=model,
+                request_id=task_id,
+            )
 
         # Get audio duration
         duration = get_audio_duration(output_path)
@@ -435,7 +562,11 @@ async def _process_generation(
         )
 
     except ValueError as e:
-        task_store.update_task(task_id, TaskStatus.FAILED, error=str(e))
+        error_msg = str(e)
+        if "cancelled" in error_msg.lower():
+            task_store.update_task(task_id, TaskStatus.CANCELLED, error=error_msg)
+        else:
+            task_store.update_task(task_id, TaskStatus.FAILED, error=error_msg)
     except Exception as e:
         import traceback
 
@@ -445,6 +576,46 @@ async def _process_generation(
             TaskStatus.FAILED,
             error="Failed to generate speech. Please try again.",
         )
+
+
+@app.post("/api/tasks/{task_id}/cancel")
+async def api_cancel_task(task_id: str):
+    """
+    Cancel a running task.
+
+    For job-based tasks, this will attempt to cancel the Modal job.
+    For direct tasks, it will mark cancellation requested (best effort).
+    """
+    task = task_store.get_task(task_id)
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    if task["status"] not in (TaskStatus.PENDING, TaskStatus.PROCESSING):
+        raise HTTPException(
+            status_code=400, detail=f"Cannot cancel task with status: {task['status']}"
+        )
+
+    # Request cancellation
+    task_store.request_cancellation(task_id)
+
+    # If it's a job-based task with a job_id, try to cancel on Modal
+    job_id = task.get("modal_job_id")
+    if job_id:
+        try:
+            from services.tts_qwen import cancel_job
+
+            await cancel_job(job_id)
+        except Exception as e:
+            # Log but don't fail - cancellation is best effort
+            import logging
+
+            logging.warning(f"Failed to cancel Modal job {job_id}: {e}")
+
+    # Mark as cancelled
+    task_store.update_task(task_id, TaskStatus.CANCELLED, error="Cancelled by user")
+
+    return {"cancelled": True, "task_id": task_id}
 
 
 @app.get("/api/tasks/{task_id}")

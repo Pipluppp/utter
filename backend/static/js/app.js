@@ -534,6 +534,7 @@ function initGeneratePage() {
     // Get progress elements
     const progressSection = document.getElementById('generation-progress');
     const progressElapsed = document.getElementById('progress-elapsed');
+    const progressStatus = document.getElementById('progress-status');
 
     // Show loading state
     generateBtn.disabled = true;
@@ -659,7 +660,63 @@ function initGeneratePage() {
     } else if (status === 'failed') {
       // Show error
       showError(error || 'Generation failed. Please try again.');
+    } else if (status === 'cancelled') {
+      // User cancelled - just show a message
+      showError('Generation was cancelled.');
     }
+  });
+  
+  // Listen for task progress updates (detailed Modal status)
+  window.addEventListener('taskProgress', (e) => {
+    const { modalStatus, elapsedSeconds, pollCount } = e.detail;
+    
+    const progressStatus = document.getElementById('progress-status');
+    if (!progressStatus) return;
+    
+    // Map Modal status to user-friendly messages
+    const statusMessages = {
+      sending: 'Connecting to Modal...',
+      queued: 'Waiting for GPU container...',
+      processing: 'Generating audio...',
+      polling: `Still processing (check #${pollCount})...`,
+    };
+    
+    let message = statusMessages[modalStatus] || modalStatus;
+    if (elapsedSeconds > 30 && modalStatus === 'polling') {
+      message = `Long generation in progress (${Math.round(elapsedSeconds)}s)...`;
+    }
+    
+    progressStatus.textContent = message;
+  });
+  
+  // Listen for task cancellation from modal cancel button
+  window.addEventListener('taskCancelled', (e) => {
+    const { storedTask } = e.detail;
+    
+    // Only handle generate tasks for this page
+    if (storedTask.type !== 'generate' || storedTask.originPage !== '/generate') {
+      return;
+    }
+    
+    // Clear timer
+    if (window._generateTimerInterval) {
+      clearInterval(window._generateTimerInterval);
+      window._generateTimerInterval = null;
+    }
+    
+    // Hide progress section
+    const progressSection = document.getElementById('generation-progress');
+    if (progressSection) {
+      progressSection.classList.add('hidden');
+    }
+    
+    // Reset button
+    generateBtn.disabled = false;
+    generateBtn.classList.remove('btn-loading');
+    generateBtn.textContent = 'Generate Speech';
+    
+    // Show cancelled message
+    showError('Generation was cancelled.');
   });
   
   // Audio player controls

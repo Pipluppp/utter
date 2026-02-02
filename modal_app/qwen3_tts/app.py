@@ -36,16 +36,30 @@ GPU_TYPE = "A10G" if "1.7B" in MODEL_ID else "T4"
 CONTAINER_IDLE_TIMEOUT = 300  # 5 minutes
 MAX_CONCURRENT_INPUTS = 10
 
+# Long-running task settings
+# For 10-minute audio at 2.5x real-time, we need ~25 minutes max
+MAX_GENERATION_TIMEOUT = 1800  # 30 minutes
+
 # Supported languages
 # Source: Qwen3-TTS model card
 SUPPORTED_LANGUAGES = [
-    "Auto", "Chinese", "English", "Japanese", "Korean",
-    "German", "French", "Russian", "Portuguese", "Spanish", "Italian"
+    "Auto",
+    "Chinese",
+    "English",
+    "Japanese",
+    "Korean",
+    "German",
+    "French",
+    "Russian",
+    "Portuguese",
+    "Spanish",
+    "Italian",
 ]
 
 # =============================================================================
 # Image Definition
 # =============================================================================
+
 
 def create_image() -> modal.Image:
     """
@@ -68,20 +82,22 @@ def create_image() -> modal.Image:
     # Install system dependencies
     # Source: Qwen3-TTS pyproject.toml lists sox, soundfile
     image = image.apt_install(
-        "sox",              # Required by sox Python package
-        "libsox-fmt-all",   # SOX format support (mp3, flac, etc.)
-        "libsndfile1",      # Required by soundfile package
-        "ffmpeg",           # Audio format conversion
+        "sox",  # Required by sox Python package
+        "libsox-fmt-all",  # SOX format support (mp3, flac, etc.)
+        "libsndfile1",  # Required by soundfile package
+        "ffmpeg",  # Audio format conversion
     )
 
     # Set environment variables for HuggingFace cache
     # Source: Modal volumes guide - HF_HOME respected by huggingface_hub
-    image = image.env({
-        "HF_HOME": HF_CACHE_DIR,
-        "TRANSFORMERS_CACHE": HF_CACHE_DIR,
-        "HF_HUB_CACHE": HF_CACHE_DIR,
-        "TOKENIZERS_PARALLELISM": "false",  # Avoid tokenizer warnings
-    })
+    image = image.env(
+        {
+            "HF_HOME": HF_CACHE_DIR,
+            "TRANSFORMERS_CACHE": HF_CACHE_DIR,
+            "HF_HUB_CACHE": HF_CACHE_DIR,
+            "TOKENIZERS_PARALLELISM": "false",  # Avoid tokenizer warnings
+        }
+    )
 
     # Install Python packages
     # Source: Qwen3-TTS pyproject.toml
@@ -89,14 +105,11 @@ def create_image() -> modal.Image:
     image = image.pip_install(
         # Core TTS package
         "qwen-tts",
-
         # Web framework (from Modal Chatterbox example)
         "fastapi[standard]",
-
         # Audio processing
         "soundfile",
         "torchaudio",
-
         # Ensure numpy compatibility
         "numpy<2.0",
     )
@@ -112,21 +125,19 @@ image = create_image()
 
 app = modal.App("qwen3-tts-voice-clone", image=image)
 
-models_volume = modal.Volume.from_name(
-    "qwen3-tts-models",
-    create_if_missing=True
-)
+models_volume = modal.Volume.from_name("qwen3-tts-models", create_if_missing=True)
 
 # =============================================================================
 # Service Class
 # =============================================================================
+
 
 @app.cls(
     gpu=GPU_TYPE,
     scaledown_window=CONTAINER_IDLE_TIMEOUT,
     volumes={MODELS_DIR: models_volume},
     secrets=[modal.Secret.from_name("huggingface-secret")],
-    timeout=900,  # 15 minute request timeout (long texts need more time)
+    timeout=MAX_GENERATION_TIMEOUT,  # 30 minute timeout for very long generations
 )
 @modal.concurrent(max_inputs=MAX_CONCURRENT_INPUTS)
 class Qwen3TTSService:
@@ -212,6 +223,7 @@ class Qwen3TTSService:
         if importlib.util.find_spec("flash_attn") is not None:
             try:
                 import flash_attn
+
                 print(f"Flash Attention found: v{flash_attn.__version__}")
                 return "flash_attention_2"
             except ImportError:
@@ -219,6 +231,7 @@ class Qwen3TTSService:
 
         # Priority 2: SDPA (PyTorch >= 2.0)
         import torch
+
         if hasattr(torch.nn.functional, "scaled_dot_product_attention"):
             print("Using PyTorch native SDPA")
             return "sdpa"
@@ -418,8 +431,14 @@ class Qwen3TTSService:
             "model_id": MODEL_ID,
             "model_name": MODEL_NAME,
             "attention_implementation": self.attn_impl,
-            "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "none",
-            "gpu_memory_gb": torch.cuda.get_device_properties(0).total_memory / 1e9 if torch.cuda.is_available() else 0,
+            "gpu": (
+                torch.cuda.get_device_name(0) if torch.cuda.is_available() else "none"
+            ),
+            "gpu_memory_gb": (
+                torch.cuda.get_device_properties(0).total_memory / 1e9
+                if torch.cuda.is_available()
+                else 0
+            ),
             "supported_languages": SUPPORTED_LANGUAGES,
         }
 
@@ -463,7 +482,7 @@ class Qwen3TTSService:
             raise HTTPException(
                 status_code=400,
                 detail=f"Unsupported language: {language}. "
-                       f"Supported: {', '.join(SUPPORTED_LANGUAGES)}"
+                f"Supported: {', '.join(SUPPORTED_LANGUAGES)}",
             )
 
         # Determine reference audio source
@@ -474,7 +493,7 @@ class Qwen3TTSService:
         else:
             raise HTTPException(
                 status_code=400,
-                detail="Either 'ref_audio_url' or 'ref_audio_base64' is required"
+                detail="Either 'ref_audio_url' or 'ref_audio_base64' is required",
             )
 
         # Generate audio using the @modal.method()
@@ -489,10 +508,7 @@ class Qwen3TTSService:
                 max_new_tokens=max_new_tokens,
             )
         except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Generation failed: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
         # Return audio as streaming response
         # Source: Modal Chatterbox example
@@ -502,7 +518,7 @@ class Qwen3TTSService:
             headers={
                 "Content-Disposition": "attachment; filename=output.wav",
                 "Content-Length": str(len(audio_bytes)),
-            }
+            },
         )
 
     @modal.fastapi_endpoint(docs=True, method="POST")
@@ -535,15 +551,13 @@ class Qwen3TTSService:
             raise HTTPException(status_code=400, detail="'ref_text' is required")
         if len(texts) != len(languages):
             raise HTTPException(
-                status_code=400,
-                detail="Length of 'texts' must match 'languages'"
+                status_code=400, detail="Length of 'texts' must match 'languages'"
             )
 
         for lang in languages:
             if lang not in SUPPORTED_LANGUAGES:
                 raise HTTPException(
-                    status_code=400,
-                    detail=f"Unsupported language: {lang}"
+                    status_code=400, detail=f"Unsupported language: {lang}"
                 )
 
         # Determine reference audio source
@@ -554,7 +568,7 @@ class Qwen3TTSService:
         else:
             raise HTTPException(
                 status_code=400,
-                detail="Either 'ref_audio_url' or 'ref_audio_base64' is required"
+                detail="Either 'ref_audio_url' or 'ref_audio_base64' is required",
             )
 
         # Generate batch
@@ -568,8 +582,7 @@ class Qwen3TTSService:
             )
         except Exception as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"Batch generation failed: {str(e)}"
+                status_code=500, detail=f"Batch generation failed: {str(e)}"
             )
 
         # Return as base64-encoded JSON
@@ -584,7 +597,7 @@ class Qwen3TTSService:
                     "size_bytes": len(audio_bytes),
                 }
                 for i, audio_bytes in enumerate(audio_bytes_list)
-            ]
+            ],
         }
 
     @modal.fastapi_endpoint(docs=True, method="GET")
@@ -623,8 +636,371 @@ class Qwen3TTSService:
 
 
 # =============================================================================
+# Standalone Generation Function (for spawn/async pattern)
+# =============================================================================
+
+
+@app.function(
+    gpu=GPU_TYPE,
+    volumes={MODELS_DIR: models_volume},
+    secrets=[modal.Secret.from_name("huggingface-secret")],
+    timeout=MAX_GENERATION_TIMEOUT,
+    # Keep container warm for 5 minutes to reuse for subsequent jobs
+    # This avoids model reload overhead when jobs arrive close together
+    # Source: https://modal.com/docs/guide/cold-start
+    scaledown_window=CONTAINER_IDLE_TIMEOUT,
+)
+def generate_voice_clone_job(
+    text: str,
+    language: str,
+    ref_audio_base64: str,
+    ref_text: str,
+    max_new_tokens: int = 2048,
+) -> bytes:
+    """
+    Standalone function for async job-based generation.
+
+    This function is designed for the spawn/poll pattern for long-running tasks.
+    It can be called via Function.spawn() which returns immediately with a job_id,
+    allowing proper job tracking, polling, and cancellation.
+
+    The function is deployed as part of the 'qwen3-tts-voice-clone' app and
+    should be referenced from other apps using:
+        modal.Function.from_name("qwen3-tts-voice-clone", "generate_voice_clone_job")
+
+    Source: https://modal.com/docs/guide/job-queue
+
+    Returns:
+        WAV audio bytes
+    """
+    import base64
+    import tempfile
+    import soundfile as sf
+    import torch
+    from qwen_tts import Qwen3TTSModel
+
+    print(f"[JOB] Starting voice clone generation")
+    print(f"[JOB] Text length: {len(text)} chars")
+    print(f"[JOB] Language: {language}")
+
+    # Load model (will be cached in container for subsequent calls)
+    local_model_path = f"{MODELS_DIR}/{MODEL_NAME}"
+    if os.path.exists(local_model_path) and os.listdir(local_model_path):
+        load_path = local_model_path
+    else:
+        load_path = MODEL_ID
+
+    # Determine attention implementation
+    import importlib.util
+
+    if importlib.util.find_spec("flash_attn") is not None:
+        attn_impl = "flash_attention_2"
+    elif hasattr(torch.nn.functional, "scaled_dot_product_attention"):
+        attn_impl = "sdpa"
+    else:
+        attn_impl = "eager"
+
+    print(f"[JOB] Loading model from: {load_path}")
+    model = Qwen3TTSModel.from_pretrained(
+        load_path,
+        device_map="cuda:0",
+        dtype=torch.bfloat16,
+        attn_implementation=attn_impl,
+    )
+    print(f"[JOB] Model loaded")
+
+    # Decode reference audio from base64 to temp file
+    audio_data = base64.b64decode(ref_audio_base64)
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        tmp.write(audio_data)
+        ref_audio_path = tmp.name
+
+    try:
+        # Generate audio
+        print(f"[JOB] Generating audio...")
+        wavs, sr = model.generate_voice_clone(
+            text=text,
+            language=language,
+            ref_audio=ref_audio_path,
+            ref_text=ref_text,
+            max_new_tokens=max_new_tokens,
+        )
+
+        print(f"[JOB] Generated: {len(wavs[0])} samples at {sr} Hz")
+
+        # Convert to WAV bytes
+        buffer = io.BytesIO()
+        sf.write(buffer, wavs[0], sr, format="WAV", subtype="PCM_16")
+        buffer.seek(0)
+
+        audio_bytes = buffer.read()
+        print(f"[JOB] Output size: {len(audio_bytes)} bytes")
+
+        return audio_bytes
+
+    finally:
+        # Cleanup temp file
+        try:
+            os.unlink(ref_audio_path)
+        except Exception:
+            pass
+
+
+# =============================================================================
+# Job Management Web Endpoints
+# =============================================================================
+#
+# These endpoints provide a job queue interface for long-running TTS generation.
+# They are deployed as a separate lightweight app that doesn't need GPU resources.
+#
+# Architecture (based on Modal's recommended pattern):
+#   1. Client POSTs to /submit-job → spawns GPU function, returns job_id
+#   2. Client polls /job-status?job_id=xxx → checks if complete
+#   3. Client GETs /job-result?job_id=xxx → retrieves audio
+#   4. Client POSTs to /cancel-job → cancels running job
+#
+# Source: https://modal.com/docs/guide/job-queue
+# Source: https://modal.com/docs/guide/webhook-timeouts
+# =============================================================================
+
+# App name constants for cross-app function lookup
+VOICE_CLONE_APP_NAME = "qwen3-tts-voice-clone"
+GENERATION_FUNCTION_NAME = "generate_voice_clone_job"
+
+job_management_app = modal.App("qwen3-tts-job-management", image=image)
+
+
+@job_management_app.function()
+@modal.fastapi_endpoint(docs=True, method="POST")
+def submit_job(request: dict) -> dict:
+    """
+    Submit a voice generation job for async processing.
+
+    POST /submit-job
+
+    This endpoint uses Modal's spawn/poll pattern for long-running tasks:
+    1. Looks up the generation function from the deployed voice-clone app
+    2. Calls spawn() which returns immediately with a FunctionCall
+    3. Returns the job_id (FunctionCall.object_id) to the client
+
+    The job runs asynchronously on GPU infrastructure. Results are
+    accessible for up to 7 days after completion.
+
+    Source: https://modal.com/docs/guide/job-queue
+
+    Request body:
+    {
+        "text": "Text to synthesize",
+        "language": "English",
+        "ref_audio_base64": "base64-encoded reference audio",
+        "ref_text": "Transcript of reference audio",
+        "max_new_tokens": 2048
+    }
+
+    Returns:
+    {
+        "job_id": "fc-xxx",
+        "status": "submitted",
+        "text_length": 12345
+    }
+    """
+    from fastapi import HTTPException
+
+    text = request.get("text", "")
+    language = request.get("language", "Auto")
+    ref_audio_base64 = request.get("ref_audio_base64")
+    ref_text = request.get("ref_text", "")
+    max_new_tokens = request.get("max_new_tokens", 2048)
+
+    if not text:
+        raise HTTPException(status_code=400, detail="'text' is required")
+    if not ref_audio_base64:
+        raise HTTPException(status_code=400, detail="'ref_audio_base64' is required")
+    if not ref_text:
+        raise HTTPException(status_code=400, detail="'ref_text' is required")
+
+    # Look up the generation function from the voice-clone app
+    # Using from_name() ensures explicit cross-app reference
+    # Source: https://modal.com/docs/guide/trigger-deployed-functions
+    generate_fn = modal.Function.from_name(
+        VOICE_CLONE_APP_NAME,
+        GENERATION_FUNCTION_NAME,
+    )
+
+    # Spawn the generation job (returns immediately)
+    # Source: https://modal.com/docs/reference/modal.Function
+    function_call = generate_fn.spawn(
+        text=text,
+        language=language,
+        ref_audio_base64=ref_audio_base64,
+        ref_text=ref_text,
+        max_new_tokens=max_new_tokens,
+    )
+
+    return {
+        "job_id": function_call.object_id,
+        "status": "submitted",
+        "text_length": len(text),
+    }
+
+
+@job_management_app.function()
+@modal.fastapi_endpoint(docs=True, method="GET")
+def job_status(job_id: str) -> dict:
+    """
+    Check the status of a submitted job.
+
+    GET /job-status?job_id=fc-xxx
+
+    Uses FunctionCall.from_id() to reconstruct the job reference, then
+    attempts a non-blocking get(timeout=0) to check completion status.
+
+    Note: Modal doesn't distinguish between "queued" and "running" states.
+    Both are reported as "running" here.
+
+    Source: https://modal.com/docs/reference/modal.FunctionCall
+
+    Returns:
+    {
+        "job_id": "fc-xxx",
+        "status": "running" | "completed" | "failed",
+        "result_ready": bool,
+        "error": "..." (only if failed)
+    }
+    """
+    from fastapi import HTTPException
+
+    if not job_id:
+        raise HTTPException(status_code=400, detail="'job_id' is required")
+
+    try:
+        # Reconstruct the FunctionCall from the saved job_id
+        # Source: https://modal.com/docs/reference/modal.FunctionCall
+        function_call = modal.FunctionCall.from_id(job_id)
+
+        # Non-blocking check: timeout=0 returns immediately
+        # - Returns result if complete
+        # - Raises TimeoutError if still processing
+        try:
+            function_call.get(timeout=0)
+            return {
+                "job_id": job_id,
+                "status": "completed",
+                "result_ready": True,
+            }
+        except TimeoutError:
+            # Still processing (queued or running - Modal doesn't distinguish)
+            return {
+                "job_id": job_id,
+                "status": "running",
+                "result_ready": False,
+            }
+    except Exception as e:
+        # Job might have failed, been cancelled, or doesn't exist
+        return {
+            "job_id": job_id,
+            "status": "failed",
+            "result_ready": False,
+            "error": str(e),
+        }
+
+
+@job_management_app.function()
+@modal.fastapi_endpoint(docs=True, method="GET")
+def job_result(job_id: str) -> "Response":
+    """
+    Get the result of a completed job.
+
+    GET /job-result?job_id=fc-xxx
+
+    Retrieves the audio output from a completed generation job.
+    Results are available for up to 7 days after job completion.
+
+    Source: https://modal.com/docs/guide/job-queue
+
+    Returns:
+        - 200 + audio/wav: Job completed, returns audio bytes
+        - 202 Accepted: Job still processing
+        - 500 Error: Job failed or result expired
+    """
+    from fastapi import HTTPException
+    from fastapi.responses import Response
+
+    if not job_id:
+        raise HTTPException(status_code=400, detail="'job_id' is required")
+
+    try:
+        function_call = modal.FunctionCall.from_id(job_id)
+
+        # Wait up to 5 seconds for result (brief wait in case just finished)
+        try:
+            audio_bytes = function_call.get(timeout=5)
+            return Response(
+                content=audio_bytes,
+                media_type="audio/wav",
+                headers={
+                    "Content-Disposition": "attachment; filename=output.wav",
+                    "Content-Length": str(len(audio_bytes)),
+                },
+            )
+        except TimeoutError:
+            # Job still processing - client should continue polling
+            raise HTTPException(status_code=202, detail="Job still processing")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Could be: job failed, was cancelled, or result expired (>7 days)
+        raise HTTPException(status_code=500, detail=f"Failed to get result: {str(e)}")
+
+
+@job_management_app.function()
+@modal.fastapi_endpoint(docs=True, method="POST")
+def cancel_job(request: dict) -> dict:
+    """
+    Cancel a running job.
+
+    POST /cancel-job
+    {
+        "job_id": "fc-xxx"
+    }
+
+    Terminates the function execution and marks inputs as terminated.
+    The cancel() method stops the job but doesn't forcibly kill containers
+    unless terminate_containers=True is passed.
+
+    Source: https://modal.com/docs/reference/modal.FunctionCall
+
+    Returns:
+    {
+        "job_id": "fc-xxx",
+        "status": "cancelled"
+    }
+    """
+    from fastapi import HTTPException
+
+    job_id = request.get("job_id")
+    if not job_id:
+        raise HTTPException(status_code=400, detail="'job_id' is required")
+
+    try:
+        function_call = modal.FunctionCall.from_id(job_id)
+        # Cancel without forcibly terminating containers
+        # (allows graceful cleanup)
+        function_call.cancel()
+
+        return {
+            "job_id": job_id,
+            "status": "cancelled",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to cancel: {str(e)}")
+
+
+# =============================================================================
 # Local Entrypoint (for testing)
 # =============================================================================
+
 
 @app.local_entrypoint()
 def main():
@@ -639,13 +1015,17 @@ def main():
 
     # Reference audio from Qwen documentation
     # Source: Qwen3-TTS HuggingFace model card examples
-    ref_audio = "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone.wav"
+    ref_audio = (
+        "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone.wav"
+    )
     ref_text = (
         "Okay. Yeah. I resent you. I love you. I respect you. "
         "But you know what? You blew it! And thanks to you."
     )
 
-    test_text = "Hello, this is a test of the Qwen3 text to speech voice cloning system."
+    test_text = (
+        "Hello, this is a test of the Qwen3 text to speech voice cloning system."
+    )
 
     # Create service instance
     service = Qwen3TTSService()

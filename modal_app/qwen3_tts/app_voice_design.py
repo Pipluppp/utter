@@ -345,16 +345,6 @@ class VoiceDesignService:
             "supported_languages": info["supported_languages"],
         }
 
-    @modal.fastapi_endpoint(docs=True, method="GET")
-    def languages(self) -> dict:
-        """Get supported languages."""
-        return {
-            "languages": SUPPORTED_LANGUAGES,
-            "default": "English",
-            "note": "Specify the language for voice design. 'Auto' attempts detection from text.",
-        }
-
-
 # =============================================================================
 # Local Entrypoint (for testing)
 # =============================================================================

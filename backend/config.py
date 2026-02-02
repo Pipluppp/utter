@@ -27,8 +27,13 @@ GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 MAX_FILE_SIZE_MB = 50
 MIN_AUDIO_DURATION_SECONDS = 3
 MAX_AUDIO_DURATION_SECONDS = 300  # 5 minutes
-MAX_TEXT_LENGTH = 5000
+MAX_TEXT_LENGTH = 50000  # Allow much longer texts for long generations
 ALLOWED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a"}
+
+# Long-running task settings
+LONG_TASK_THRESHOLD_CHARS = 4000  # Use job-based generation above this
+TASK_TTL_SECONDS = 3600  # 1 hour (for long generations)
+TASK_CLEANUP_INTERVAL = 600  # 10 minutes
 
 # TTS Provider
 TTS_PROVIDER = os.getenv("TTS_PROVIDER", "qwen")
@@ -47,6 +52,26 @@ QWEN_MODAL_ENDPOINT_0_6B = os.getenv(
 QWEN_MODAL_ENDPOINT_VOICE_DESIGN = os.getenv(
     "QWEN_MODAL_ENDPOINT_VOICE_DESIGN",
     "https://duncab013--qwen3-tts-voice-design-voicedesignservice-design.modal.run",
+)
+
+# Modal Job Management Endpoints (for long-running tasks)
+# These are now part of the voice-clone-06b app to save endpoint slots
+QWEN_MODAL_JOB_SUBMIT = os.getenv(
+    "QWEN_MODAL_JOB_SUBMIT",
+    "https://duncab013--qwen3-tts-voice-clone-06b-submit-job.modal.run",
+)
+QWEN_MODAL_JOB_STATUS = os.getenv(
+    "QWEN_MODAL_JOB_STATUS",
+    "https://duncab013--qwen3-tts-voice-clone-06b-job-status.modal.run",
+)
+QWEN_MODAL_JOB_RESULT = os.getenv(
+    "QWEN_MODAL_JOB_RESULT",
+    "https://duncab013--qwen3-tts-voice-clone-06b-job-result.modal.run",
+)
+# Note: cancel_job removed to save endpoint slots (was nice-to-have)
+QWEN_MODAL_JOB_CANCEL = os.getenv(
+    "QWEN_MODAL_JOB_CANCEL",
+    "",  # Disabled - not deployed to save endpoint slots
 )
 
 # Supported languages (Qwen3-TTS)

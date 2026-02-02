@@ -35,6 +35,10 @@ GPU_TYPE = "A10G"
 CONTAINER_IDLE_TIMEOUT = 300  # 5 minutes
 MAX_CONCURRENT_INPUTS = 10
 
+# Long-running task settings
+# For 10-minute audio at 2.5x real-time, we need ~25 minutes max
+MAX_GENERATION_TIMEOUT = 1800  # 30 minutes
+
 # Supported languages
 SUPPORTED_LANGUAGES = [
     "Auto",
@@ -110,7 +114,7 @@ models_volume = modal.Volume.from_name("qwen3-tts-models", create_if_missing=Tru
     scaledown_window=CONTAINER_IDLE_TIMEOUT,
     volumes={MODELS_DIR: models_volume},
     secrets=[modal.Secret.from_name("huggingface-secret")],
-    timeout=900,  # 15 minutes - increased for long text generation
+    timeout=MAX_GENERATION_TIMEOUT,  # 30 minutes for long text generation
 )
 @modal.concurrent(max_inputs=MAX_CONCURRENT_INPUTS)
 class Qwen3TTSService:
@@ -253,54 +257,6 @@ class Qwen3TTSService:
                     pass
 
     @modal.method()
-    def generate_voice_clone_batch(
-        self,
-        texts: list[str],
-        languages: list[str],
-        ref_audio: str,
-        ref_text: str,
-        max_new_tokens: int = 2048,
-    ) -> list[bytes]:
-        """Generate multiple voice clones in a batch."""
-        import soundfile as sf
-
-        print(f"Batch generation: {len(texts)} items")
-
-        resolved_ref_audio = self._resolve_ref_audio(ref_audio)
-        temp_file_created = resolved_ref_audio != ref_audio
-
-        try:
-            voice_prompt = self.model.create_voice_clone_prompt(
-                ref_audio=resolved_ref_audio,
-                ref_text=ref_text,
-                x_vector_only_mode=False,
-            )
-
-            wavs, sr = self.model.generate_voice_clone(
-                text=texts,
-                language=languages,
-                voice_clone_prompt=voice_prompt,
-                max_new_tokens=max_new_tokens,
-            )
-
-            results = []
-            for i, wav in enumerate(wavs):
-                buffer = io.BytesIO()
-                sf.write(buffer, wav, sr, format="WAV", subtype="PCM_16")
-                buffer.seek(0)
-                results.append(buffer.read())
-                print(f"  [{i+1}/{len(texts)}] {len(results[-1])} bytes")
-
-            return results
-        finally:
-            if temp_file_created:
-                try:
-                    os.unlink(resolved_ref_audio)
-                    print(f"  Cleaned up temp file")
-                except Exception:
-                    pass
-
-    @modal.method()
     def get_model_info(self) -> dict:
         """Get information about the loaded model."""
         import torch
@@ -379,71 +335,6 @@ class Qwen3TTSService:
             },
         )
 
-    @modal.fastapi_endpoint(docs=True, method="POST")
-    def clone_batch(self, request: dict) -> dict:
-        """Clone a voice and synthesize multiple texts. Returns JSON with base64 audio."""
-        import base64
-        from fastapi import HTTPException
-
-        texts = request.get("texts", [])
-        languages = request.get("languages", [])
-        ref_audio_url = request.get("ref_audio_url")
-        ref_audio_base64 = request.get("ref_audio_base64")
-        ref_text = request.get("ref_text", "")
-        max_new_tokens = request.get("max_new_tokens", 2048)
-
-        if not texts:
-            raise HTTPException(status_code=400, detail="'texts' is required")
-        if not ref_text:
-            raise HTTPException(status_code=400, detail="'ref_text' is required")
-        if len(texts) != len(languages):
-            raise HTTPException(
-                status_code=400, detail="Length of 'texts' must match 'languages'"
-            )
-
-        for lang in languages:
-            if lang not in SUPPORTED_LANGUAGES:
-                raise HTTPException(
-                    status_code=400, detail=f"Unsupported language: {lang}"
-                )
-
-        if ref_audio_url:
-            ref_audio = ref_audio_url
-        elif ref_audio_base64:
-            ref_audio = ref_audio_base64
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Either 'ref_audio_url' or 'ref_audio_base64' is required",
-            )
-
-        try:
-            audio_bytes_list = self.generate_voice_clone_batch.local(
-                texts=texts,
-                languages=languages,
-                ref_audio=ref_audio,
-                ref_text=ref_text,
-                max_new_tokens=max_new_tokens,
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Batch generation failed: {str(e)}"
-            )
-
-        return {
-            "status": "success",
-            "count": len(audio_bytes_list),
-            "audio_files": [
-                {
-                    "index": i,
-                    "text": texts[i][:50] + "..." if len(texts[i]) > 50 else texts[i],
-                    "audio_base64": base64.b64encode(audio_bytes).decode("utf-8"),
-                    "size_bytes": len(audio_bytes),
-                }
-                for i, audio_bytes in enumerate(audio_bytes_list)
-            ],
-        }
-
     @modal.fastapi_endpoint(docs=True, method="GET")
     def health(self) -> dict:
         """Health check endpoint."""
@@ -457,14 +348,233 @@ class Qwen3TTSService:
             "supported_languages": info["supported_languages"],
         }
 
-    @modal.fastapi_endpoint(docs=True, method="GET")
-    def languages(self) -> dict:
-        """Get supported languages."""
+# =============================================================================
+# Standalone Generation Function (for spawn/async pattern)
+# =============================================================================
+
+
+@app.function(
+    gpu=GPU_TYPE,
+    volumes={MODELS_DIR: models_volume},
+    secrets=[modal.Secret.from_name("huggingface-secret")],
+    timeout=MAX_GENERATION_TIMEOUT,
+    scaledown_window=CONTAINER_IDLE_TIMEOUT,
+)
+def generate_voice_clone_job(
+    text: str,
+    language: str,
+    ref_audio_base64: str,
+    ref_text: str,
+    max_new_tokens: int = 2048,
+) -> bytes:
+    """
+    Standalone function for async job-based generation.
+
+    This function is designed for the spawn/poll pattern for long-running tasks.
+    Called via Function.spawn() which returns immediately with a job_id.
+
+    Source: https://modal.com/docs/guide/job-queue
+
+    Returns:
+        WAV audio bytes
+    """
+    import base64
+    import tempfile
+    import soundfile as sf
+    import torch
+    from qwen_tts import Qwen3TTSModel
+
+    print(f"[JOB] Starting voice clone generation")
+    print(f"[JOB] Text length: {len(text)} chars")
+    print(f"[JOB] Language: {language}")
+
+    # Load model
+    local_model_path = f"{MODELS_DIR}/{MODEL_NAME}"
+    if os.path.exists(local_model_path) and os.listdir(local_model_path):
+        load_path = local_model_path
+    else:
+        load_path = MODEL_ID
+
+    # Determine attention implementation
+    import importlib.util
+
+    if importlib.util.find_spec("flash_attn") is not None:
+        attn_impl = "flash_attention_2"
+    elif hasattr(torch.nn.functional, "scaled_dot_product_attention"):
+        attn_impl = "sdpa"
+    else:
+        attn_impl = "eager"
+
+    print(f"[JOB] Loading model from: {load_path}")
+    model = Qwen3TTSModel.from_pretrained(
+        load_path,
+        device_map="cuda:0",
+        dtype=torch.bfloat16,
+        attn_implementation=attn_impl,
+    )
+    print(f"[JOB] Model loaded")
+
+    # Decode reference audio from base64 to temp file
+    audio_data = base64.b64decode(ref_audio_base64)
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        tmp.write(audio_data)
+        ref_audio_path = tmp.name
+
+    try:
+        print(f"[JOB] Generating audio...")
+        wavs, sr = model.generate_voice_clone(
+            text=text,
+            language=language,
+            ref_audio=ref_audio_path,
+            ref_text=ref_text,
+            max_new_tokens=max_new_tokens,
+        )
+
+        print(f"[JOB] Generated: {len(wavs[0])} samples at {sr} Hz")
+
+        buffer = io.BytesIO()
+        sf.write(buffer, wavs[0], sr, format="WAV", subtype="PCM_16")
+        buffer.seek(0)
+
+        audio_bytes = buffer.read()
+        print(f"[JOB] Output size: {len(audio_bytes)} bytes")
+
+        return audio_bytes
+
+    finally:
+        try:
+            os.unlink(ref_audio_path)
+        except Exception:
+            pass
+
+
+# =============================================================================
+# Job Management Web Endpoints
+# =============================================================================
+
+
+@app.function()
+@modal.fastapi_endpoint(docs=True, method="POST")
+def submit_job(request: dict) -> dict:
+    """
+    Submit a voice generation job for async processing.
+
+    POST /submit-job
+
+    Uses Modal's spawn/poll pattern for long-running tasks.
+    Returns immediately with a job_id for polling.
+
+    Source: https://modal.com/docs/guide/job-queue
+    """
+    from fastapi import HTTPException
+
+    text = request.get("text", "")
+    language = request.get("language", "Auto")
+    ref_audio_base64 = request.get("ref_audio_base64")
+    ref_text = request.get("ref_text", "")
+    max_new_tokens = request.get("max_new_tokens", 2048)
+
+    if not text:
+        raise HTTPException(status_code=400, detail="'text' is required")
+    if not ref_audio_base64:
+        raise HTTPException(status_code=400, detail="'ref_audio_base64' is required")
+    if not ref_text:
+        raise HTTPException(status_code=400, detail="'ref_text' is required")
+
+    # Spawn the generation job (returns immediately)
+    function_call = generate_voice_clone_job.spawn(
+        text=text,
+        language=language,
+        ref_audio_base64=ref_audio_base64,
+        ref_text=ref_text,
+        max_new_tokens=max_new_tokens,
+    )
+
+    return {
+        "job_id": function_call.object_id,
+        "status": "submitted",
+        "text_length": len(text),
+    }
+
+
+@app.function()
+@modal.fastapi_endpoint(docs=True, method="GET")
+def job_status(job_id: str) -> dict:
+    """
+    Check the status of a submitted job.
+
+    GET /job-status?job_id=fc-xxx
+
+    Source: https://modal.com/docs/reference/modal.FunctionCall
+    """
+    from fastapi import HTTPException
+
+    if not job_id:
+        raise HTTPException(status_code=400, detail="'job_id' is required")
+
+    try:
+        function_call = modal.FunctionCall.from_id(job_id)
+
+        try:
+            function_call.get(timeout=0)
+            return {
+                "job_id": job_id,
+                "status": "completed",
+                "result_ready": True,
+            }
+        except TimeoutError:
+            return {
+                "job_id": job_id,
+                "status": "running",
+                "result_ready": False,
+            }
+    except Exception as e:
         return {
-            "languages": SUPPORTED_LANGUAGES,
-            "default": "Auto",
-            "note": "Use 'Auto' for automatic language detection",
+            "job_id": job_id,
+            "status": "failed",
+            "result_ready": False,
+            "error": str(e),
         }
+
+
+@app.function()
+@modal.fastapi_endpoint(docs=True, method="GET")
+def job_result(job_id: str) -> "Response":
+    """
+    Get the result of a completed job.
+
+    GET /job-result?job_id=fc-xxx
+
+    Returns audio/wav if complete, 202 if still processing.
+
+    Source: https://modal.com/docs/guide/job-queue
+    """
+    from fastapi import HTTPException
+    from fastapi.responses import Response
+
+    if not job_id:
+        raise HTTPException(status_code=400, detail="'job_id' is required")
+
+    try:
+        function_call = modal.FunctionCall.from_id(job_id)
+
+        try:
+            audio_bytes = function_call.get(timeout=5)
+            return Response(
+                content=audio_bytes,
+                media_type="audio/wav",
+                headers={
+                    "Content-Disposition": "attachment; filename=output.wav",
+                    "Content-Length": str(len(audio_bytes)),
+                },
+            )
+        except TimeoutError:
+            raise HTTPException(status_code=202, detail="Job still processing")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get result: {str(e)}")
 
 
 # =============================================================================

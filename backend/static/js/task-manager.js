@@ -130,6 +130,48 @@ class TaskManager {
   }
 
   /**
+   * Cancel a running task
+   * @returns {Promise<boolean>} true if cancelled successfully
+   */
+  async cancelTask() {
+    const task = this.getStoredTask();
+    if (!task || !task.taskId) {
+      return false;
+    }
+    
+    try {
+      const response = await fetch(`/api/tasks/${task.taskId}/cancel`, {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        // Update local state
+        const updatedTask = {
+          ...task,
+          status: 'cancelled',
+          error: 'Cancelled by user',
+          completedAt: Date.now(),
+        };
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedTask));
+        
+        this.stopPolling();
+        
+        // Dispatch event so pages can update UI
+        const event = new CustomEvent('taskCancelled', {
+          detail: { taskId: task.taskId, storedTask: task }
+        });
+        window.dispatchEvent(event);
+        
+        return true;
+      }
+    } catch (error) {
+      console.error('Failed to cancel task:', error);
+    }
+    
+    return false;
+  }
+
+  /**
    * Clear current task from storage and UI
    */
   clearTask() {
@@ -145,9 +187,9 @@ class TaskManager {
     this.stopPolling();
     this.stopTimer();
     
-    // Remove completed/failed state classes
+    // Remove completed/failed/cancelled state classes
     if (this.modal) {
-      this.modal.classList.remove('task-complete', 'task-failed');
+      this.modal.classList.remove('task-complete', 'task-failed', 'task-cancelled');
     }
   }
 
@@ -170,8 +212,8 @@ class TaskManager {
       return null;
     }
 
-    // Check for stale tasks (over 10 minutes old)
-    const maxAge = 10 * 60 * 1000;
+    // Check for stale tasks (over 30 minutes old to support long generation tasks)
+    const maxAge = 30 * 60 * 1000;
     if (Date.now() - task.startedAt > maxAge) {
       this.clearTask();
       return null;
@@ -183,8 +225,8 @@ class TaskManager {
     if (currentPath === task.originPage) {
       this.hideModal();
       
-      // If task is already completed, dispatch event so page can show result
-      if (task.status === 'completed' || task.status === 'failed') {
+      // If task is already completed/failed/cancelled, dispatch event so page can show result
+      if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
         // Dispatch event after a short delay to let page JS initialize
         setTimeout(() => {
           const event = new CustomEvent('taskComplete', {
@@ -213,17 +255,27 @@ class TaskManager {
     this.showModal(task);
     
     // If task not yet complete, keep polling
-    if (task.status !== 'completed' && task.status !== 'failed') {
+    if (task.status !== 'completed' && task.status !== 'failed' && task.status !== 'cancelled') {
       this.startPolling(task.taskId);
     } else {
-      // Task already complete, update modal to show complete state
+      // Task already complete/failed/cancelled, update modal to show state
       if (this.modalStatus) {
-        this.modalStatus.textContent = task.status === 'completed' ? 'Complete! Click to view' : 'Failed';
+        const statusText = {
+          completed: 'Complete! Click to view',
+          failed: 'Failed',
+          cancelled: 'Cancelled',
+        };
+        this.modalStatus.textContent = statusText[task.status] || task.status;
       }
       if (this.modalTime) {
         this.modalTime.textContent = 'Ready';
       }
-      this.modal.classList.add(task.status === 'completed' ? 'task-complete' : 'task-failed');
+      const stateClass = {
+        completed: 'task-complete',
+        failed: 'task-failed',
+        cancelled: 'task-cancelled',
+      };
+      this.modal.classList.add(stateClass[task.status] || 'task-failed');
       this.stopTimer();
     }
     
@@ -284,16 +336,78 @@ class TaskManager {
     if (!storedTask) return;
     
     const status = taskData.status;
+    const modalStatus = taskData.modal_status;
+    const modalElapsed = taskData.modal_elapsed_seconds || 0;
+    const modalPolls = taskData.modal_poll_count || 0;
+    const isLongRunning = taskData.is_long_running || false;
+    const estimatedMinutes = taskData.metadata?.estimated_duration_minutes;
     
     // Update modal status text if visible
     if (this.modalStatus && !this.modal.classList.contains('hidden')) {
-      const statusText = {
-        pending: 'Queued...',
-        processing: 'Generating...',
-        completed: 'Complete! Click to view',
-        failed: 'Failed',
-      };
-      this.modalStatus.textContent = statusText[status] || status;
+      // Build detailed status text based on Modal API state
+      let statusText;
+      if (status === 'completed') {
+        statusText = 'Complete! Click to view';
+      } else if (status === 'failed') {
+        statusText = taskData.error ? `Failed: ${taskData.error.slice(0, 50)}` : 'Failed';
+      } else if (status === 'cancelled') {
+        statusText = 'Cancelled';
+      } else if (modalStatus) {
+        // Show detailed Modal status
+        const modalStatusText = {
+          sending: 'Connecting to Modal...',
+          queued: 'Waiting for GPU...',
+          processing: isLongRunning ? 'Generating (long task)...' : 'Generating audio...',
+          polling: `Processing (${modalPolls} checks)...`,
+          timeout: 'Request timed out',
+        };
+        statusText = modalStatusText[modalStatus] || `Modal: ${modalStatus}`;
+        if (modalElapsed > 0 && modalStatus !== 'sending') {
+          const elapsedMins = Math.floor(modalElapsed / 60);
+          const elapsedSecs = Math.round(modalElapsed % 60);
+          if (elapsedMins > 0) {
+            statusText += ` (${elapsedMins}m ${elapsedSecs}s)`;
+          } else {
+            statusText += ` (${elapsedSecs}s)`;
+          }
+        }
+        // Show estimated time remaining for long tasks
+        if (isLongRunning && estimatedMinutes && modalElapsed > 0) {
+          const remainingMins = Math.max(0, estimatedMinutes - (modalElapsed / 60));
+          if (remainingMins > 1) {
+            statusText += ` ~${Math.round(remainingMins)}m remaining`;
+          }
+        }
+      } else {
+        // Fallback to simple status
+        const simpleStatusText = {
+          pending: isLongRunning ? 'Queued (long task)...' : 'Queued...',
+          processing: isLongRunning ? 'Generating (long task)...' : 'Generating...',
+        };
+        statusText = simpleStatusText[status] || status;
+      }
+      this.modalStatus.textContent = statusText;
+      
+      // Show/hide long-task indicator
+      const longTaskDiv = this.modal.querySelector('.task-modal-long-task');
+      if (longTaskDiv) {
+        if (isLongRunning && status !== 'completed' && status !== 'failed' && status !== 'cancelled') {
+          longTaskDiv.classList.remove('hidden');
+          const estimateSpan = longTaskDiv.querySelector('.long-task-estimate');
+          if (estimateSpan && estimatedMinutes) {
+            const remainingMins = Math.max(0, estimatedMinutes - (modalElapsed / 60));
+            if (remainingMins > 1) {
+              estimateSpan.textContent = `Est. ~${Math.round(remainingMins)} min remaining`;
+            } else if (remainingMins > 0) {
+              estimateSpan.textContent = 'Almost done...';
+            } else {
+              estimateSpan.textContent = 'Taking longer than expected...';
+            }
+          }
+        } else {
+          longTaskDiv.classList.add('hidden');
+        }
+      }
       
       // Add visual indicator for completed state
       if (status === 'completed') {
@@ -304,11 +418,29 @@ class TaskManager {
         }
       } else if (status === 'failed') {
         this.modal.classList.add('task-failed');
+      } else if (status === 'cancelled') {
+        this.modal.classList.add('task-cancelled');
       }
     }
     
+    // Dispatch a progress event so pages can show detailed status
+    if (status === 'processing') {
+      const progressEvent = new CustomEvent('taskProgress', {
+        detail: {
+          taskId: taskData.id,
+          status: status,
+          modalStatus: modalStatus,
+          elapsedSeconds: modalElapsed,
+          pollCount: modalPolls,
+          isLongRunning: isLongRunning,
+          estimatedMinutes: estimatedMinutes,
+        }
+      });
+      window.dispatchEvent(progressEvent);
+    }
+    
     // Task finished
-    if (status === 'completed' || status === 'failed') {
+    if (status === 'completed' || status === 'failed' || status === 'cancelled') {
       this.stopPolling();
       
       // Save result/error to stored task so origin page can use it
@@ -367,6 +499,32 @@ class TaskManager {
     
     if (this.modalStatus) {
       this.modalStatus.textContent = 'Processing...';
+    }
+
+    // Show/hide cancel button based on task type
+    const cancelBtn = this.modal.querySelector('.task-modal-cancel');
+    if (cancelBtn) {
+      // Show cancel for generate tasks (which can be long-running)
+      if (task.type === 'generate') {
+        cancelBtn.classList.remove('hidden');
+        // Remove old listener and add new one
+        cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+        const newCancelBtn = this.modal.querySelector('.task-modal-cancel');
+        newCancelBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          newCancelBtn.disabled = true;
+          newCancelBtn.textContent = 'Cancelling...';
+          await this.cancelTask();
+        });
+      } else {
+        cancelBtn.classList.add('hidden');
+      }
+    }
+
+    // Hide long-task indicator initially
+    const longTaskDiv = this.modal.querySelector('.task-modal-long-task');
+    if (longTaskDiv) {
+      longTaskDiv.classList.add('hidden');
     }
 
     // Start elapsed time display

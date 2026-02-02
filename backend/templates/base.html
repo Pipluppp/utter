@@ -45,8 +45,15 @@
           <span class="task-modal-status">Processing...</span>
           <span class="task-modal-time">0:00 elapsed</span>
         </div>
+        <div class="task-modal-long-task hidden">
+          <span class="long-task-indicator">🔄 Long generation in progress</span>
+          <span class="long-task-estimate"></span>
+        </div>
       </div>
-      <button class="task-modal-dismiss" title="Dismiss">×</button>
+      <div class="task-modal-actions">
+        <button class="task-modal-cancel hidden" title="Cancel generation">Cancel</button>
+        <button class="task-modal-dismiss" title="Dismiss">×</button>
+      </div>
     </div>
   </div>
 
