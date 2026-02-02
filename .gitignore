@@ -41,8 +41,10 @@ uploads/
 *.swp
 *.swo
 
-# Claude AI
+# AI
 .claude/
+.agents/
+.codex/
 
 # Windows device name artifacts
 nul

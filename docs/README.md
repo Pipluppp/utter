@@ -55,12 +55,16 @@ See [qwen3-tts-models-map.md](./qwen3-tts-models-map.md) for detailed model comp
 
 ## Active Planning Documents
 
-> **Focus: `2026-02-02/`**
+> **Focus: `2026-02-03/`**
 
 | Document | What It Covers |
 |----------|----------------|
+| **[2026-02-03/](./2026-02-03/README.md)** | Frontend refactor + UX fix plans index |
+| **[frontend-refactor/](./2026-02-03/frontend-refactor/README.md)** | React refactor docs index |
+| **[react-refactor-plan.md](./2026-02-03/frontend-refactor/react-refactor-plan.md)** | React + Tailwind frontend migration |
+| **[frontend-inventory.md](./2026-02-03/frontend-refactor/frontend-inventory.md)** | Ground truth map of current frontend for migration parity |
+| **[react-frontend-guidelines.md](./2026-02-03/frontend-refactor/react-frontend-guidelines.md)** | Guardrails to keep the React rewrite appropriately simple |
 | **[deployment-architecture-plan.md](./2026-02-02/deployment-architecture-plan.md)** | Supabase-only deployment, auth, billing |
-| **[react-refactor-plan.md](./2026-02-02/react-refactor-plan.md)** | React 19 + Tailwind V4 migration |
 
 ## Deployment Guides
 

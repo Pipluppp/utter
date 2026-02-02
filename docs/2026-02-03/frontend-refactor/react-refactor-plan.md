@@ -1,8 +1,11 @@
 # Utter React 19 + Tailwind V4 Refactor Plan
 
-> **Date**: 2026-02-02  
+> **Date**: 2026-02-03  
 > **Scope**: Complete frontend rewrite from Jinja2/Vanilla JS to React 19 + Tailwind V4  
 > **Goal**: Full feature parity with improved DX, maintainability, and mobile experience
+>
+> **Codex skills (available)**: `frontend-design`, `tailwind-design-system`, `web-design-guidelines`, `skill-creator`, `skill-installer`.  
+> Use `tailwind-design-system` for Tailwind v4 tokens/components, `frontend-design` for UI build/polish, and `web-design-guidelines` for UI/a11y audits.
 
 ---
 
@@ -50,15 +53,18 @@
 
 ### What's Changing
 
-- **Rendering**: Server-side Jinja2 → Client-side React SPA
-- **Routing**: Full page reloads → React Router client-side navigation
-- **Styling**: Custom CSS → Tailwind V4 utility classes
-- **State**: localStorage + vanilla JS → React Context + TanStack Query
+- **Rendering**: Server-side Jinja2 → Client-side React UI
+- **Routing**: Full page reloads → Client-side navigation (React Router, or Vite multi-page)
+- **Styling**: Custom CSS → Tailwind utilities + minimal `@layer` components
+- **State**: localStorage + vanilla JS → React state/hooks + Context (TanStack Query optional)
 - **Build**: None → Vite
 
 ---
 
 ## 2. Current Architecture Analysis
+
+> Ground truth mapping for migration: **[frontend-inventory.md](./frontend-inventory.md)** (pages, behaviors, state, API calls).  
+> Implementation guardrails: **[react-frontend-guidelines.md](./react-frontend-guidelines.md)** (keep it simple, consistent patterns).
 
 ### Existing Pages Inventory
 
@@ -75,44 +81,41 @@
 ### Existing API Endpoints
 
 ```
-POST   /api/clone                    → Clone voice from audio
-GET    /api/voices                   → List all voices
-DELETE /api/voices/{id}              → Delete voice
-GET    /api/voices/{id}/preview      → Get voice preview audio
+POST   /api/clone                                  → Clone voice from audio
+GET    /api/voices                                 → List all voices
+DELETE /api/voices/{voice_id}                      → Delete voice
+GET    /api/voices/{voice_id}/preview              → Stream voice preview audio
 
-POST   /api/generate                 → Start generation task (returns task_id)
-GET    /api/tasks/{id}               → Poll task status
-DELETE /api/tasks/{id}               → Cancel task
+POST   /api/generate                               → Start generation task (returns task_id)
+GET    /api/tasks/{task_id}                        → Poll task status/result
+POST   /api/tasks/{task_id}/cancel                 → Cancel running task (generate)
+DELETE /api/tasks/{task_id}                        → Delete task record (best-effort cleanup)
 
-POST   /api/voices/design/preview    → Start design preview task
-POST   /api/voices/design            → Save designed voice
+GET    /api/generations                            → List generation history (pagination/search/filter)
+DELETE /api/generations/{generation_id}            → Delete generation
+POST   /api/generations/{generation_id}/regenerate → Get regeneration params + redirect URL
 
-GET    /api/generations              → List generation history
-DELETE /api/generations/{id}         → Delete generation
+POST   /api/voices/design/preview                  → Start design preview task (task result includes base64 audio)
+POST   /api/voices/design                          → Save designed voice
 
-GET    /api/languages                → Get supported languages
+GET    /api/languages                              → Get supported languages
 ```
 
 ### Existing JavaScript Modules
 
-| File | Purpose | React Equivalent |
-|------|---------|------------------|
-| `app.js` | Page initialization, form handlers | Page components + hooks |
-| `task-manager.js` | Global task state, polling, modal | TaskContext + useTask hook |
-| `waveform-manager.js` | WaveSurfer integration | useWaveform hook |
+| Location | Purpose | React Equivalent |
+|----------|---------|------------------|
+| `static/js/app.js` | Clone + Generate page logic (forms, validation, timers, WaveSurfer player) | Page components + hooks |
+| `static/js/task-manager.js` | Multi-task persistence (localStorage), polling, bottom-right task modal | `TaskProvider` + hooks |
+| `static/js/waveform-manager.js` | Single-instance WaveSurfer for list previews (Voices/History) | `WaveformListPlayer` component/hook |
+| `templates/design.html` inline script | Design page logic (preview task, base64→Blob, WaveSurfer preview, save voice) | `Design` page + hooks |
+| `templates/voices.html` inline script | Voices list render, preview playback, delete | `Voices` page + hooks |
+| `templates/history.html` inline script | History list (search/filter/pagination/autorefresh), play/regenerate/delete | `History` page + hooks |
 
 ### Existing CSS Structure
 
-| Section | Lines | Tailwind Migration |
-|---------|-------|-------------------|
-| CSS Variables | 1-20 | `tailwind.config.js` theme |
-| Base/Reset | 21-50 | Tailwind preflight |
-| Typography | 51-100 | Text utilities |
-| Layout | 101-200 | Flex/Grid utilities |
-| Components | 201-700 | Component classes |
-| Task Modal | 701-850 | TaskModal component |
-| Landing Page | 851-1000 | Landing component |
-| Utilities | 1001-1180 | Utility classes |
+- **Primary**: `static/css/style.css` (monolithic file, CSS variables + modern CSS nesting)
+- **Inline**: `templates/design.html` includes page-specific `<style>` overrides for subtitle + example cards
 
 ---
 
@@ -1139,10 +1142,10 @@ export function Generate() {
             value={formData.text}
             onChange={(e) => setFormData(prev => ({ ...prev, text: e.target.value }))}
             placeholder="Enter text to speak..."
-            maxLength={5000}
+            maxLength={10000}
             required
           />
-          <CharCounter current={formData.text.length} max={5000} />
+          <CharCounter current={formData.text.length} max={10000} />
         </FormGroup>
 
         <Message variant="info">
@@ -2521,14 +2524,40 @@ export const saveDesignedVoice = async (input: DesignSaveInput) => {
 import { api } from './client';
 import type { Generation, GenerateInput } from '@/types';
 
-export const fetchGenerations = () =>
-  api.get<Generation[]>('/generations');
+export type GenerationsResponse = {
+  generations: Generation[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    pages: number;
+  };
+};
+
+export const fetchGenerations = (params?: {
+  page?: number;
+  per_page?: number;
+  search?: string;
+  status?: string;
+}) =>
+  api.get<GenerationsResponse>('/generations', { params });
 
 export const deleteGeneration = (id: string) =>
-  api.delete<{ deleted: boolean }>(`/generations/${id}`);
+  api.delete<{ success: boolean; message: string }>(`/generations/${id}`);
+
+export const regenerateGeneration = (id: string) =>
+  api.post<{ redirect_url: string; voice_id: string; text: string; language: string }>(
+    `/generations/${id}/regenerate`
+  );
 
 export const startGeneration = (input: GenerateInput) =>
-  api.post<{ task_id: string; status: string }>('/generate', input);
+  api.post<{
+    task_id: string;
+    status: string;
+    is_long_running: boolean;
+    estimated_duration_minutes: number;
+    generation_id: string;
+  }>('/generate', input);
 ```
 
 ```tsx
@@ -2540,6 +2569,9 @@ export const fetchTaskStatus = (taskId: string) =>
   api.get<Task>(`/tasks/${taskId}`);
 
 export const cancelTask = (taskId: string) =>
+  api.post<{ cancelled: boolean; task_id: string }>(`/tasks/${taskId}/cancel`);
+
+export const deleteTask = (taskId: string) =>
   api.delete<{ deleted: boolean }>(`/tasks/${taskId}`);
 ```
 
@@ -3113,4 +3145,4 @@ test.describe('Generate page', () => {
 ---
 
 *Document prepared: 2026-02-02*
-*Last updated: 2026-02-02*
+*Last updated: 2026-02-03*

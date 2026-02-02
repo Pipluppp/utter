@@ -2,6 +2,8 @@
 
 ## Current Focus
 
+> Note: The React refactor docs were continued/updated on **2026-02-03** and moved to `docs/2026-02-03/`.
+
 ### UX & Task Management Improvements
 
 | Plan | Purpose |
@@ -15,7 +17,10 @@
 | Plan | Purpose |
 |------|---------|
 | **[deployment-architecture-plan.md](./deployment-architecture-plan.md)** | Production deployment with Supabase, Modal.com, auth, billing |
-| **[react-refactor-plan.md](./react-refactor-plan.md)** | Frontend migration to React 19 + Tailwind V4 |
+| **[frontend refactor index](../2026-02-03/README.md)** | React refactor docs + follow-up UX fix plans (updated 2026-02-03) |
+| **[react-refactor-plan.md](../2026-02-03/frontend-refactor/react-refactor-plan.md)** | Frontend migration to React + Tailwind |
+| **[frontend-inventory.md](../2026-02-03/frontend-refactor/frontend-inventory.md)** | Ground truth mapping of current frontend pages/behaviors for migration parity |
+| **[react-frontend-guidelines.md](../2026-02-03/frontend-refactor/react-frontend-guidelines.md)** | Guardrails for React/Tailwind usage (keep it simple, consistent patterns) |
 
 ---
 
@@ -87,7 +92,7 @@ These are **obsolete** as the frontend is migrating to React. Equivalent feature
 
 ## Next Steps
 
-1. **React Refactor** (react-refactor-plan.md)
+1. **React Refactor** (../2026-02-03/frontend-refactor/react-refactor-plan.md)
    - Set up Vite + React 19 + Tailwind V4 scaffold
    - Migrate pages incrementally
    
