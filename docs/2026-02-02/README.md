@@ -2,12 +2,50 @@
 
 ## Current Focus
 
-Two active planning documents remain:
+### UX & Task Management Improvements
+
+| Plan | Purpose |
+|------|---------|
+| **[multi-task-manager-plan.md](./multi-task-manager-plan.md)** | Support concurrent Generate/Design/Clone tasks with independent state |
+| **[task-modal-simplification-plan.md](./task-modal-simplification-plan.md)** | Simplify the floating modal, remove redundant info, fix dismiss behavior |
+| **[history-enhancements-plan.md](./history-enhancements-plan.md)** | Add status tracking, generation time, search/pagination, regeneration |
+
+### Architecture & Infrastructure
 
 | Plan | Purpose |
 |------|---------|
 | **[deployment-architecture-plan.md](./deployment-architecture-plan.md)** | Production deployment with Supabase, Modal.com, auth, billing |
 | **[react-refactor-plan.md](./react-refactor-plan.md)** | Frontend migration to React 19 + Tailwind V4 |
+
+---
+
+## Task Groupings & Implementation Order
+
+The three new UX plans are interrelated. Recommended implementation order:
+
+### Phase 1: Multi-Task Manager (Foundation)
+**File:** [multi-task-manager-plan.md](./multi-task-manager-plan.md)
+
+This is the **prerequisite** for other features:
+- Refactors storage from single-task to per-type tasks
+- Enables concurrent Generate + Design operations
+- Establishes dismiss vs clear behavior
+
+### Phase 2: Modal Simplification (UI Polish)
+**File:** [task-modal-simplification-plan.md](./task-modal-simplification-plan.md)
+
+Depends on Phase 1:
+- Redesigns modal for multi-task display
+- Removes redundant timing information
+- Syncs modal display with on-page progress
+
+### Phase 3: History Enhancements (Persistence)
+**File:** [history-enhancements-plan.md](./history-enhancements-plan.md)
+
+Can be done in parallel with Phase 2:
+- Database schema changes (add status, generation_time)
+- Create generation record at start (not just completion)
+- Add search, pagination, regeneration features
 
 ---
 
