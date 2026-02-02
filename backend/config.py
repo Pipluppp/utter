@@ -30,9 +30,8 @@ MAX_AUDIO_DURATION_SECONDS = 300  # 5 minutes
 MAX_TEXT_LENGTH = 50000  # Allow much longer texts for long generations
 ALLOWED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a"}
 
-# Long-running task settings
-LONG_TASK_THRESHOLD_CHARS = 4000  # Use job-based generation above this
-TASK_TTL_SECONDS = 3600  # 1 hour (for long generations)
+# Task settings (all generations use job-based approach for cancellation support)
+TASK_TTL_SECONDS = 3600  # 1 hour
 TASK_CLEANUP_INTERVAL = 600  # 10 minutes
 
 # TTS Provider

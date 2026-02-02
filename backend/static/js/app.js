@@ -487,7 +487,7 @@ function initGeneratePage() {
   if (textInput && charCounter) {
     textInput.addEventListener('input', () => {
       const length = textInput.value.length;
-      const max = 5000;
+      const max = 10000;
       charCounter.textContent = `${length} / ${max}`;
 
       if (length >= max) {

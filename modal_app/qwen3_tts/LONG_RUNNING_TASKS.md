@@ -1,4 +1,4 @@
-# Long-Running Task Support for Qwen3-TTS Voice Generation
+# Job-Based Task Architecture for Qwen3-TTS Voice Generation
 
 > **Date**: 2026-02-02
 > **Status**: Implemented and Deployed
@@ -6,13 +6,32 @@
 
 ## Goal
 
-Enable generation of **5-10 minute audio files** using Qwen3-TTS on Modal.com.
+Enable reliable speech generation using Qwen3-TTS on Modal.com with:
+- **Cancellation support** for all generations
+- **Consistent behavior** across all text lengths
+- **Resilience** to backend restarts
 
-Based on benchmarks, Qwen3-TTS processes at approximately **2.5x real-time**, meaning:
-- 5-minute audio = ~12.5 minutes execution time
-- 10-minute audio = ~25 minutes execution time
+Based on benchmarks, Qwen3-TTS processes at approximately **1.6x real-time** (using **2x** for conservative estimates):
+- 1-minute audio = ~2 minutes execution time
+- 5-minute audio = ~10 minutes execution time
+- 10-minute audio = ~20 minutes execution time
 
-This exceeds Modal's default HTTP timeout of 150 seconds, requiring a job-based architecture.
+---
+
+## Why Job-Based for Everything?
+
+**All generations now use the job-based (spawn/poll) pattern**, regardless of text length.
+
+### Benefits over Direct HTTP
+| Benefit | Description |
+|---------|-------------|
+| **Cancellation** | Users can abort any generation via Modal's `FunctionCall.cancel()` |
+| **Resilience** | Job continues even if backend restarts - job ID persists |
+| **No timeout edge cases** | No 10-minute timeout bug (direct path) vs 4000-char threshold |
+| **Consistent UX** | Same behavior for 10-second and 10-minute generations |
+
+### Trade-off
+~500ms overhead per request (submit + result fetch). Negligible for any generation over 10 seconds.
 
 ---
 

@@ -455,14 +455,12 @@ async def api_generate(request: Request, session: AsyncSession = Depends(get_ses
             detail="This voice has no reference transcript. Re-clone with a transcript to use Qwen3-TTS.",
         )
 
-    # Determine if this is a long-running task
-    from services.tts import is_long_text
+    # Estimate generation time
     from services.tts_qwen import estimate_generation_time
 
-    is_long_running = is_long_text(text)
-    estimated_minutes = estimate_generation_time(text) if is_long_running else None
+    estimated_minutes = estimate_generation_time(text)
 
-    # Create task
+    # Create task (all generations use job-based approach for cancellation support)
     task_id = task_store.create_task(
         task_type="generate",
         metadata={
@@ -473,21 +471,19 @@ async def api_generate(request: Request, session: AsyncSession = Depends(get_ses
             "language": language,
             "estimated_duration_minutes": estimated_minutes,
         },
-        is_long_running=is_long_running,
+        is_long_running=True,  # All tasks use job-based approach
     )
 
     # Start background generation
     asyncio.create_task(
-        _process_generation(
-            task_id, voice_id, text, ref_text, language, model, is_long_running
-        )
+        _process_generation(task_id, voice_id, text, ref_text, language)
     )
 
-    # Return task_id immediately with additional info for long tasks
+    # Return task_id immediately
     return {
         "task_id": task_id,
         "status": TaskStatus.PENDING,
-        "is_long_running": is_long_running,
+        "is_long_running": True,
         "estimated_duration_minutes": estimated_minutes,
     }
 
@@ -498,38 +494,25 @@ async def _process_generation(
     text: str,
     ref_text: str,
     language: str,
-    model: str,
-    is_long_running: bool = False,
 ):
-    """Background task to process speech generation."""
+    """Background task to process speech generation using job-based approach."""
     from database import async_session_factory
-    from services.tts import generate_speech, generate_speech_job
+    from services.tts import generate_speech
 
     task_store.update_task(task_id, TaskStatus.PROCESSING)
 
     try:
-        if is_long_running:
-            # Use job-based generation for long texts
-            output_path, job_id = await generate_speech_job(
-                voice_id=voice_id,
-                text=text,
-                ref_text=ref_text,
-                language=language,
-                task_id=task_id,
-                cancellation_checker=task_store.is_cancellation_requested,
-            )
-            # Store job_id for potential cancellation
-            task_store.set_modal_job_id(task_id, job_id)
-        else:
-            # Use direct generation for shorter texts
-            output_path = await generate_speech(
-                voice_id=voice_id,
-                text=text,
-                ref_text=ref_text,
-                language=language,
-                model=model,
-                request_id=task_id,
-            )
+        # All generations use job-based approach for cancellation support
+        output_path, job_id = await generate_speech(
+            voice_id=voice_id,
+            text=text,
+            ref_text=ref_text,
+            language=language,
+            task_id=task_id,
+            cancellation_checker=task_store.is_cancellation_requested,
+        )
+        # Store job_id for potential cancellation
+        task_store.set_modal_job_id(task_id, job_id)
 
         # Get audio duration
         duration = get_audio_duration(output_path)

@@ -33,7 +33,6 @@ from config import (
     QWEN_MODAL_JOB_STATUS,
     QWEN_MODAL_JOB_RESULT,
     QWEN_MODAL_JOB_CANCEL,
-    LONG_TASK_THRESHOLD_CHARS,
 )
 
 logger = logging.getLogger("tts.qwen")
@@ -432,27 +431,22 @@ async def design_voice(
 
 
 # =============================================================================
-# Job-Based Generation (for long-running tasks)
+# Job-Based Generation
 # =============================================================================
-
-
-def is_long_running_text(text: str) -> bool:
-    """Check if text should use job-based generation."""
-    return len(text) >= LONG_TASK_THRESHOLD_CHARS
 
 
 def estimate_generation_time(text: str) -> float:
     """
     Estimate generation time in minutes based on text length.
 
-    Rough heuristic: ~2.5x real-time audio generation
+    Based on benchmarks: ~1.6x real-time, using 2x for conservative estimates.
     Average speaking rate: ~150 words/minute
     Average word length: ~5 characters
-    So: text_length / 5 / 150 * 2.5 = text_length / 300 minutes
+    So: text_length / 5 / 150 * 2.0 = text_length / 375 minutes
     """
     words = len(text) / 5
     audio_minutes = words / 150
-    generation_minutes = audio_minutes * 2.5
+    generation_minutes = audio_minutes * 2.0
     return round(generation_minutes, 1)
 
 
