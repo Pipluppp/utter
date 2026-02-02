@@ -25,13 +25,13 @@ GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 
 # Validation limits
 MAX_FILE_SIZE_MB = 50
-MIN_AUDIO_DURATION_SECONDS = 10
+MIN_AUDIO_DURATION_SECONDS = 3
 MAX_AUDIO_DURATION_SECONDS = 300  # 5 minutes
 MAX_TEXT_LENGTH = 5000
 ALLOWED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a"}
 
 # TTS Provider
-TTS_PROVIDER = os.getenv("TTS_PROVIDER", "echo")
+TTS_PROVIDER = os.getenv("TTS_PROVIDER", "qwen")
 QWEN_MODAL_ENDPOINT = os.getenv(
     "QWEN_MODAL_ENDPOINT",
     "https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run",

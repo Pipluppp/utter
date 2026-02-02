@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Utter{% endblock %}</title>
-  <meta name="description" content="Clone a voice and generate speech with Echo-TTS">
+  <meta name="description" content="Clone a voice and generate speech with Qwen3-TTS">
   <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
 
   <!-- IBM Plex Mono Font -->
@@ -22,9 +22,10 @@
     <a href="/" class="header-logo">UTTER</a>
     <nav class="header-nav">
       <a href="/clone" class="{% if request.url.path == '/clone' %}active{% endif %}">Clone</a>
-      <a href="/design" class="{% if request.url.path == '/design' %}active{% endif %}">Design</a>
-      <a href="/voices" class="{% if request.url.path == '/voices' %}active{% endif %}">Voices</a>
       <a href="/generate" class="{% if request.url.path == '/generate' %}active{% endif %}">Generate</a>
+      <a href="/design" class="{% if request.url.path == '/design' %}active{% endif %}">Design</a>
+      <span class="nav-separator"></span>
+      <a href="/voices" class="{% if request.url.path == '/voices' %}active{% endif %}">Voices</a>
       <a href="/history" class="{% if request.url.path == '/history' %}active{% endif %}">History</a>
       <a href="/about" class="{% if request.url.path == '/about' %}active{% endif %}">About</a>
     </nav>

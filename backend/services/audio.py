@@ -1,4 +1,4 @@
-"""Audio processing helpers for Echo-TTS compatibility."""
+"""Audio processing helpers for reference audio validation."""
 
 from pathlib import Path
 
@@ -8,8 +8,8 @@ from mutagen.wave import WAVE
 from mutagen.mp4 import MP4
 
 
-# Echo-TTS constraints
-MIN_DURATION = 10   # seconds
+# Reference audio constraints
+MIN_DURATION = 3    # seconds (Qwen3-TTS works well with 3+ seconds)
 MAX_DURATION = 300  # 5 minutes
 
 
@@ -41,7 +41,7 @@ def get_audio_duration(file_path: str | Path) -> float:
 
 def validate_reference_audio(file_path: str | Path) -> dict:
     """
-    Validate audio file meets Echo-TTS reference requirements.
+    Validate audio file meets reference requirements for voice cloning.
     
     Returns: {"valid": True, "duration": 45.2, "message": "OK"}
              {"valid": False, "duration": 5.0, "message": "Audio must be..."}

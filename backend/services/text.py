@@ -1,9 +1,9 @@
-"""Text processing helpers for Echo-TTS compatibility."""
+"""Text processing helpers for TTS generation."""
 
 import re
 
 
-# Echo-TTS byte limit (from model docs)
+# Legacy text limit constant (kept for estimation logic)
 MAX_TEXT_BYTES = 768
 
 # Our app's character limit (user-facing) - increased for chunking support
@@ -16,7 +16,7 @@ MAX_WORDS_PER_CHUNK = 70
 
 def preprocess_text(text: str) -> str:
     """
-    Preprocess text for optimal Echo-TTS generation.
+    Preprocess text for TTS generation.
     
     - Normalizes punctuation (colons, semicolons, emdashes → commas)
     - Strips excessive punctuation
@@ -26,7 +26,7 @@ def preprocess_text(text: str) -> str:
     # Strip and normalize whitespace
     text = " ".join(text.split())
     
-    # Normalize punctuation that Echo-TTS converts anyway
+    # Normalize punctuation for cleaner TTS output
     text = text.replace(";", ",")
     text = text.replace(":", ",")
     text = text.replace("—", ",")  # emdash
@@ -52,8 +52,6 @@ def preprocess_text(text: str) -> str:
 def validate_text(text: str) -> dict:
     """
     Validate text meets app constraints.
-    
-    Note: The 768-byte Echo-TTS limit per chunk is handled by split_text_into_chunks.
     This function validates overall text limits for the app.
     
     Returns: {"valid": True, "chars": 150, "message": "OK"}
@@ -114,7 +112,7 @@ def estimate_duration(text: str) -> float:
 
 def split_text_into_chunks(text: str, max_words: int = None) -> list[str]:
     """
-    Split long text into chunks suitable for Echo-TTS generation.
+    Split long text into chunks for estimation purposes.
     
     Strategy:
     1. Split by sentence boundaries (., !, ?)

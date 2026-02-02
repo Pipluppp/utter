@@ -1,7 +1,7 @@
 """
 Utter Voice Clone - FastAPI Application
 
-A voice cloning app inspired by ElevenLabs, powered by Echo-TTS.
+A voice cloning app inspired by ElevenLabs, powered by Qwen3-TTS.
 """
 
 import uuid

@@ -48,6 +48,66 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+function showCloneSuccessModal(voiceData) {
+  // Remove any existing modal
+  const existingModal = document.getElementById('clone-success-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  // Create modal overlay
+  const modal = document.createElement('div');
+  modal.id = 'clone-success-modal';
+  modal.className = 'clone-success-modal';
+  modal.innerHTML = `
+    <div class="clone-success-content">
+      <div class="clone-success-icon">✓</div>
+      <h2 class="clone-success-title">Voice Created!</h2>
+      <p class="clone-success-name">"${voiceData.name}"</p>
+      <p class="clone-success-message">Your voice clone is ready to use.</p>
+      <div class="clone-success-actions">
+        <a href="/generate?voice=${voiceData.id}" class="btn btn-primary clone-success-btn">
+          Generate Speech →
+        </a>
+        <button type="button" class="btn btn-secondary clone-success-btn" id="clone-another-btn">
+          Clone Another Voice
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Animate in
+  requestAnimationFrame(() => {
+    modal.classList.add('visible');
+  });
+
+  // Clone another button resets the form
+  document.getElementById('clone-another-btn').addEventListener('click', () => {
+    modal.classList.remove('visible');
+    setTimeout(() => {
+      modal.remove();
+      // Reset the form
+      const form = document.getElementById('clone-form');
+      if (form) form.reset();
+      const fileInfo = document.getElementById('file-info');
+      if (fileInfo) fileInfo.classList.add('hidden');
+      const dropzone = document.getElementById('dropzone');
+      if (dropzone) dropzone.classList.remove('has-file');
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('btn-loading');
+        submitBtn.textContent = 'Create Voice Clone';
+      }
+      const transcriptCounter = document.getElementById('transcript-counter');
+      if (transcriptCounter) transcriptCounter.textContent = '0 chars';
+      hideError();
+    }, 300);
+  });
+}
+
 // ============================================================================
 // Clone Page - Dropzone
 // ============================================================================
@@ -264,14 +324,8 @@ function initClonePage() {
         window.taskManager.completeTask();
       }
 
-      // Show success message
-      showSuccess(`Voice "${data.name}" created successfully! Redirecting...`);
-      submitBtn.textContent = 'Success!';
-      
-      // Redirect to generate page after a brief delay
-      setTimeout(() => {
-        window.location.href = '/generate';
-      }, 1500);
+      // Show success modal instead of instant redirect
+      showCloneSuccessModal(data);
       
     } catch (error) {
       // Stop timer

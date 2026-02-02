@@ -55,6 +55,7 @@ body {
   & .header-nav {
     display: flex;
     gap: var(--space-1);
+    align-items: center;
 
     & a {
       padding: var(--space-1) var(--space-2);
@@ -69,6 +70,13 @@ body {
         color: var(--text);
         background: var(--bg-muted);
       }
+    }
+
+    & .nav-separator {
+      width: 1px;
+      height: 16px;
+      background: var(--border);
+      margin: 0 var(--space-1);
     }
   }
 }
@@ -1181,4 +1189,106 @@ body::before {
   font-size: 13px;
   margin-top: calc(var(--space-4) * -1);
   margin-bottom: var(--space-4);
+}
+
+/* ============================================================================
+   Clone Success Modal
+   ============================================================================ */
+
+.clone-success-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.clone-success-modal.visible {
+  opacity: 1;
+}
+
+.clone-success-content {
+  text-align: center;
+  max-width: 400px;
+  padding: var(--space-6);
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+}
+
+.clone-success-modal.visible .clone-success-content {
+  transform: translateY(0);
+}
+
+.clone-success-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--text);
+  color: var(--bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto var(--space-3);
+  animation: success-pop 0.4s ease 0.2s both;
+}
+
+@keyframes success-pop {
+  0% {
+    transform: scale(0);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.clone-success-title {
+  font-size: 24px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: var(--space-1);
+}
+
+.clone-success-name {
+  font-size: 16px;
+  color: var(--text);
+  font-weight: 500;
+  margin-bottom: var(--space-2);
+}
+
+.clone-success-message {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.clone-success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.clone-success-btn {
+  width: 100%;
+  text-align: center;
+}
+
+.clone-success-btn.btn-primary {
+  background: var(--text);
+  color: var(--bg);
+  border: 2px solid var(--text);
+}
+
+.clone-success-btn.btn-primary:hover {
+  background: color-mix(in srgb, var(--text) 85%, white);
 }
