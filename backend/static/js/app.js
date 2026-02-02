@@ -271,11 +271,6 @@ function initClonePage() {
       progressSection.classList.remove('hidden');
     }
 
-    // Start task tracking for navigation persistence
-    if (window.taskManager) {
-      window.taskManager.startTask('clone', '/clone', `Cloning "${voiceName}"`);
-    }
-
     // Start elapsed time counter
     const startTime = Date.now();
     const updateTimer = () => {
@@ -319,11 +314,6 @@ function initClonePage() {
         progressSection.classList.add('hidden');
       }
 
-      // Complete task tracking
-      if (window.taskManager) {
-        window.taskManager.completeTask();
-      }
-
       // Show success modal instead of instant redirect
       showCloneSuccessModal(data);
       
@@ -334,11 +324,6 @@ function initClonePage() {
       // Hide progress section
       if (progressSection) {
         progressSection.classList.add('hidden');
-      }
-
-      // Complete task tracking on error
-      if (window.taskManager) {
-        window.taskManager.completeTask();
       }
 
       showError(error.message);
@@ -410,8 +395,8 @@ function initGeneratePage() {
   function checkAndRestoreActiveTask() {
     if (!window.taskManager) return;
     
-    const task = window.taskManager.getTask();
-    if (!task || task.type !== 'generate' || task.originPage !== '/generate') {
+    const task = window.taskManager.getTask('generate');
+    if (!task || task.originPage !== '/generate') {
       return;
     }
 
@@ -437,7 +422,7 @@ function initGeneratePage() {
     // after this function returns. The event listener will handle showing the result.
     // We just need to show a brief loading state.
     
-    if (task.status === 'completed' || task.status === 'failed') {
+    if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
       // Task already done - event will fire shortly, just show brief loading
       generateBtn.disabled = true;
       generateBtn.textContent = 'Loading result...';
@@ -510,7 +495,7 @@ function initGeneratePage() {
     // If this is a restored task, clear it first
     if (generateBtn.dataset.isRestored === 'true') {
       if (window.taskManager) {
-        window.taskManager.clearTask();
+        window.taskManager.clearTask('generate');
       }
       delete generateBtn.dataset.isRestored;
     }
@@ -617,10 +602,13 @@ function initGeneratePage() {
   
   // Listen for task completion from TaskManager
   window.addEventListener('taskComplete', (e) => {
-    const { status, result, error, storedTask } = e.detail;
-    
-    // Only handle generate tasks for this page
-    if (storedTask.type !== 'generate' || storedTask.originPage !== '/generate') {
+    const { type, status, result, error, storedTask } = e.detail;
+
+    if (type && type !== 'generate') {
+      return;
+    }
+
+    if (storedTask && storedTask.originPage !== '/generate') {
       return;
     }
     
@@ -668,33 +656,20 @@ function initGeneratePage() {
   
   // Listen for task progress updates (detailed Modal status)
   window.addEventListener('taskProgress', (e) => {
-    const { modalStatus, elapsedSeconds, pollCount } = e.detail;
-    
+    const { type, statusText } = e.detail;
+    if (type !== 'generate') return;
+
     const progressStatus = document.getElementById('progress-status');
     if (!progressStatus) return;
-    
-    // Map Modal status to user-friendly messages
-    const statusMessages = {
-      sending: 'Connecting to Modal...',
-      queued: 'Waiting for GPU container...',
-      processing: 'Generating audio...',
-      polling: `Still processing (check #${pollCount})...`,
-    };
-    
-    let message = statusMessages[modalStatus] || modalStatus;
-    if (elapsedSeconds > 30 && modalStatus === 'polling') {
-      message = `Long generation in progress (${Math.round(elapsedSeconds)}s)...`;
-    }
-    
-    progressStatus.textContent = message;
+
+    progressStatus.textContent = statusText || 'Processing...';
   });
   
   // Listen for task cancellation from modal cancel button
   window.addEventListener('taskCancelled', (e) => {
-    const { storedTask } = e.detail;
-    
-    // Only handle generate tasks for this page
-    if (storedTask.type !== 'generate' || storedTask.originPage !== '/generate') {
+    const { type, storedTask } = e.detail;
+    if (type && type !== 'generate') return;
+    if (storedTask && storedTask.originPage !== '/generate') {
       return;
     }
     

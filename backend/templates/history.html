@@ -7,6 +7,18 @@
 
 <div id="error-container" class="message hidden"></div>
 
+<div class="history-controls">
+    <input type="text" id="history-search" placeholder="Search generations..." />
+    <select id="history-filter">
+        <option value="">All status</option>
+        <option value="completed">Completed</option>
+        <option value="failed">Failed</option>
+        <option value="cancelled">Cancelled</option>
+        <option value="processing">Processing</option>
+        <option value="pending">Pending</option>
+    </select>
+</div>
+
 <div id="history-container" class="history-grid">
     <div class="loading-placeholder">Loading history...</div>
 </div>
@@ -16,137 +28,335 @@
     <a href="/generate" class="btn">Generate Your First Speech</a>
 </div>
 
+<div class="history-pagination hidden" id="pagination">
+    <button id="prev-page" disabled>Previous</button>
+    <span id="page-info">Page 1 of 1</span>
+    <button id="next-page">Next</button>
+</div>
+
 <script>
-    document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('history-container');
         const emptyState = document.getElementById('empty-state');
+        const errorContainer = document.getElementById('error-container');
+        const searchInput = document.getElementById('history-search');
+        const statusFilter = document.getElementById('history-filter');
+        const pagination = document.getElementById('pagination');
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        const pageInfo = document.getElementById('page-info');
 
-        try {
-            const response = await fetch('/api/generations');
-            const data = await response.json();
+        let currentPage = 1;
+        const perPage = 20;
+        let currentSearch = '';
+        let currentStatus = '';
+        let refreshInterval = null;
+        let debounceTimer = null;
 
-            if (data.generations.length === 0) {
-                container.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                return;
+        async function loadHistory() {
+            showLoading();
+            clearError();
+
+            try {
+                const params = new URLSearchParams();
+                params.set('page', currentPage);
+                params.set('per_page', perPage);
+                if (currentSearch) params.set('search', currentSearch);
+                if (currentStatus) params.set('status', currentStatus);
+
+                const response = await fetch(`/api/generations?${params.toString()}`);
+                if (!response.ok) {
+                    throw new Error('Failed to load history');
+                }
+
+                const data = await response.json();
+                const generations = data.generations || [];
+
+                if (data.pagination && data.pagination.pages && currentPage > data.pagination.pages) {
+                    currentPage = data.pagination.pages;
+                    if (currentPage < 1) currentPage = 1;
+                    await loadHistory();
+                    return;
+                }
+
+                if (generations.length === 0) {
+                    container.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    pagination.classList.add('hidden');
+                    stopAutoRefresh();
+                    return;
+                }
+
+                emptyState.classList.add('hidden');
+                container.classList.remove('hidden');
+                container.innerHTML = generations.map(renderHistoryCard).join('');
+
+                updatePagination(data.pagination);
+
+                const hasProcessing = generations.some(g =>
+                    g.status === 'processing' || g.status === 'pending'
+                );
+                if (hasProcessing) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+
+            } catch (error) {
+                showError(error.message || 'Failed to load history');
             }
+        }
 
-            container.innerHTML = data.generations.map(gen => `
+        function renderHistoryCard(gen) {
+            const status = gen.status || 'completed';
+            const statusLabel = formatStatus(status);
+            const statusClass = `status-${status}`;
+            const audioFilename = getFilename(gen.audio_path);
+            const audioUrl = audioFilename ? `/uploads/generated/${audioFilename}` : '';
+            const duration = gen.duration_seconds ? formatDuration(gen.duration_seconds) : '';
+            const genTime = gen.generation_time_seconds
+                ? `Generated in ${formatDuration(gen.generation_time_seconds)}`
+                : '';
+
+            const metaParts = [];
+            if (duration) metaParts.push(`<span class="history-card-duration">${duration}</span>`);
+            if (genTime) metaParts.push(`<span class="history-card-gen-time">${genTime}</span>`);
+
+            const canPlay = status === 'completed' && audioUrl;
+            const canRegenerate = status !== 'processing' && status !== 'pending';
+            const voiceName = escapeHtml(gen.voice_name || 'Unknown Voice');
+            const textPreview = escapeHtml(truncateText(gen.text, 100));
+            const errorMessage = gen.error_message ? escapeHtml(truncateText(gen.error_message, 140)) : '';
+
+            return `
             <div class="history-card" data-id="${gen.id}">
                 <div class="history-card-header">
-                    <span class="history-card-voice">${gen.voice_name || 'Unknown Voice'}</span>
+                    <span class="history-card-voice">${voiceName}</span>
+                    <span class="history-card-status ${statusClass}">${statusLabel}</span>
                     <span class="history-card-date">${formatDate(gen.created_at)}</span>
                 </div>
-                <p class="history-card-text">${truncateText(gen.text, 100)}</p>
+                <p class="history-card-text">${textPreview}</p>
                 <div class="history-card-meta">
-                    <span class="history-card-duration">${formatDuration(gen.duration_seconds)}</span>
+                    ${metaParts.join('')}
                 </div>
+                ${errorMessage ? `<div class="history-card-error">${errorMessage}</div>` : ''}
                 <div class="history-card-actions">
-                    <button class="btn btn-secondary play-btn" data-id="${gen.id}" data-url="/uploads/generated/${getFilename(gen.audio_path)}">
-                        Play
-                    </button>
-                    <a href="/uploads/generated/${getFilename(gen.audio_path)}" class="btn btn-secondary" download="speech.mp3">
-                        Download
-                    </a>
+                    ${canPlay ? `
+                        <button class="btn btn-secondary play-btn" data-id="${gen.id}" data-url="${audioUrl}">
+                            Play
+                        </button>
+                        <a href="${audioUrl}" class="btn btn-secondary" download="speech.mp3">
+                            Download
+                        </a>
+                    ` : ''}
+                    ${(status === 'processing' || status === 'pending') ? `
+                        <span class="processing-indicator">Generating...</span>
+                    ` : ''}
+                    ${canRegenerate ? `
+                        <button class="btn btn-secondary regenerate-btn" data-id="${gen.id}">
+                            Regenerate
+                        </button>
+                    ` : ''}
                     <button class="btn btn-secondary delete-btn" data-id="${gen.id}">
                         Delete
                     </button>
                 </div>
                 <div id="waveform-${gen.id}" class="waveform-container hidden"></div>
             </div>
-        `).join('');
-
-        } catch (error) {
-            container.innerHTML = '<p class="message error">Failed to load history</p>';
-        }
-    });
-
-    function formatDate(isoString) {
-        if (!isoString) return '';
-        // Append Z to ensure it's treated as UTC if it's missing timezone info
-        if (!isoString.endsWith('Z')) isoString += 'Z';
-        const date = new Date(isoString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit'
-        });
-    }
-
-    function formatDuration(seconds) {
-        if (!seconds) return '';
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return mins > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${secs}s`;
-    }
-
-    function truncateText(text, maxLen) {
-        if (!text) return '';
-        return text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
-    }
-
-    function getFilename(path) {
-        if (!path) return '';
-        return path.split(/[/\\]/).pop();
-    }
-
-    // Play button handler
-    document.addEventListener('click', (e) => {
-        const playBtn = e.target.closest('.play-btn');
-        if (!playBtn) return;
-
-        const audioUrl = playBtn.dataset.url;
-        const genId = playBtn.dataset.id;
-
-        // Use global WaveformManager
-        if (window.waveformManager) {
-            window.waveformManager.play(`waveform-${genId}`, audioUrl, playBtn);
-        } else {
-            console.error('WaveformManager not loaded');
-        }
-    });
-
-    // Delete button handler
-    document.addEventListener('click', async (e) => {
-        const deleteBtn = e.target.closest('.delete-btn');
-        if (!deleteBtn) return;
-
-        const genId = deleteBtn.dataset.id;
-
-        if (!confirm('Delete this generation? This cannot be undone.')) {
-            return;
+        `;
         }
 
-        deleteBtn.disabled = true;
-        deleteBtn.textContent = 'Deleting...';
+        function updatePagination(paginationData) {
+            if (!paginationData || paginationData.total === 0) {
+                pagination.classList.add('hidden');
+                return;
+            }
 
-        try {
-            const response = await fetch(`/api/generations/${genId}`, {
-                method: 'DELETE'
+            pagination.classList.remove('hidden');
+            const totalPages = paginationData.pages || 1;
+            const page = paginationData.page || 1;
+
+            pageInfo.textContent = `Page ${page} of ${totalPages}`;
+            prevBtn.disabled = page <= 1;
+            nextBtn.disabled = page >= totalPages;
+        }
+
+        function startAutoRefresh() {
+            if (refreshInterval) return;
+            refreshInterval = setInterval(loadHistory, 5000);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+
+        function showLoading() {
+            container.innerHTML = '<div class="loading-placeholder">Loading history...</div>';
+        }
+
+        function showError(message) {
+            errorContainer.textContent = message;
+            errorContainer.classList.remove('hidden', 'success');
+            errorContainer.classList.add('error');
+        }
+
+        function clearError() {
+            errorContainer.classList.add('hidden');
+            errorContainer.classList.remove('error', 'success');
+        }
+
+        function formatStatus(status) {
+            const labels = {
+                pending: 'Pending',
+                processing: 'Processing',
+                completed: 'Completed',
+                failed: 'Failed',
+                cancelled: 'Cancelled',
+            };
+            return labels[status] || status;
+        }
+
+        function formatDate(isoString) {
+            if (!isoString) return '';
+            if (!isoString.endsWith('Z')) isoString += 'Z';
+            const date = new Date(isoString);
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
             });
-
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.detail || 'Failed to delete');
-            }
-
-            // Remove card from DOM
-            const card = deleteBtn.closest('.history-card');
-            card.remove();
-
-            // Check if any generations left
-            const container = document.getElementById('history-container');
-            if (container.children.length === 0) {
-                container.classList.add('hidden');
-                document.getElementById('empty-state').classList.remove('hidden');
-            }
-
-        } catch (error) {
-            alert('Failed to delete: ' + error.message);
-            deleteBtn.disabled = false;
-            deleteBtn.textContent = 'Delete';
         }
+
+        function formatDuration(seconds) {
+            if (seconds === null || seconds === undefined) return '';
+            const total = Math.round(seconds);
+            const mins = Math.floor(total / 60);
+            const secs = total % 60;
+            return mins > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${secs}s`;
+        }
+
+        function truncateText(text, maxLen) {
+            if (!text) return '';
+            return text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getFilename(path) {
+            if (!path) return '';
+            return path.split(/[/\\]/).pop();
+        }
+
+        searchInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                currentSearch = searchInput.value.trim();
+                currentPage = 1;
+                loadHistory();
+            }, 300);
+        });
+
+        statusFilter.addEventListener('change', () => {
+            currentStatus = statusFilter.value;
+            currentPage = 1;
+            loadHistory();
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage -= 1;
+                loadHistory();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            currentPage += 1;
+            loadHistory();
+        });
+
+        // Play button handler
+        document.addEventListener('click', (e) => {
+            const playBtn = e.target.closest('.play-btn');
+            if (!playBtn) return;
+
+            const audioUrl = playBtn.dataset.url;
+            const genId = playBtn.dataset.id;
+
+            if (window.waveformManager) {
+                window.waveformManager.play(`waveform-${genId}`, audioUrl, playBtn);
+            } else {
+                console.error('WaveformManager not loaded');
+            }
+        });
+
+        // Regenerate handler
+        document.addEventListener('click', async (e) => {
+            const regenBtn = e.target.closest('.regenerate-btn');
+            if (!regenBtn) return;
+
+            const genId = regenBtn.dataset.id;
+            regenBtn.disabled = true;
+            regenBtn.textContent = 'Preparing...';
+
+            try {
+                const response = await fetch(`/api/generations/${genId}/regenerate`, { method: 'POST' });
+                if (!response.ok) {
+                    throw new Error('Failed to prepare regeneration');
+                }
+                const data = await response.json();
+                window.location.href = data.redirect_url;
+            } catch (error) {
+                alert('Failed to regenerate: ' + error.message);
+                regenBtn.disabled = false;
+                regenBtn.textContent = 'Regenerate';
+            }
+        });
+
+        // Delete button handler
+        document.addEventListener('click', async (e) => {
+            const deleteBtn = e.target.closest('.delete-btn');
+            if (!deleteBtn) return;
+
+            const genId = deleteBtn.dataset.id;
+
+            if (!confirm('Delete this generation? This cannot be undone.')) {
+                return;
+            }
+
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Deleting...';
+
+            try {
+                const response = await fetch(`/api/generations/${genId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || 'Failed to delete');
+                }
+
+                await loadHistory();
+
+            } catch (error) {
+                alert('Failed to delete: ' + error.message);
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'Delete';
+            }
+        });
+
+        loadHistory();
     });
 </script>
 {% endblock %}

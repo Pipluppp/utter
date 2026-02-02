@@ -57,6 +57,13 @@ class Generation(Base):
     audio_path: Mapped[str] = mapped_column(String(500), nullable=False)
     duration_seconds: Mapped[float] = mapped_column(Float, nullable=True)
     language: Mapped[str] = mapped_column(String(20), nullable=False, default="Auto")
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="completed"
+    )  # "pending" | "processing" | "completed" | "failed" | "cancelled"
+    generation_time_seconds: Mapped[Optional[float]] = mapped_column(
+        Float, nullable=True
+    )
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # Relationship
@@ -72,5 +79,8 @@ class Generation(Base):
             "audio_path": self.audio_path,
             "duration_seconds": self.duration_seconds,
             "language": self.language,
+            "status": self.status,
+            "generation_time_seconds": self.generation_time_seconds,
+            "error_message": self.error_message,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

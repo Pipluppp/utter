@@ -81,6 +81,16 @@ body {
   }
 }
 
+.task-badge {
+  background: var(--text);
+  color: var(--bg);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+  line-height: 1;
+}
+
 .container {
   width: min(100% - var(--space-4), 640px);
   margin: 0 auto;
@@ -595,6 +605,30 @@ body::before {
    History Page
    ============================================================================ */
 
+.history-controls {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.history-controls input,
+.history-controls select {
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 10px var(--space-2);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  width: 100%;
+}
+
+.history-controls input:focus,
+.history-controls select:focus {
+  outline: none;
+  border-color: var(--text);
+}
+
 .history-grid {
   display: flex;
   flex-direction: column;
@@ -611,6 +645,8 @@ body::before {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-1);
   margin-bottom: var(--space-1);
 }
 
@@ -635,14 +671,56 @@ body::before {
 }
 
 .history-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   font-size: 11px;
   color: var(--text-faint);
   margin-bottom: var(--space-2);
 }
 
+.history-card-status {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+}
+
+.status-completed {
+  color: #16a34a;
+  border-color: #16a34a;
+}
+
+.status-processing,
+.status-pending {
+  color: #2563eb;
+  border-color: #2563eb;
+}
+
+.status-failed {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.status-cancelled {
+  color: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.history-card-error {
+  font-size: 11px;
+  color: var(--text);
+  border-left: 3px solid #ef4444;
+  padding: 6px 10px;
+  background: #fef2f2;
+  margin-top: var(--space-1);
+}
+
 .history-card-actions {
   display: flex;
   gap: var(--space-1);
+  flex-wrap: wrap;
 }
 
 .history-card-actions .btn {
@@ -650,6 +728,12 @@ body::before {
   text-align: center;
   font-size: 12px;
   padding: 8px var(--space-2);
+}
+
+.processing-indicator {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 0;
 }
 
 .history-empty {
@@ -660,6 +744,30 @@ body::before {
 
 .history-empty p {
   margin-bottom: var(--space-3);
+}
+
+.history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-3);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.history-pagination button {
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.history-pagination button:disabled {
+  color: var(--text-faint);
+  cursor: not-allowed;
 }
 
 /* Play button playing state */
@@ -711,6 +819,11 @@ body::before {
       margin-top: var(--space-1);
     }
   }
+
+  .history-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 /* Waveform Container */
@@ -726,196 +839,85 @@ body::before {
 
 .task-modal {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 20px;
+  right: 20px;
   background: var(--bg);
-  border: 2px solid var(--text);
-  padding: 12px 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  max-width: 280px;
-  box-shadow: 4px 4px 0 var(--text);
-}
-
-.task-modal:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 var(--text);
+  max-width: 350px;
 }
 
 .task-modal-content {
   display: flex;
+  flex-direction: column;
+}
+
+.task-item {
+  display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
 }
 
-.task-modal-icon {
-  font-size: 20px;
-  flex-shrink: 0;
+.task-item:last-child {
+  border-bottom: none;
 }
 
-.task-modal-info {
+.task-item:hover {
+  background: var(--bg-subtle);
+}
+
+.task-icon {
+  font-size: 14px;
+  width: 20px;
+  text-align: center;
+}
+
+.task-desc {
   flex: 1;
-  min-width: 0;
-}
-
-.task-modal-title {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.task-modal-time {
-  font-size: 11px;
+.task-elapsed {
+  font-size: 12px;
   color: var(--text-muted);
-  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
 }
 
-.task-modal-meta {
-  display: flex;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.task-modal-status {
-  font-weight: 500;
-}
-
-.task-modal-dismiss {
+.task-cancel,
+.task-dismiss {
   background: none;
   border: none;
-  font-size: 20px;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
-  flex-shrink: 0;
-  transition: color 0.15s ease;
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
-.task-modal-dismiss:hover {
-  color: var(--text);
-}
-
-/* Pulse animation for active task */
-.task-modal::before {
-  content: '';
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 10px;
-  height: 10px;
-  background: var(--text);
-  border-radius: 50%;
-  animation: task-pulse 2s ease-in-out infinite;
-}
-
-@keyframes task-pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.5;
-    transform: scale(1.2);
-  }
-}
-
-/* Task modal completed state */
-.task-modal.task-complete {
-  background: var(--text);
-  color: var(--bg);
-}
-
-.task-modal.task-complete .task-modal-title,
-.task-modal.task-complete .task-modal-status,
-.task-modal.task-complete .task-modal-time,
-.task-modal.task-complete .task-modal-icon {
-  color: var(--bg);
-}
-
-.task-modal.task-complete .task-modal-dismiss {
-  color: var(--bg);
-  opacity: 0.7;
-}
-
-.task-modal.task-complete .task-modal-dismiss:hover {
-  opacity: 1;
-}
-
-.task-modal.task-complete::before {
-  background: #22c55e;
-  animation: none;
-}
-
-/* Task modal failed state */
-.task-modal.task-failed::before {
-  background: #ef4444;
-  animation: none;
-}
-
-/* Task modal cancelled state */
-.task-modal.task-cancelled::before {
-  background: #f59e0b;
-  animation: none;
-}
-
-.task-modal.task-cancelled .task-modal-title {
-  color: #f59e0b;
-}
-
-/* Task modal actions container */
-.task-modal-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-/* Cancel button */
-.task-modal-cancel {
-  background: transparent;
-  border: 1px solid var(--text-muted);
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.task-modal-cancel:hover {
-  border-color: #ef4444;
+.task-cancel:hover {
   color: #ef4444;
 }
 
-/* Long task indicator */
-.task-modal-long-task {
-  margin-top: 6px;
-  font-size: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.task-dismiss:hover {
+  color: var(--text);
 }
 
-.long-task-indicator {
+.task-item.completed .task-elapsed {
+  color: #16a34a;
+}
+
+.task-item.failed .task-elapsed {
+  color: #ef4444;
+}
+
+.task-item.cancelled .task-elapsed {
   color: #f59e0b;
-  font-weight: 500;
-}
-
-.long-task-estimate {
-  color: var(--text-muted);
 }
 
 /* ============================================================================

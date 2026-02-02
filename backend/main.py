@@ -6,11 +6,13 @@ A voice cloning app inspired by ElevenLabs, powered by Qwen3-TTS.
 
 import uuid
 import asyncio
+import time
 from pathlib import Path
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
 from typing import Dict, Any, Optional
 from enum import Enum
+from urllib.parse import quote
 
 from fastapi import (
     FastAPI,
@@ -25,7 +27,7 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -460,6 +462,20 @@ async def api_generate(request: Request, session: AsyncSession = Depends(get_ses
 
     estimated_minutes = estimate_generation_time(text)
 
+    # Create generation record immediately so it appears in history while processing
+    generation = Generation(
+        voice_id=voice_id,
+        text=text,
+        audio_path="",
+        duration_seconds=None,
+        language=language,
+        status="processing",
+    )
+    session.add(generation)
+    await session.commit()
+    await session.refresh(generation)
+    generation_id = generation.id
+
     # Create task (all generations use job-based approach for cancellation support)
     task_id = task_store.create_task(
         task_type="generate",
@@ -470,13 +486,14 @@ async def api_generate(request: Request, session: AsyncSession = Depends(get_ses
             "text_preview": text[:50] + "..." if len(text) > 50 else text,
             "language": language,
             "estimated_duration_minutes": estimated_minutes,
+            "generation_id": generation_id,
         },
         is_long_running=True,  # All tasks use job-based approach
     )
 
     # Start background generation
     asyncio.create_task(
-        _process_generation(task_id, voice_id, text, ref_text, language)
+        _process_generation(task_id, generation_id, voice_id, text, ref_text, language)
     )
 
     # Return task_id immediately
@@ -485,11 +502,13 @@ async def api_generate(request: Request, session: AsyncSession = Depends(get_ses
         "status": TaskStatus.PENDING,
         "is_long_running": True,
         "estimated_duration_minutes": estimated_minutes,
+        "generation_id": generation_id,
     }
 
 
 async def _process_generation(
     task_id: str,
+    generation_id: str,
     voice_id: str,
     text: str,
     ref_text: str,
@@ -499,6 +518,7 @@ async def _process_generation(
     from database import async_session_factory
     from services.tts import generate_speech
 
+    start_time = time.time()
     task_store.update_task(task_id, TaskStatus.PROCESSING)
 
     try:
@@ -517,22 +537,31 @@ async def _process_generation(
         # Get audio duration
         duration = get_audio_duration(output_path)
 
+        elapsed = time.time() - start_time
+
         # Save generation record using a new session
         async with async_session_factory() as session:
-            generation = Generation(
-                voice_id=voice_id,
-                text=text,
-                audio_path=output_path,
-                duration_seconds=duration,
-                language=language,
-            )
-            session.add(generation)
-            await session.commit()
-            generation_id = generation.id
+            generation = await session.get(Generation, generation_id)
+            if generation:
+                # If cancellation was requested after completion, respect cancelled state
+                task = task_store.get_task(task_id)
+                if task and task.get("status") == TaskStatus.CANCELLED:
+                    generation.status = "cancelled"
+                    generation.error_message = "Cancelled by user"
+                else:
+                    generation.status = "completed"
+                    generation.audio_path = output_path
+                    generation.duration_seconds = duration
+                generation.generation_time_seconds = elapsed
+                await session.commit()
 
         # Convert to URL path
         output_filename = Path(output_path).name
         audio_url = f"/uploads/generated/{output_filename}"
+
+        task = task_store.get_task(task_id)
+        if task and task.get("status") == TaskStatus.CANCELLED:
+            return
 
         task_store.update_task(
             task_id,
@@ -546,19 +575,42 @@ async def _process_generation(
 
     except ValueError as e:
         error_msg = str(e)
+        elapsed = time.time() - start_time
         if "cancelled" in error_msg.lower():
             task_store.update_task(task_id, TaskStatus.CANCELLED, error=error_msg)
+            async with async_session_factory() as session:
+                generation = await session.get(Generation, generation_id)
+                if generation:
+                    generation.status = "cancelled"
+                    generation.error_message = error_msg
+                    generation.generation_time_seconds = elapsed
+                    await session.commit()
         else:
             task_store.update_task(task_id, TaskStatus.FAILED, error=error_msg)
+            async with async_session_factory() as session:
+                generation = await session.get(Generation, generation_id)
+                if generation:
+                    generation.status = "failed"
+                    generation.error_message = error_msg
+                    generation.generation_time_seconds = elapsed
+                    await session.commit()
     except Exception as e:
         import traceback
 
         traceback.print_exc()
+        elapsed = time.time() - start_time
         task_store.update_task(
             task_id,
             TaskStatus.FAILED,
             error="Failed to generate speech. Please try again.",
         )
+        async with async_session_factory() as session:
+            generation = await session.get(Generation, generation_id)
+            if generation:
+                generation.status = "failed"
+                generation.error_message = "Failed to generate speech. Please try again."
+                generation.generation_time_seconds = elapsed
+                await session.commit()
 
 
 @app.post("/api/tasks/{task_id}/cancel")
@@ -598,6 +650,25 @@ async def api_cancel_task(task_id: str):
     # Mark as cancelled
     task_store.update_task(task_id, TaskStatus.CANCELLED, error="Cancelled by user")
 
+    # Update generation record if available
+    generation_id = task.get("metadata", {}).get("generation_id")
+    if generation_id:
+        from database import async_session_factory
+
+        async with async_session_factory() as session:
+            generation = await session.get(Generation, generation_id)
+            if generation and generation.status not in ("completed", "failed", "cancelled"):
+                try:
+                    created_at = datetime.fromisoformat(task["created_at"])
+                    elapsed = (datetime.utcnow() - created_at).total_seconds()
+                except Exception:
+                    elapsed = None
+                generation.status = "cancelled"
+                generation.error_message = "Cancelled by user"
+                if elapsed is not None:
+                    generation.generation_time_seconds = elapsed
+                await session.commit()
+
     return {"cancelled": True, "task_id": task_id}
 
 
@@ -630,17 +701,48 @@ async def api_delete_task(task_id: str):
 
 
 @app.get("/api/generations")
-async def api_generations(session: AsyncSession = Depends(get_session)):
-    """List all past generations."""
-    result = await session.execute(
-        select(Generation)
-        .options(joinedload(Generation.voice))
-        .order_by(Generation.created_at.desc())
-        .limit(50)
+async def api_generations(
+    page: int = 1,
+    per_page: int = 20,
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    session: AsyncSession = Depends(get_session),
+):
+    """List generations with pagination and optional filtering."""
+    page = max(page, 1)
+    per_page = min(max(per_page, 1), 100)
+
+    query = select(Generation).options(joinedload(Generation.voice))
+
+    if search:
+        search = search.strip()
+        if search:
+            query = query.where(Generation.text.ilike(f"%{search}%"))
+    if status:
+        query = query.where(Generation.status == status)
+
+    count_query = select(func.count()).select_from(query.subquery())
+    total = (await session.execute(count_query)).scalar() or 0
+
+    query = (
+        query.order_by(Generation.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
     )
+    result = await session.execute(query)
     generations = result.scalars().all()
 
-    return {"generations": [gen.to_dict() for gen in generations]}
+    pages = max(1, (total + per_page - 1) // per_page)
+
+    return {
+        "generations": [gen.to_dict() for gen in generations],
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "pages": pages,
+        },
+    }
 
 
 @app.delete("/api/generations/{generation_id}")
@@ -657,16 +759,39 @@ async def api_delete_generation(
     if not generation:
         raise HTTPException(status_code=404, detail="Generation not found")
 
-    # Delete audio file
-    audio_path = Path(generation.audio_path)
-    if audio_path.exists():
-        audio_path.unlink()
+    # Delete audio file (if present)
+    if generation.audio_path:
+        audio_path = Path(generation.audio_path)
+        if audio_path.exists() and audio_path.is_file():
+            audio_path.unlink()
 
     # Delete from database
     await session.delete(generation)
     await session.commit()
 
     return {"success": True, "message": "Generation deleted"}
+
+
+@app.post("/api/generations/{generation_id}/regenerate")
+async def api_regenerate_generation(
+    generation_id: str, session: AsyncSession = Depends(get_session)
+):
+    """Return parameters needed to regenerate a past generation."""
+    generation = await session.get(Generation, generation_id)
+
+    if not generation:
+        raise HTTPException(status_code=404, detail="Generation not found")
+
+    return {
+        "voice_id": generation.voice_id,
+        "text": generation.text,
+        "language": generation.language,
+        "redirect_url": (
+            f"/generate?voice={generation.voice_id}"
+            f"&text={quote(generation.text)}"
+            f"&language={generation.language}"
+        ),
+    }
 
 
 @app.get("/api/languages")

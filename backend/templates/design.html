@@ -361,10 +361,12 @@
 
         // Listen for task completion from TaskManager
         window.addEventListener('taskComplete', (e) => {
-            const { status, result, error, storedTask } = e.detail;
+            const { type, status, result, error, storedTask } = e.detail;
 
-            // Only handle design tasks for this page
-            if (storedTask.type !== 'design' || storedTask.originPage !== '/design') {
+            if (type && type !== 'design') {
+                return;
+            }
+            if (storedTask && storedTask.originPage !== '/design') {
                 return;
             }
 
@@ -392,8 +394,8 @@
         function checkAndRestoreActiveTask() {
             if (!window.taskManager) return;
 
-            const task = window.taskManager.getTask();
-            if (!task || task.type !== 'design' || task.originPage !== '/design') {
+            const task = window.taskManager.getTask('design');
+            if (!task || task.originPage !== '/design') {
                 return;
             }
 
@@ -413,7 +415,7 @@
             }
 
             // If task already completed, event will fire shortly
-            if (task.status === 'completed' || task.status === 'failed') {
+            if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
                 generatePreviewBtn.disabled = true;
                 generatePreviewBtn.textContent = 'Loading result...';
                 return;

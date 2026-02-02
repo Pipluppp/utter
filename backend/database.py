@@ -37,6 +37,9 @@ async def create_tables():
         "ALTER TABLE voices ADD COLUMN source VARCHAR(20) NOT NULL DEFAULT 'uploaded'",
         "ALTER TABLE voices ADD COLUMN description TEXT",
         "ALTER TABLE generations ADD COLUMN language VARCHAR(20) NOT NULL DEFAULT 'Auto'",
+        "ALTER TABLE generations ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'completed'",
+        "ALTER TABLE generations ADD COLUMN generation_time_seconds FLOAT",
+        "ALTER TABLE generations ADD COLUMN error_message TEXT",
     ]
     async with engine.begin() as conn:
         for stmt in migrations:

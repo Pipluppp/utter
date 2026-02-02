@@ -26,7 +26,10 @@
       <a href="/design" class="{% if request.url.path == '/design' %}active{% endif %}">Design</a>
       <span class="nav-separator"></span>
       <a href="/voices" class="{% if request.url.path == '/voices' %}active{% endif %}">Voices</a>
-      <a href="/history" class="{% if request.url.path == '/history' %}active{% endif %}">History</a>
+      <a href="/history" class="{% if request.url.path == '/history' %}active{% endif %}">
+        History
+        <span id="task-badge" class="task-badge hidden">0</span>
+      </a>
       <a href="/about" class="{% if request.url.path == '/about' %}active{% endif %}">About</a>
     </nav>
   </header>
@@ -37,23 +40,8 @@
 
   <!-- Global Task Modal (shows when navigating away during generation) -->
   <div id="global-task-modal" class="task-modal hidden">
-    <div class="task-modal-content">
-      <div class="task-modal-icon">⏳</div>
-      <div class="task-modal-info">
-        <div class="task-modal-title">Processing...</div>
-        <div class="task-modal-meta">
-          <span class="task-modal-status">Processing...</span>
-          <span class="task-modal-time">0:00 elapsed</span>
-        </div>
-        <div class="task-modal-long-task hidden">
-          <span class="long-task-indicator">🔄 Long generation in progress</span>
-          <span class="long-task-estimate"></span>
-        </div>
-      </div>
-      <div class="task-modal-actions">
-        <button class="task-modal-cancel hidden" title="Cancel generation">Cancel</button>
-        <button class="task-modal-dismiss" title="Dismiss">×</button>
-      </div>
+    <div class="task-modal-content" id="task-modal-content">
+      <!-- Dynamically populated -->
     </div>
   </div>
 

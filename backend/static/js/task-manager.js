@@ -1,19 +1,22 @@
 /**
- * Task Manager - Backend-Synced Task Tracking
- * 
+ * Task Manager - Backend-Synced Multi-Task Tracking
+ *
  * Polls backend /api/tasks/{id} for real-time status updates.
- * Shows persistent modal when navigating away during active task.
+ * Shows persistent modal when navigating away during active tasks.
  * Dispatches events when tasks complete so pages can update their UI.
  */
 
 class TaskManager {
   constructor() {
-    this.STORAGE_KEY = 'utter_active_task';
+    this.STORAGE_KEY_PREFIX = 'utter_task_';
+    this.LEGACY_STORAGE_KEY = 'utter_active_task';
     this.modal = null;
-    this.pollInterval = null;
+    this.modalContent = null;
+    this.pollIntervals = {};
     this.timerInterval = null;
     this.initialized = false;
     this.pollRate = 1000; // Poll every 1 second
+    this.maxTaskAgeMs = 30 * 60 * 1000; // 30 minutes
   }
 
   /**
@@ -21,21 +24,45 @@ class TaskManager {
    */
   init() {
     if (this.initialized) return;
-    
+
     this.modal = document.getElementById('global-task-modal');
     if (!this.modal) {
       console.warn('TaskManager: Modal element not found');
       return;
     }
 
-    this.modalTitle = this.modal.querySelector('.task-modal-title');
-    this.modalTime = this.modal.querySelector('.task-modal-time');
-    this.modalIcon = this.modal.querySelector('.task-modal-icon');
-    this.modalStatus = this.modal.querySelector('.task-modal-status');
+    this.modalContent = this.modal.querySelector('#task-modal-content');
+    if (!this.modalContent) {
+      console.warn('TaskManager: Modal content element not found');
+      return;
+    }
 
+    this.migrateLegacyTask();
     this.bindEvents();
-    this.checkActiveTask();
+    this.checkActiveTasks();
+    this.updateModalUI();
+    this.updateTaskBadge();
     this.initialized = true;
+  }
+
+  /**
+   * Migrate old single-task storage to per-type storage
+   */
+  migrateLegacyTask() {
+    const legacy = localStorage.getItem(this.LEGACY_STORAGE_KEY);
+    if (!legacy) return;
+
+    try {
+      const task = JSON.parse(legacy);
+      if (task && task.type) {
+        task.dismissed = false;
+        localStorage.setItem(this.getStorageKey(task.type), JSON.stringify(task));
+      }
+    } catch {
+      // ignore malformed legacy data
+    }
+
+    localStorage.removeItem(this.LEGACY_STORAGE_KEY);
   }
 
   /**
@@ -44,42 +71,72 @@ class TaskManager {
   bindEvents() {
     if (!this.modal) return;
 
-    // Click on modal (not dismiss button) navigates to origin page
+    // Click handling for task rows and buttons
     this.modal.addEventListener('click', (e) => {
-      if (e.target.classList.contains('task-modal-dismiss')) {
+      const dismissBtn = e.target.closest('.task-dismiss');
+      if (dismissBtn) {
         e.stopPropagation();
-        this.clearTask();
+        this.dismissTask(dismissBtn.dataset.type);
         return;
       }
-      
-      const task = this.getStoredTask();
+
+      const cancelBtn = e.target.closest('.task-cancel');
+      if (cancelBtn) {
+        e.stopPropagation();
+        this.cancelTask(cancelBtn.dataset.type);
+        return;
+      }
+
+      const item = e.target.closest('.task-item');
+      if (!item) return;
+
+      const type = item.dataset.type;
+      const task = this.getTask(type);
       if (task && task.originPage) {
         window.location.href = task.originPage;
       }
     });
-    
+
     // Listen for storage changes from other tabs
     window.addEventListener('storage', (e) => {
-      if (e.key === this.STORAGE_KEY) {
-        if (e.newValue === null) {
-          this.hideModal();
-          this.stopPolling();
-        } else {
-          this.checkActiveTask();
+      if (!e.key) return;
+
+      if (e.key === this.LEGACY_STORAGE_KEY) {
+        this.migrateLegacyTask();
+        this.checkActiveTasks();
+        this.updateModalUI();
+        this.updateTaskBadge();
+        return;
+      }
+
+      if (!e.key.startsWith(this.STORAGE_KEY_PREFIX)) return;
+
+      const type = e.key.slice(this.STORAGE_KEY_PREFIX.length);
+      if (e.newValue === null) {
+        this.stopPolling(type);
+      } else {
+        const task = this.getTask(type);
+        if (task && !this.isTerminalStatus(task.status) && task.taskId) {
+          this.startPolling(task.taskId, type);
         }
       }
+
+      this.updateModalUI();
+      this.updateTaskBadge();
     });
   }
 
   /**
    * Start a new task and begin polling
-   * @param {string} taskId - Backend task ID from /api/generate response
+   * @param {string|null} taskId - Backend task ID from /api/generate response
    * @param {string} type - 'generate' | 'clone' | 'design'
    * @param {string} originPage - The page URL where task started
    * @param {string} description - Human-readable task description
    * @param {Object} formState - Form state to preserve for restoration
    */
   startTask(taskId, type, originPage, description, formState = null) {
+    if (!type) return;
+
     const task = {
       taskId,
       type,
@@ -87,450 +144,362 @@ class TaskManager {
       description,
       formState,
       startedAt: Date.now(),
+      status: 'pending',
+      dismissed: false,
     };
-    
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(task));
-    
-    // Start polling backend for status
-    this.startPolling(taskId);
-    
-    // Don't show modal on origin page
-    this.hideModal();
+
+    localStorage.setItem(this.getStorageKey(type), JSON.stringify(task));
+
+    if (taskId) {
+      this.startPolling(taskId, type);
+    }
+
+    this.updateModalUI();
+    this.updateTaskBadge();
   }
 
   /**
-   * Get stored task from localStorage
-   * @returns {Object|null}
+   * Get localStorage key for task type
    */
-  getStoredTask() {
-    const stored = localStorage.getItem(this.STORAGE_KEY);
+  getStorageKey(type) {
+    return `${this.STORAGE_KEY_PREFIX}${type}`;
+  }
+
+  /**
+   * Get task by type
+   */
+  getTask(type) {
+    if (!type) {
+      const tasks = this.getAllTasks();
+      return tasks.length > 0 ? tasks[0] : null;
+    }
+
+    const stored = localStorage.getItem(this.getStorageKey(type));
     if (!stored) return null;
-    
+
     try {
-      return JSON.parse(stored);
+      const task = JSON.parse(stored);
+      if (!task.status) task.status = 'processing';
+      if (task.dismissed === undefined) task.dismissed = false;
+      return task;
     } catch {
       return null;
     }
   }
 
   /**
-   * Alias for getStoredTask for backwards compatibility
+   * Get all active tasks
    */
-  getTask() {
-    return this.getStoredTask();
+  getAllTasks() {
+    const tasks = [];
+
+    for (const type of TaskManager.TASK_TYPES) {
+      const task = this.getTask(type);
+      if (!task) continue;
+
+      if (this.isTaskExpired(task)) {
+        this.clearTask(type);
+        continue;
+      }
+
+      tasks.push(task);
+    }
+
+    return tasks.sort((a, b) => a.startedAt - b.startedAt);
   }
 
   /**
-   * Get form state from stored task
-   * @returns {Object|null}
+   * Check if a task is expired
    */
-  getFormState() {
-    const task = this.getStoredTask();
-    return task ? task.formState : null;
+  isTaskExpired(task) {
+    if (!task.startedAt) return true;
+    return Date.now() - task.startedAt > this.maxTaskAgeMs;
   }
 
   /**
    * Cancel a running task
    * @returns {Promise<boolean>} true if cancelled successfully
    */
-  async cancelTask() {
-    const task = this.getStoredTask();
+  async cancelTask(type) {
+    const task = this.getTask(type);
     if (!task || !task.taskId) {
       return false;
     }
-    
+
     try {
       const response = await fetch(`/api/tasks/${task.taskId}/cancel`, {
         method: 'POST',
       });
-      
+
       if (response.ok) {
-        // Update local state
         const updatedTask = {
           ...task,
           status: 'cancelled',
           error: 'Cancelled by user',
           completedAt: Date.now(),
         };
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedTask));
-        
-        this.stopPolling();
-        
-        // Dispatch event so pages can update UI
+        localStorage.setItem(this.getStorageKey(type), JSON.stringify(updatedTask));
+
+        this.stopPolling(type);
+        this.updateModalUI();
+        this.updateTaskBadge();
+
         const event = new CustomEvent('taskCancelled', {
-          detail: { taskId: task.taskId, storedTask: task }
+          detail: { type, taskId: task.taskId, storedTask: updatedTask }
         });
         window.dispatchEvent(event);
-        
+
         return true;
       }
     } catch (error) {
       console.error('Failed to cancel task:', error);
     }
-    
+
     return false;
+  }
+
+  /**
+   * Dismiss a task from the modal without clearing it
+   */
+  dismissTask(type) {
+    const task = this.getTask(type);
+    if (!task) return;
+
+    task.dismissed = true;
+    localStorage.setItem(this.getStorageKey(type), JSON.stringify(task));
+    this.updateModalUI();
+    this.updateTaskBadge();
   }
 
   /**
    * Clear current task from storage and UI
    */
-  clearTask() {
-    const task = this.getStoredTask();
-    
-    // Optionally delete task from backend
+  clearTask(type) {
+    if (!type) {
+      for (const taskType of TaskManager.TASK_TYPES) {
+        this.clearTask(taskType);
+      }
+      return;
+    }
+
+    const task = this.getTask(type);
+
     if (task && task.taskId) {
       fetch(`/api/tasks/${task.taskId}`, { method: 'DELETE' }).catch(() => {});
     }
-    
-    localStorage.removeItem(this.STORAGE_KEY);
-    this.hideModal();
-    this.stopPolling();
-    this.stopTimer();
-    
-    // Remove completed/failed/cancelled state classes
-    if (this.modal) {
-      this.modal.classList.remove('task-complete', 'task-failed', 'task-cancelled');
-    }
+
+    localStorage.removeItem(this.getStorageKey(type));
+    this.stopPolling(type);
+    this.updateModalUI();
+    this.updateTaskBadge();
   }
 
   /**
    * Alias for clearTask for backwards compatibility
    */
-  completeTask() {
-    this.clearTask();
+  completeTask(type) {
+    this.clearTask(type);
   }
 
   /**
-   * Check for active task on page load
-   * @returns {Object|null} task if on origin page
+   * Check for active tasks on page load
    */
-  checkActiveTask() {
-    const task = this.getStoredTask();
-    
-    if (!task) {
-      this.hideModal();
-      return null;
-    }
-
-    // Check for stale tasks (over 30 minutes old to support long generation tasks)
-    const maxAge = 30 * 60 * 1000;
-    if (Date.now() - task.startedAt > maxAge) {
-      this.clearTask();
-      return null;
-    }
-
+  checkActiveTasks() {
+    const tasks = this.getAllTasks();
     const currentPath = window.location.pathname;
-    
-    // If on origin page
-    if (currentPath === task.originPage) {
-      this.hideModal();
-      
-      // If task is already completed/failed/cancelled, dispatch event so page can show result
-      if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
-        // Dispatch event after a short delay to let page JS initialize
-        setTimeout(() => {
-          const event = new CustomEvent('taskComplete', {
-            detail: {
-              taskId: task.taskId,
-              status: task.status,
-              result: task.result,
-              error: task.error,
-              storedTask: task,
-            }
-          });
-          window.dispatchEvent(event);
-          
-          // Clear task after page handles it
-          setTimeout(() => this.clearTask(), 50);
-        }, 100);
-      } else {
-        // Task still in progress, start polling
-        this.startPolling(task.taskId);
-      }
-      
-      return task;
-    }
 
-    // On different page, show modal
-    this.showModal(task);
-    
-    // If task not yet complete, keep polling
-    if (task.status !== 'completed' && task.status !== 'failed' && task.status !== 'cancelled') {
-      this.startPolling(task.taskId);
-    } else {
-      // Task already complete/failed/cancelled, update modal to show state
-      if (this.modalStatus) {
-        const statusText = {
-          completed: 'Complete! Click to view',
-          failed: 'Failed',
-          cancelled: 'Cancelled',
-        };
-        this.modalStatus.textContent = statusText[task.status] || task.status;
+    tasks.forEach((task) => {
+      if (task.originPage === currentPath) {
+        if (this.isTerminalStatus(task.status)) {
+          setTimeout(() => {
+            const event = new CustomEvent('taskComplete', {
+              detail: {
+                type: task.type,
+                taskId: task.taskId,
+                status: task.status,
+                result: task.result,
+                error: task.error,
+                storedTask: task,
+              }
+            });
+            window.dispatchEvent(event);
+            setTimeout(() => this.clearTask(task.type), 50);
+          }, 100);
+        } else if (task.taskId) {
+          this.startPolling(task.taskId, task.type);
+        }
+      } else if (!this.isTerminalStatus(task.status) && task.taskId) {
+        this.startPolling(task.taskId, task.type);
       }
-      if (this.modalTime) {
-        this.modalTime.textContent = 'Ready';
-      }
-      const stateClass = {
-        completed: 'task-complete',
-        failed: 'task-failed',
-        cancelled: 'task-cancelled',
-      };
-      this.modal.classList.add(stateClass[task.status] || 'task-failed');
-      this.stopTimer();
-    }
-    
-    return null;
+    });
   }
 
   /**
    * Start polling backend for task status
-   * @param {string} taskId
    */
-  startPolling(taskId) {
-    this.stopPolling();
-    
+  startPolling(taskId, type) {
+    this.stopPolling(type);
+
     const poll = async () => {
       try {
         const response = await fetch(`/api/tasks/${taskId}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
-            // Task not found on backend, clear local state
-            this.clearTask();
+            this.clearTask(type);
             return;
           }
           throw new Error('Failed to fetch task status');
         }
-        
+
         const taskData = await response.json();
-        this.handleTaskUpdate(taskData);
-        
+        this.handleTaskUpdate(type, taskData);
       } catch (error) {
-        console.error('Task poll error:', error);
+        console.error(`Task poll error (${type}):`, error);
       }
     };
-    
-    // Initial poll immediately
+
     poll();
-    
-    // Continue polling at interval
-    this.pollInterval = setInterval(poll, this.pollRate);
+    this.pollIntervals[type] = setInterval(poll, this.pollRate);
   }
 
   /**
    * Stop polling
    */
-  stopPolling() {
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval);
-      this.pollInterval = null;
+  stopPolling(type) {
+    if (this.pollIntervals[type]) {
+      clearInterval(this.pollIntervals[type]);
+      delete this.pollIntervals[type];
     }
   }
 
   /**
    * Handle task status update from backend
-   * @param {Object} taskData - Task data from /api/tasks/{id}
    */
-  handleTaskUpdate(taskData) {
-    const storedTask = this.getStoredTask();
+  handleTaskUpdate(type, taskData) {
+    const storedTask = this.getTask(type);
     if (!storedTask) return;
-    
+
     const status = taskData.status;
     const modalStatus = taskData.modal_status;
-    const modalElapsed = taskData.modal_elapsed_seconds || 0;
-    const modalPolls = taskData.modal_poll_count || 0;
-    const isLongRunning = taskData.is_long_running || false;
-    const estimatedMinutes = taskData.metadata?.estimated_duration_minutes;
-    
-    // Update modal status text if visible
-    if (this.modalStatus && !this.modal.classList.contains('hidden')) {
-      // Build detailed status text based on Modal API state
-      let statusText;
-      if (status === 'completed') {
-        statusText = 'Complete! Click to view';
-      } else if (status === 'failed') {
-        statusText = taskData.error ? `Failed: ${taskData.error.slice(0, 50)}` : 'Failed';
-      } else if (status === 'cancelled') {
-        statusText = 'Cancelled';
-      } else if (modalStatus) {
-        // Show detailed Modal status
-        const modalStatusText = {
-          sending: 'Connecting to Modal...',
-          queued: 'Waiting for GPU...',
-          processing: isLongRunning ? 'Generating (long task)...' : 'Generating audio...',
-          polling: `Processing (${modalPolls} checks)...`,
-          timeout: 'Request timed out',
-        };
-        statusText = modalStatusText[modalStatus] || `Modal: ${modalStatus}`;
-        if (modalElapsed > 0 && modalStatus !== 'sending') {
-          const elapsedMins = Math.floor(modalElapsed / 60);
-          const elapsedSecs = Math.round(modalElapsed % 60);
-          if (elapsedMins > 0) {
-            statusText += ` (${elapsedMins}m ${elapsedSecs}s)`;
-          } else {
-            statusText += ` (${elapsedSecs}s)`;
-          }
-        }
-        // Show estimated time remaining for long tasks
-        if (isLongRunning && estimatedMinutes && modalElapsed > 0) {
-          const remainingMins = Math.max(0, estimatedMinutes - (modalElapsed / 60));
-          if (remainingMins > 1) {
-            statusText += ` ~${Math.round(remainingMins)}m remaining`;
-          }
-        }
-      } else {
-        // Fallback to simple status
-        const simpleStatusText = {
-          pending: isLongRunning ? 'Queued (long task)...' : 'Queued...',
-          processing: isLongRunning ? 'Generating (long task)...' : 'Generating...',
-        };
-        statusText = simpleStatusText[status] || status;
-      }
-      this.modalStatus.textContent = statusText;
-      
-      // Show/hide long-task indicator
-      const longTaskDiv = this.modal.querySelector('.task-modal-long-task');
-      if (longTaskDiv) {
-        if (isLongRunning && status !== 'completed' && status !== 'failed' && status !== 'cancelled') {
-          longTaskDiv.classList.remove('hidden');
-          const estimateSpan = longTaskDiv.querySelector('.long-task-estimate');
-          if (estimateSpan && estimatedMinutes) {
-            const remainingMins = Math.max(0, estimatedMinutes - (modalElapsed / 60));
-            if (remainingMins > 1) {
-              estimateSpan.textContent = `Est. ~${Math.round(remainingMins)} min remaining`;
-            } else if (remainingMins > 0) {
-              estimateSpan.textContent = 'Almost done...';
-            } else {
-              estimateSpan.textContent = 'Taking longer than expected...';
-            }
-          }
-        } else {
-          longTaskDiv.classList.add('hidden');
-        }
-      }
-      
-      // Add visual indicator for completed state
-      if (status === 'completed') {
-        this.modal.classList.add('task-complete');
-        this.stopTimer();
-        if (this.modalTime) {
-          this.modalTime.textContent = 'Ready';
-        }
-      } else if (status === 'failed') {
-        this.modal.classList.add('task-failed');
-      } else if (status === 'cancelled') {
-        this.modal.classList.add('task-cancelled');
-      }
+
+    const updatedTask = {
+      ...storedTask,
+      status,
+      result: taskData.result,
+      error: taskData.error,
+    };
+
+    if (this.isTerminalStatus(status)) {
+      updatedTask.completedAt = Date.now();
     }
-    
-    // Dispatch a progress event so pages can show detailed status
-    if (status === 'processing') {
+
+    localStorage.setItem(this.getStorageKey(type), JSON.stringify(updatedTask));
+
+    // Dispatch a progress event so pages can show simple status
+    if (!this.isTerminalStatus(status)) {
       const progressEvent = new CustomEvent('taskProgress', {
         detail: {
+          type,
           taskId: taskData.id,
-          status: status,
-          modalStatus: modalStatus,
-          elapsedSeconds: modalElapsed,
-          pollCount: modalPolls,
-          isLongRunning: isLongRunning,
-          estimatedMinutes: estimatedMinutes,
+          status,
+          statusText: this.getStatusText(status, modalStatus),
+          elapsedSeconds: Math.floor((Date.now() - storedTask.startedAt) / 1000),
         }
       });
       window.dispatchEvent(progressEvent);
     }
-    
+
     // Task finished
-    if (status === 'completed' || status === 'failed' || status === 'cancelled') {
-      this.stopPolling();
-      
-      // Save result/error to stored task so origin page can use it
-      const updatedTask = {
-        ...storedTask,
-        status: status,
-        result: taskData.result,
-        error: taskData.error,
-        completedAt: Date.now(),
-      };
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedTask));
-      
+    if (this.isTerminalStatus(status)) {
+      this.stopPolling(type);
+
       const currentPath = window.location.pathname;
-      
-      // If on origin page, dispatch event immediately so page can handle
       if (currentPath === storedTask.originPage) {
         const event = new CustomEvent('taskComplete', {
           detail: {
+            type,
             taskId: taskData.id,
             status: status,
             result: taskData.result,
             error: taskData.error,
-            storedTask: storedTask,
+            storedTask: updatedTask,
           }
         });
         window.dispatchEvent(event);
-        
-        // Clear task after page handles it
-        setTimeout(() => this.clearTask(), 50);
+        setTimeout(() => this.clearTask(type), 50);
       }
-      // If on different page, keep task in storage so user can navigate back
-      // Task will be handled when they return to origin page
     }
+
+    this.updateModalUI();
+    this.updateTaskBadge();
   }
 
   /**
-   * Show the task modal with current task info
-   * @param {Object} task
+   * Show/hide the task modal and render tasks
    */
-  showModal(task) {
-    if (!this.modal) return;
+  updateModalUI() {
+    if (!this.modal || !this.modalContent) return;
 
-    const icons = {
-      generate: '▶',
-      clone: '🎤',
-      design: '✨',
-    };
-    
-    if (this.modalIcon) {
-      this.modalIcon.textContent = icons[task.type] || '⏳';
+    const currentPath = window.location.pathname;
+    const tasks = this.getAllTasks().filter(
+      (task) => !task.dismissed && task.originPage !== currentPath
+    );
+
+    if (tasks.length === 0) {
+      this.hideModal();
+      return;
     }
 
-    if (this.modalTitle) {
-      this.modalTitle.textContent = task.description || 'Processing...';
-    }
-    
-    if (this.modalStatus) {
-      this.modalStatus.textContent = 'Processing...';
-    }
-
-    // Show/hide cancel button based on task type
-    const cancelBtn = this.modal.querySelector('.task-modal-cancel');
-    if (cancelBtn) {
-      // Show cancel for generate tasks (which can be long-running)
-      if (task.type === 'generate') {
-        cancelBtn.classList.remove('hidden');
-        // Remove old listener and add new one
-        cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-        const newCancelBtn = this.modal.querySelector('.task-modal-cancel');
-        newCancelBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          newCancelBtn.disabled = true;
-          newCancelBtn.textContent = 'Cancelling...';
-          await this.cancelTask();
-        });
-      } else {
-        cancelBtn.classList.add('hidden');
-      }
-    }
-
-    // Hide long-task indicator initially
-    const longTaskDiv = this.modal.querySelector('.task-modal-long-task');
-    if (longTaskDiv) {
-      longTaskDiv.classList.add('hidden');
-    }
-
-    // Start elapsed time display
-    this.startTimer(task.startedAt);
+    this.modalContent.innerHTML = tasks
+      .map((task) => this.renderTaskItem(task))
+      .join('');
 
     this.modal.classList.remove('hidden');
+    this.startTimer();
+  }
+
+  /**
+   * Render a single task item
+   */
+  renderTaskItem(task) {
+    const elapsed = this.formatElapsedForTask(task);
+    const icon = this.getIcon(task.type);
+    const rawDescription = task.description || 'Processing...';
+    const description = this.escapeHtml(this.truncate(rawDescription, 32));
+    const titleText = this.escapeHtml(rawDescription);
+    const cancelButton = this.shouldShowCancel(task)
+      ? `<button class="task-cancel" data-type="${task.type}" title="Cancel">Cancel</button>`
+      : '';
+
+    return `
+      <div class="task-item ${task.status || ''}" data-type="${task.type}" title="${titleText}">
+        <span class="task-icon">${icon}</span>
+        <span class="task-desc">${description}</span>
+        <span class="task-elapsed">${elapsed}</span>
+        ${cancelButton}
+        <button class="task-dismiss" data-type="${task.type}" title="Dismiss">&times;</button>
+      </div>
+    `;
+  }
+
+  /**
+   * Update task badge in the nav
+   */
+  updateTaskBadge() {
+    const badge = document.getElementById('task-badge');
+    if (!badge) return;
+
+    const activeCount = this.getAllTasks().filter(
+      (task) => !this.isTerminalStatus(task.status)
+    ).length;
+
+    if (activeCount > 0) {
+      badge.textContent = activeCount;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
   }
 
   /**
@@ -544,23 +513,24 @@ class TaskManager {
 
   /**
    * Start elapsed time timer
-   * @param {number} startedAt - Timestamp when task started
    */
-  startTimer(startedAt) {
+  startTimer() {
     this.stopTimer();
 
-    const updateTime = () => {
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      const mins = Math.floor(elapsed / 60);
-      const secs = elapsed % 60;
-      
-      if (this.modalTime) {
-        this.modalTime.textContent = `${mins}:${secs.toString().padStart(2, '0')} elapsed`;
-      }
+    const updateAllTimers = () => {
+      const tasks = this.getAllTasks();
+      tasks.forEach((task) => {
+        const el = this.modal.querySelector(
+          `.task-item[data-type="${task.type}"] .task-elapsed`
+        );
+        if (el) {
+          el.textContent = this.formatElapsedForTask(task);
+        }
+      });
     };
 
-    updateTime();
-    this.timerInterval = setInterval(updateTime, 1000);
+    updateAllTimers();
+    this.timerInterval = setInterval(updateAllTimers, 1000);
   }
 
   /**
@@ -574,23 +544,80 @@ class TaskManager {
   }
 
   /**
-   * Check if there's an active task
-   * @returns {boolean}
+   * Format elapsed time for in-progress tasks
    */
-  hasActiveTask() {
-    return this.getStoredTask() !== null;
+  formatElapsed(startedAt) {
+    const seconds = Math.floor((Date.now() - startedAt) / 1000);
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  formatElapsedForTask(task) {
+    if (task.status === 'completed') return 'Ready';
+    if (task.status === 'failed') return 'Failed';
+    if (task.status === 'cancelled') return 'Cancelled';
+    return this.formatElapsed(task.startedAt);
   }
 
   /**
-   * Check if current page is origin of active task
-   * @returns {boolean}
+   * Helpers
    */
-  isOnOriginPage() {
-    const task = this.getStoredTask();
+  getIcon(type) {
+    const icons = {
+      generate: '&#9654;',
+      design: '&#10024;',
+      clone: '&#127908;',
+    };
+    return icons[type] || '&#8987;';
+  }
+
+  truncate(text, maxLen) {
+    if (!text) return '';
+    return text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
+  }
+
+  escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  shouldShowCancel(task) {
+    return task.type === 'generate' && !this.isTerminalStatus(task.status);
+  }
+
+  isTerminalStatus(status) {
+    return status === 'completed' || status === 'failed' || status === 'cancelled';
+  }
+
+  getStatusText(status, modalStatus) {
+    if (modalStatus === 'queued' || status === 'pending') {
+      return 'Waiting for GPU...';
+    }
+    if (modalStatus === 'processing' || status === 'processing') {
+      return 'Generating...';
+    }
+    if (modalStatus === 'sending') {
+      return 'Starting generation...';
+    }
+    return 'Processing...';
+  }
+
+  /**
+   * Check if current page is origin of a task
+   */
+  isOnOriginPage(type) {
+    const task = this.getTask(type);
     if (!task) return false;
     return window.location.pathname === task.originPage;
   }
 }
+
+TaskManager.TASK_TYPES = ['generate', 'design', 'clone'];
 
 // Create global instance
 window.taskManager = new TaskManager();
