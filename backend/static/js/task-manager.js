@@ -565,11 +565,23 @@ class TaskManager {
    */
   getIcon(type) {
     const icons = {
-      generate: '&#9654;',
-      design: '&#10024;',
-      clone: '&#127908;',
+      clone: `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" />
+        </svg>
+      `,
+      design: `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+        </svg>
+      `,
+      generate: `
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M8 5v14l11-7L8 5z" />
+        </svg>
+      `,
     };
-    return icons[type] || '&#8987;';
+    return icons[type] || icons.generate;
   }
 
   truncate(text, maxLen) {

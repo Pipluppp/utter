@@ -21,9 +21,32 @@
   <header class="header">
     <a href="/" class="header-logo">UTTER</a>
     <nav class="header-nav">
-      <a href="/clone" class="{% if request.url.path == '/clone' %}active{% endif %}">Clone</a>
-      <a href="/generate" class="{% if request.url.path == '/generate' %}active{% endif %}">Generate</a>
-      <a href="/design" class="{% if request.url.path == '/design' %}active{% endif %}">Design</a>
+      <a href="/clone" class="{% if request.url.path == '/clone' %}active{% endif %}">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path
+              d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" />
+          </svg>
+        </span>
+        Clone
+      </a>
+      <a href="/generate" class="{% if request.url.path == '/generate' %}active{% endif %}">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7L8 5z" />
+          </svg>
+        </span>
+        Generate
+      </a>
+      <a href="/design" class="{% if request.url.path == '/design' %}active{% endif %}">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path
+              d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+          </svg>
+        </span>
+        Design
+      </a>
       <span class="nav-separator"></span>
       <a href="/voices" class="{% if request.url.path == '/voices' %}active{% endif %}">Voices</a>
       <a href="/history" class="{% if request.url.path == '/history' %}active{% endif %}">
