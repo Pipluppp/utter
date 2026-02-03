@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --color-background: #ffffff;
+  --color-subtle: #fafafa;
+  --color-muted: #f0f0f0;
+  --color-foreground: #111111;
+  --color-muted-foreground: #555555;
+  --color-faint: #888888;
+  --color-border: #cccccc;
+  --color-border-strong: #999999;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100dvh;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :where(a, button, input, select, textarea):focus-visible {
+    outline: none;
+  }
+
+  :where(button, a) {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
