@@ -19,12 +19,7 @@ uv pip install -r requirements.txt -p .venv
 uv run -p .venv uvicorn main:app --reload --port 8000
 ```
 
-Or from repo root:
-
-- `.\scripts\dev-backend.ps1`
-
 ## Frontend interaction
 
 - FastAPI serves APIs under `/api/**`.
 - React dev server (in `frontend/`) proxies `/api`, `/uploads`, `/static` to this backend.
-

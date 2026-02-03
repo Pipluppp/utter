@@ -89,20 +89,6 @@ npm run dev
 
 Frontend URL: `http://localhost:5173`
 
-### 3) One-command helper scripts (PowerShell)
-
-From repo root:
-
-```powershell
-.\scripts\dev-backend.ps1
-```
-
-And in another PowerShell:
-
-```powershell
-.\scripts\dev-frontend.ps1
-```
-
 ### Notes
 
 - The React dev server proxies to FastAPI for:

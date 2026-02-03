@@ -24,5 +24,4 @@ From repo root, you can run:
 
 - Config: `frontend/biome.json`
 - VS Code: `.vscode/settings.json` sets Biome as the formatter for JS/TS/JSON/CSS.
-- Keep save behavior predictable: fixes/import-organize are configured as “explicit” code actions.
-
+- Keep save behavior predictable: fixes/import-organize are configured as "explicit" code actions.

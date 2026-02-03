@@ -1,32 +1,33 @@
 # Utter
 
-Voice cloning + TTS app (Qwen3‑TTS on Modal). Backend is FastAPI. Frontend is mid‑migration from legacy Jinja pages to a React + Tailwind SPA.
+Voice cloning + TTS app (Qwen3-TTS on Modal). Backend is FastAPI. Frontend is mid-migration from legacy Jinja pages to a React + Tailwind SPA.
 
-## What’s in here
+## What's in here
 
 - `backend/`: FastAPI app + legacy Jinja UI (still served for parity checks)
 - `frontend/`: React 19 + Vite + TS + Tailwind v4 (new UI work)
-- `modal_app/`: Modal deploy code for Qwen3‑TTS
-- `docs/`: actual docs (start here: `docs/2026-02-03/README.md`)
+- `modal_app/`: Modal deploy code for Qwen3-TTS
+- `docs/`: docs (start with `docs/README.md`)
 
 ## Run locally (2 terminals)
 
 ### Backend
 
-PowerShell:
-
 ```powershell
-.\scripts\dev-backend.ps1
+cd backend
+uv venv --allow-existing
+uv pip install -r requirements.txt -p .venv
+uv run -p .venv uvicorn main:app --reload --port 8000
 ```
 
 Backend: `http://localhost:8000`
 
 ### Frontend (React dev server)
 
-PowerShell:
-
 ```powershell
-.\scripts\dev-frontend.ps1
+cd frontend
+npm install
+npm run dev
 ```
 
 Frontend: `http://localhost:5173`
@@ -42,9 +43,4 @@ Frontend uses **Biome** (formatter + linter).
 - CI: `npm --prefix frontend run ci`
 
 More: `docs/biome.md`.
-
-## Docs entry points
-
-- Current refactor status + how to run: `docs/2026-02-03/README.md`
-- Tooling notes: `docs/tooling.md`
 

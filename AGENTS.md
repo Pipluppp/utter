@@ -7,12 +7,22 @@ This repo is split into a Python FastAPI backend and a React + TS + Tailwind fro
 - `backend/`: FastAPI app (still serves the legacy Jinja pages for parity validation)
 - `frontend/`: React 19 + Vite + TypeScript + Tailwind v4 SPA (current UI work)
 - `modal_app/`: Modal deployment code for Qwen3-TTS
-- `docs/`: source-of-truth documentation (start with `docs/2026-02-03/README.md`)
+- `docs/`: documentation (start with `docs/README.md`)
 
-## Local dev (fast path)
+## Local dev (2 terminals)
 
-- Backend (PowerShell): `.\scripts\dev-backend.ps1`
-- Frontend (PowerShell): `.\scripts\dev-frontend.ps1`
+Backend:
+
+- `cd backend`
+- `uv venv --allow-existing`
+- `uv pip install -r requirements.txt -p .venv`
+- `uv run -p .venv uvicorn main:app --reload --port 8000`
+
+Frontend:
+
+- `cd frontend`
+- `npm install`
+- `npm run dev`
 
 Backend: `http://localhost:8000` (legacy Jinja pages)  
 Frontend: `http://localhost:5173` (React dev server; proxies `/api`, `/uploads`, `/static` to FastAPI)
@@ -41,5 +51,4 @@ Avoid adding ESLint/Prettier unless explicitly requested; Biome is the source of
 ## Docs pointers
 
 - Biome explainer: `docs/biome.md`
-- Frontend refactor index: `docs/2026-02-03/README.md`
-
+- Project docs index: `docs/README.md`
