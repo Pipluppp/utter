@@ -122,7 +122,6 @@ export function DesignPage() {
 
   useEffect(() => {
     if (!task?.taskId) return
-    if (task.originPage !== '/design') return
     if (task.status === 'pending' || task.status === 'processing') return
 
     const terminalKey = `${task.taskId}:${task.status}`
@@ -359,7 +358,10 @@ export function DesignPage() {
           <div className="text-sm font-medium uppercase tracking-wide">
             Preview
           </div>
-          <WaveformPlayer audioUrl={previewUrl} />
+          <WaveformPlayer
+            audioUrl={previewUrl}
+            audioBlob={previewBlobRef.current ?? undefined}
+          />
         </div>
       ) : null}
     </div>

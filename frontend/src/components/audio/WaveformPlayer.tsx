@@ -5,9 +5,11 @@ import { cn } from '../../lib/cn'
 
 export function WaveformPlayer({
   audioUrl,
+  audioBlob,
   className,
 }: {
-  audioUrl: string
+  audioUrl?: string
+  audioBlob?: Blob
   className?: string
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -15,6 +17,7 @@ export function WaveformPlayer({
   const [isReady, setIsReady] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [timeLabel, setTimeLabel] = useState('0:00')
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const { resolvedTheme } = useTheme()
 
@@ -33,10 +36,14 @@ export function WaveformPlayer({
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
+    if (!audioUrl && !audioBlob) return
+
+    let cancelled = false
 
     setIsReady(false)
     setIsPlaying(false)
     setTimeLabel('0:00')
+    setLoadError(null)
 
     const styles = getComputedStyle(document.documentElement)
     const foreground =
@@ -56,14 +63,36 @@ export function WaveformPlayer({
       ...baseOptions,
       waveColor,
       progressColor,
-      url: audioUrl,
     })
     wsRef.current = ws
 
-    const onReady = () => setIsReady(true)
+    const onReady = () => {
+      setIsReady(true)
+      setLoadError(null)
+    }
     const onPlay = () => setIsPlaying(true)
     const onPause = () => setIsPlaying(false)
     const onFinish = () => setIsPlaying(false)
+    const onError = (e: unknown) => {
+      if (cancelled) return
+      const err = e as { name?: unknown; message?: unknown }
+      const name = typeof err?.name === 'string' ? err.name : ''
+      const message = typeof err?.message === 'string' ? err.message : ''
+
+      // Ignore aborts (common during route changes/unmounts or rapid reloads).
+      if (
+        name === 'AbortError' ||
+        message.toLowerCase().includes('aborted') ||
+        message.toLowerCase().includes('signal is aborted')
+      ) {
+        return
+      }
+
+      const msg = e instanceof Error ? e.message : 'Failed to load audio.'
+      setLoadError(msg)
+      setIsReady(false)
+      setIsPlaying(false)
+    }
     const onTimeUpdate = () => {
       const t = ws.getCurrentTime()
       const mins = Math.floor(t / 60)
@@ -75,13 +104,21 @@ export function WaveformPlayer({
     ws.on('play', onPlay)
     ws.on('pause', onPause)
     ws.on('finish', onFinish)
+    ws.on('error', onError)
     ws.on('timeupdate', onTimeUpdate)
 
+    if (audioBlob) {
+      ws.loadBlob(audioBlob).catch(onError)
+    } else if (audioUrl) {
+      ws.load(audioUrl).catch(onError)
+    }
+
     return () => {
+      cancelled = true
       ws.destroy()
       wsRef.current = null
     }
-  }, [audioUrl, baseOptions, resolvedTheme])
+  }, [audioBlob, audioUrl, baseOptions, resolvedTheme])
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -106,7 +143,18 @@ export function WaveformPlayer({
         <span className="text-xs text-faint">{timeLabel}</span>
       </div>
 
+      {loadError ? (
+        <div className="text-xs text-red-700 dark:text-red-400">
+          {loadError}
+        </div>
+      ) : null}
+
       <div ref={containerRef} />
+
+      {loadError && audioUrl && !isReady ? (
+        // biome-ignore lint/a11y/useMediaCaption: Generated previews have no caption track; this is a fallback for playback when WaveSurfer fails.
+        <audio controls preload="metadata" className="w-full" src={audioUrl} />
+      ) : null}
     </div>
   )
 }

@@ -108,7 +108,6 @@ export function GeneratePage() {
 
   useEffect(() => {
     if (!task?.taskId) return
-    if (task.originPage !== '/generate') return
     if (task.status === 'pending' || task.status === 'processing') return
 
     const terminalKey = `${task.taskId}:${task.status}`
