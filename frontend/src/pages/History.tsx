@@ -250,9 +250,9 @@ export function HistoryPage() {
                         (g.status === 'pending' || g.status === 'processing') &&
                           'border-border bg-muted text-muted-foreground',
                         g.status === 'failed' &&
-                          'border-red-500/40 bg-red-500/10 text-red-700',
+                          'border-red-500/40 bg-red-500/10 text-red-700 dark:border-red-400/40 dark:bg-red-400/10 dark:text-red-300',
                         g.status === 'cancelled' &&
-                          'border-amber-500/40 bg-amber-500/10 text-amber-800',
+                          'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200',
                       )}
                     >
                       {g.status}
@@ -270,7 +270,7 @@ export function HistoryPage() {
                   </div>
 
                   {g.error_message ? (
-                    <div className="mt-2 text-sm text-red-700">
+                    <div className="mt-2 text-sm text-red-700 dark:text-red-300">
                       {g.error_message.slice(0, 160)}
                       {g.error_message.length > 160 ? '…' : ''}
                     </div>
@@ -291,7 +291,7 @@ export function HistoryPage() {
                     <>
                       <button
                         type="button"
-                        className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         disabled={playDisabled}
                         aria-pressed={state === 'playing'}
                         aria-controls={`gen-wave-${g.id}`}
@@ -300,7 +300,7 @@ export function HistoryPage() {
                         {playLabel}
                       </button>
                       <a
-                        className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         href={audioUrl}
                       >
                         Download
@@ -344,7 +344,7 @@ export function HistoryPage() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             disabled={data.pagination.page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -355,7 +355,7 @@ export function HistoryPage() {
           </div>
           <button
             type="button"
-            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             disabled={data.pagination.page >= data.pagination.pages}
             onClick={() => setPage((p) => p + 1)}
           >

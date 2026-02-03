@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import WaveSurfer from 'wavesurfer.js'
 import { cn } from '../../lib/cn'
+import { useTheme } from '../../app/theme/ThemeProvider'
 
 export function WaveformPlayer({
   audioUrl,
@@ -15,10 +16,10 @@ export function WaveformPlayer({
   const [isPlaying, setIsPlaying] = useState(false)
   const [timeLabel, setTimeLabel] = useState('0:00')
 
-  const options = useMemo(
+  const { resolvedTheme } = useTheme()
+
+  const baseOptions = useMemo(
     () => ({
-      waveColor: '#a0a0a0',
-      progressColor: '#111111',
       cursorColor: 'transparent',
       barWidth: 2,
       barGap: 2,
@@ -37,7 +38,19 @@ export function WaveformPlayer({
     setIsPlaying(false)
     setTimeLabel('0:00')
 
-    const ws = WaveSurfer.create({ container: el, ...options, url: audioUrl })
+    const styles = getComputedStyle(document.documentElement)
+    const waveColor = styles.getPropertyValue('--color-faint').trim() || '#a0a0a0'
+    const progressFallback = resolvedTheme === 'dark' ? '#f5f5f5' : '#111111'
+    const progressColor =
+      styles.getPropertyValue('--color-foreground').trim() || progressFallback
+
+    const ws = WaveSurfer.create({
+      container: el,
+      ...baseOptions,
+      waveColor,
+      progressColor,
+      url: audioUrl,
+    })
     wsRef.current = ws
 
     const onReady = () => setIsReady(true)
@@ -61,7 +74,7 @@ export function WaveformPlayer({
       ws.destroy()
       wsRef.current = null
     }
-  }, [audioUrl, options])
+  }, [audioUrl, baseOptions, resolvedTheme])
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -70,7 +83,7 @@ export function WaveformPlayer({
           type="button"
           className={cn(
             'border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted',
-            'focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+            'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
             !isReady && 'cursor-not-allowed opacity-50',
           )}
           disabled={!isReady}

@@ -241,13 +241,13 @@ export function VoicesPage() {
                 <div className="flex shrink-0 items-center gap-2">
                   <NavLink
                     to={`/generate?voice=${v.id}`}
-                    className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     Generate
                   </NavLink>
                   <button
                     type="button"
-                    className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     disabled={disabled}
                     aria-pressed={state === 'playing'}
                     aria-controls={`voice-wave-${v.id}`}
@@ -284,7 +284,7 @@ export function VoicesPage() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             disabled={data.pagination.page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -295,7 +295,7 @@ export function VoicesPage() {
           </div>
           <button
             type="button"
-            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             disabled={data.pagination.page >= data.pagination.pages}
             onClick={() => setPage((p) => p + 1)}
           >

@@ -19,7 +19,7 @@ function FeatureCard({
       to={to}
       className={cn(
         'group block border border-border bg-background p-6 hover:bg-subtle',
-        'focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
       )}
     >
       <div className="mb-4 text-muted-foreground group-hover:text-foreground">{icon}</div>
@@ -50,7 +50,7 @@ export function LandingPage() {
         </p>
         <NavLink
           to="/clone"
-          className="mt-8 inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="mt-8 inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           Get Started →
         </NavLink>

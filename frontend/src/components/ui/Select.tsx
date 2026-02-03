@@ -11,7 +11,7 @@ export function Select({
       <select
         className={cn(
           'w-full appearance-none border border-border bg-background px-4 py-3 pr-10 text-sm text-foreground',
-          'focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           className,
         )}
         {...props}

@@ -164,7 +164,8 @@ export function ClonePage() {
 
       <div
         className={cn(
-          'border border-dashed border-border bg-background p-6 text-center hover:bg-subtle',
+          'cursor-pointer border border-dashed border-border bg-background p-6 text-center hover:bg-subtle',
+          'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         )}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -194,7 +195,11 @@ export function ClonePage() {
         </div>
         <div className="mt-2 text-xs text-faint">WAV / MP3 / M4A • max 50MB</div>
         {fileInfo ? <div className="mt-3 text-xs text-foreground">{fileInfo}</div> : null}
-        {fileError ? <div className="mt-3 text-xs text-red-700">{fileError}</div> : null}
+        {fileError ? (
+          <div className="mt-3 text-xs text-red-700 dark:text-red-400">
+            {fileError}
+          </div>
+        ) : null}
       </div>
 
       <form
@@ -258,7 +263,7 @@ export function ClonePage() {
       </form>
 
       {created ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overscroll-contain">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overscroll-contain backdrop-blur-sm">
           <div
             className="w-full max-w-md border border-border bg-background p-6"
             role="dialog"
@@ -278,7 +283,7 @@ export function ClonePage() {
               <NavLink
                 ref={firstModalActionRef}
                 to={`/generate?voice=${created.id}`}
-                className="inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 Go to Generate →
               </NavLink>

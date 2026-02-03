@@ -221,7 +221,7 @@ export function GeneratePage() {
             className="min-h-44"
           />
           <div className="mt-2 flex items-center justify-between text-xs text-faint">
-            <span className={cn(charCount > 10000 && 'text-red-700')}>
+            <span className={cn(charCount > 10000 && 'text-red-700 dark:text-red-400')}>
               {charCount}/10000
             </span>
             <span>Max 10,000 characters</span>
@@ -254,7 +254,7 @@ export function GeneratePage() {
             <div className="flex items-center gap-2">
               {downloadUrl ? (
                 <a
-                  className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   href={downloadUrl}
                 >
                   Download

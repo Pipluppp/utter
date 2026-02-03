@@ -20,7 +20,7 @@ export function Button({
     <button
       className={cn(
         'relative inline-flex items-center justify-center gap-2 border px-6 py-3 text-sm font-medium uppercase tracking-wide transition-colors',
-        'focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         'disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-faint',
         variant === 'primary' &&
           'border-foreground bg-foreground text-background hover:bg-foreground/80 hover:border-foreground/80',
