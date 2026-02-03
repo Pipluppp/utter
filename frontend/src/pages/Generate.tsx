@@ -8,8 +8,10 @@ import { Label } from '../components/ui/Label'
 import { Message } from '../components/ui/Message'
 import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
+import { getUtterDemo } from '../content/utterDemo'
 import { apiJson } from '../lib/api'
 import { cn } from '../lib/cn'
+import { fetchTextUtf8 } from '../lib/fetchTextUtf8'
 import { formatElapsed } from '../lib/time'
 import type { GenerateResponse, StoredTask, VoicesResponse } from '../lib/types'
 import { useLanguages } from './hooks'
@@ -43,6 +45,7 @@ export function GeneratePage() {
 
   const restoredRef = useRef(false)
   const handledTerminalRef = useRef<string | null>(null)
+  const loadedDemoRef = useRef<string | null>(null)
 
   useEffect(() => setLanguage(defaultLanguage), [defaultLanguage])
 
@@ -80,9 +83,25 @@ export function GeneratePage() {
     const voice = params.get('voice')
     const qsText = params.get('text')
     const qsLang = params.get('language')
+    const demoId = params.get('demo')
     if (voice) setVoiceId(voice)
     if (typeof qsText === 'string' && qsText.length > 0) setText(qsText)
     if (typeof qsLang === 'string' && qsLang.length > 0) setLanguage(qsLang)
+
+    if (demoId && loadedDemoRef.current !== demoId) {
+      loadedDemoRef.current = demoId
+      const demo = getUtterDemo(demoId)
+      if (demo?.transcriptUrl) {
+        void (async () => {
+          try {
+            const demoText = await fetchTextUtf8(demo.transcriptUrl as string)
+            setText(demoText.trim())
+          } catch {
+            // ignore
+          }
+        })()
+      }
+    }
   }, [params, task])
 
   useEffect(() => {

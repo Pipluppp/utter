@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { InfoTip } from '../components/ui/InfoTip'
 import { Input } from '../components/ui/Input'
@@ -7,8 +7,10 @@ import { Label } from '../components/ui/Label'
 import { Message } from '../components/ui/Message'
 import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
+import { getUtterDemo } from '../content/utterDemo'
 import { apiForm } from '../lib/api'
 import { cn } from '../lib/cn'
+import { fetchTextUtf8 } from '../lib/fetchTextUtf8'
 import { formatElapsed } from '../lib/time'
 import type { CloneResponse } from '../lib/types'
 import { useLanguages } from './hooks'
@@ -22,10 +24,12 @@ function extOf(name: string) {
 }
 
 export function ClonePage() {
+  const [params] = useSearchParams()
   const { languages, defaultLanguage, provider } = useLanguages()
 
   const inputRef = useRef<HTMLInputElement | null>(null)
   const firstModalActionRef = useRef<HTMLAnchorElement | null>(null)
+  const loadedDemoRef = useRef<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
 
@@ -58,7 +62,7 @@ export function ClonePage() {
     return `${file.name} • ${(file.size / (1024 * 1024)).toFixed(1)} MB`
   }, [file])
 
-  function validateAndSetFile(next: File | null) {
+  const validateAndSetFile = useCallback((next: File | null) => {
     setFileError(null)
     setFile(null)
     if (!next) return
@@ -73,7 +77,7 @@ export function ClonePage() {
       return
     }
     setFile(next)
-  }
+  }, [])
 
   async function onTryExample() {
     setError(null)
@@ -97,6 +101,44 @@ export function ClonePage() {
       setError(e instanceof Error ? e.message : 'Failed to load example.')
     }
   }
+
+  useEffect(() => {
+    const demoId = params.get('demo')
+    if (!demoId) return
+    if (loadedDemoRef.current === demoId) return
+    loadedDemoRef.current = demoId
+
+    const demo = getUtterDemo(demoId)
+    const audioUrl = demo?.audioUrl
+    if (!demo || !audioUrl) return
+
+    setError(null)
+    setFileError(null)
+
+    void (async () => {
+      try {
+        const [audioRes, transcript] = await Promise.all([
+          fetch(audioUrl),
+          demo.transcriptUrl
+            ? fetchTextUtf8(demo.transcriptUrl)
+            : Promise.resolve(''),
+        ])
+        if (!audioRes.ok) throw new Error('Failed to load demo audio.')
+        const audioBlob = await audioRes.blob()
+        const ext = extOf(new URL(audioUrl, window.location.href).pathname)
+        const fileName = `${demo.id}${ext || '.mp3'}`
+        const nextFile = new File([audioBlob], fileName, {
+          type: audioBlob.type || 'audio/mpeg',
+        })
+
+        setName(demo.suggestedCloneName ?? `${demo.title} (demo)`)
+        setTranscript(transcript.trim())
+        validateAndSetFile(nextFile)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load demo.')
+      }
+    })()
+  }, [params, validateAndSetFile])
 
   async function onSubmit() {
     setError(null)
