@@ -279,7 +279,7 @@ export function GeneratePage() {
       </form>
 
       {isRunning ? (
-        <div className="border border-border bg-subtle p-4">
+        <div className="border border-border bg-subtle p-4 shadow-elevated">
           <div className="flex items-center justify-between">
             <div className="text-sm">
               <div className="font-medium uppercase tracking-wide">
@@ -295,7 +295,7 @@ export function GeneratePage() {
       ) : null}
 
       {audioUrl ? (
-        <div className="space-y-4 border border-border bg-background p-4">
+        <div className="space-y-4 border border-border bg-background p-4 shadow-elevated">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm font-medium uppercase tracking-wide">
               Result

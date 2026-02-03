@@ -73,7 +73,7 @@ export function DemoClipCard({
     <article
       className={cn(
         'mx-auto w-full max-w-[560px]',
-        'border border-border bg-background hover:bg-subtle',
+        'border border-border bg-background shadow-elevated hover:bg-subtle',
         'transition-[background-color,border-color,box-shadow] duration-300 ease-out motion-reduce:transition-none',
         'hover:border-border-strong hover:shadow-[0_10px_28px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_12px_36px_rgba(0,0,0,0.50)]',
         className,
@@ -99,6 +99,8 @@ export function DemoClipCard({
             <img
               src={demo.imageUrl}
               alt=""
+              width={560}
+              height={224}
               loading="lazy"
               decoding="async"
               className="h-56 w-full object-cover grayscale"

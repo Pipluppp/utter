@@ -10,7 +10,7 @@ export function Select({
     <div className="relative">
       <select
         className={cn(
-          'w-full appearance-none border border-border bg-background px-4 py-3 pr-10 text-sm text-foreground',
+          'w-full appearance-none border border-border bg-background px-4 py-3 pr-10 text-sm text-foreground shadow-elevated',
           'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           className,
         )}

@@ -14,7 +14,7 @@ export function AboutPage() {
       </p>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="border border-border bg-background p-4">
+        <div className="border border-border bg-background p-4 shadow-elevated">
           <div className="text-[12px] font-semibold uppercase tracking-wide">
             Clone
           </div>
@@ -23,7 +23,7 @@ export function AboutPage() {
             create a reusable voice.
           </p>
         </div>
-        <div className="border border-border bg-background p-4">
+        <div className="border border-border bg-background p-4 shadow-elevated">
           <div className="text-[12px] font-semibold uppercase tracking-wide">
             Design
           </div>
@@ -32,7 +32,7 @@ export function AboutPage() {
             for later use.
           </p>
         </div>
-        <div className="border border-border bg-background p-4">
+        <div className="border border-border bg-background p-4 shadow-elevated">
           <div className="text-[12px] font-semibold uppercase tracking-wide">
             Generate
           </div>
@@ -43,7 +43,7 @@ export function AboutPage() {
         </div>
       </div>
 
-      <div className="space-y-3 border border-border bg-subtle p-4">
+      <div className="space-y-3 border border-border bg-subtle p-4 shadow-elevated">
         <div className="text-[12px] font-semibold uppercase tracking-wide">
           Constraints & tips
         </div>

@@ -218,7 +218,7 @@ export function VoicesPage() {
       ) : null}
 
       {!loading && data && data.voices.length === 0 ? (
-        <div className="border border-border bg-subtle p-6 text-center text-sm text-muted-foreground">
+        <div className="border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
           No voices found.
         </div>
       ) : null}
@@ -237,7 +237,10 @@ export function VoicesPage() {
           const disabled = state === 'loading'
 
           return (
-            <div key={v.id} className="border border-border bg-background p-4">
+            <div
+              key={v.id}
+              className="border border-border bg-background p-4 shadow-elevated"
+            >
               <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">

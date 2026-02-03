@@ -10,7 +10,7 @@ export function Message({
   return (
     <div
       className={cn(
-        'border px-4 py-3 text-sm',
+        'border px-4 py-3 text-sm shadow-elevated',
         variant === 'error' &&
           'border-red-500/40 bg-red-500/10 text-red-950 dark:border-red-400/40 dark:bg-red-400/10 dark:text-red-200',
         variant === 'success' &&

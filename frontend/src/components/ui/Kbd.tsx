@@ -12,7 +12,7 @@ export function Kbd({
   return (
     <kbd
       aria-hidden={ariaHidden || undefined}
-        className={cn(
+      className={cn(
         'inline-flex items-center justify-center',
         'h-[18px] min-w-[16px] px-1',
         'rounded border border-kbd-border bg-kbd-bg',

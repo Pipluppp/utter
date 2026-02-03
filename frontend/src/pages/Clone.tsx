@@ -235,7 +235,7 @@ export function ClonePage() {
       <button
         type="button"
         className={cn(
-          'w-full cursor-pointer border border-dashed border-border bg-background p-6 text-center hover:bg-subtle',
+          'w-full cursor-pointer border border-dashed border-border bg-background p-6 text-center shadow-elevated hover:bg-subtle',
           'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         )}
         onDragOver={(e) => e.preventDefault()}
@@ -284,7 +284,7 @@ export function ClonePage() {
             autoComplete="off"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Duncan (calm, close-mic)"
+            placeholder="e.g. Duncan (calm, close-mic)…"
           />
         </div>
 
@@ -295,7 +295,7 @@ export function ClonePage() {
             name="transcript"
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
-            placeholder="Paste the transcript of the reference audio."
+            placeholder="Paste the transcript of the reference audio…"
           />
           <div className="mt-2 flex items-center justify-between text-xs text-faint">
             <span>
@@ -341,7 +341,7 @@ export function ClonePage() {
       {created ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overscroll-contain backdrop-blur-sm">
           <div
-            className="w-full max-w-md border border-border bg-background p-6"
+            className="w-full max-w-md border border-border bg-background p-6 shadow-elevated"
             role="dialog"
             aria-modal="true"
             aria-labelledby="clone-success-title"

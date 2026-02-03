@@ -23,6 +23,8 @@
   --color-kbd-border: #d0d0d0;
   --color-kbd-text: #2f2f2f;
   --color-kbd-shadow: rgb(0 0 0 / 0.12);
+
+  --shadow-elevated: 0 1px 0 rgb(0 0 0 / 0.03), 0 8px 20px rgb(0 0 0 / 0.06);
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -48,6 +50,10 @@
   --color-kbd-border: #363636;
   --color-kbd-text: #e2e2e2;
   --color-kbd-shadow: rgb(0 0 0 / 0.35);
+
+  --shadow-elevated:
+    0 0 0 1px rgb(255 255 255 / 0.1), 0 10px 26px rgb(255 255 255 / 0.06),
+    0 24px 54px rgb(0 0 0 / 0.75);
 }
 
 @layer base {
@@ -69,7 +75,8 @@
     outline: none;
     --tw-ring-offset-shadow: 0 0 #0000;
     --tw-ring-shadow: 0 0 0 2px var(--color-ring);
-    box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
+    box-shadow:
+      var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
       var(--tw-shadow, 0 0 #0000);
   }
 
@@ -77,4 +84,12 @@
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
+}
+
+@utility shadow-elevated {
+  --tw-shadow: var(--shadow-elevated);
+  --tw-shadow-colored: var(--shadow-elevated);
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000),
+    var(--tw-shadow);
 }

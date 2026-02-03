@@ -16,7 +16,7 @@ function Step({
   to: string
 }) {
   return (
-    <div className="border border-border bg-background p-5">
+    <div className="border border-border bg-background p-5 shadow-elevated">
       <div className="flex items-start justify-between gap-3">
         <div className="text-xs font-semibold uppercase tracking-wide text-faint">
           {n}

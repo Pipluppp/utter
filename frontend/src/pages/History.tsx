@@ -246,7 +246,7 @@ export function HistoryPage() {
       ) : null}
 
       {!loading && data && data.generations.length === 0 ? (
-        <div className="border border-border bg-subtle p-6 text-center text-sm text-muted-foreground">
+        <div className="border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
           No generations found.
         </div>
       ) : null}
@@ -265,7 +265,10 @@ export function HistoryPage() {
           const playDisabled = state === 'loading'
 
           return (
-            <div key={g.id} className="border border-border bg-background p-4">
+            <div
+              key={g.id}
+              className="border border-border bg-background p-4 shadow-elevated"
+            >
               <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">

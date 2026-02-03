@@ -72,7 +72,7 @@ function TaskRow({
   return (
     <div
       className={cn(
-        'group flex w-full items-center gap-2 border border-border bg-background px-2 py-2 text-sm',
+        'group flex w-full items-center gap-2 border border-border bg-background px-2 py-2 text-sm shadow-elevated',
         'hover:bg-subtle',
       )}
       title={raw}

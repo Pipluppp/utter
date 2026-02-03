@@ -338,7 +338,7 @@ export function DesignPage() {
       </form>
 
       {isRunning ? (
-        <div className="border border-border bg-subtle p-4">
+        <div className="border border-border bg-subtle p-4 shadow-elevated">
           <div className="flex items-center justify-between">
             <div className="text-sm">
               <div className="font-medium uppercase tracking-wide">
@@ -354,7 +354,7 @@ export function DesignPage() {
       ) : null}
 
       {previewUrl ? (
-        <div className="space-y-4 border border-border bg-background p-4">
+        <div className="space-y-4 border border-border bg-background p-4 shadow-elevated">
           <div className="text-sm font-medium uppercase tracking-wide">
             Preview
           </div>
