@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Button, buttonStyles } from '../../components/ui/Button'
 import type { UtterDemo } from '../../content/utterDemo'
 import { cn } from '../../lib/cn'
-import { fetchTextUtf8 } from '../../lib/fetchTextUtf8'
 
 function formatTime(seconds: number) {
   const s = Math.max(0, Math.floor(seconds))
@@ -20,12 +19,6 @@ export function DemoClipCard({
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const rafRef = useRef<number | null>(null)
-
-  const transcriptUrl = demo.transcriptUrl
-  const [transcript, setTranscript] = useState<string | null>(null)
-  const [loadingTranscript, setLoadingTranscript] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const [copyError, setCopyError] = useState<string | null>(null)
 
   const [ready, setReady] = useState(false)
   const [playing, setPlaying] = useState(false)
@@ -72,55 +65,17 @@ export function DemoClipCard({
     }
   }
 
-  async function ensureTranscriptLoaded() {
-    if (!transcriptUrl) return ''
-    if (typeof transcript === 'string') return transcript
-    if (loadingTranscript) return ''
-
-    setLoadingTranscript(true)
-    setCopyError(null)
-    try {
-      const text = await fetchTextUtf8(transcriptUrl as string)
-      setTranscript(text)
-      return text
-    } catch {
-      setTranscript('')
-      return ''
-    } finally {
-      setLoadingTranscript(false)
-    }
-  }
-
-  async function copyText() {
-    if (!transcriptUrl) return
-    try {
-      const text = (await ensureTranscriptLoaded()).trim()
-      if (!text) {
-        setCopyError('No text')
-        window.setTimeout(() => setCopyError(null), 900)
-        return
-      }
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 900)
-    } catch {
-      setCopyError('Failed')
-      window.setTimeout(() => setCopyError(null), 900)
-    }
-  }
-
   const timeLabel = ready
     ? `${formatTime(currentTime)} / ${formatTime(duration)}`
     : '0:00 / 0:00'
-
-  const canCopy = Boolean(transcriptUrl)
 
   return (
     <article
       className={cn(
         'mx-auto w-full max-w-[560px]',
         'border border-border bg-background hover:bg-subtle',
-        'transform-gpu transition-transform md:hover:-translate-y-0.5',
+        'transition-[background-color,border-color,box-shadow] duration-300 ease-out motion-reduce:transition-none',
+        'hover:border-border-strong hover:shadow-[0_10px_28px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_12px_36px_rgba(0,0,0,0.50)]',
         className,
       )}
     >
@@ -164,15 +119,6 @@ export function DemoClipCard({
           >
             {playing ? 'Pause' : 'Play'}
           </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            type="button"
-            onClick={copyText}
-            disabled={!canCopy || loadingTranscript}
-          >
-            {copied ? 'Copied' : copyError ? copyError : 'Copy text'}
-          </Button>
           {demo.audioUrl ? (
             <a
               href={demo.audioUrl}
@@ -212,7 +158,7 @@ export function DemoClipCard({
               aria-label={`Seek ${demo.title}`}
             />
 
-            {/* biome-ignore lint/a11y/useMediaCaption: demos are short clips; transcript is copy-only */}
+            {/* biome-ignore lint/a11y/useMediaCaption: demos are short clips; no captions are provided */}
             <audio
               ref={audioRef}
               data-utter-demo-audio={demo.id}
