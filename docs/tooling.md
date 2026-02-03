@@ -42,7 +42,7 @@ uv venv
 |----------|------|--------|
 | Python | (TBD) | - |
 | CSS | (TBD) | - |
-| JS | (TBD) | - |
+| JS/TS/JSON/CSS (frontend) | Biome | `frontend/biome.json` (see `docs/biome.md`) |
 
 ---
 
