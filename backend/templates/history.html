@@ -49,6 +49,7 @@
         let currentPage = 1;
         const perPage = 20;
         let currentSearch = '';
+        let currentSearchTokens = [];
         let currentStatus = '';
         let refreshInterval = null;
         let debounceTimer = null;
@@ -71,6 +72,7 @@
 
                 const data = await response.json();
                 const generations = data.generations || [];
+                currentSearchTokens = getSearchTokens(currentSearch);
 
                 if (data.pagination && data.pagination.pages && currentPage > data.pagination.pages) {
                     currentPage = data.pagination.pages;
@@ -124,8 +126,8 @@
 
             const canPlay = status === 'completed' && audioUrl;
             const canRegenerate = status !== 'processing' && status !== 'pending';
-            const voiceName = escapeHtml(gen.voice_name || 'Unknown Voice');
-            const textPreview = escapeHtml(truncateText(gen.text, 100));
+            const voiceName = highlightMatches(gen.voice_name || 'Unknown Voice', currentSearchTokens);
+            const textPreview = highlightMatches(truncateText(gen.text || '', 100), currentSearchTokens);
             const errorMessage = gen.error_message ? escapeHtml(truncateText(gen.error_message, 140)) : '';
 
             return `
@@ -251,6 +253,60 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
+        }
+
+        function getSearchTokens(search) {
+            if (!search) return [];
+            return search
+                .trim()
+                .split(/\s+/)
+                .map(t => t.trim())
+                .filter(Boolean);
+        }
+
+        function highlightMatches(text, tokens) {
+            const raw = text === null || text === undefined ? '' : String(text);
+            if (!tokens || tokens.length === 0) return escapeHtml(raw);
+
+            const lower = raw.toLowerCase();
+            const spans = [];
+
+            for (const token of tokens) {
+                const t = String(token).toLowerCase();
+                if (!t) continue;
+
+                let start = 0;
+                while (start < lower.length) {
+                    const idx = lower.indexOf(t, start);
+                    if (idx === -1) break;
+                    spans.push({ start: idx, end: idx + t.length });
+                    start = idx + t.length;
+                }
+            }
+
+            if (spans.length === 0) return escapeHtml(raw);
+
+            spans.sort((a, b) => (a.start - b.start) || (b.end - a.end));
+
+            const merged = [];
+            for (const span of spans) {
+                const prev = merged[merged.length - 1];
+                if (!prev || span.start > prev.end) {
+                    merged.push({ start: span.start, end: span.end });
+                    continue;
+                }
+                prev.end = Math.max(prev.end, span.end);
+            }
+
+            let out = '';
+            let last = 0;
+            for (const span of merged) {
+                out += escapeHtml(raw.slice(last, span.start));
+                out += `<mark class="text-highlight">${escapeHtml(raw.slice(span.start, span.end))}</mark>`;
+                last = span.end;
+            }
+            out += escapeHtml(raw.slice(last));
+            return out;
         }
 
         function getFilename(path) {

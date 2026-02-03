@@ -570,6 +570,30 @@ body::before {
    Voice List Page
    ============================================================================ */
 
+.voices-controls {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.voices-controls input,
+.voices-controls select {
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 10px var(--space-2);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  width: 100%;
+}
+
+.voices-controls input:focus,
+.voices-controls select:focus {
+  outline: none;
+  border-color: var(--text);
+}
+
 .voices-grid {
   display: flex;
   flex-direction: column;
@@ -589,6 +613,13 @@ body::before {
   margin-bottom: var(--space-2);
 }
 
+.voice-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
 .voice-card-name {
   font-size: 14px;
   font-weight: 600;
@@ -596,9 +627,84 @@ body::before {
   letter-spacing: 0.5px;
 }
 
+.voice-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.voice-tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 1.2;
+  user-select: none;
+}
+
+.voice-tag-clone {
+  border-color: var(--text);
+  color: var(--text);
+  background: var(--bg);
+}
+
+.voice-tag-designed {
+  border-color: var(--text);
+  color: var(--bg);
+  background: var(--text);
+}
+
+.voice-tag-unknown {
+  border-color: var(--border);
+  color: var(--text-muted);
+  background: var(--bg-muted);
+}
+
+.voice-card-language {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
 .voice-card-date {
   font-size: 12px;
   color: var(--text-faint);
+}
+
+.voice-card-details {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.voice-snippet-block {
+  border-left: 2px solid var(--border);
+  padding-left: var(--space-2);
+}
+
+.voice-snippet-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-faint);
+  margin-bottom: 4px;
+}
+
+.voice-snippet-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.voice-snippet-empty {
+  color: var(--text-faint);
+  font-style: italic;
 }
 
 .voice-card-actions {
@@ -621,6 +727,35 @@ body::before {
 
 .voices-empty p {
   margin-bottom: var(--space-3);
+}
+
+.voices-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.voices-pagination button {
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 8px var(--space-2);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.voices-pagination button:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  border-color: var(--text);
+}
+
+.voices-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .loading-placeholder {
@@ -702,6 +837,17 @@ body::before {
   color: var(--text-muted);
   margin-bottom: var(--space-2);
   line-height: 1.4;
+}
+
+.text-highlight {
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0 2px;
+  border-radius: 3px;
+  font-weight: 600;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 .history-card-meta {
@@ -855,6 +1001,11 @@ body::before {
   }
 
   .history-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .voices-controls {
     flex-direction: column;
     align-items: stretch;
   }

@@ -27,7 +27,7 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_, and_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -367,12 +367,78 @@ async def api_clone(
 
 
 @app.get("/api/voices")
-async def api_voices(session: AsyncSession = Depends(get_session)):
-    """List all available voices."""
+async def api_voices(
+    page: Optional[int] = None,
+    per_page: Optional[int] = None,
+    search: Optional[str] = None,
+    source: Optional[str] = None,
+    session: AsyncSession = Depends(get_session),
+):
+    """List voices (optionally with pagination and search)."""
+    wants_pagination = any([page is not None, per_page is not None, search, source])
+
+    if wants_pagination:
+        page = max(page or 1, 1)
+        per_page = min(max(per_page or 20, 1), 100)
+
+        query = select(Voice)
+
+        if source:
+            source = source.strip()
+            if source not in {"uploaded", "designed"}:
+                raise HTTPException(status_code=400, detail="Invalid source filter")
+            query = query.where(Voice.source == source)
+
+        if search:
+            tokens = [t for t in search.strip().split() if t]
+            if tokens:
+                token_filters = []
+                for token in tokens:
+                    like = f"%{token}%"
+                    token_filters.append(
+                        or_(
+                            Voice.name.ilike(like),
+                            Voice.reference_transcript.ilike(like),
+                            Voice.description.ilike(like),
+                        )
+                    )
+                query = query.where(and_(*token_filters))
+
+        count_query = select(func.count()).select_from(query.subquery())
+        total = (await session.execute(count_query)).scalar() or 0
+        pages = max(1, (total + per_page - 1) // per_page)
+
+        query = (
+            query.order_by(Voice.created_at.desc())
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+        )
+        result = await session.execute(query)
+        voices = result.scalars().all()
+
+        return {
+            "voices": [voice.to_dict() for voice in voices],
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "pages": pages,
+            },
+        }
+
     result = await session.execute(select(Voice).order_by(Voice.created_at.desc()))
     voices = result.scalars().all()
+    total = len(voices)
 
-    return {"voices": [voice.to_dict() for voice in voices]}
+    return {
+        "voices": [voice.to_dict() for voice in voices],
+        "pagination": {
+            "page": 1,
+            "per_page": total or 1,
+            "total": total,
+            "pages": 1,
+        },
+    }
 
 
 @app.delete("/api/voices/{voice_id}")
@@ -715,9 +781,16 @@ async def api_generations(
     query = select(Generation).options(joinedload(Generation.voice))
 
     if search:
-        search = search.strip()
-        if search:
-            query = query.where(Generation.text.ilike(f"%{search}%"))
+        tokens = [t for t in search.strip().split() if t]
+        if tokens:
+            query = query.join(Voice)
+            token_filters = []
+            for token in tokens:
+                like = f"%{token}%"
+                token_filters.append(
+                    or_(Generation.text.ilike(like), Voice.name.ilike(like))
+                )
+            query = query.where(and_(*token_filters))
     if status:
         query = query.where(Generation.status == status)
 

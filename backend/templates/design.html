@@ -94,7 +94,6 @@
 
 <!-- Generation Progress (shown during generation) -->
 <div class="generation-progress hidden" id="design-progress">
-    <div class="progress-spinner"></div>
     <div class="progress-info">
         <div class="progress-title">Designing voice...</div>
         <div class="progress-time">
@@ -159,6 +158,7 @@
 
         let previewWavesurfer = null;
         let previewAudioBlob = null;
+        let previewAudioUrl = null;
 
         // Character counters
         function updateCounter(input, counter, max) {
@@ -206,7 +206,6 @@
         // Helper to display preview audio from base64 or blob
         function displayPreviewAudio(audioBlob) {
             previewAudioBlob = audioBlob;
-            const audioUrl = URL.createObjectURL(previewAudioBlob);
 
             // Show preview section
             previewSection.style.display = 'block';
@@ -214,7 +213,14 @@
             // Initialize or update wavesurfer
             if (previewWavesurfer) {
                 previewWavesurfer.destroy();
+                previewWavesurfer = null;
             }
+
+            if (previewAudioUrl) {
+                URL.revokeObjectURL(previewAudioUrl);
+                previewAudioUrl = null;
+            }
+            previewAudioUrl = URL.createObjectURL(previewAudioBlob);
 
             previewWavesurfer = WaveSurfer.create({
                 container: '#preview-waveform',
@@ -228,10 +234,21 @@
                 normalize: true,
             });
 
-            previewWavesurfer.load(audioUrl);
+            previewWavesurfer.load(previewAudioUrl);
 
             const playBtn = document.getElementById('preview-play-btn');
             const timeDisplay = document.getElementById('preview-time');
+
+            playBtn.disabled = true;
+            timeDisplay.textContent = '0:00 / 0:00';
+            const iconEl = playBtn.querySelector('.play-icon');
+            if (iconEl) {
+                iconEl.textContent = '▶';
+            }
+            playBtn.onclick = () => {
+                if (!previewWavesurfer) return;
+                previewWavesurfer.playPause();
+            };
 
             previewWavesurfer.on('ready', () => {
                 playBtn.disabled = false;
@@ -253,12 +270,7 @@
                 playBtn.querySelector('.play-icon').textContent = '▶';
             });
 
-            // Remove existing listener to avoid duplicates
-            const newPlayBtn = playBtn.cloneNode(true);
-            playBtn.parentNode.replaceChild(newPlayBtn, playBtn);
-            newPlayBtn.addEventListener('click', () => {
-                previewWavesurfer.playPause();
-            });
+            // Keep a stable play button element; overwrite handler to avoid duplicates.
 
             // Enable save button
             saveVoiceBtn.disabled = false;
@@ -462,6 +474,17 @@
 
         // Initialize on page load
         checkAndRestoreActiveTask();
+
+        window.addEventListener('beforeunload', () => {
+            if (previewWavesurfer) {
+                previewWavesurfer.destroy();
+                previewWavesurfer = null;
+            }
+            if (previewAudioUrl) {
+                URL.revokeObjectURL(previewAudioUrl);
+                previewAudioUrl = null;
+            }
+        });
 
         // Save Voice
         form.addEventListener('submit', async (e) => {
