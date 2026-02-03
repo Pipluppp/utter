@@ -18,7 +18,7 @@ export function buttonStyles({
   className?: string
 }) {
   return cn(
-    'relative inline-flex items-center justify-center gap-2 border font-medium uppercase tracking-wide transition-colors',
+    'relative inline-flex cursor-pointer items-center justify-center gap-2 border font-medium uppercase tracking-wide transition-colors',
     size === 'md' ? 'px-6 py-3 text-sm' : 'px-3 py-2 text-[12px]',
     'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
     'disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-faint',
