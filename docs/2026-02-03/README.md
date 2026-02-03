@@ -30,9 +30,10 @@ These docs were originally written for the Jinja/vanilla frontend, but the React
 
 | Plan | Goal |
 |------|------|
-| **[history-search-voice-highlight-plan.md](./history-search-voice-highlight-plan.md)** | Search History by voice name + highlight matches |
-| **[design-preview-playback-fix-plan.md](./design-preview-playback-fix-plan.md)** | Fix `/design` preview play button not playing |
-| **[voices-page-improvements-plan.md](./voices-page-improvements-plan.md)** | Tag clone vs designed voices, show reference transcript, add Voices search + pagination |
+| **[legacy-frontend-plans/README.md](./legacy-frontend-plans/README.md)** | Index of the legacy-frontend implementation plans |
+| **[history-search-voice-highlight-plan.md](./legacy-frontend-plans/history-search-voice-highlight-plan.md)** | Search History by voice name + highlight matches |
+| **[design-preview-playback-fix-plan.md](./legacy-frontend-plans/design-preview-playback-fix-plan.md)** | Fix `/design` preview play button not playing |
+| **[voices-page-improvements-plan.md](./legacy-frontend-plans/voices-page-improvements-plan.md)** | Tag clone vs designed voices, show reference transcript, add Voices search + pagination |
 
 ---
 
@@ -114,4 +115,3 @@ And in another PowerShell:
 $env:FASTAPI_ORIGIN = "http://localhost:8001"
 npm run dev
 ```
-
