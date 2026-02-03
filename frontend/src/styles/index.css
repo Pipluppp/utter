@@ -12,6 +12,27 @@
   --color-faint: #888888;
   --color-border: #cccccc;
   --color-border-strong: #999999;
+  --color-ring: #111111;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --color-background: #0d0d0d;
+  --color-subtle: #121212;
+  --color-muted: #1a1a1a;
+  --color-foreground: #f5f5f5;
+  --color-muted-foreground: #b3b3b3;
+  --color-faint: #8a8a8a;
+  --color-border: #2a2a2a;
+  --color-border-strong: #3a3a3a;
+  --color-ring: #00d1ff;
 }
 
 @layer base {

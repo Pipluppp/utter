@@ -5,6 +5,30 @@
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Clone a voice and generate speech with Qwen3-TTS" />
+    <meta name="theme-color" content="#ffffff" />
+
+    <script>
+      ;(() => {
+        const STORAGE_KEY = 'utter_theme'
+        const DARK_BG = '#0d0d0d'
+        const LIGHT_BG = '#ffffff'
+
+        let theme = null
+        try {
+          theme = localStorage.getItem(STORAGE_KEY)
+        } catch {
+          // ignore
+        }
+        const resolvedDark = theme === 'dark'
+
+        const root = document.documentElement
+        root.classList.toggle('dark', resolvedDark)
+        root.style.colorScheme = resolvedDark ? 'dark' : 'light'
+
+        const metaTheme = document.querySelector('meta[name="theme-color"]')
+        if (metaTheme) metaTheme.setAttribute('content', resolvedDark ? DARK_BG : LIGHT_BG)
+      })()
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
