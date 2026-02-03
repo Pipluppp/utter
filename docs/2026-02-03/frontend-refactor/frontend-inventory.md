@@ -143,6 +143,7 @@ Used by **Voices** and **History** pages.
 - Submit:
   - POSTs `FormData` to `POST /api/clone` (`name`, `audio`, `transcript`, `language`)
   - Shows a timer on the button and `#clone-progress` while request runs
+    - Progress panel is timer-focused (no redundant spinner; the submit button carries loading state)
   - On success: shows a **Clone Success Modal** (overlay built in JS) with:
     - Link to `/generate?voice=<newVoiceId>`
     - “Clone Another Voice” resets the form
@@ -172,6 +173,7 @@ Used by **Voices** and **History** pages.
   - POST `POST /api/generate` JSON `{ voice_id, text, language, model: "0.6B" }`
   - Calls `taskManager.startTask(task_id, "generate", "/generate", description, formState)`
   - Shows progress UI + elapsed timer
+    - Progress panel is timer/status focused (no redundant spinner; the button carries loading state)
 - Task progress:
   - Listens for `taskProgress` to update `#progress-status` (GPU queue/progress copy)
   - Listens for `taskCancelled` (from modal cancel) to reset UI
@@ -220,6 +222,7 @@ Used by **Voices** and **History** pages.
   - POST `POST /api/voices/design/preview` JSON `{ text, language, instruct }`
   - Tracks async work via `taskManager.startTask(task_id, "design", "/design", "...", formState)`
   - Shows progress UI + elapsed timer
+    - Progress panel is timer-focused (no redundant spinner; the button carries loading state)
 - Preview completion:
   - On `taskComplete` for type `design`, expects `result.audio_base64`
   - Converts base64 → `Blob(audio/wav)` and renders WaveSurfer preview
@@ -230,6 +233,7 @@ Used by **Voices** and **History** pages.
 
 **Notes**
 - Design preview is **not cancellable** from the global task modal (cancel button only exists for generate).
+- Preview playback uses a stable play button binding (avoids DOM replacement bugs) and revokes old preview object URLs between runs.
 - `design.html` includes page-specific inline `<style>` (subtitle + example cards + button group layout).
 
 ---
