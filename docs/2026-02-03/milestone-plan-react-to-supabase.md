@@ -1,8 +1,19 @@
 # Milestone Plan (2026-02-03): React Refactor → Supabase Edge Backend → CloudFront
 
-> **Status**: Planned  
-> **Next focus**: React frontend refactor (parity-first)  
+> **Status**: In progress (Milestones 0–4 implemented locally; no deployment yet)  
+> **Next focus**: UI/UX hardening pass (pre-Milestone 5)  
 > **Target stack**: React (frontend) + AWS S3/CloudFront (hosting) + Supabase Edge Functions/Postgres/Storage (backend) + Modal.com (TTS jobs)
+
+## Current progress (as of 2026-02-03)
+
+- React app exists under `frontend/` (Vite + React 19 + TS + Tailwind v4).
+- Dev proxy works for `/api/**`, `/uploads/**`, `/static/**`.
+- SPA routes migrated for parity: `/`, `/about`, `/voices`, `/history`, `/clone`, `/generate`, `/design`.
+- Shared infra implemented: typed API wrapper, task system parity, WaveSurfer integration (npm-bundled).
+- Legacy Jinja/vanilla frontend remains served by FastAPI for parity validation.
+
+Before starting Milestone 5, we’re doing a UI/UX hardening pass:
+- `docs/2026-02-03/react-ui-ux-hardening-plan.md`
 
 ## Milestone 0 — Align docs + contracts (1–2 hrs)
 

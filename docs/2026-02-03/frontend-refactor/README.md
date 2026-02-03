@@ -2,6 +2,13 @@
 
 This subfolder contains the source-of-truth documents for the React/Tailwind frontend rewrite.
 
+## Status (as of 2026-02-03)
+
+- Implementation is in place locally under `frontend/` (Vite + React 19 + TS + Tailwind v4).
+- Pages migrated for parity (no deployment yet): `/`, `/about`, `/voices`, `/history`, `/clone`, `/generate`, `/design`.
+- Next: UI/UX hardening pass before any deployment work:
+  - `docs/2026-02-03/react-ui-ux-hardening-plan.md`
+
 ## Documents
 
 | Doc | Purpose |
