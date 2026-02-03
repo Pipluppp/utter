@@ -63,4 +63,5 @@ Thumbs.db
 .coverage
 htmlcov/
 
-utter_demo/
+utter_demo
+utter_demo_v2

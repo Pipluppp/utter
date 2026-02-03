@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { buttonStyles } from '../components/ui/Button'
 import { cn } from '../lib/cn'
-import { DemoNarrative } from './landing/DemoNarrative'
+import { DemoWall } from './landing/DemoWall'
 import { LandingHero } from './landing/LandingHero'
 
 function Step({
@@ -41,7 +41,7 @@ export function LandingPage() {
     <div className="space-y-10">
       <LandingHero />
 
-      <DemoNarrative />
+      <DemoWall />
 
       <section className="space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
