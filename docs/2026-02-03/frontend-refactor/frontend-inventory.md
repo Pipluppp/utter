@@ -202,7 +202,7 @@ Used by **Voices** and **History** pages.
 - Today, task state is tracked by an **in-memory** backend `TaskStore` (polling via `GET /api/tasks/{task_id}`).
 - When migrating to Supabase Edge Functions, task state must be **persisted** (e.g. `tasks` table in Postgres) because Edge Functions are stateless.
   - See: `modal_app/qwen3_tts/LONG_RUNNING_TASKS.md`
-  - See (new): `docs/2026-02-03/job-based-edge-orchestration.md`
+  - See (new): `docs/2026-02-05/job-based-edge-orchestration.md`
 
 ---
 

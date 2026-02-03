@@ -298,7 +298,7 @@ async def poll_job_until_complete(
 
 > See [Deployment Architecture Plan - Section 6](../../docs/2026-02-02/deployment-architecture-plan.md#6-task-queue--long-running-jobs) for details.
 >
-> Bridge doc: `docs/2026-02-03/job-based-edge-orchestration.md`
+> Bridge doc: `docs/2026-02-05/job-based-edge-orchestration.md`
 
 When migrating to Supabase Edge Functions, the pattern remains the same:
 

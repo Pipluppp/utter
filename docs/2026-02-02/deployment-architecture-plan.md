@@ -187,7 +187,7 @@ This is **exactly** what we need for Utter!
   - `GET /tasks/:id` polls Modal and, when complete, fetches the audio, uploads to Storage, and updates DB.
 - This avoids relying on one long Edge invocation for multi-minute generations and remains correct under restarts.
 - See: `modal_app/qwen3_tts/LONG_RUNNING_TASKS.md`
-- See (bridge doc): `docs/2026-02-03/job-based-edge-orchestration.md`
+- See (bridge doc): `docs/2026-02-05/job-based-edge-orchestration.md`
 
 ---
 
@@ -1170,7 +1170,7 @@ POST   /tasks/:id/cancel → cancel Modal job + mark cancelled
 
 **References**
 - Modal job pattern: `modal_app/qwen3_tts/LONG_RUNNING_TASKS.md`
-- Detailed bridge doc (new): `docs/2026-02-03/job-based-edge-orchestration.md`
+- Detailed bridge doc (new): `docs/2026-02-05/job-based-edge-orchestration.md`
 
 ### Option A: Database-Backed Tasks + Dedicated Worker (Hybrid)
 
