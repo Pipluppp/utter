@@ -35,7 +35,12 @@ function Icon({ type }: { type: TaskType }) {
     )
   }
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path d="M8 5v14l11-7L8 5z" />
     </svg>
   )

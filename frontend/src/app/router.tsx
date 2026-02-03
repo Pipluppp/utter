@@ -1,5 +1,4 @@
 import { createBrowserRouter } from 'react-router-dom'
-import { Layout } from './Layout'
 import { AboutPage } from '../pages/About'
 import { ClonePage } from '../pages/Clone'
 import { DesignPage } from '../pages/Design'
@@ -7,6 +6,7 @@ import { GeneratePage } from '../pages/Generate'
 import { HistoryPage } from '../pages/History'
 import { LandingPage } from '../pages/Landing'
 import { VoicesPage } from '../pages/Voices'
+import { Layout } from './Layout'
 
 export const router = createBrowserRouter([
   {
@@ -22,4 +22,3 @@ export const router = createBrowserRouter([
     ],
   },
 ])
-

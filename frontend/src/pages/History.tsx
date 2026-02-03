@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useWaveformListPlayer } from '../components/audio/useWaveformListPlayer'
 import { Button } from '../components/ui/Button'
@@ -8,15 +8,18 @@ import { Message } from '../components/ui/Message'
 import { Select } from '../components/ui/Select'
 import { apiJson } from '../lib/api'
 import { cn } from '../lib/cn'
-import type { Generation, GenerationsResponse, RegenerateResponse } from '../lib/types'
+import type {
+  Generation,
+  GenerationsResponse,
+  RegenerateResponse,
+} from '../lib/types'
 import { useDebouncedValue } from './hooks'
 
 function tokenize(query: string) {
-  return query
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
+  return query.trim().split(/\s+/).filter(Boolean)
 }
+
+const PER_PAGE = 20
 
 function Highlight({ text, tokens }: { text: string; tokens: string[] }) {
   if (tokens.length === 0) return <>{text}</>
@@ -45,16 +48,21 @@ function Highlight({ text, tokens }: { text: string; tokens: string[] }) {
 
   const out: React.ReactNode[] = []
   let cursor = 0
-  merged.forEach(([s, e], i) => {
-    if (cursor < s) out.push(<span key={`t-${i}`}>{text.slice(cursor, s)}</span>)
+  merged.forEach(([s, e]) => {
+    if (cursor < s)
+      out.push(<span key={`t-${cursor}-${s}`}>{text.slice(cursor, s)}</span>)
     out.push(
-      <mark key={`m-${i}`} className="bg-foreground text-background px-0.5">
+      <mark
+        key={`m-${s}-${e}`}
+        className="bg-foreground text-background px-0.5"
+      >
         {text.slice(s, e)}
       </mark>,
     )
     cursor = e
   })
-  if (cursor < text.length) out.push(<span key="end">{text.slice(cursor)}</span>)
+  if (cursor < text.length)
+    out.push(<span key={`t-${cursor}-end`}>{text.slice(cursor)}</span>)
   return <>{out}</>
 }
 
@@ -85,7 +93,6 @@ export function HistoryPage() {
 
   const [status, setStatus] = useState<'all' | string>(initialStatus)
   const [page, setPage] = useState(initialPage)
-  const perPage = 20
 
   const [data, setData] = useState<GenerationsResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -95,29 +102,31 @@ export function HistoryPage() {
   const waveRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const refreshTimerRef = useRef<number | null>(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
       const qs = new URLSearchParams()
       qs.set('page', String(page))
-      qs.set('per_page', String(perPage))
+      qs.set('per_page', String(PER_PAGE))
       if (debounced.trim()) qs.set('search', debounced.trim())
       if (status !== 'all') qs.set('status', status)
-      const res = await apiJson<GenerationsResponse>(`/api/generations?${qs.toString()}`)
+      const res = await apiJson<GenerationsResponse>(
+        `/api/generations?${qs.toString()}`,
+      )
       setData(res)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load history.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [debounced, page, status])
 
   useEffect(() => {
     void load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debounced, page, status])
+  }, [load])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset paging when search/status changes
   useEffect(() => setPage(1), [debounced, status])
 
   useEffect(() => {
@@ -143,8 +152,7 @@ export function HistoryPage() {
     return () => {
       if (refreshTimerRef.current) window.clearInterval(refreshTimerRef.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data])
+  }, [data, load])
 
   async function onDelete(gen: Generation) {
     if (!confirm('Delete generation?')) return
@@ -221,7 +229,9 @@ export function HistoryPage() {
         </div>
       </div>
 
-      {loading ? <div className="text-sm text-muted-foreground">Loading…</div> : null}
+      {loading ? (
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      ) : null}
 
       {!loading && data && data.generations.length === 0 ? (
         <div className="border border-border bg-subtle p-6 text-center text-sm text-muted-foreground">
@@ -235,7 +245,11 @@ export function HistoryPage() {
           const isReady = g.status === 'completed' && Boolean(audioUrl)
           const state = playState[g.id] ?? 'idle'
           const playLabel =
-            state === 'loading' ? 'Loading…' : state === 'playing' ? 'Stop' : 'Play'
+            state === 'loading'
+              ? 'Loading…'
+              : state === 'playing'
+                ? 'Stop'
+                : 'Play'
           const playDisabled = state === 'loading'
 
           return (
@@ -246,7 +260,8 @@ export function HistoryPage() {
                     <span
                       className={cn(
                         'border px-2 py-0.5 text-[10px] uppercase tracking-wide',
-                        g.status === 'completed' && 'border-border bg-subtle text-muted-foreground',
+                        g.status === 'completed' &&
+                          'border-border bg-subtle text-muted-foreground',
                         (g.status === 'pending' || g.status === 'processing') &&
                           'border-border bg-muted text-muted-foreground',
                         g.status === 'failed' &&
@@ -258,13 +273,18 @@ export function HistoryPage() {
                       {g.status}
                     </span>
                     <div className="truncate text-sm font-semibold">
-                      <Highlight text={g.voice_name ?? 'Unknown voice'} tokens={tokens} />
+                      <Highlight
+                        text={g.voice_name ?? 'Unknown voice'}
+                        tokens={tokens}
+                      />
                     </div>
                   </div>
 
                   <div className="mt-2 text-sm text-muted-foreground">
                     <Highlight
-                      text={g.text.slice(0, 160) + (g.text.length > 160 ? '…' : '')}
+                      text={
+                        g.text.slice(0, 160) + (g.text.length > 160 ? '…' : '')
+                      }
                       tokens={tokens}
                     />
                   </div>
@@ -281,7 +301,9 @@ export function HistoryPage() {
                       <span>Duration: {g.duration_seconds.toFixed(1)}s</span>
                     ) : null}
                     {g.generation_time_seconds != null ? (
-                      <span>Gen time: {g.generation_time_seconds.toFixed(1)}s</span>
+                      <span>
+                        Gen time: {g.generation_time_seconds.toFixed(1)}s
+                      </span>
                     ) : null}
                   </div>
                 </div>
@@ -320,7 +342,11 @@ export function HistoryPage() {
                   >
                     Regenerate
                   </Button>
-                  <Button type="button" variant="secondary" onClick={() => void onDelete(g)}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => void onDelete(g)}
+                  >
                     Delete
                   </Button>
                 </div>

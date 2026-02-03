@@ -69,6 +69,7 @@ export function Layout() {
 
   useGlobalShortcuts()
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: close the mobile menu on route changes
   useEffect(() => {
     setMenuOpen(false)
   }, [location.pathname])
@@ -159,7 +160,11 @@ export function Layout() {
         >
           <div className="mx-auto w-full max-w-5xl px-4 py-2 md:px-6">
             <div className="space-y-1">
-              <MobileNavItem to="/clone" shortcut="c" onClick={() => setMenuOpen(false)}>
+              <MobileNavItem
+                to="/clone"
+                shortcut="c"
+                onClick={() => setMenuOpen(false)}
+              >
                 <span>Clone</span>
                 <Kbd>c</Kbd>
               </MobileNavItem>
@@ -171,7 +176,11 @@ export function Layout() {
                 <span>Generate</span>
                 <Kbd>g</Kbd>
               </MobileNavItem>
-              <MobileNavItem to="/design" shortcut="d" onClick={() => setMenuOpen(false)}>
+              <MobileNavItem
+                to="/design"
+                shortcut="d"
+                onClick={() => setMenuOpen(false)}
+              >
                 <span>Design</span>
                 <Kbd>d</Kbd>
               </MobileNavItem>
@@ -214,7 +223,9 @@ export function Layout() {
           'hover:bg-muted/80 hover:text-foreground',
           'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         )}
-        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label={
+          theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+        }
         aria-pressed={theme === 'dark'}
         title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
       >

@@ -98,7 +98,10 @@ export function GeneratePage() {
 
   useEffect(() => {
     if (!startedAt) return
-    const t = window.setInterval(() => setElapsedLabel(formatElapsed(startedAt)), 1000)
+    const t = window.setInterval(
+      () => setElapsedLabel(formatElapsed(startedAt)),
+      1000,
+    )
     return () => window.clearInterval(t)
   }, [startedAt])
 
@@ -129,10 +132,15 @@ export function GeneratePage() {
 
   const charCount = text.length
   const isRunning = task?.status === 'pending' || task?.status === 'processing'
-  const statusText = task ? getStatusText(task.status, task.modalStatus ?? null) : null
+  const statusText = task
+    ? getStatusText(task.status, task.modalStatus ?? null)
+    : null
 
   const canSubmit =
-    !loadingVoices && Boolean(voiceId) && Boolean(text.trim()) && charCount <= 10000
+    !loadingVoices &&
+    Boolean(voiceId) &&
+    Boolean(text.trim()) &&
+    charCount <= 10000
 
   const formState: GenerateFormState = useMemo(
     () => ({ voiceId, language, text }),
@@ -185,7 +193,9 @@ export function GeneratePage() {
             disabled={loadingVoices}
             name="voice_id"
           >
-            <option value="">{loadingVoices ? 'Loading…' : 'Select a voice'}</option>
+            <option value="">
+              {loadingVoices ? 'Loading…' : 'Select a voice'}
+            </option>
             {voices?.voices.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.name}
@@ -221,7 +231,11 @@ export function GeneratePage() {
             className="min-h-44"
           />
           <div className="mt-2 flex items-center justify-between text-xs text-faint">
-            <span className={cn(charCount > 10000 && 'text-red-700 dark:text-red-400')}>
+            <span
+              className={cn(
+                charCount > 10000 && 'text-red-700 dark:text-red-400',
+              )}
+            >
               {charCount}/10000
             </span>
             <span>Max 10,000 characters</span>
@@ -237,7 +251,9 @@ export function GeneratePage() {
         <div className="border border-border bg-subtle p-4">
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <div className="font-medium uppercase tracking-wide">Progress</div>
+              <div className="font-medium uppercase tracking-wide">
+                Progress
+              </div>
               <div className="mt-1 text-sm text-muted-foreground">
                 {statusText ?? 'Processing…'}
               </div>
@@ -250,7 +266,9 @@ export function GeneratePage() {
       {audioUrl ? (
         <div className="space-y-4 border border-border bg-background p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm font-medium uppercase tracking-wide">Result</div>
+            <div className="text-sm font-medium uppercase tracking-wide">
+              Result
+            </div>
             <div className="flex items-center gap-2">
               {downloadUrl ? (
                 <a

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, useSearchParams } from 'react-router-dom'
 import { useWaveformListPlayer } from '../components/audio/useWaveformListPlayer'
 import { Button } from '../components/ui/Button'
@@ -11,10 +11,7 @@ import type { Voice, VoicesResponse } from '../lib/types'
 import { useDebouncedValue } from './hooks'
 
 function tokenize(query: string) {
-  return query
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
+  return query.trim().split(/\s+/).filter(Boolean)
 }
 
 function Highlight({ text, tokens }: { text: string; tokens: string[] }) {
@@ -44,16 +41,21 @@ function Highlight({ text, tokens }: { text: string; tokens: string[] }) {
 
   const out: React.ReactNode[] = []
   let cursor = 0
-  merged.forEach(([s, e], i) => {
-    if (cursor < s) out.push(<span key={`t-${i}`}>{text.slice(cursor, s)}</span>)
+  merged.forEach(([s, e]) => {
+    if (cursor < s)
+      out.push(<span key={`t-${cursor}-${s}`}>{text.slice(cursor, s)}</span>)
     out.push(
-      <mark key={`m-${i}`} className="bg-foreground text-background px-0.5">
+      <mark
+        key={`m-${s}-${e}`}
+        className="bg-foreground text-background px-0.5"
+      >
         {text.slice(s, e)}
       </mark>,
     )
     cursor = e
   })
-  if (cursor < text.length) out.push(<span key="end">{text.slice(cursor)}</span>)
+  if (cursor < text.length)
+    out.push(<span key={`t-${cursor}-end`}>{text.slice(cursor)}</span>)
   return <>{out}</>
 }
 
@@ -63,6 +65,8 @@ function snippet(value: string | null, maxLen: number, fallback: string) {
 }
 
 type PlayState = 'idle' | 'loading' | 'playing' | 'paused' | 'stopped'
+
+const PER_PAGE = 20
 
 export function VoicesPage() {
   const { toggle } = useWaveformListPlayer()
@@ -74,7 +78,9 @@ export function VoicesPage() {
 
   const initialPage = Math.max(1, Number(initialPageRaw ?? '1') || 1)
   const initialSourceValue =
-    initialSource === 'uploaded' || initialSource === 'designed' ? initialSource : 'all'
+    initialSource === 'uploaded' || initialSource === 'designed'
+      ? initialSource
+      : 'all'
 
   const [query, setQuery] = useState(initialQuery)
   const debounced = useDebouncedValue(query, 250)
@@ -84,8 +90,6 @@ export function VoicesPage() {
     initialSourceValue,
   )
   const [page, setPage] = useState(initialPage)
-  const perPage = 20
-
   const [data, setData] = useState<VoicesResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -94,13 +98,13 @@ export function VoicesPage() {
   const [playState, setPlayState] = useState<Record<string, PlayState>>({})
   const waveRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
       const qs = new URLSearchParams()
       qs.set('page', String(page))
-      qs.set('per_page', String(perPage))
+      qs.set('per_page', String(PER_PAGE))
       if (debounced.trim()) qs.set('search', debounced.trim())
       if (source !== 'all') qs.set('source', source)
       const res = await apiJson<VoicesResponse>(`/api/voices?${qs.toString()}`)
@@ -110,13 +114,13 @@ export function VoicesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [debounced, page, source])
 
   useEffect(() => {
     void load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debounced, page, source])
+  }, [load])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset paging when search/source changes
   useEffect(() => setPage(1), [debounced, source])
 
   useEffect(() => {
@@ -192,7 +196,9 @@ export function VoicesPage() {
         </div>
       </div>
 
-      {loading ? <div className="text-sm text-muted-foreground">Loading…</div> : null}
+      {loading ? (
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      ) : null}
 
       {!loading && data && data.voices.length === 0 ? (
         <div className="border border-border bg-subtle p-6 text-center text-sm text-muted-foreground">
@@ -227,13 +233,20 @@ export function VoicesPage() {
                   </div>
                   <div className="mt-2 text-sm text-muted-foreground">
                     <Highlight
-                      text={snippet(v.reference_transcript, 120, 'No transcript')}
+                      text={snippet(
+                        v.reference_transcript,
+                        120,
+                        'No transcript',
+                      )}
                       tokens={tokens}
                     />
                   </div>
                   {v.description ? (
                     <div className="mt-2 text-sm text-muted-foreground">
-                      <Highlight text={snippet(v.description, 120, '')} tokens={tokens} />
+                      <Highlight
+                        text={snippet(v.description, 120, '')}
+                        tokens={tokens}
+                      />
                     </div>
                   ) : null}
                 </div>

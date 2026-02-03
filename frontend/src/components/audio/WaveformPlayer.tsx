@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import WaveSurfer from 'wavesurfer.js'
-import { cn } from '../../lib/cn'
 import { useTheme } from '../../app/theme/ThemeProvider'
+import { cn } from '../../lib/cn'
 
 export function WaveformPlayer({
   audioUrl,
@@ -39,7 +39,8 @@ export function WaveformPlayer({
     setTimeLabel('0:00')
 
     const styles = getComputedStyle(document.documentElement)
-    const waveColor = styles.getPropertyValue('--color-faint').trim() || '#a0a0a0'
+    const waveColor =
+      styles.getPropertyValue('--color-faint').trim() || '#a0a0a0'
     const progressFallback = resolvedTheme === 'dark' ? '#f5f5f5' : '#111111'
     const progressColor =
       styles.getPropertyValue('--color-foreground').trim() || progressFallback

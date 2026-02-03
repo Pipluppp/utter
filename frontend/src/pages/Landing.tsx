@@ -22,7 +22,9 @@ function FeatureCard({
         'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
       )}
     >
-      <div className="mb-4 text-muted-foreground group-hover:text-foreground">{icon}</div>
+      <div className="mb-4 text-muted-foreground group-hover:text-foreground">
+        {icon}
+      </div>
       <h3 className="text-sm font-semibold uppercase tracking-wide">{title}</h3>
       <p className="mt-2 text-sm text-muted-foreground">{desc}</p>
       <span className="mt-4 inline-block text-[12px] uppercase tracking-wide text-foreground">

@@ -14,7 +14,8 @@ export function AboutPage() {
         <li>Long-running work is tracked via tasks (polling).</li>
       </ul>
       <p className="text-sm text-muted-foreground">
-        Supported languages and provider are exposed via <code>GET /api/languages</code>.
+        Supported languages and provider are exposed via{' '}
+        <code>GET /api/languages</code>.
       </p>
     </div>
   )

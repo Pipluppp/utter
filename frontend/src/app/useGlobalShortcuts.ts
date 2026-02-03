@@ -21,7 +21,13 @@ export function useGlobalShortcuts() {
 
       const key = e.key.toLowerCase()
       const to =
-        key === 'c' ? '/clone' : key === 'g' ? '/generate' : key === 'd' ? '/design' : null
+        key === 'c'
+          ? '/clone'
+          : key === 'g'
+            ? '/generate'
+            : key === 'd'
+              ? '/design'
+              : null
       if (!to) return
       if (location.pathname === to) return
 
@@ -33,4 +39,3 @@ export function useGlobalShortcuts() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [location.pathname, navigate])
 }
-

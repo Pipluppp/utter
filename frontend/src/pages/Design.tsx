@@ -109,7 +109,10 @@ export function DesignPage() {
 
   useEffect(() => {
     if (!startedAt) return
-    const t = window.setInterval(() => setElapsedLabel(formatElapsed(startedAt)), 1000)
+    const t = window.setInterval(
+      () => setElapsedLabel(formatElapsed(startedAt)),
+      1000,
+    )
     return () => window.clearInterval(t)
   }, [startedAt])
 
@@ -170,10 +173,13 @@ export function DesignPage() {
     }
 
     try {
-      const res = await apiJson<DesignPreviewResponse>('/api/voices/design/preview', {
-        method: 'POST',
-        json: { text, language, instruct },
-      })
+      const res = await apiJson<DesignPreviewResponse>(
+        '/api/voices/design/preview',
+        {
+          method: 'POST',
+          json: { text, language, instruct },
+        },
+      )
       startTask(res.task_id, 'design', '/design', 'Design preview', formState)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start preview.')
@@ -201,7 +207,9 @@ export function DesignPage() {
       form.set('instruct', instruct.trim())
       form.set(
         'audio',
-        new File([previewBlobRef.current], 'preview.wav', { type: 'audio/wav' }),
+        new File([previewBlobRef.current], 'preview.wav', {
+          type: 'audio/wav',
+        }),
       )
 
       await apiForm('/api/voices/design', form, { method: 'POST' })
@@ -314,8 +322,12 @@ export function DesignPage() {
         <div className="border border-border bg-subtle p-4">
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <div className="font-medium uppercase tracking-wide">Progress</div>
-              <div className="mt-1 text-sm text-muted-foreground">Generating…</div>
+              <div className="font-medium uppercase tracking-wide">
+                Progress
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Generating…
+              </div>
             </div>
             <div className="text-xs text-faint">{elapsedLabel}</div>
           </div>
@@ -324,7 +336,9 @@ export function DesignPage() {
 
       {previewUrl ? (
         <div className="space-y-4 border border-border bg-background p-4">
-          <div className="text-sm font-medium uppercase tracking-wide">Preview</div>
+          <div className="text-sm font-medium uppercase tracking-wide">
+            Preview
+          </div>
           <WaveformPlayer audioUrl={previewUrl} />
         </div>
       ) : null}

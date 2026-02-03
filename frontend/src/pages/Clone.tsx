@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -43,7 +43,10 @@ export function ClonePage() {
 
   useEffect(() => {
     if (!submitting || !startedAt) return
-    const t = window.setInterval(() => setElapsedLabel(formatElapsed(startedAt)), 1000)
+    const t = window.setInterval(
+      () => setElapsedLabel(formatElapsed(startedAt)),
+      1000,
+    )
     return () => window.clearInterval(t)
   }, [startedAt, submitting])
 
@@ -79,10 +82,13 @@ export function ClonePage() {
         fetch('/static/examples/audio_text.txt'),
         fetch('/static/examples/audio.wav'),
       ])
-      if (!textRes.ok || !audioRes.ok) throw new Error('Failed to load example.')
+      if (!textRes.ok || !audioRes.ok)
+        throw new Error('Failed to load example.')
       const exampleText = await textRes.text()
       const audioBlob = await audioRes.blob()
-      const exampleFile = new File([audioBlob], 'audio.wav', { type: 'audio/wav' })
+      const exampleFile = new File([audioBlob], 'audio.wav', {
+        type: 'audio/wav',
+      })
       setName('Example Voice')
       setTranscript(exampleText.trim())
       validateAndSetFile(exampleFile)
@@ -121,7 +127,9 @@ export function ClonePage() {
       form.set('transcript', transcript.trim())
       form.set('language', language)
 
-      const res = await apiForm<CloneResponse>('/api/clone', form, { method: 'POST' })
+      const res = await apiForm<CloneResponse>('/api/clone', form, {
+        method: 'POST',
+      })
       setCreated(res)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to clone voice.')
@@ -131,7 +139,7 @@ export function ClonePage() {
     }
   }
 
-  function reset() {
+  const reset = useCallback(() => {
     setCreated(null)
     setError(null)
     setFileError(null)
@@ -139,7 +147,7 @@ export function ClonePage() {
     setTranscript('')
     setFile(null)
     if (inputRef.current) inputRef.current.value = ''
-  }
+  }, [])
 
   useEffect(() => {
     if (!created) return
@@ -152,7 +160,7 @@ export function ClonePage() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [created])
+  }, [created, reset])
 
   return (
     <div className="space-y-8">
@@ -162,7 +170,8 @@ export function ClonePage() {
 
       {error ? <Message variant="error">{error}</Message> : null}
 
-      <div
+      <button
+        type="button"
         className={cn(
           'cursor-pointer border border-dashed border-border bg-background p-6 text-center hover:bg-subtle',
           'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -173,14 +182,6 @@ export function ClonePage() {
           validateAndSetFile(e.dataTransfer.files?.[0] ?? null)
         }}
         onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            inputRef.current?.click()
-          }
-        }}
-        role="button"
-        tabIndex={0}
         aria-label="Select audio file"
       >
         <input
@@ -193,14 +194,18 @@ export function ClonePage() {
         <div className="text-sm text-muted-foreground">
           Drag &amp; drop audio here, or click to browse.
         </div>
-        <div className="mt-2 text-xs text-faint">WAV / MP3 / M4A • max 50MB</div>
-        {fileInfo ? <div className="mt-3 text-xs text-foreground">{fileInfo}</div> : null}
+        <div className="mt-2 text-xs text-faint">
+          WAV / MP3 / M4A • max 50MB
+        </div>
+        {fileInfo ? (
+          <div className="mt-3 text-xs text-foreground">{fileInfo}</div>
+        ) : null}
         {fileError ? (
           <div className="mt-3 text-xs text-red-700 dark:text-red-400">
             {fileError}
           </div>
         ) : null}
-      </div>
+      </button>
 
       <form
         className="space-y-6"
@@ -231,7 +236,9 @@ export function ClonePage() {
             placeholder="Paste the transcript of the reference audio."
           />
           <div className="mt-2 flex items-center justify-between text-xs text-faint">
-            <span>{transcriptRequired ? 'Required for Qwen3-TTS.' : 'Optional.'}</span>
+            <span>
+              {transcriptRequired ? 'Required for Qwen3-TTS.' : 'Optional.'}
+            </span>
             <span>{transcript.length} chars</span>
           </div>
         </div>
@@ -253,7 +260,11 @@ export function ClonePage() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Button variant="secondary" type="button" onClick={() => void onTryExample()}>
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => void onTryExample()}
+          >
             Try Example Voice
           </Button>
           <Button type="submit" block loading={submitting}>
@@ -277,7 +288,8 @@ export function ClonePage() {
               Clone Success
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Voice <span className="text-foreground">{created.name}</span> is ready.
+              Voice <span className="text-foreground">{created.name}</span> is
+              ready.
             </p>
             <div className="mt-6 flex flex-col gap-3">
               <NavLink

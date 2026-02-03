@@ -42,4 +42,3 @@ export function useLanguages() {
 
   return { languages, defaultLanguage, provider, loading, error }
 }
-

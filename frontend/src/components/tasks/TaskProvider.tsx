@@ -1,4 +1,5 @@
-import React, {
+import type React from 'react'
+import {
   createContext,
   useCallback,
   useContext,
@@ -10,7 +11,12 @@ import React, {
 import { ApiError, apiJson } from '../../lib/api'
 import { readJson, writeJson } from '../../lib/storage'
 import { formatElapsed } from '../../lib/time'
-import type { BackendTask, StoredTask, TaskStatus, TaskType } from '../../lib/types'
+import type {
+  BackendTask,
+  StoredTask,
+  TaskStatus,
+  TaskType,
+} from '../../lib/types'
 import {
   LEGACY_TASK_KEY,
   TASK_STORAGE_PREFIX,
@@ -123,14 +129,17 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const pollIntervalsRef = useRef<Partial<Record<TaskType, number>>>({})
 
-  const clearTask = useCallback((taskType: TaskType) => {
-    const task = state.tasks[taskType]
-    if (task?.taskId) {
-      fetch(`/api/tasks/${task.taskId}`, { method: 'DELETE' }).catch(() => {})
-    }
-    localStorage.removeItem(taskStorageKey(taskType))
-    dispatch({ type: 'remove', taskType })
-  }, [state.tasks])
+  const clearTask = useCallback(
+    (taskType: TaskType) => {
+      const task = state.tasks[taskType]
+      if (task?.taskId) {
+        fetch(`/api/tasks/${task.taskId}`, { method: 'DELETE' }).catch(() => {})
+      }
+      localStorage.removeItem(taskStorageKey(taskType))
+      dispatch({ type: 'remove', taskType })
+    },
+    [state.tasks],
+  )
 
   useEffect(() => {
     migrateLegacyTask()
@@ -161,8 +170,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const getStatusText = useCallback(
     (status: TaskStatus, modalStatus?: string | null) => {
-      if (modalStatus === 'queued' || status === 'pending') return 'Waiting for GPU…'
-      if (modalStatus === 'processing' || status === 'processing') return 'Generating…'
+      if (modalStatus === 'queued' || status === 'pending')
+        return 'Waiting for GPU…'
+      if (modalStatus === 'processing' || status === 'processing')
+        return 'Generating…'
       if (modalStatus === 'sending') return 'Starting generation…'
       return 'Processing…'
     },
@@ -265,7 +276,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-          const taskData = await apiJson<BackendTask>(`/api/tasks/${current.taskId}`)
+          const taskData = await apiJson<BackendTask>(
+            `/api/tasks/${current.taskId}`,
+          )
           const updated: StoredTask = {
             ...current,
             status: taskData.status,
