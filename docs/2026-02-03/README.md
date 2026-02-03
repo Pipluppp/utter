@@ -48,9 +48,9 @@ These docs were originally written for the Jinja/vanilla frontend, but the React
 - Sanity checks: `cd frontend; npm run typecheck` and `npm run build` pass locally.
 - Legacy Jinja pages still exist and are still served by FastAPI (we are validating parity before any deployment).
 
-### Next focus (before Milestone 5 deployment)
+### Next focus (UI/UX hardening)
 
-- UI/UX hardening pass (fixes + polish + accessibility): **[react-ui-ux-hardening-plan.md](./react-ui-ux-hardening-plan.md)**
+- Implementation plan (React): **[post-frontend-refactoring-fixes-plan.md](./post-frontend-refactoring-fixes-plan.md)**
 
 ---
 
