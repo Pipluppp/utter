@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
+import { InfoTip } from '../components/ui/InfoTip'
 import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
 import { Message } from '../components/ui/Message'
@@ -89,7 +90,7 @@ export function ClonePage() {
       const exampleFile = new File([audioBlob], 'audio.wav', {
         type: 'audio/wav',
       })
-      setName('Example Voice')
+      setName('ASMR')
       setTranscript(exampleText.trim())
       validateAndSetFile(exampleFile)
     } catch (e) {
@@ -164,16 +165,35 @@ export function ClonePage() {
 
   return (
     <div className="space-y-8">
-      <h2 className="text-balance text-center text-xl font-semibold uppercase tracking-[2px]">
-        Clone
-      </h2>
+      <div className="flex items-center justify-center gap-2">
+        <h2 className="text-balance text-center text-xl font-semibold uppercase tracking-[2px]">
+          Clone
+        </h2>
+        <InfoTip align="end" label="Clone tips">
+          <div className="space-y-2">
+            <div>
+              Upload WAV/MP3/M4A (max 50MB). For best results, use 3+ seconds of
+              clean speech.
+            </div>
+            <div>
+              Paste the transcript that matches the reference audio as closely
+              as possible.
+            </div>
+            <div>
+              {transcriptRequired
+                ? 'Transcript is required for your current provider.'
+                : 'Transcript may be optional for your current provider.'}
+            </div>
+          </div>
+        </InfoTip>
+      </div>
 
       {error ? <Message variant="error">{error}</Message> : null}
 
       <button
         type="button"
         className={cn(
-          'cursor-pointer border border-dashed border-border bg-background p-6 text-center hover:bg-subtle',
+          'w-full cursor-pointer border border-dashed border-border bg-background p-6 text-center hover:bg-subtle',
           'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         )}
         onDragOver={(e) => e.preventDefault()}
@@ -237,7 +257,9 @@ export function ClonePage() {
           />
           <div className="mt-2 flex items-center justify-between text-xs text-faint">
             <span>
-              {transcriptRequired ? 'Required for Qwen3-TTS.' : 'Optional.'}
+              {transcriptRequired
+                ? 'Required for your current provider.'
+                : 'Optional.'}
             </span>
             <span>{transcript.length} chars</span>
           </div>
@@ -259,10 +281,11 @@ export function ClonePage() {
           </Select>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Button
             variant="secondary"
             type="button"
+            block
             onClick={() => void onTryExample()}
           >
             Try Example Voice

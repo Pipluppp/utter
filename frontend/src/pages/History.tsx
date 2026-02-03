@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useWaveformListPlayer } from '../components/audio/useWaveformListPlayer'
-import { Button } from '../components/ui/Button'
+import { Button, buttonStyles } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
 import { Message } from '../components/ui/Message'
@@ -254,7 +254,7 @@ export function HistoryPage() {
 
           return (
             <div key={g.id} className="border border-border bg-background p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span
@@ -308,12 +308,15 @@ export function HistoryPage() {
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end">
                   {isReady && audioUrl ? (
                     <>
                       <button
                         type="button"
-                        className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        className={cn(
+                          buttonStyles({ variant: 'secondary', size: 'sm' }),
+                          'disabled:opacity-50',
+                        )}
                         disabled={playDisabled}
                         aria-pressed={state === 'playing'}
                         aria-controls={`gen-wave-${g.id}`}
@@ -322,7 +325,10 @@ export function HistoryPage() {
                         {playLabel}
                       </button>
                       <a
-                        className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        className={buttonStyles({
+                          variant: 'secondary',
+                          size: 'sm',
+                        })}
                         href={audioUrl}
                       >
                         Download
@@ -338,6 +344,7 @@ export function HistoryPage() {
                   <Button
                     type="button"
                     variant="secondary"
+                    size="sm"
                     onClick={() => void onRegenerate(g)}
                   >
                     Regenerate
@@ -345,6 +352,7 @@ export function HistoryPage() {
                   <Button
                     type="button"
                     variant="secondary"
+                    size="sm"
                     onClick={() => void onDelete(g)}
                   >
                     Delete
@@ -370,7 +378,10 @@ export function HistoryPage() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className={cn(
+              buttonStyles({ variant: 'secondary', size: 'sm' }),
+              'disabled:opacity-50',
+            )}
             disabled={data.pagination.page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -381,7 +392,10 @@ export function HistoryPage() {
           </div>
           <button
             type="button"
-            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className={cn(
+              buttonStyles({ variant: 'secondary', size: 'sm' }),
+              'disabled:opacity-50',
+            )}
             disabled={data.pagination.page >= data.pagination.pages}
             onClick={() => setPage((p) => p + 1)}
           >

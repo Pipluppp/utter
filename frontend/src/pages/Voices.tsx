@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, useSearchParams } from 'react-router-dom'
 import { useWaveformListPlayer } from '../components/audio/useWaveformListPlayer'
-import { Button } from '../components/ui/Button'
+import { Button, buttonStyles } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
 import { Message } from '../components/ui/Message'
 import { Select } from '../components/ui/Select'
 import { apiJson } from '../lib/api'
+import { cn } from '../lib/cn'
 import type { Voice, VoicesResponse } from '../lib/types'
 import { useDebouncedValue } from './hooks'
 
@@ -221,7 +222,7 @@ export function VoicesPage() {
 
           return (
             <div key={v.id} className="border border-border bg-background p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="border border-border bg-subtle px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -231,36 +232,58 @@ export function VoicesPage() {
                       <Highlight text={v.name} tokens={tokens} />
                     </div>
                   </div>
-                  <div className="mt-2 text-sm text-muted-foreground">
-                    <Highlight
-                      text={snippet(
-                        v.reference_transcript,
-                        120,
-                        'No transcript',
-                      )}
-                      tokens={tokens}
-                    />
-                  </div>
-                  {v.description ? (
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      <Highlight
-                        text={snippet(v.description, 120, '')}
-                        tokens={tokens}
-                      />
+
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wide text-faint">
+                        {v.source === 'designed'
+                          ? 'Preview text (saved transcript)'
+                          : 'Reference transcript'}
+                      </div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        <Highlight
+                          text={snippet(
+                            v.reference_transcript,
+                            120,
+                            'No transcript',
+                          )}
+                          tokens={tokens}
+                        />
+                      </div>
                     </div>
-                  ) : null}
+
+                    {v.source === 'designed' ? (
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-faint">
+                          Design prompt
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                          <Highlight
+                            text={snippet(v.description, 120, 'No prompt')}
+                            tokens={tokens}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end">
                   <NavLink
                     to={`/generate?voice=${v.id}`}
-                    className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className={buttonStyles({
+                      variant: 'secondary',
+                      size: 'sm',
+                    })}
                   >
                     Generate
                   </NavLink>
                   <button
                     type="button"
-                    className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className={cn(
+                      buttonStyles({ variant: 'secondary', size: 'sm' }),
+                      'disabled:opacity-50',
+                    )}
                     disabled={disabled}
                     aria-pressed={state === 'playing'}
                     aria-controls={`voice-wave-${v.id}`}
@@ -271,6 +294,7 @@ export function VoicesPage() {
                   <Button
                     type="button"
                     variant="secondary"
+                    size="sm"
                     disabled={busyDelete === v.id}
                     onClick={() => void onDelete(v)}
                   >
@@ -297,7 +321,10 @@ export function VoicesPage() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className={cn(
+              buttonStyles({ variant: 'secondary', size: 'sm' }),
+              'disabled:opacity-50',
+            )}
             disabled={data.pagination.page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -308,7 +335,10 @@ export function VoicesPage() {
           </div>
           <button
             type="button"
-            className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className={cn(
+              buttonStyles({ variant: 'secondary', size: 'sm' }),
+              'disabled:opacity-50',
+            )}
             disabled={data.pagination.page >= data.pagination.pages}
             onClick={() => setPage((p) => p + 1)}
           >

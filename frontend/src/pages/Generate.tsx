@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { WaveformPlayer } from '../components/audio/WaveformPlayer'
 import { useTasks } from '../components/tasks/TaskProvider'
 import { Button } from '../components/ui/Button'
+import { InfoTip } from '../components/ui/InfoTip'
 import { Label } from '../components/ui/Label'
 import { Message } from '../components/ui/Message'
 import { Select } from '../components/ui/Select'
@@ -171,9 +172,21 @@ export function GeneratePage() {
 
   return (
     <div className="space-y-8">
-      <h2 className="text-balance text-center text-xl font-semibold uppercase tracking-[2px]">
-        Generate
-      </h2>
+      <div className="flex items-center justify-center gap-2">
+        <h2 className="text-balance text-center text-xl font-semibold uppercase tracking-[2px]">
+          Generate
+        </h2>
+        <InfoTip align="end" label="Generate tips">
+          <div className="space-y-2">
+            <div>Pick a voice, enter text, then start generation.</div>
+            <div>
+              Generation runs as a background task. Time varies by text length
+              and server load.
+            </div>
+            <div>Max input: 10,000 characters.</div>
+          </div>
+        </InfoTip>
+      </div>
 
       {error ? <Message variant="error">{error}</Message> : null}
 

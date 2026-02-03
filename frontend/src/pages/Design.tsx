@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { WaveformPlayer } from '../components/audio/WaveformPlayer'
 import { useTasks } from '../components/tasks/TaskProvider'
 import { Button } from '../components/ui/Button'
+import { InfoTip } from '../components/ui/InfoTip'
 import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
 import { Message } from '../components/ui/Message'
@@ -27,19 +28,22 @@ function base64ToBlob(base64: string, mime: string) {
   return new Blob([bytes], { type: mime })
 }
 
-const EXAMPLES: Array<{ title: string; instruct: string }> = [
+const EXAMPLES: Array<{ title: string; name: string; instruct: string }> = [
   {
     title: 'Warm & steady',
+    name: 'Warm & steady',
     instruct:
       'A warm, steady voice with close-mic intimacy. Calm pacing, soft consonants, and a confident but gentle tone.',
   },
   {
     title: 'Bright & fast',
+    name: 'Bright & fast',
     instruct:
       'A bright, energetic voice with crisp articulation. Slightly faster pacing, friendly and upbeat without sounding cartoonish.',
   },
   {
     title: 'Low & cinematic',
+    name: 'Low & cinematic',
     instruct:
       'A low, cinematic voice with a restrained intensity. Slow pacing, rich timbre, and subtle breathiness.',
   },
@@ -224,9 +228,21 @@ export function DesignPage() {
 
   return (
     <div className="space-y-8">
-      <h2 className="text-balance text-center text-xl font-semibold uppercase tracking-[2px]">
-        Design
-      </h2>
+      <div className="flex items-center justify-center gap-2">
+        <h2 className="text-balance text-center text-xl font-semibold uppercase tracking-[2px]">
+          Design
+        </h2>
+        <InfoTip align="end" label="Design tips">
+          <div className="space-y-2">
+            <div>No reference audio needed. Describe the voice you want.</div>
+            <div>
+              Generate a short preview first; saving the voice stores that
+              preview as the reference for later generation.
+            </div>
+            <div>Preview text and description are limited to 500 chars.</div>
+          </div>
+        </InfoTip>
+      </div>
 
       {error ? <Message variant="error">{error}</Message> : null}
       {success ? <Message variant="success">{success}</Message> : null}
@@ -266,7 +282,10 @@ export function DesignPage() {
                   key={ex.title}
                   type="button"
                   className="border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  onClick={() => setInstruct(ex.instruct)}
+                  onClick={() => {
+                    setName(ex.name)
+                    setInstruct(ex.instruct)
+                  }}
                 >
                   {ex.title}
                 </button>
@@ -303,13 +322,14 @@ export function DesignPage() {
           </Select>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Button type="submit" block loading={isRunning}>
             {isRunning ? `Generating… ${elapsedLabel}` : 'Generate Preview'}
           </Button>
           <Button
             type="button"
             variant="secondary"
+            block
             onClick={() => void onSave()}
             disabled={!previewUrl}
           >
