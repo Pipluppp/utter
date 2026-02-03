@@ -5,6 +5,10 @@
     "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 
+  --font-mono-ui:
+    "Geist Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+
   --color-background: #ffffff;
   --color-subtle: #fafafa;
   --color-muted: #f0f0f0;
@@ -14,6 +18,11 @@
   --color-border: #cccccc;
   --color-border-strong: #999999;
   --color-ring: #111111;
+
+  --color-kbd-bg: #e8e8e8;
+  --color-kbd-border: #d0d0d0;
+  --color-kbd-text: #2f2f2f;
+  --color-kbd-shadow: rgb(0 0 0 / 0.12);
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -34,6 +43,11 @@
   --color-border: #2a2a2a;
   --color-border-strong: #3a3a3a;
   --color-ring: #00d1ff;
+
+  --color-kbd-bg: #232323;
+  --color-kbd-border: #363636;
+  --color-kbd-text: #e2e2e2;
+  --color-kbd-shadow: rgb(0 0 0 / 0.35);
 }
 
 @layer base {
@@ -53,6 +67,10 @@
 
   :where(a, button, input, select, textarea):focus-visible {
     outline: none;
+    --tw-ring-offset-shadow: 0 0 #0000;
+    --tw-ring-shadow: 0 0 0 2px var(--color-ring);
+    box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
+      var(--tw-shadow, 0 0 #0000);
   }
 
   :where(button, a) {

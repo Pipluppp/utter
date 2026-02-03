@@ -22,7 +22,7 @@ function NavItem({
       aria-keyshortcuts={shortcut ? shortcut.toUpperCase() : undefined}
       className={({ isActive }) =>
         cn(
-          'inline-flex items-center gap-1.5 px-3 py-2 text-[12px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground',
+          'inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
           'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           isActive && 'bg-muted text-foreground',
         )
@@ -51,7 +51,7 @@ function MobileNavItem({
       aria-keyshortcuts={shortcut ? shortcut.toUpperCase() : undefined}
       className={({ isActive }) =>
         cn(
-          'flex w-full items-center justify-between px-3 py-3 text-[12px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground',
+          'flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
           'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           isActive && 'bg-muted text-foreground',
         )
