@@ -27,7 +27,7 @@ Based on benchmarks, Qwen3-TTS processes at approximately **1.6x real-time** (us
 |---------|-------------|
 | **Cancellation** | Users can abort any generation via Modal's `FunctionCall.cancel()` |
 | **Resilience** | Job continues even if backend restarts - job ID persists |
-| **No timeout edge cases** | No 10-minute timeout bug (direct path) vs 4000-char threshold |
+| **No timeout edge cases** | No 10-minute timeout bug from a direct/synchronous HTTP path |
 | **Consistent UX** | Same behavior for 10-second and 10-minute generations |
 
 ### Trade-off
@@ -61,8 +61,8 @@ The planned production architecture uses **Supabase Edge Functions** as the back
 
 | Scenario | Generation Time | Supabase Limit | Status |
 |----------|----------------|----------------|--------|
-| Short text (<4000 chars) | 30-120s | 400s | ✅ Fits with `waitUntil()` |
-| Long text (5-10 min audio) | **12-25 min** | 400s | ❌ Exceeds limit |
+| Job-based orchestration calls (submit/status/result) | seconds per call | 400s | ✅ Fits comfortably |
+| Full synchronous generation inside Edge | **minutes** | 400s | ❌ Exceeds limit |
 
 **The spawn/poll pattern solves this**: Each Edge Function call completes in seconds (just forwarding to Modal), while the actual generation runs asynchronously in Modal's infrastructure.
 
@@ -247,27 +247,21 @@ This is important because model loading takes ~30-60 seconds. With `scaledown_wi
 
 ## Backend Integration (Current: FastAPI)
 
-### Short vs Long Text Detection
+### Routing Logic (Job-based for all generations)
+
+All speech generations now use the job-based (spawn/poll) path for consistency and cancellation support.
 
 ```python
-# config.py
-LONG_TASK_THRESHOLD_CHARS = 4000  # Use job-based above this
-
-# tts.py
-def is_long_text(text: str) -> bool:
-    return len(text) >= LONG_TASK_THRESHOLD_CHARS
-```
-
-### Routing Logic
-
-```python
-# main.py - _process_generation()
-if is_long_running:
-    # Job-based: submit → poll → retrieve
-    output_path, job_id = await generate_speech_job(...)
-else:
-    # Direct: synchronous call with 150s redirect handling
-    output_path = await generate_speech(...)
+# backend/main.py - _process_generation()
+output_path, job_id = await generate_speech(
+    voice_id=voice_id,
+    text=text,
+    ref_text=ref_text,
+    language=language,
+    task_id=task_id,
+    cancellation_checker=task_store.is_cancellation_requested,
+)
+task_store.set_modal_job_id(task_id, job_id)
 ```
 
 ### Polling Loop with Cancellation
@@ -303,6 +297,8 @@ async def poll_job_until_complete(
 ## Future: Supabase Edge Function Integration
 
 > See [Deployment Architecture Plan - Section 6](../../docs/2026-02-02/deployment-architecture-plan.md#6-task-queue--long-running-jobs) for details.
+>
+> Bridge doc: `docs/2026-02-03/job-based-edge-orchestration.md`
 
 When migrating to Supabase Edge Functions, the pattern remains the same:
 
@@ -317,26 +313,25 @@ serve(async (req: Request) => {
     .insert({ user_id, type: "generate", status: "pending" })
     .select().single();
 
-  if (text.length >= 4000) {
-    // Long text: Submit to Modal job endpoint
-    const { job_id } = await fetch(MODAL_SUBMIT_JOB_URL, {
-      method: "POST",
-      body: JSON.stringify({ text, language, ref_audio_base64, ref_text }),
-    }).then(r => r.json());
+  // Submit to Modal job endpoint (job-based for all generations)
+  const { job_id } = await fetch(MODAL_SUBMIT_JOB_URL, {
+    method: "POST",
+    body: JSON.stringify({ text, language, ref_audio_base64, ref_text }),
+  }).then(r => r.json());
 
-    await supabase.from("tasks").update({
-      metadata: { modal_job_id: job_id },
-      status: "processing"
-    }).eq("id", task.id);
-  } else {
-    // Short text: Use waitUntil() for background processing
-    EdgeRuntime.waitUntil(processDirectGeneration(task.id, ...));
-  }
+  await supabase.from("tasks").update({
+    metadata: { modal_job_id: job_id },
+    status: "processing"
+  }).eq("id", task.id);
 
-  // Return immediately - frontend polls /tasks/:id
+  // Return immediately - frontend polls /tasks/:id (or subscribes via Realtime)
   return Response.json({ task_id: task.id });
 });
 ```
+
+**Recommended Edge approach**: implement poll-driven finalization in `GET /tasks/:id`:
+- poll Modal status using `job_id`
+- when complete, fetch `job-result`, upload to Supabase Storage, and mark task/generation completed
 
 ---
 
@@ -349,7 +344,7 @@ serve(async (req: Request) => {
 | Polling max duration | 30 min | 25 min | ✅ |
 | Max text length | 50,000 chars | ~15,000 for 10-min audio | ✅ |
 | Result retention | 7 days (Modal default) | Hours | ✅ |
-| Direct path timeout | 20 min | 13 min (4000 char max) | ✅ |
+| Direct path timeout | n/a | Job-based only | ✅ |
 
 ---
 

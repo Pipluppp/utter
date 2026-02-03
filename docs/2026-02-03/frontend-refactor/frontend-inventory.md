@@ -193,6 +193,15 @@ Used by **Voices** and **History** pages.
 - Text validation is server-side (`validate_text`): **max 10,000 chars**.
 - `/api/generate` returns `{ task_id, status, is_long_running, estimated_duration_minutes, generation_id }`.
 
+**Job-based orchestration note (important for Supabase deployment)**
+- Speech generation uses Modal’s **job-based spawn/poll pattern for all generations** (not just “long text”).
+  - The backend stores a Modal `job_id` on the task (so it can be polled/cancelled).
+  - This avoids HTTP timeout edge cases and makes cancellation consistent.
+- Today, task state is tracked by an **in-memory** backend `TaskStore` (polling via `GET /api/tasks/{task_id}`).
+- When migrating to Supabase Edge Functions, task state must be **persisted** (e.g. `tasks` table in Postgres) because Edge Functions are stateless.
+  - See: `modal_app/qwen3_tts/LONG_RUNNING_TASKS.md`
+  - See (new): `docs/2026-02-03/job-based-edge-orchestration.md`
+
 ---
 
 ### 4.4 Design (`/design`) — `backend/templates/design.html` inline script + `TaskManager`
@@ -228,20 +237,32 @@ Used by **Voices** and **History** pages.
 ### 4.5 Voices (`/voices`) — `backend/templates/voices.html` inline script + `WaveformManager`
 
 **UI elements (IDs)**
-- `#voices-container`, `#empty-state`, `#error-container`
+- Controls: `#voices-search` (debounced), `#voices-source-filter`
+- Container: `#voices-container`, `#empty-state`, `#error-container`
+- Pagination: `#pagination`, `#prev-page`, `#next-page`, `#page-info`
 
 **Key behaviors**
-- Fetch `GET /api/voices` on load.
-- Empty state shows CTA to `/clone` if no voices.
-- Renders cards with:
-  - Preview button:
-    - Calls `/api/voices/{voice_id}/preview`
-    - Uses `window.waveformManager.play("waveform-<id>", url, button)`
+- Fetch `GET /api/voices?page=&per_page=&search=&source=` (perPage defaults to 20).
+- Search:
+  - Matches voice name (and backend also matches transcript + description).
+  - Results highlight matching substrings in:
+    - voice name
+    - reference transcript snippet
+    - description snippet
+- Filter:
+  - Source filter: All / Clone (`uploaded`) / Designed (`designed`)
+- Pagination:
+  - Prev/Next + “Page X of Y” (shown when there are results, matching History UX)
+- Card rendering:
+  - Shows voice type tag: `CLONE` vs `DESIGNED`
+  - Shows reference transcript snippet (or “No transcript”)
+  - Shows designed voice description snippet (when present)
+  - Preview button uses `/api/voices/{voice_id}/preview` + `WaveformManager`
   - Generate link: `/generate?voice=<id>`
-  - Delete button:
+  - Delete:
     - confirm dialog
     - `DELETE /api/voices/{voice_id}`
-    - removes card and re-evaluates empty state
+    - reloads list (keeps pagination/search state consistent)
 
 ---
 
@@ -254,6 +275,11 @@ Used by **Voices** and **History** pages.
 
 **Key behaviors**
 - Fetch `GET /api/generations?page=&per_page=&search=&status=` (perPage defaults to 20).
+- Search:
+  - Matches generation text **and** voice name
+  - Highlights matching substrings in:
+    - voice name
+    - text preview
 - Renders cards with:
   - Status label (pending/processing/completed/failed/cancelled)
   - Text preview + error message preview (if failed/cancelled)

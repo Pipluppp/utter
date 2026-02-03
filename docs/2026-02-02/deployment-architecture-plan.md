@@ -180,6 +180,15 @@ async function processGeneration(taskId: string, voiceId: string, text: string) 
 
 This is **exactly** what we need for Utter!
 
+**Important nuance (job-based generation)**
+- The example above shows a single background function that calls Modal and uploads the result.
+- For Utter’s **job-based** speech generation (Modal spawn/poll), a more robust Edge design is **poll-driven finalization**:
+  - `POST /generate` submits a Modal job and stores `modal_job_id` in the `tasks` row.
+  - `GET /tasks/:id` polls Modal and, when complete, fetches the audio, uploads to Storage, and updates DB.
+- This avoids relying on one long Edge invocation for multi-minute generations and remains correct under restarts.
+- See: `modal_app/qwen3_tts/LONG_RUNNING_TASKS.md`
+- See (bridge doc): `docs/2026-02-03/job-based-edge-orchestration.md`
+
 ---
 
 ## 2. Current Architecture Analysis
@@ -1132,7 +1141,38 @@ serve(async (req: Request) => {
 
 ## 6. Task Queue & Long-Running Jobs
 
-### Option A: Database-Backed Tasks (Recommended)
+### Option 0: Edge Functions + Modal Jobs + Poll-Driven Finalization (No Dedicated Worker)
+
+This option aligns with Utter’s current **job-based generation** approach on Modal (spawn/poll) and avoids running any separate FastAPI “worker” service.
+
+**Core idea**
+- `POST /generate` (Edge Function) does **not** try to run the full generation inside the Edge runtime.
+- Instead it:
+  1) creates a `tasks` row in Postgres,
+  2) submits a Modal job (stores `modal_job_id` in task metadata),
+  3) returns quickly with `task_id`.
+- `GET /tasks/:id` (Edge Function) becomes the *single source of truth* and can do **short work** each time it is called:
+  - poll Modal job status,
+  - and when complete, fetch the result, upload to Supabase Storage, then mark the task/generation complete.
+
+This “poll-driven finalization” pattern keeps each Edge Function invocation fast and works even for multi-minute audio generations.
+
+**Why this is better than `waitUntil()` for long generations**
+- `EdgeRuntime.waitUntil()` is great for fire-and-forget tasks that reliably finish within the Edge function wall-clock limits.
+- Modal jobs can run for many minutes; instead of relying on a single long-running Edge invocation, finalize in small steps on repeated `GET /tasks/:id` calls (or via Realtime-triggered client refresh).
+
+**Endpoint sketch**
+```text
+POST   /generate         → create task + submit Modal job → return {task_id}
+GET    /tasks/:id        → read task → poll Modal → maybe finalize/upload → return task
+POST   /tasks/:id/cancel → cancel Modal job + mark cancelled
+```
+
+**References**
+- Modal job pattern: `modal_app/qwen3_tts/LONG_RUNNING_TASKS.md`
+- Detailed bridge doc (new): `docs/2026-02-03/job-based-edge-orchestration.md`
+
+### Option A: Database-Backed Tasks + Dedicated Worker (Hybrid)
 
 Use Supabase PostgreSQL as the task queue with FastAPI as the worker.
 
