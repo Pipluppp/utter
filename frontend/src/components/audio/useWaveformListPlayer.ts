@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import WaveSurfer from 'wavesurfer.js'
+import { useTheme } from '../../app/theme/ThemeProvider'
 
 type Active = { id: string; container: HTMLElement }
 
@@ -7,6 +8,7 @@ export function useWaveformListPlayer() {
   const wsRef = useRef<WaveSurfer | null>(null)
   const activeRef = useRef<Active | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
+  const { resolvedTheme } = useTheme()
 
   const stopAll = useCallback(() => {
     wsRef.current?.destroy()
@@ -50,10 +52,23 @@ export function useWaveformListPlayer() {
       onState?.('loading')
 
       container.classList.remove('hidden')
+      const styles = getComputedStyle(document.documentElement)
+      const foreground =
+        styles.getPropertyValue('--color-foreground').trim() ||
+        (resolvedTheme === 'dark' ? '#f5f5f5' : '#111111')
+      const mutedForeground =
+        styles.getPropertyValue('--color-muted-foreground').trim() ||
+        (resolvedTheme === 'dark' ? '#b3b3b3' : '#555555')
+      const faint = styles.getPropertyValue('--color-faint').trim() || '#888888'
+
+      const waveColor = resolvedTheme === 'dark' ? foreground : faint
+      const progressColor =
+        resolvedTheme === 'dark' ? mutedForeground : foreground
+
       const ws = WaveSurfer.create({
         container,
-        waveColor: '#a0a0a0',
-        progressColor: '#111111',
+        waveColor,
+        progressColor,
         cursorColor: 'transparent',
         barWidth: 2,
         barGap: 2,
@@ -75,7 +90,7 @@ export function useWaveformListPlayer() {
         stopAll()
       })
     },
-    [stopAll],
+    [resolvedTheme, stopAll],
   )
 
   useEffect(() => stopAll, [stopAll])

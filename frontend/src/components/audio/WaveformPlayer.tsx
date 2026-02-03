@@ -39,11 +39,17 @@ export function WaveformPlayer({
     setTimeLabel('0:00')
 
     const styles = getComputedStyle(document.documentElement)
-    const waveColor =
-      styles.getPropertyValue('--color-faint').trim() || '#a0a0a0'
-    const progressFallback = resolvedTheme === 'dark' ? '#f5f5f5' : '#111111'
+    const foreground =
+      styles.getPropertyValue('--color-foreground').trim() ||
+      (resolvedTheme === 'dark' ? '#f5f5f5' : '#111111')
+    const mutedForeground =
+      styles.getPropertyValue('--color-muted-foreground').trim() ||
+      (resolvedTheme === 'dark' ? '#b3b3b3' : '#555555')
+    const faint = styles.getPropertyValue('--color-faint').trim() || '#888888'
+
+    const waveColor = resolvedTheme === 'dark' ? foreground : faint
     const progressColor =
-      styles.getPropertyValue('--color-foreground').trim() || progressFallback
+      resolvedTheme === 'dark' ? mutedForeground : foreground
 
     const ws = WaveSurfer.create({
       container: el,
