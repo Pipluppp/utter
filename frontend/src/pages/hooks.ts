@@ -2,6 +2,24 @@ import { useEffect, useMemo, useState } from 'react'
 import { apiJson } from '../lib/api'
 import type { LanguagesResponse } from '../lib/types'
 
+let languagesCache: LanguagesResponse | null = null
+let languagesInFlight: Promise<LanguagesResponse> | null = null
+
+async function getLanguagesOnce(): Promise<LanguagesResponse> {
+  if (languagesCache) return languagesCache
+  if (!languagesInFlight) {
+    languagesInFlight = apiJson<LanguagesResponse>('/api/languages')
+      .then((res) => {
+        languagesCache = res
+        return res
+      })
+      .finally(() => {
+        languagesInFlight = null
+      })
+  }
+  return languagesInFlight
+}
+
 export function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debounced, setDebounced] = useState(value)
   useEffect(() => {
@@ -12,15 +30,18 @@ export function useDebouncedValue<T>(value: T, delayMs: number) {
 }
 
 export function useLanguages() {
-  const [data, setData] = useState<LanguagesResponse | null>(null)
+  const [data, setData] = useState<LanguagesResponse | null>(
+    () => languagesCache,
+  )
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !languagesCache)
 
   useEffect(() => {
+    if (languagesCache) return
     let active = true
     void (async () => {
       try {
-        const res = await apiJson<LanguagesResponse>('/api/languages')
+        const res = await getLanguagesOnce()
         if (!active) return
         setData(res)
         setError(null)

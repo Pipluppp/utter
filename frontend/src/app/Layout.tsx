@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { TaskBadge } from '../components/tasks/TaskBadge'
 import { TaskDock } from '../components/tasks/TaskDock'
@@ -210,7 +210,15 @@ export function Layout() {
         tabIndex={-1}
         className="mx-auto w-full max-w-5xl px-4 py-12 md:px-6"
       >
-        <Outlet />
+        <Suspense
+          fallback={
+            <div className="py-10 text-center text-sm text-muted-foreground">
+              Loading…
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
       </main>
 
       <TaskDock />

@@ -1,12 +1,35 @@
+import { lazy } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
-import { AboutPage } from '../pages/About'
-import { ClonePage } from '../pages/Clone'
-import { DesignPage } from '../pages/Design'
-import { GeneratePage } from '../pages/Generate'
-import { HistoryPage } from '../pages/History'
-import { LandingPage } from '../pages/Landing'
-import { VoicesPage } from '../pages/Voices'
 import { Layout } from './Layout'
+
+const LandingPage = lazy(async () => {
+  const m = await import('../pages/Landing')
+  return { default: m.LandingPage }
+})
+const ClonePage = lazy(async () => {
+  const m = await import('../pages/Clone')
+  return { default: m.ClonePage }
+})
+const GeneratePage = lazy(async () => {
+  const m = await import('../pages/Generate')
+  return { default: m.GeneratePage }
+})
+const DesignPage = lazy(async () => {
+  const m = await import('../pages/Design')
+  return { default: m.DesignPage }
+})
+const VoicesPage = lazy(async () => {
+  const m = await import('../pages/Voices')
+  return { default: m.VoicesPage }
+})
+const HistoryPage = lazy(async () => {
+  const m = await import('../pages/History')
+  return { default: m.HistoryPage }
+})
+const AboutPage = lazy(async () => {
+  const m = await import('../pages/About')
+  return { default: m.AboutPage }
+})
 
 export const router = createBrowserRouter([
   {

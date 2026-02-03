@@ -101,8 +101,13 @@ export function HistoryPage() {
   const [playState, setPlayState] = useState<Record<string, PlayState>>({})
   const waveRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const refreshTimerRef = useRef<number | null>(null)
+  const loadAbortRef = useRef<AbortController | null>(null)
 
   const load = useCallback(async () => {
+    loadAbortRef.current?.abort()
+    const controller = new AbortController()
+    loadAbortRef.current = controller
+
     setLoading(true)
     setError(null)
     try {
@@ -113,18 +118,25 @@ export function HistoryPage() {
       if (status !== 'all') qs.set('status', status)
       const res = await apiJson<GenerationsResponse>(
         `/api/generations?${qs.toString()}`,
+        { signal: controller.signal },
       )
       setData(res)
     } catch (e) {
+      if (controller.signal.aborted) return
       setError(e instanceof Error ? e.message : 'Failed to load history.')
     } finally {
-      setLoading(false)
+      if (!controller.signal.aborted) setLoading(false)
+      if (loadAbortRef.current === controller) loadAbortRef.current = null
     }
   }, [debounced, page, status])
 
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    return () => loadAbortRef.current?.abort()
+  }, [])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset paging when search/status changes
   useEffect(() => setPage(1), [debounced, status])

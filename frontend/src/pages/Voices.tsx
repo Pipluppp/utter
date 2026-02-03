@@ -98,8 +98,13 @@ export function VoicesPage() {
   const [busyDelete, setBusyDelete] = useState<string | null>(null)
   const [playState, setPlayState] = useState<Record<string, PlayState>>({})
   const waveRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const loadAbortRef = useRef<AbortController | null>(null)
 
   const load = useCallback(async () => {
+    loadAbortRef.current?.abort()
+    const controller = new AbortController()
+    loadAbortRef.current = controller
+
     setLoading(true)
     setError(null)
     try {
@@ -108,18 +113,29 @@ export function VoicesPage() {
       qs.set('per_page', String(PER_PAGE))
       if (debounced.trim()) qs.set('search', debounced.trim())
       if (source !== 'all') qs.set('source', source)
-      const res = await apiJson<VoicesResponse>(`/api/voices?${qs.toString()}`)
+      const res = await apiJson<VoicesResponse>(
+        `/api/voices?${qs.toString()}`,
+        {
+          signal: controller.signal,
+        },
+      )
       setData(res)
     } catch (e) {
+      if (controller.signal.aborted) return
       setError(e instanceof Error ? e.message : 'Failed to load voices.')
     } finally {
-      setLoading(false)
+      if (!controller.signal.aborted) setLoading(false)
+      if (loadAbortRef.current === controller) loadAbortRef.current = null
     }
   }, [debounced, page, source])
 
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    return () => loadAbortRef.current?.abort()
+  }, [])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset paging when search/source changes
   useEffect(() => setPage(1), [debounced, source])
