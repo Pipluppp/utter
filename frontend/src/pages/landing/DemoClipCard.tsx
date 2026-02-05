@@ -1,14 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
-import { Button, buttonStyles } from '../../components/ui/Button'
+import { useMemo, useState } from 'react'
+import { WaveformPlayer } from '../../components/audio/WaveformPlayer'
+import { buttonStyles } from '../../components/ui/Button'
 import type { UtterDemo } from '../../content/utterDemo'
 import { cn } from '../../lib/cn'
-
-function formatTime(seconds: number) {
-  const s = Math.max(0, Math.floor(seconds))
-  const mm = Math.floor(s / 60)
-  const ss = String(s % 60).padStart(2, '0')
-  return `${mm}:${ss}`
-}
 
 export function DemoClipCard({
   demo,
@@ -17,57 +11,13 @@ export function DemoClipCard({
   demo: UtterDemo
   className?: string
 }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const rafRef = useRef<number | null>(null)
+  const [mode, setMode] = useState<'original' | 'clone'>('original')
+  const canClone = Boolean(demo.outputAudioUrl)
 
-  const [ready, setReady] = useState(false)
-  const [playing, setPlaying] = useState(false)
-  const [duration, setDuration] = useState(0)
-  const [currentTime, setCurrentTime] = useState(0)
-
-  const canPlay = Boolean(demo.audioUrl)
-
-  useEffect(() => {
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    }
-  }, [])
-
-  function stopTick() {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    rafRef.current = null
-  }
-
-  function tick() {
-    const el = audioRef.current
-    if (!el) return
-    setCurrentTime(el.currentTime || 0)
-    rafRef.current = requestAnimationFrame(tick)
-  }
-
-  function pauseOtherDemos(current: HTMLAudioElement) {
-    const all = document.querySelectorAll<HTMLAudioElement>(
-      'audio[data-utter-demo-audio]',
-    )
-    for (const el of all) {
-      if (el !== current && !el.paused) el.pause()
-    }
-  }
-
-  function togglePlay() {
-    const el = audioRef.current
-    if (!el) return
-    if (el.paused) {
-      pauseOtherDemos(el)
-      void el.play().catch(() => {})
-    } else {
-      el.pause()
-    }
-  }
-
-  const timeLabel = ready
-    ? `${formatTime(currentTime)} / ${formatTime(duration)}`
-    : '0:00 / 0:00'
+  const activeAudioUrl = useMemo(() => {
+    if (mode === 'clone' && demo.outputAudioUrl) return demo.outputAudioUrl
+    return demo.audioUrl
+  }, [demo.audioUrl, demo.outputAudioUrl, mode])
 
   return (
     <article
@@ -112,18 +62,45 @@ export function DemoClipCard({
           </div>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            type="button"
-            onClick={togglePlay}
-            disabled={!canPlay}
-          >
-            {playing ? 'Pause' : 'Play'}
-          </Button>
-          {demo.audioUrl ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="inline-flex overflow-hidden border border-border bg-background">
+            <button
+              type="button"
+              className={cn(
+                'px-3 py-2 text-[12px] uppercase tracking-wide transition-colors',
+                'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                mode === 'original'
+                  ? 'bg-foreground text-background'
+                  : 'bg-background text-foreground hover:bg-subtle',
+              )}
+              aria-pressed={mode === 'original'}
+              onClick={() => setMode('original')}
+            >
+              Original
+            </button>
+            <button
+              type="button"
+              className={cn(
+                'px-3 py-2 text-[12px] uppercase tracking-wide transition-colors',
+                'border-l border-border',
+                'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                mode === 'clone'
+                  ? 'bg-foreground text-background'
+                  : 'bg-background text-foreground hover:bg-subtle',
+                !canClone &&
+                  'cursor-not-allowed bg-muted text-faint hover:bg-muted',
+              )}
+              disabled={!canClone}
+              aria-pressed={mode === 'clone'}
+              onClick={() => setMode('clone')}
+            >
+              Clone
+            </button>
+          </div>
+
+          {activeAudioUrl ? (
             <a
-              href={demo.audioUrl}
+              href={activeAudioUrl}
               className={buttonStyles({ variant: 'secondary', size: 'sm' })}
             >
               Download
@@ -131,58 +108,13 @@ export function DemoClipCard({
           ) : null}
         </div>
 
-        {demo.audioUrl ? (
+        {activeAudioUrl ? (
           <div className="mt-3 border border-border bg-background p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-xs uppercase tracking-wide text-faint">
-                {timeLabel}
-              </div>
-              <div className="text-[11px] uppercase tracking-wide text-faint">
-                {ready ? 'Ready' : 'Loading'}
-              </div>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={duration || 0}
-              step={0.01}
-              value={currentTime}
-              onChange={(e) => {
-                const next = Number(e.target.value)
-                setCurrentTime(next)
-                if (audioRef.current) audioRef.current.currentTime = next
-              }}
-              disabled={!ready}
-              className={cn(
-                'mt-2 w-full accent-foreground',
-                !ready && 'cursor-not-allowed opacity-60',
-              )}
-              aria-label={`Seek ${demo.title}`}
-            />
-
-            {/* biome-ignore lint/a11y/useMediaCaption: demos are short clips; no captions are provided */}
-            <audio
-              ref={audioRef}
-              data-utter-demo-audio={demo.id}
-              preload="none"
-              src={demo.audioUrl}
-              onLoadedMetadata={(e) => {
-                setDuration(e.currentTarget.duration || 0)
-                setReady(true)
-              }}
-              onPlay={(e) => {
-                pauseOtherDemos(e.currentTarget)
-                setPlaying(true)
-                tick()
-              }}
-              onPause={() => {
-                setPlaying(false)
-                stopTick()
-              }}
-              onEnded={() => {
-                setPlaying(false)
-                stopTick()
-              }}
+            <WaveformPlayer
+              key={activeAudioUrl}
+              audioUrl={activeAudioUrl}
+              group="landing-demos"
+              playerId={demo.id}
             />
           </div>
         ) : null}

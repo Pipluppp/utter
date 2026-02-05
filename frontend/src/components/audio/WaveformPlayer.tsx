@@ -3,13 +3,19 @@ import WaveSurfer from 'wavesurfer.js'
 import { useTheme } from '../../app/theme/ThemeProvider'
 import { cn } from '../../lib/cn'
 
+const WAVEFORM_PLAY_EVENT = 'utter:waveform-play'
+
 export function WaveformPlayer({
   audioUrl,
   audioBlob,
+  group,
+  playerId,
   className,
 }: {
   audioUrl?: string
   audioBlob?: Blob
+  group?: string
+  playerId?: string
   className?: string
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -32,6 +38,25 @@ export function WaveformPlayer({
     }),
     [],
   )
+
+  useEffect(() => {
+    if (!group || !playerId) return
+
+    function onOtherPlay(e: Event) {
+      const ce = e as CustomEvent<{ group?: string; playerId?: string }>
+      const detail = ce.detail
+      if (!detail) return
+      if (detail.group !== group) return
+      if (detail.playerId === playerId) return
+
+      const ws = wsRef.current
+      if (!ws) return
+      if (ws.isPlaying()) ws.pause()
+    }
+
+    window.addEventListener(WAVEFORM_PLAY_EVENT, onOtherPlay)
+    return () => window.removeEventListener(WAVEFORM_PLAY_EVENT, onOtherPlay)
+  }, [group, playerId])
 
   useEffect(() => {
     const el = containerRef.current
@@ -70,7 +95,14 @@ export function WaveformPlayer({
       setIsReady(true)
       setLoadError(null)
     }
-    const onPlay = () => setIsPlaying(true)
+    const onPlay = () => {
+      setIsPlaying(true)
+      if (group && playerId) {
+        window.dispatchEvent(
+          new CustomEvent(WAVEFORM_PLAY_EVENT, { detail: { group, playerId } }),
+        )
+      }
+    }
     const onPause = () => setIsPlaying(false)
     const onFinish = () => setIsPlaying(false)
     const onError = (e: unknown) => {
@@ -118,7 +150,7 @@ export function WaveformPlayer({
       ws.destroy()
       wsRef.current = null
     }
-  }, [audioBlob, audioUrl, baseOptions, resolvedTheme])
+  }, [audioBlob, audioUrl, baseOptions, group, playerId, resolvedTheme])
 
   return (
     <div className={cn('space-y-3', className)}>

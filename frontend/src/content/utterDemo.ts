@@ -5,6 +5,7 @@ export type UtterDemo = {
   languageLabel: string
   imageUrl?: string
   audioUrl?: string
+  outputAudioUrl?: string
   transcriptUrl?: string
   suggestedCloneName?: string
 }
@@ -17,6 +18,7 @@ export const UTTER_DEMOS: UtterDemo[] = [
     languageLabel: 'Japanese',
     imageUrl: '/static/utter_demo/gojo/still.png',
     audioUrl: '/static/utter_demo/gojo/reference.mp3',
+    outputAudioUrl: '/static/utter_demo/gojo/output.wav',
     transcriptUrl: '/static/utter_demo/gojo/reference.txt',
     suggestedCloneName: 'Gojo (demo)',
   },
@@ -27,6 +29,7 @@ export const UTTER_DEMOS: UtterDemo[] = [
     languageLabel: 'Japanese',
     imageUrl: '/static/utter_demo/frieren/still.png',
     audioUrl: '/static/utter_demo/frieren/reference.mp3',
+    outputAudioUrl: '/static/utter_demo/frieren/output.wav',
     transcriptUrl: '/static/utter_demo/frieren/reference.txt',
     suggestedCloneName: 'Frieren (demo)',
   },
@@ -37,6 +40,7 @@ export const UTTER_DEMOS: UtterDemo[] = [
     languageLabel: 'Chinese',
     imageUrl: '/static/utter_demo/eeaao/still.jpg',
     audioUrl: '/static/utter_demo/eeaao/reference.mp3',
+    outputAudioUrl: '/static/utter_demo/eeaao/output.wav',
     transcriptUrl: '/static/utter_demo/eeaao/reference.txt',
     suggestedCloneName: 'EEAAO (demo)',
   },
@@ -47,6 +51,7 @@ export const UTTER_DEMOS: UtterDemo[] = [
     languageLabel: 'Cantonese / Mandarin',
     imageUrl: '/static/utter_demo/chungking/still.png',
     audioUrl: '/static/utter_demo/chungking/reference.mp3',
+    outputAudioUrl: '/static/utter_demo/chungking/output.wav',
     suggestedCloneName: 'Chungking (demo)',
   },
   {
@@ -56,6 +61,7 @@ export const UTTER_DEMOS: UtterDemo[] = [
     languageLabel: 'Unknown',
     imageUrl: '/static/utter_demo/brutalist/still.png',
     audioUrl: '/static/utter_demo/brutalist/reference.mp3',
+    outputAudioUrl: '/static/utter_demo/brutalist/output.wav',
     transcriptUrl: '/static/utter_demo/brutalist/reference.txt',
     suggestedCloneName: 'Brutalist (demo)',
   },
