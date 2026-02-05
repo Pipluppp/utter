@@ -3,6 +3,7 @@ import { buttonStyles } from '../components/ui/Button'
 import { cn } from '../lib/cn'
 import { DemoWall } from './landing/DemoWall'
 import { LandingHero } from './landing/LandingHero'
+import { PricingSection } from './landing/PricingSection'
 
 function Step({
   n,
@@ -85,6 +86,8 @@ export function LandingPage() {
           />
         </div>
       </section>
+
+      <PricingSection />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { TaskBadge } from '../components/tasks/TaskBadge'
 import { TaskDock } from '../components/tasks/TaskDock'
 import { Kbd } from '../components/ui/Kbd'
 import { cn } from '../lib/cn'
+import { AppFooter } from './Footer'
 import { useTheme } from './theme/ThemeProvider'
 import { useGlobalShortcuts } from './useGlobalShortcuts'
 
@@ -123,6 +124,8 @@ export function Layout() {
               <span>History</span>
               <TaskBadge />
             </NavItem>
+            <NavItem to="/pricing">Pricing</NavItem>
+            <NavItem to="/account">Account</NavItem>
             <NavItem to="/about">About</NavItem>
           </nav>
 
@@ -196,6 +199,14 @@ export function Layout() {
                 </span>
                 <span />
               </MobileNavItem>
+              <MobileNavItem to="/pricing" onClick={() => setMenuOpen(false)}>
+                <span>Pricing</span>
+                <span />
+              </MobileNavItem>
+              <MobileNavItem to="/account" onClick={() => setMenuOpen(false)}>
+                <span>Account</span>
+                <span />
+              </MobileNavItem>
               <MobileNavItem to="/about" onClick={() => setMenuOpen(false)}>
                 <span>About</span>
                 <span />
@@ -220,6 +231,8 @@ export function Layout() {
           <Outlet />
         </Suspense>
       </main>
+
+      <AppFooter />
 
       <TaskDock />
 
