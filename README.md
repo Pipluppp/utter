@@ -2,6 +2,12 @@
 
 Voice cloning + TTS app (Qwen3-TTS on Modal). Backend is FastAPI. Frontend is mid-migration from legacy Jinja pages to a React + Tailwind SPA.
 
+<img width="2785" height="1703" alt="image" src="https://github.com/user-attachments/assets/8902baa6-3995-492c-9085-ef66c6c736b0" />
+
+
+<img width="2785" height="1710" alt="image" src="https://github.com/user-attachments/assets/db37cea6-7741-4f14-9b58-614a798c625f" />
+
+
 ## What's in here
 
 - `backend/`: FastAPI app + legacy Jinja UI (still served for parity checks)
