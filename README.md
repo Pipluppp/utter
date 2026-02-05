@@ -4,6 +4,7 @@ Voice cloning + TTS app (Qwen3-TTS on Modal). Backend is FastAPI. Frontend is mi
 
 <img width="2785" height="1703" alt="image" src="https://github.com/user-attachments/assets/8902baa6-3995-492c-9085-ef66c6c736b0" />
 
+![demo](https://github.com/user-attachments/assets/82bd2201-81e4-4b0c-b317-8c5a49ba8826)
 
 <img width="2785" height="1710" alt="image" src="https://github.com/user-attachments/assets/db37cea6-7741-4f14-9b58-614a798c625f" />
 
