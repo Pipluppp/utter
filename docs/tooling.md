@@ -1,6 +1,6 @@
-# Tooling & Development Guidelines
+# Tooling & development
 
-> How we build this project
+How we build and run this project locally.
 
 ---
 
@@ -10,18 +10,13 @@
 |------|---------|-----|
 | **uv** | Python dependencies | Fast, reliable, modern |
 
-### Commands
+### Backend (Python) commands
 
-```bash
-# Install dependencies
-uv pip install -r requirements.txt
-
-# Add new package
-uv pip install <package>
-uv pip freeze > requirements.txt
-
-# Create virtual environment
-uv venv
+```powershell
+cd backend
+uv venv --allow-existing
+uv pip install -r requirements.txt -p .venv
+uv run -p .venv uvicorn main:app --reload --port 8000
 ```
 
 ---
@@ -30,9 +25,11 @@ uv venv
 
 | Tool | Purpose |
 |------|---------|
-| Docker | Local PostgreSQL |
-| Modal CLI | GPU deployment |
-| uvicorn | Dev server |
+| Node.js 20+ | Frontend dev + build |
+| npm | Frontend package manager |
+| uv | Python env + deps |
+| uvicorn | FastAPI dev server |
+| Modal CLI | GPU deployment (Qwen3-TTS) |
 
 ---
 
@@ -40,16 +37,17 @@ uv venv
 
 | Language | Tool | Config |
 |----------|------|--------|
-| Python | (TBD) | - |
-| CSS | (TBD) | - |
+| Python | None enforced (yet) | - |
 | JS/TS/JSON/CSS (frontend) | Biome | `frontend/biome.json` (see `docs/biome.md`) |
 
 ---
 
-## Pre-commit (Future)
+## Frontend checks
 
-```bash
-# TBD - will add when needed
+```powershell
+npm --prefix frontend run check
+npm --prefix frontend run check:write
+npm --prefix frontend run ci
 ```
 
 ---

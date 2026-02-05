@@ -82,7 +82,7 @@ Extend capabilities beyond MVP.
 - Split text at sentence boundaries
 - Generate each chunk separately
 - Concatenate audio (with crossfade)
-- See [echo-tts-model.md](../echo-tts-model.md) chunking example
+- See [2026-01-18 Echo-TTS constraints](../2026-01-18-modal-integration-plan/2026-01-18-modal-integration-plan.md#82-text-input-processing) for the chunking/byte-limit notes
 
 ### Voice Settings (Advanced)
 Current hardcoded values in `echo_tts.py`:
@@ -131,4 +131,4 @@ Could expose as sliders:
 
 - [next-steps.md](./next-steps.md) - Quick checklist version
 - [pain-points.md](../2026-01-18-modal-integration-plan/pain-points.md) - Modal gotchas
-- [echo-tts-model.md](../echo-tts-model.md) - Model constraints
+- [2026-01-18 Echo-TTS constraints](../2026-01-18-modal-integration-plan/2026-01-18-modal-integration-plan.md#82-text-input-processing) - Model constraints

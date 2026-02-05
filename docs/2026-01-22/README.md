@@ -7,7 +7,7 @@
 ### 1. Advanced Generation Mode ⚙️
 Implement a power-user interface exposing granular Echo-TTS parameters (CFG, Rescaling, Steps) to allow fine-tuning of voice output.
 - **Reference**: [Advanced Mode Plan](./advanced-mode-plan.md)
-- **Model Details**: [Echo-TTS Model Reference](../echo-tts-model.md)
+- **Model Details**: [Echo-TTS constraints (archived in 2026-01-18 plan)](../2026-01-18-modal-integration-plan/2026-01-18-modal-integration-plan.md#82-text-input-processing)
 
 Similar to the actual Hugging Face demo of echo-tts: https://huggingface.co/spaces/jordand/echo-tts-preview
 

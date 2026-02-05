@@ -243,7 +243,7 @@ This Qwen3-TTS deployment is designed to power **utter**, a voice cloning applic
 
 **Key difference from Echo-TTS**: Qwen3-TTS requires a **transcript** of the reference audio for optimal voice cloning. This enables better quality across 10 languages.
 
-See [Step 8: Utter Integration](./08-utter-integration.md) for backend code changes.
+See [Step 8: Utter Integration](./guides/08-utter-integration.md) for backend code changes.
 
 ---
 

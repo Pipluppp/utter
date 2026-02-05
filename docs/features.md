@@ -2,7 +2,7 @@
 
 > **Purpose**: Ground-truth documentation of all Utter features, constraints, and implementation details.  
 > **Audience**: Developers, deployment planning, architecture decisions  
-> **Last Updated**: 2026-02-02
+> **Last Updated**: 2026-02-05
 
 ---
 
@@ -40,10 +40,12 @@ Utter is an AI-powered voice cloning and text-to-speech application. Users can:
 |-----------|------------|-------|
 | **Backend** | FastAPI (Python 3.11+) | Async, single instance |
 | **Database** | SQLite + SQLAlchemy | Local file `utter.db` |
-| **Frontend** | Jinja2 Templates + Vanilla JS | Server-rendered |
+| **Frontend** | React 19 SPA (Vite) + legacy Jinja | React dev server proxies to FastAPI; Jinja kept for parity |
 | **TTS Engine** | Qwen3-TTS on Modal.com | Serverless GPU (A10G) |
 | **Audio Playback** | WaveSurfer.js | Waveform visualization |
 | **File Storage** | Local filesystem | `uploads/` directory |
+
+Note: In local dev, the React UI runs on `http://localhost:5173` and proxies `/api`, `/uploads`, and `/static` to FastAPI.
 
 ### Current Architecture
 

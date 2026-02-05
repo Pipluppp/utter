@@ -105,7 +105,7 @@ python test_client.py --endpoint <new-06b-endpoint>
 
 ### Reference Documentation
 
-- [03-model-caching.md](./03-model-caching.md) - Download commands
+- [03-model-caching.md](./guides/03-model-caching.md) - Download commands
 - [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md) - Pain points to avoid
 - [config.py](../../modal_app/qwen3_tts/config.py) - GPU configuration
 
@@ -179,7 +179,7 @@ def generate_voice_design(
 
 ### Reference Documentation
 
-- [qwen-tts-plan.md](../qwen-tts-plan.md) - Original planning doc with voice design sketch
+- [qwen3-tts-models-map.md](../qwen3-tts-models-map.md) - Model variants reference
 - [Qwen3-TTS GitHub](https://github.com/QwenLM/Qwen3-TTS) - Official documentation
 - [HuggingFace](https://huggingface.co/Qwen) - Model availability
 
@@ -289,7 +289,7 @@ async def generate_speech(voice_id, text, ref_text=None, language="Auto"):
 
 ### Reference Documentation
 
-- [08-utter-integration.md](./08-utter-integration.md) - Complete integration guide
+- [08-utter-integration.md](./guides/08-utter-integration.md) - Complete integration guide
 - [backend/models.py](../../backend/models.py) - Current schema
 - [backend/main.py](../../backend/main.py) - Current endpoints
 - [backend/services/tts.py](../../backend/services/tts.py) - Current TTS service
