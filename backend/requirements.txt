@@ -25,3 +25,6 @@ httpx>=0.27.0
 # Audio validation
 mutagen>=1.47.0
 
+# Transcription (Mistral Voxtral)
+mistralai[realtime]
+

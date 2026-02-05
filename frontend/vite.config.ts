@@ -10,7 +10,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
-      '/api': { target: FASTAPI_ORIGIN, changeOrigin: true },
+      '/api': { target: FASTAPI_ORIGIN, changeOrigin: true, ws: true },
       '/uploads': { target: FASTAPI_ORIGIN, changeOrigin: true },
       '/static': { target: FASTAPI_ORIGIN, changeOrigin: true },
     },

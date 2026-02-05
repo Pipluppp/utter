@@ -7,6 +7,7 @@ A voice cloning app inspired by ElevenLabs, powered by Qwen3-TTS.
 import uuid
 import asyncio
 import time
+import json
 from pathlib import Path
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
@@ -20,6 +21,8 @@ from fastapi import (
     UploadFile,
     File,
     Form,
+    WebSocket,
+    WebSocketDisconnect,
     HTTPException,
     Depends,
     BackgroundTasks,
@@ -35,9 +38,21 @@ from database import create_tables, get_session
 from models import Voice, Generation
 from services import storage
 from services.audio import get_audio_duration, validate_reference_audio
+from services.transcription import (
+    TranscriptionUnavailableError,
+    get_transcription_models,
+    is_transcription_enabled,
+    transcribe_audio_bytes,
+)
 from services.tts import generate_speech
 from services.text import validate_text
-from config import ALLOWED_AUDIO_EXTENSIONS, SUPPORTED_LANGUAGES, TTS_PROVIDER
+from config import (
+    ALLOWED_AUDIO_EXTENSIONS,
+    MISTRAL_API_KEY,
+    MISTRAL_REALTIME_MODEL,
+    SUPPORTED_LANGUAGES,
+    TTS_PROVIDER,
+)
 
 
 # ============================================================================
@@ -365,6 +380,204 @@ async def api_clone(
 
     return JSONResponse(status_code=201, content={"id": voice_id, "name": voice.name})
 
+
+@app.post("/api/transcriptions")
+async def api_transcriptions(
+    audio: UploadFile = File(...),
+    language: str = Form("Auto"),
+):
+    """Transcribe an audio file (batch)."""
+    if not is_transcription_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail="Transcription is not configured on this server.",
+        )
+
+    if audio.filename:
+        ext = Path(audio.filename).suffix.lower()
+        if ext not in ALLOWED_AUDIO_EXTENSIONS:
+            raise HTTPException(
+                status_code=400, detail=f"File must be WAV, MP3, or M4A (got {ext})"
+            )
+
+    audio_bytes = await audio.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Audio file is required")
+
+    max_bytes = 50 * 1024 * 1024
+    if len(audio_bytes) > max_bytes:
+        raise HTTPException(status_code=400, detail="File too large (max 50MB)")
+
+    import tempfile
+
+    suffix = Path(audio.filename or "audio.wav").suffix or ".wav"
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(audio_bytes)
+            tmp_path = tmp.name
+
+        validation = validate_reference_audio(tmp_path)
+        if not validation["valid"]:
+            raise HTTPException(status_code=400, detail=validation["message"])
+
+        result = await transcribe_audio_bytes(
+            audio_bytes,
+            filename=audio.filename or f"audio{suffix}",
+            language=language,
+        )
+        return {
+            "text": result.text,
+            "model": result.model,
+            "language": result.language,
+        }
+    except HTTPException:
+        raise
+    except TranscriptionUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Transcription request failed: {e}",
+        )
+    finally:
+        if tmp_path:
+            try:
+                import os
+
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+
+
+@app.websocket("/api/transcriptions/realtime")
+async def ws_transcriptions_realtime(websocket: WebSocket):
+    """Realtime PCM transcription over WebSocket (server proxies to Mistral)."""
+    await websocket.accept()
+
+    if not is_transcription_enabled():
+        await websocket.send_json(
+            {
+                "type": "error",
+                "message": "Transcription is not configured on this server.",
+            }
+        )
+        await websocket.close(code=1011)
+        return
+
+    try:
+        start_raw = await websocket.receive_text()
+    except WebSocketDisconnect:
+        return
+
+    try:
+        start = json.loads(start_raw)
+    except json.JSONDecodeError:
+        await websocket.send_json(
+            {"type": "error", "message": "Invalid JSON. Expected a start message."}
+        )
+        await websocket.close(code=1003)
+        return
+
+    if start.get("type") != "start":
+        await websocket.send_json(
+            {"type": "error", "message": "Expected first message type=start."}
+        )
+        await websocket.close(code=1003)
+        return
+
+    audio_format = start.get("audio_format") or {}
+    encoding = (audio_format.get("encoding") or "pcm_s16le").strip()
+    sample_rate = int(audio_format.get("sample_rate") or 16000)
+
+    if encoding != "pcm_s16le" or sample_rate != 16000:
+        await websocket.send_json(
+            {
+                "type": "error",
+                "message": "Unsupported audio_format. Use pcm_s16le @ 16000 Hz mono.",
+            }
+        )
+        await websocket.close(code=1003)
+        return
+
+    await websocket.send_json({"type": "ready", "v": 1})
+
+    from collections.abc import AsyncIterator
+
+    audio_queue: asyncio.Queue[bytes | None] = asyncio.Queue()
+
+    async def recv_loop() -> None:
+        try:
+            while True:
+                msg = await websocket.receive()
+                if msg.get("type") == "websocket.disconnect":
+                    break
+
+                if msg.get("bytes") is not None:
+                    await audio_queue.put(msg["bytes"])
+                    continue
+
+                if msg.get("text") is None:
+                    continue
+
+                try:
+                    cmd = json.loads(msg["text"])
+                except json.JSONDecodeError:
+                    continue
+
+                if cmd.get("type") == "stop":
+                    break
+        except WebSocketDisconnect:
+            pass
+        finally:
+            await audio_queue.put(None)
+
+    async def audio_stream() -> AsyncIterator[bytes]:
+        while True:
+            chunk = await audio_queue.get()
+            if chunk is None:
+                break
+            yield chunk
+
+    recv_task = asyncio.create_task(recv_loop())
+
+    transcript = ""
+    try:
+        from mistralai import Mistral
+        from mistralai.models import (
+            AudioFormat,
+            RealtimeTranscriptionError,
+            TranscriptionStreamTextDelta,
+        )
+
+        client = Mistral(api_key=MISTRAL_API_KEY)
+        fmt = AudioFormat(encoding="pcm_s16le", sample_rate=sample_rate)
+
+        async for event in client.audio.realtime.transcribe_stream(
+            audio_stream=audio_stream(),
+            model=MISTRAL_REALTIME_MODEL,
+            audio_format=fmt,
+        ):
+            if isinstance(event, TranscriptionStreamTextDelta):
+                if event.text:
+                    transcript += event.text
+                    await websocket.send_json({"type": "delta", "text": event.text})
+            elif isinstance(event, RealtimeTranscriptionError):
+                await websocket.send_json({"type": "error", "message": str(event)})
+
+        await websocket.send_json({"type": "final", "text": transcript.strip()})
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        await websocket.send_json(
+            {"type": "error", "message": "Realtime transcription failed."}
+        )
+    finally:
+        recv_task.cancel()
+        try:
+            await recv_task
+        except Exception:
+            pass
 
 @app.get("/api/voices")
 async def api_voices(
@@ -874,6 +1087,10 @@ async def api_languages():
         "languages": SUPPORTED_LANGUAGES,
         "default": "Auto",
         "provider": TTS_PROVIDER,
+        "transcription": {
+            "enabled": is_transcription_enabled(),
+            **get_transcription_models(),
+        },
     }
 
 

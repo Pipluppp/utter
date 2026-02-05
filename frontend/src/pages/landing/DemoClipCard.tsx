@@ -59,7 +59,7 @@ export function DemoClipCard({
     if (!el) return
     if (el.paused) {
       pauseOtherDemos(el)
-      void el.play()
+      void el.play().catch(() => {})
     } else {
       el.pause()
     }

@@ -8,13 +8,13 @@ const LAYOUT: Record<string, string> = {
     'md:col-span-5 md:col-start-7 md:rotate-[2.3deg] md:-translate-y-1 md:translate-x-1',
   chungking:
     'md:col-span-5 md:col-start-7 md:rotate-[2.8deg] md:-translate-y-3 md:translate-x-1',
-  parasite:
+  eeaao:
     'md:col-span-5 md:col-start-2 md:rotate-[-2.1deg] md:translate-y-4 md:-translate-x-1',
   brutalist: 'md:col-span-6 md:col-start-4 md:rotate-[2.1deg] md:translate-y-3',
 }
 
 export function DemoWall() {
-  const demos = UTTER_DEMOS.filter((d) => d.id !== 'chunking')
+  const demos = UTTER_DEMOS
 
   return (
     <section

@@ -87,3 +87,14 @@ SUPPORTED_LANGUAGES = [
     "Spanish",
     "Italian",
 ]
+
+# Transcription Provider (Mistral Voxtral)
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "")
+MISTRAL_TRANSCRIBE_MODEL = os.getenv("MISTRAL_TRANSCRIBE_MODEL", "voxtral-mini-2602")
+MISTRAL_REALTIME_MODEL = os.getenv(
+    "MISTRAL_REALTIME_MODEL", "voxtral-mini-transcribe-realtime-2602"
+)
+TRANSCRIPTION_ENABLED = (
+    os.getenv("TRANSCRIPTION_ENABLED", "true").lower() == "true"
+    and bool(MISTRAL_API_KEY)
+)
