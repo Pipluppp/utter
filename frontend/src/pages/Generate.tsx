@@ -191,7 +191,7 @@ export function GeneratePage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-center gap-2">
-        <h2 className="text-balance text-center text-xl font-pixel font-medium uppercase tracking-[2px]">
+        <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Generate
         </h2>
         <InfoTip align="end" label="Generate tips">

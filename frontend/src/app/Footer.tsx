@@ -36,7 +36,7 @@ export function AppFooter() {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <FooterLink to="/pricing">Pricing</FooterLink>
+            <FooterLink to="/#pricing">Pricing</FooterLink>
             <FooterLink to="/account">Account</FooterLink>
             <FooterLink to="/privacy">Privacy</FooterLink>
             <FooterLink to="/terms">Terms</FooterLink>

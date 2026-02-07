@@ -21,6 +21,7 @@ export function DemoWall() {
       id="demos"
       className={cn(
         'relative left-1/2 right-1/2 -mx-[50vw] w-screen',
+        'scroll-mt-24',
         'border-y border-border bg-subtle',
       )}
     >

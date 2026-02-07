@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, type To, useLocation } from 'react-router-dom'
 import { TaskBadge } from '../components/tasks/TaskBadge'
 import { TaskDock } from '../components/tasks/TaskDock'
 import { Kbd } from '../components/ui/Kbd'
@@ -13,7 +13,7 @@ function NavItem({
   children,
   shortcut,
 }: {
-  to: string
+  to: To
   children: React.ReactNode
   shortcut?: string
 }) {
@@ -40,7 +40,7 @@ function MobileNavItem({
   shortcut,
   onClick,
 }: {
-  to: string
+  to: To
   children: React.ReactNode
   shortcut?: string
   onClick: () => void
@@ -67,13 +67,56 @@ export function Layout() {
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
+  const isLanding = location.pathname === '/'
 
   useGlobalShortcuts()
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: close the mobile menu on route changes
   useEffect(() => {
     setMenuOpen(false)
-  }, [location.pathname])
+  }, [location.pathname, location.hash])
+
+  useEffect(() => {
+    if (!location.hash) return
+
+    const prefersReducedMotion = window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    const allowSmooth = new Set(['#demos', '#features', '#pricing']).has(
+      location.hash,
+    )
+    const behavior: ScrollBehavior =
+      prefersReducedMotion || !allowSmooth ? 'auto' : 'smooth'
+
+    let cancelled = false
+    let timeoutId: number | undefined
+
+    const rawId = location.hash.slice(1)
+    let id = rawId
+    try {
+      id = decodeURIComponent(rawId)
+    } catch {
+      id = rawId
+    }
+
+    const attemptScroll = (triesLeft: number) => {
+      if (cancelled) return
+      const el = document.getElementById(id)
+      if (el) {
+        el.scrollIntoView({ behavior, block: 'start', inline: 'nearest' })
+        return
+      }
+      if (triesLeft <= 0) return
+      timeoutId = window.setTimeout(() => attemptScroll(triesLeft - 1), 60)
+    }
+
+    attemptScroll(12)
+
+    return () => {
+      cancelled = true
+      if (timeoutId) window.clearTimeout(timeoutId)
+    }
+  }, [location.hash])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -106,27 +149,66 @@ export function Layout() {
           </NavLink>
 
           <nav className="hidden items-center gap-1 md:flex">
-            <NavItem to="/clone" shortcut="c">
-              <span>Clone</span>
-              <Kbd>c</Kbd>
-            </NavItem>
-            <NavItem to="/generate" shortcut="g">
-              <span>Generate</span>
-              <Kbd>g</Kbd>
-            </NavItem>
-            <NavItem to="/design" shortcut="d">
-              <span>Design</span>
-              <Kbd>d</Kbd>
-            </NavItem>
-            <span className="mx-2 h-4 w-px bg-border" />
-            <NavItem to="/voices">Voices</NavItem>
-            <NavItem to="/history">
-              <span>History</span>
-              <TaskBadge />
-            </NavItem>
-            <NavItem to="/pricing">Pricing</NavItem>
-            <NavItem to="/account">Account</NavItem>
-            <NavItem to="/about">About</NavItem>
+            {isLanding ? (
+              <>
+                <Link
+                  to={{ pathname: '/', hash: '#demos' }}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
+                    'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                    location.hash === '#demos' && 'bg-muted text-foreground',
+                  )}
+                >
+                  Demo
+                </Link>
+                <Link
+                  to={{ pathname: '/', hash: '#features' }}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
+                    'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                    location.hash === '#features' && 'bg-muted text-foreground',
+                  )}
+                >
+                  Features
+                </Link>
+                <Link
+                  to={{ pathname: '/', hash: '#pricing' }}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
+                    'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                    location.hash === '#pricing' && 'bg-muted text-foreground',
+                  )}
+                >
+                  Pricing
+                </Link>
+                <span className="mx-2 h-4 w-px bg-border" />
+                <NavItem to="/about">About</NavItem>
+                <NavItem to="/account">Account</NavItem>
+              </>
+            ) : (
+              <>
+                <NavItem to="/clone" shortcut="c">
+                  <span>Clone</span>
+                  <Kbd>c</Kbd>
+                </NavItem>
+                <NavItem to="/generate" shortcut="g">
+                  <span>Generate</span>
+                  <Kbd>g</Kbd>
+                </NavItem>
+                <NavItem to="/design" shortcut="d">
+                  <span>Design</span>
+                  <Kbd>d</Kbd>
+                </NavItem>
+                <span className="mx-2 h-4 w-px bg-border" />
+                <NavItem to="/voices">Voices</NavItem>
+                <NavItem to="/history">
+                  <span>History</span>
+                  <TaskBadge />
+                </NavItem>
+                <NavItem to="/account">Account</NavItem>
+                <NavItem to="/about">About</NavItem>
+              </>
+            )}
           </nav>
 
           <button
@@ -163,54 +245,116 @@ export function Layout() {
         >
           <div className="mx-auto w-full max-w-5xl px-4 py-2 md:px-6">
             <div className="space-y-1">
-              <MobileNavItem
-                to="/clone"
-                shortcut="c"
-                onClick={() => setMenuOpen(false)}
-              >
-                <span>Clone</span>
-                <Kbd>c</Kbd>
-              </MobileNavItem>
-              <MobileNavItem
-                to="/generate"
-                shortcut="g"
-                onClick={() => setMenuOpen(false)}
-              >
-                <span>Generate</span>
-                <Kbd>g</Kbd>
-              </MobileNavItem>
-              <MobileNavItem
-                to="/design"
-                shortcut="d"
-                onClick={() => setMenuOpen(false)}
-              >
-                <span>Design</span>
-                <Kbd>d</Kbd>
-              </MobileNavItem>
-              <div className="my-2 h-px bg-border" />
-              <MobileNavItem to="/voices" onClick={() => setMenuOpen(false)}>
-                <span>Voices</span>
-                <span />
-              </MobileNavItem>
-              <MobileNavItem to="/history" onClick={() => setMenuOpen(false)}>
-                <span className="flex items-center gap-2">
-                  <span>History</span>
-                  <TaskBadge />
-                </span>
-                <span />
-              </MobileNavItem>
-              <MobileNavItem to="/pricing" onClick={() => setMenuOpen(false)}>
-                <span>Pricing</span>
-                <span />
-              </MobileNavItem>
-              <MobileNavItem to="/account" onClick={() => setMenuOpen(false)}>
-                <span>Account</span>
-                <span />
-              </MobileNavItem>
-              <MobileNavItem to="/about" onClick={() => setMenuOpen(false)}>
-                <span>About</span>
-                <span />
-              </MobileNavItem>
+              {isLanding ? (
+                <>
+                  <Link
+                    to={{ pathname: '/', hash: '#demos' }}
+                    onClick={() => setMenuOpen(false)}
+                    className={cn(
+                      'flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
+                      'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                      location.hash === '#demos' && 'bg-muted text-foreground',
+                    )}
+                  >
+                    <span>Demo</span>
+                    <span />
+                  </Link>
+                  <Link
+                    to={{ pathname: '/', hash: '#features' }}
+                    onClick={() => setMenuOpen(false)}
+                    className={cn(
+                      'flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
+                      'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                      location.hash === '#features' &&
+                        'bg-muted text-foreground',
+                    )}
+                  >
+                    <span>Features</span>
+                    <span />
+                  </Link>
+                  <Link
+                    to={{ pathname: '/', hash: '#pricing' }}
+                    onClick={() => setMenuOpen(false)}
+                    className={cn(
+                      'flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
+                      'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                      location.hash === '#pricing' &&
+                        'bg-muted text-foreground',
+                    )}
+                  >
+                    <span>Pricing</span>
+                    <span />
+                  </Link>
+                  <div className="my-2 h-px bg-border" />
+                  <MobileNavItem to="/about" onClick={() => setMenuOpen(false)}>
+                    <span>About</span>
+                    <span />
+                  </MobileNavItem>
+                  <MobileNavItem
+                    to="/account"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span>Account</span>
+                    <span />
+                  </MobileNavItem>
+                </>
+              ) : (
+                <>
+                  <MobileNavItem
+                    to="/clone"
+                    shortcut="c"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span>Clone</span>
+                    <Kbd>c</Kbd>
+                  </MobileNavItem>
+                  <MobileNavItem
+                    to="/generate"
+                    shortcut="g"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span>Generate</span>
+                    <Kbd>g</Kbd>
+                  </MobileNavItem>
+                  <MobileNavItem
+                    to="/design"
+                    shortcut="d"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span>Design</span>
+                    <Kbd>d</Kbd>
+                  </MobileNavItem>
+                  <div className="my-2 h-px bg-border" />
+                  <MobileNavItem
+                    to="/voices"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span>Voices</span>
+                    <span />
+                  </MobileNavItem>
+                  <MobileNavItem
+                    to="/history"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>History</span>
+                      <TaskBadge />
+                    </span>
+                    <span />
+                  </MobileNavItem>
+                  <MobileNavItem
+                    to="/account"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span>Account</span>
+                    <span />
+                  </MobileNavItem>
+                  <MobileNavItem to="/about" onClick={() => setMenuOpen(false)}>
+                    <span>About</span>
+                    <span />
+                  </MobileNavItem>
+                </>
+              )}
             </div>
           </div>
         </div>

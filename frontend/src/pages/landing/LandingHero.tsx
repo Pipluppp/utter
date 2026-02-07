@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { buttonStyles } from '../../components/ui/Button'
 import { useLanguages } from '../hooks'
 
@@ -22,12 +22,12 @@ export function LandingHero() {
         </p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <a
-            href="#demos"
+          <Link
+            to={{ pathname: '/', hash: '#demos' }}
             className={buttonStyles({ variant: 'primary', size: 'md' })}
           >
             Hear the demos →
-          </a>
+          </Link>
           <NavLink
             to="/clone"
             className={buttonStyles({ variant: 'secondary', size: 'md' })}

@@ -1,7 +1,5 @@
-import { NavLink } from 'react-router-dom'
-import { PricingGrid } from '../components/marketing/PricingGrid'
-import { creditRates } from '../content/plans'
-import { cn } from '../lib/cn'
+import { creditRates } from '../../content/plans'
+import { PricingGrid } from './PricingGrid'
 
 function FAQItem({ q, a }: { q: string; a: string }) {
   return (
@@ -14,30 +12,9 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   )
 }
 
-export function PricingPage() {
+export function PricingContent() {
   return (
-    <div className="space-y-10">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-pixel font-medium uppercase tracking-[2px]">
-            Pricing
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Credit-based pricing designed for voice clone, voice design, and
-            long-form generation powered by Qwen3-TTS.
-          </p>
-        </div>
-        <NavLink
-          to="/account/billing"
-          className={cn(
-            'text-[12px] uppercase tracking-wide text-muted-foreground hover:text-foreground',
-            'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-          )}
-        >
-          Manage billing →
-        </NavLink>
-      </div>
-
+    <>
       <PricingGrid />
 
       <section className="space-y-4">
@@ -85,6 +62,6 @@ export function PricingPage() {
           </div>
         </div>
       </section>
-    </div>
+    </>
   )
 }

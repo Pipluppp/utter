@@ -30,10 +30,6 @@ const AboutPage = lazy(async () => {
   const m = await import('../pages/About')
   return { default: m.AboutPage }
 })
-const PricingPage = lazy(async () => {
-  const m = await import('../pages/Pricing')
-  return { default: m.PricingPage }
-})
 const PrivacyPage = lazy(async () => {
   const m = await import('../pages/Privacy')
   return { default: m.PrivacyPage }
@@ -70,7 +66,7 @@ export const router = createBrowserRouter([
       { path: '/design', element: <DesignPage /> },
       { path: '/voices', element: <VoicesPage /> },
       { path: '/history', element: <HistoryPage /> },
-      { path: '/pricing', element: <PricingPage /> },
+      { path: '/pricing', element: <Navigate to="/#pricing" replace /> },
       { path: '/privacy', element: <PrivacyPage /> },
       { path: '/terms', element: <TermsPage /> },
       {
