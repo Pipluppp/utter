@@ -1,3 +1,5 @@
+import { getSession } from './supabase'
+
 export type ApiErrorShape = {
   detail?: string
   message?: string
@@ -24,14 +26,36 @@ async function parseErrorMessage(res: Response): Promise<string> {
   return text || `${res.status} ${res.statusText}`
 }
 
+async function getDefaultAuthHeaders(): Promise<Record<string, string>> {
+  const session = await getSession()
+  const accessToken = session?.access_token ?? null
+  const headers: Record<string, string> = {}
+
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+
+  if (import.meta.env.DEV) {
+    const debugUserId = (
+      import.meta.env.VITE_DEBUG_USER_ID as string | undefined
+    )
+      ?.trim()
+      .toLowerCase()
+    const userId = debugUserId || session?.user?.id
+    if (userId) headers['x-utter-user-id'] = userId
+  }
+
+  return headers
+}
+
 export async function apiJson<T>(
   path: string,
   init: RequestInit & { json?: unknown } = {},
 ): Promise<T> {
   const { json, headers, ...rest } = init
+  const authHeaders = await getDefaultAuthHeaders()
   const res = await fetch(path, {
     ...rest,
     headers: {
+      ...authHeaders,
       ...(json ? { 'content-type': 'application/json' } : {}),
       ...headers,
     },
@@ -50,9 +74,14 @@ export async function apiForm<T>(
   form: FormData,
   init: RequestInit = {},
 ): Promise<T> {
+  const authHeaders = await getDefaultAuthHeaders()
   const res = await fetch(path, {
     ...init,
     method: init.method ?? 'POST',
+    headers: {
+      ...authHeaders,
+      ...(init.headers ?? {}),
+    },
     body: form,
   })
 

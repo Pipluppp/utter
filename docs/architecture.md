@@ -10,7 +10,7 @@
 
 - Frontend is a **React + Vite SPA** hosted on **Vercel**.
 - Browser HTTP calls to our backend contract remain `https://<app-domain>/api/*` and are implemented via **Vercel rewrites** to Supabase Edge Functions (`/functions/v1/api/*`).
-- Any true WebSocket feature should not rely on Vercel rewrites; prefer **Supabase Realtime** or a direct WebSocket endpoint.
+- Avoid WebSockets through Vercel rewrites. For the initial Option A stack, prefer HTTP polling (or an `/api/*` push mechanism like SSE). Treat Supabase Realtime / direct WebSockets as future opt-ins with explicit security review.
 
 See `docs/vercel-frontend.md` and `docs/supabase-security.md`.
 
@@ -47,11 +47,11 @@ See `docs/vercel-frontend.md` and `docs/supabase-security.md`.
 └──────────────────────────────────────────────────────────┘
 ```
 
-### Three request paths
+### Request paths (Option A: API-only frontend)
 
-Note: even though Supabase exposes PostgREST and Realtime, the deployed SPA defaults to calling our stable `/api/*` contract (Vercel rewrite to the `api` Edge Function). PostgREST remains available and must be secured, but is not the primary frontend integration.
+Decision: the deployed SPA does **not** call PostgREST or Supabase Realtime directly for app data. The browser uses Supabase Auth SDK for session management, and calls `fetch('/api/*')` for all app data (Vercel rewrite to the Supabase `api` Edge Function). PostgREST and Realtime still exist and must be secured, but they are not part of the frontend integration contract.
 
-**1. Frontend → Edge Function** (custom backend logic)
+**1. Frontend → Edge Function** (all app data)
 ```
 fetch('/api/generate', {
   method: 'POST',
@@ -65,40 +65,40 @@ fetch('/api/generate', {
   → JWT fetched via supabase-js Auth and attached as Authorization header
   → Edge fn validates JWT, queries DB, calls Modal, returns JSON
 ```
-Use for: anything needing server-side logic — Modal job orchestration, audio processing, transcription proxy, file validation, multi-step operations.
+Use for: all Utter app data (voices, generations, tasks, billing, Modal orchestration, Storage signing).
 
-**2. Frontend → PostgREST** (auto-generated CRUD)
+**2. Edge Function → PostgREST** (internal data plane)
 ```
 supabase.from('voices').select('*').eq('user_id', userId)
   → HTTPS GET to https://<ref>.supabase.co/rest/v1/voices?user_id=eq.<id>
   → JWT in Authorization header → RLS enforces row-level access
   → Returns rows the user owns
 ```
-Use for: simple reads/writes where RLS alone handles authorization. Listing voices, reading generation history, updating user profile.
+Use for: internal reads/writes from Edge Functions. In Option A, the SPA does not call PostgREST directly.
 
-**3. Frontend → Realtime** (subscriptions)
+**3. Supabase Realtime** (future; optional)
 ```
 supabase.channel('tasks').on('postgres_changes', {
   event: 'UPDATE', schema: 'public', table: 'tasks',
   filter: `user_id=eq.${userId}`
 }, callback).subscribe()
 ```
-Use for: live task status updates (replaces HTTP polling). When an edge fn updates a task row, the frontend gets notified instantly via WebSocket.
+Use for: potential future push updates. Not part of the initial Option A frontend contract; if adopted later, treat it as a direct Supabase surface area that must be secured like PostgREST (RLS, grants, exposed tables).
 
 ### Decision matrix: when to use what
 
 | Scenario | Use | Why |
 |----------|-----|-----|
-| List user's voices | PostgREST | Simple SELECT, RLS handles scoping |
-| Delete a voice | PostgREST | Simple DELETE, RLS ensures ownership |
+| List user's voices | Edge Function | Single stable contract (`/api/*`), hides PostgREST from the frontend |
+| Delete a voice | Edge Function | Must also delete from Storage; server-side invariant |
 | Submit generation job | Edge Function | Needs Modal API call, task creation, validation |
-| Poll task status | Realtime **or** PostgREST | Realtime preferred (push vs pull); PostgREST fallback |
-| Upload reference audio | Edge Function | Needs validation, transcription, storage write |
+| Poll task status | Edge Function | Performs one Modal status check + idempotent finalize |
+| Upload reference audio | Edge Function | Returns signed upload URL; server controls object keys |
 | Clone a voice | Edge Function | Multi-step: validate audio → store → create DB row |
 | Design voice preview | Edge Function | Calls Modal VoiceDesign API |
-| Get generation audio | Storage signed URL | Direct file access, no edge fn needed |
+| Get generation audio | Storage signed URL | Edge returns signed URL or 302 redirect |
 | User sign-in/out | Supabase Auth SDK | Built-in, no custom code |
-| Read user profile | PostgREST | Simple row read w/ RLS |
+| Read/update user profile | Edge Function | Prevents direct client writes to billing/credits fields |
 
 ---
 
@@ -240,7 +240,7 @@ This is where Modal HTTP client code, validation logic, and utility functions li
 | Constraint | Value | Impact on Utter |
 |-----------|-------|-----------------|
 | CPU time | 200ms per invocation | Fine for API orchestration. NOT fine for audio processing — must stay on Modal |
-| Wall clock | 400s | Plenty for Modal job submission + polling. But don't poll in-function — use DB + Realtime instead |
+| Wall clock | 400s | Plenty for Modal job submission + a single status check. Don't poll in-function — use DB + repeated short requests (polling or SSE) instead |
 | Bundle size | 20MB | Should be fine — we're not bundling audio files |
 | Memory | Plan-dependent | Large audio file buffering could be an issue. Stream instead of buffer |
 | Idle timeout | 150s | If no response in 150s → 504. Don't do long-running sync work |
@@ -261,7 +261,20 @@ Mitigation: keep function bundle small, avoid heavy imports. If cold starts are 
 ### Schema design
 
 ```sql
--- Users come from Supabase Auth (auth.users table) — no custom users table needed
+-- Users come from Supabase Auth (auth.users table).
+-- We also maintain a public.profiles table for app-specific user metadata (billing, display name, etc.).
+
+create table public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  handle text unique,
+  display_name text,
+  avatar_url text,
+  subscription_tier text not null default 'free',
+  credits_remaining int not null default 100,
+  stripe_customer_id text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
 create table public.voices (
   id uuid primary key default gen_random_uuid(),
@@ -305,6 +318,7 @@ create table public.tasks (
 );
 
 -- Indexes for RLS performance (critical — without these, RLS policy checks do full table scans)
+create index idx_profiles_id on public.profiles(id);
 create index idx_voices_user_id on public.voices(user_id);
 create index idx_generations_user_id on public.generations(user_id);
 create index idx_tasks_user_id on public.tasks(user_id);
@@ -323,9 +337,20 @@ RLS-first design. Every table gets RLS enabled + per-operation policies.
 
 ```sql
 -- Enable RLS on all tables
+alter table public.profiles enable row level security;
 alter table public.voices enable row level security;
 alter table public.generations enable row level security;
 alter table public.tasks enable row level security;
+
+-- Profiles: users read their own; updates are restricted (see note below)
+create policy "profiles_select" on public.profiles
+  for select to authenticated
+  using ((select auth.uid()) = id);
+
+create policy "profiles_update" on public.profiles
+  for update to authenticated
+  using ((select auth.uid()) = id)
+  with check ((select auth.uid()) = id);
 
 -- Voices: users CRUD their own
 create policy "voices_select" on public.voices
@@ -357,13 +382,20 @@ create policy "tasks_select" on public.tasks
 
 **Performance note:** Wrapping `auth.uid()` in `(select auth.uid())` triggers an `initPlan` optimization — Postgres evaluates it once per statement instead of once per row. This matters on tables with many rows.
 
+**Column-level protection note:** RLS only restricts which rows a user can update, not which columns. For tables where clients can UPDATE rows (e.g. `profiles`, and `voices` if we add client-side rename), use one of:
+
+- Postgres column privileges (`GRANT UPDATE (display_name, avatar_url) ...`) and revoke broad UPDATE, and/or
+- a `BEFORE UPDATE` trigger that rejects changes to protected columns
+
+See `docs/supabase-security.md`.
+
 **INSERT/UPDATE on generations and tasks:** Done by edge functions using service role key (bypasses RLS). Users don't directly insert generations or tasks — edge functions do it on their behalf after validation.
 
 ### RLS + edge functions interaction
 
 | Caller | Key Used | RLS Applied? | Use Case |
 |--------|----------|-------------|----------|
-| Frontend → PostgREST | anon key + user JWT | Yes | List voices, read history |
+| Frontend → Edge Function (`/api/*`) | user JWT | N/A (Edge enforces) | All app data via stable API-only contract |
 | Edge fn → supabase-js (anon key + user JWT) | User-scoped | Yes | User reads within edge fn |
 | Edge fn → supabase-js (service role key) | Admin | **No** | Task creation, storage writes, cross-user ops |
 
@@ -487,17 +519,17 @@ For our `api` function, keep `verify_jwt = true`. All requests must be authentic
 
 | Current Endpoint | Method | Current Behavior | Supabase Approach | Notes |
 |---|---|---|---|---|
-| `GET /api/voices` | GET | List voices, pagination, search | **PostgREST** | RLS scopes to user. supabase-js handles pagination natively |
+| `GET /api/voices` | GET | List voices, pagination, search | **Edge Function** | API-only frontend: Edge reads from DB and returns results |
 | `POST /api/clone` | POST | Upload audio + create voice | **Edge Function** | Needs audio validation, storage write, transcription |
-| `DELETE /api/voices/:id` | DELETE | Delete voice + audio file | **Edge Function** | Must also delete from Storage; or PostgREST + storage trigger |
+| `DELETE /api/voices/:id` | DELETE | Delete voice + audio file | **Edge Function** | Must also delete from Storage |
 | `GET /api/voices/:id/preview` | GET | Serve audio file | **Storage signed URL** | Generate signed URL, redirect client |
 | `POST /api/generate` | POST | Submit TTS job → Modal | **Edge Function** | Creates task + generation rows, submits Modal job |
-| `GET /api/generations` | GET | List generations, pagination | **PostgREST** | RLS scopes to user. Join with voices via foreign key |
+| `GET /api/generations` | GET | List generations, pagination | **Edge Function** | API-only frontend: Edge reads from DB and returns results |
 | `DELETE /api/generations/:id` | DELETE | Delete generation + audio | **Edge Function** | Must also delete from Storage |
-| `POST /api/generations/:id/regenerate` | POST | Get regen params | **PostgREST or Edge Fn** | Could be a simple row read + redirect |
-| `GET /api/tasks/:id` | GET | Poll task status | **PostgREST + Realtime** | Read task row via PostgREST; subscribe via Realtime for push updates |
+| `POST /api/generations/:id/regenerate` | POST | Regenerate from an existing row | **Edge Function** | Server validates ownership + creates new task/generation |
+| `GET /api/tasks/:id` | GET | Poll task status | **Edge Function** | Single-call status check + idempotent finalize |
 | `POST /api/tasks/:id/cancel` | POST | Cancel Modal job | **Edge Function** | Must call Modal cancel API + update DB |
-| `DELETE /api/tasks/:id` | DELETE | Clean up task | **PostgREST** | RLS-scoped delete |
+| `DELETE /api/tasks/:id` | DELETE | Clean up task | **Edge Function** | API-only frontend; Edge deletes task row after checks |
 | `POST /api/voices/design/preview` | POST | Design voice via Modal | **Edge Function** | Calls Modal VoiceDesign API |
 | `POST /api/voices/design` | POST | Save designed voice | **Edge Function** | Storage write + DB insert |
 | `GET /api/languages` | GET | Return language list | **Edge Function or static** | Could be a static config; edge fn if dynamic |
@@ -516,7 +548,7 @@ For our `api` function, keep `verify_jwt = true`. All requests must be authentic
 - **Status:** Cannot do long-running background polling in a single edge fn invocation (400s wall clock limit).
 - **Solution:** Change the pattern. Instead of polling in the backend:
   - Edge fn submits Modal job, stores `modal_job_id` in tasks table, returns immediately
-  - Frontend subscribes to task row via Realtime
+  - Frontend polls `GET /api/tasks/:id` (one status check per call) until terminal
   - A separate mechanism checks Modal status and updates the task row
   - Options for the "checker": (a) frontend polls an edge fn that does a single Modal status check, (b) `pg_cron` calls an edge fn periodically, (c) Modal webhook calls back to an edge fn on completion
 - **Recommended:** Frontend polls a lightweight `/api/tasks/:id/check` edge fn that does ONE Modal status check per call. If Modal is done → finalize (upload audio to Storage, update task row). This is the simplest migration path from current polling pattern.
@@ -529,7 +561,7 @@ For our `api` function, keep `verify_jwt = true`. All requests must be authentic
 
 **4. Audio file serving**
 - **Status:** Don't serve audio through edge functions. Use Supabase Storage signed URLs.
-- **Pattern:** Edge fn (or PostgREST) returns a signed URL → frontend fetches directly from Storage CDN.
+- **Pattern:** Edge fn returns a signed URL (or 302 redirect) → frontend fetches directly from Storage CDN.
 - **Verdict:** Better than current approach (faster, CDN-cached).
 
 **5. Cron jobs (task cleanup, expired task deletion)**
@@ -558,7 +590,7 @@ Single instance, imported everywhere. supabase-js handles auth token refresh, he
 ### Calling edge functions vs direct queries
 
 ```typescript
-// Direct table query (simple CRUD — goes through PostgREST + RLS)
+// Direct table query inside Edge Function (goes through PostgREST + RLS)
 const { data: voices } = await supabase
   .from('voices')
   .select('*')

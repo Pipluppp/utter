@@ -92,7 +92,7 @@ Supabase replaces those pieces directly:
 | User identity | Supabase Auth | JWT is the identity boundary |
 | Authorization | RLS | policies for tables + `storage.objects` |
 | Audio storage + delivery | Supabase Storage | private buckets + signed URLs |
-| Backend APIs | Edge Functions (+ optional PostgREST) | orchestration in Edge |
+| Backend APIs | Edge Functions (API-only) | Stable `/api/*` contract; Edge talks to DB/Storage/Modal |
 | Long-running TTS | Modal jobs | Edge orchestrates, Modal executes |
 
 ## Frontend deployment (how it affects Supabase)
@@ -147,9 +147,9 @@ Use Edge Functions when:
 - it needs Storage signed URL creation, uploads, or object key conventions
 - it needs stable request validation + error contracts
 
-Default stance for the migration:
-- preserve today's `/api/*` contract via an Edge API router (see `backend.md`)
-- optionally adopt direct PostgREST reads later (after RLS + hardening is mature)
+Default stance for the migration (Option A):
+- preserve today's `/api/*` contract via a single Edge API router (see `backend.md`)
+- the SPA does not call PostgREST directly; PostgREST/RPC are internal implementation details used by Edge Functions
 
 ## Performance basics we should treat as required
 

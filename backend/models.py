@@ -9,6 +9,29 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
 
+class Profile(Base):
+    """App-specific user profile data (dev backend parity for Supabase profiles)."""
+
+    __tablename__ = "profiles"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    handle: Mapped[Optional[str]] = mapped_column(String(24), unique=True, nullable=True)
+    display_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "handle": self.handle,
+            "display_name": self.display_name,
+            "avatar_url": self.avatar_url,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
 class Voice(Base):
     """A cloned voice with its reference audio."""
 

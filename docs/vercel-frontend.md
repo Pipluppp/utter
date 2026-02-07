@@ -62,7 +62,7 @@ This preserves a stable, same-origin `/api/*` contract for the frontend while ke
 - External rewrite proxy timeout: Vercel external rewrites have a **120s** proxy timeout (errors like `ROUTER_EXTERNAL_TARGET_ERROR` if the backend does not respond in time).
   - For Utter, avoid doing "big finalize work" in a single request routed through Vercel. Keep finalization incremental/idempotent, or move finalization to server-to-server triggers that do not pass through the Vercel proxy.
 - WebSockets: do not assume Vercel rewrites can tunnel WebSockets reliably. Treat Vercel rewrites as HTTP-only.
-  - If we need realtime behavior, prefer **Supabase Realtime** (or direct WS to a Supabase WS endpoint), not WS through `/api/*`.
+  - For Option A, prefer HTTP polling (or an `/api/*` push mechanism like SSE) rather than direct client WebSockets.
 - `vercel.json` is static config (no env-var interpolation). The Supabase project ref in a rewrite destination is not a secret; committing it is acceptable.
 
 ### Minimal `vercel.json` (placed under `frontend/`)
@@ -108,7 +108,7 @@ Even with Pattern A, Supabase is still the backend platform. The frontend will r
 - RLS: the security boundary for user-owned rows and Storage objects
 - Edge Functions: our `/api/*` contract (via Vercel rewrites)
 - Storage: private buckets for audio; signed URLs for playback/download and signed upload URLs for large uploads
-- Realtime (optional): subscriptions for task/generation updates (prefer over custom WS proxying through Vercel)
+- Realtime (future; optional): not used by the SPA in Option A. If adopted later, treat as a direct Supabase surface area that must be secured like PostgREST.
 
 ---
 

@@ -44,6 +44,21 @@ This is a starting point, not final SQL. We should implement this via Supabase m
 ### Tables (DDL sketch)
 
 ```sql
+-- profiles: app-specific user metadata (separate from auth.users)
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  handle text unique,
+  display_name text,
+  avatar_url text,
+
+  subscription_tier text not null default 'free',
+  credits_remaining integer not null default 100,
+  stripe_customer_id text,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 -- voices: cloned or designed voices
 create table if not exists public.voices (
   id uuid primary key default gen_random_uuid(),
@@ -63,6 +78,10 @@ create table if not exists public.voices (
 
 create index if not exists voices_user_created_at
   on public.voices (user_id, created_at desc);
+
+-- profiles: frequent read/update by current user
+create index if not exists profiles_id
+  on public.profiles (id);
 
 -- generations: generated speech outputs
 create table if not exists public.generations (
@@ -122,14 +141,24 @@ create index if not exists tasks_modal_job_id
 
 ### RLS (policy sketch)
 
-Enable RLS and apply the "user owns row" rule on all three tables.
+Enable RLS and apply the "user owns row" rule on all tables.
 
 **Performance note:** Wrapping `auth.uid()` in `(select auth.uid())` triggers Postgres's `initPlan` optimization — the function is evaluated once per statement instead of once per row. This matters on tables with many rows.
 
 ```sql
+alter table public.profiles enable row level security;
 alter table public.voices enable row level security;
 alter table public.generations enable row level security;
 alter table public.tasks enable row level security;
+
+-- profiles: users read/update their own
+create policy profiles_select_own on public.profiles
+  for select to authenticated
+  using ((select auth.uid()) = id);
+
+create policy profiles_update_own on public.profiles
+  for update to authenticated
+  using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
 
 -- voices: users CRUD their own
 create policy voices_select_own on public.voices
@@ -163,6 +192,9 @@ Notes:
 - INSERT/UPDATE on `generations` and `tasks` is done by edge functions using the service role key (bypasses RLS). Users don't directly insert these — edge functions do it on their behalf after validation.
 - The service role key bypasses RLS entirely; only use it for explicitly server-owned flows.
 - PostgREST uses the `anon` and `authenticated` roles; policies target `authenticated`.
+
+Column-level security reminder:
+- RLS does not prevent an allowed UPDATE from changing arbitrary columns. Use column privileges (GRANT UPDATE on specific columns) and/or a `BEFORE UPDATE` trigger allowlist for tables the client can update (notably `profiles`).
 
 ## Storage policies (`storage.objects`)
 
