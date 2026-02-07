@@ -6,6 +6,14 @@
 
 ## 1. Request Flow Mapping
 
+### Frontend hosting (production)
+
+- Frontend is a **React + Vite SPA** hosted on **Vercel**.
+- Browser HTTP calls to our backend contract remain `https://<app-domain>/api/*` and are implemented via **Vercel rewrites** to Supabase Edge Functions (`/functions/v1/api/*`).
+- Any true WebSocket feature should not rely on Vercel rewrites; prefer **Supabase Realtime** or a direct WebSocket endpoint.
+
+See `docs/vercel-frontend.md` and `docs/supabase-security.md`.
+
 ### How requests travel
 
 ```
@@ -41,11 +49,20 @@
 
 ### Three request paths
 
+Note: even though Supabase exposes PostgREST and Realtime, the deployed SPA defaults to calling our stable `/api/*` contract (Vercel rewrite to the `api` Edge Function). PostgREST remains available and must be secured, but is not the primary frontend integration.
+
 **1. Frontend → Edge Function** (custom backend logic)
 ```
-supabase.functions.invoke('api', { body: { ... } })
-  → HTTPS POST to https://<ref>.supabase.co/functions/v1/api
-  → JWT auto-attached by supabase-js
+fetch('/api/generate', {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    Authorization: `Bearer ${accessToken}`,
+  },
+  body: JSON.stringify({ ... }),
+})
+  → Vercel rewrite to https://<ref>.supabase.co/functions/v1/api/generate
+  → JWT fetched via supabase-js Auth and attached as Authorization header
   → Edge fn validates JWT, queries DB, calls Modal, returns JSON
 ```
 Use for: anything needing server-side logic — Modal job orchestration, audio processing, transcription proxy, file validation, multi-step operations.
@@ -181,8 +198,8 @@ Connection goes through Supavisor transaction mode pooler (port 6543). Edge func
 
 ```
 Frontend (logged in user)
-  → supabase.functions.invoke('api', { body: {...} })
-  → supabase-js auto-attaches: Authorization: Bearer <user-jwt>
+  → fetch('/api/*', with Authorization: Bearer <user-jwt>)
+  → Vercel rewrites /api/* to https://<ref>.supabase.co/functions/v1/api/*
   → Edge Function receives request
   → Extracts token: req.headers.get('Authorization')
   → Option 1: supabase.auth.getUser(token) → full user object

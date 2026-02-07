@@ -41,7 +41,7 @@ npm run dev
 - Backend: Supabase Postgres + Storage + Edge Functions (job-based, poll-driven finalization)
 - Auth: Supabase Auth + RLS
 - Billing: Stripe (planned)
-- Frontend hosting: TBD (Vercel vs S3/CloudFront)
+- Frontend hosting: Vercel (Vite/React SPA) with `/api/*` rewrites to Supabase Edge Functions
 
 ---
 
@@ -56,8 +56,10 @@ npm run dev
 | [supabase.md](./supabase.md) | Supabase grounding (official docs + CLI workflows) |
 | [backend.md](./backend.md) | Edge API plan (routes, auth, storage flows) |
 | [database.md](./database.md) | Schema + RLS + Storage policies |
+| [supabase-security.md](./supabase-security.md) | Supabase security checklist (RLS, hardening, keys, Storage) |
 | [edge-orchestration.md](./edge-orchestration.md) | Modal jobs -> Edge orchestration (poll-driven finalization) |
 | [deployment-architecture.md](./deployment-architecture.md) | Billing integration + cost projections |
+| [vercel-frontend.md](./vercel-frontend.md) | Vercel frontend (React + Vite SPA) with `/api/*` rewrites to Supabase Edge Functions |
 
 ## Supporting docs
 
