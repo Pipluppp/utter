@@ -61,6 +61,9 @@ Rules for Utter:
 - Enable **RLS on every table** that is reachable from the Data API.
 - Write policies so that the “default” is **deny**.
 - Put tenant boundaries on `user_id` everywhere (`voices`, `generations`, `tasks`, etc.).
+- Write RLS policies with performance in mind:
+  - wrap `auth.uid()` as `(select auth.uid())` to avoid per-row function calls on large scans
+  - ensure columns referenced by policies (typically `user_id`) are indexed
 - Prefer doing complex invariants via:
   - Postgres functions (RPC) executed under RLS, or
   - Edge Functions that validate, then write as the server where appropriate.
@@ -69,6 +72,26 @@ Official docs:
 
 - RLS guide: https://supabase.com/docs/guides/database/postgres/row-level-security
 - Securing your API: https://supabase.com/docs/guides/api/securing-your-api
+
+---
+
+## 3b) Indexing and query performance (security-adjacent)
+
+Poor performance becomes a security problem when it:
+
+- forces you to add dangerous caches, or
+- makes RLS checks so slow that you start bypassing them.
+
+Minimum expectations for Utter:
+
+- Index every `user_id` column used in RLS policies.
+- Index foreign key columns (Postgres does not create FK indexes automatically).
+- Use composite indexes that match real query patterns (e.g. `(user_id, created_at desc)` for history pages).
+
+References:
+
+- Indexes on WHERE/JOIN columns: https://supabase.com/docs/guides/database/query-optimization
+- RLS performance notes: https://supabase.com/docs/guides/database/postgres/row-level-security#rls-performance-recommendations
 
 ---
 
@@ -102,6 +125,7 @@ Rules:
 - Treat Edge Functions as the trusted “backend code”.
 - Store secrets using Supabase secrets (not in the frontend build).
 - Only disable auth/JWT checks for endpoints like **webhooks**, and then verify the webhook signature instead.
+- Keep database transactions short: don’t hold DB locks while calling Modal/Stripe. Do external calls outside transactions; only lock rows for the final update.
 
 Official docs:
 
@@ -171,3 +195,16 @@ Fix is almost always:
 - [ ] Edge Functions: auth enforced; webhooks signature-verified
 - [ ] Auth redirect URLs configured for prod + preview domains
 - [ ] Supabase “Security Advisor” clean (or findings triaged)
+
+---
+
+## Appendix: Vercel previews should not use production data
+
+Vercel Preview Deployments are great for UI iteration, but they should not accidentally point at the production Supabase project.
+
+Because Utter uses static `vercel.json` rewrites for `/api/*`, the simplest safe approach is:
+
+- a staging Vercel project (rewrites → staging Supabase)
+- a production Vercel project (rewrites → production Supabase)
+
+See `docs/vercel-frontend.md`.

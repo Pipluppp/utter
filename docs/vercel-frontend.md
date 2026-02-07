@@ -77,6 +77,18 @@ If the Vercel project root is `frontend/`, place this at `frontend/vercel.json`:
       "destination": "https://<project-ref>.supabase.co/functions/v1/api/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
   ]
 }
 ```
@@ -84,7 +96,7 @@ If the Vercel project root is `frontend/`, place this at `frontend/vercel.json`:
 Notes:
 
 - The SPA fallback rewrite is required because we use React Router (browser history mode).
-- Be careful with caching headers on rewritten API responses; default to `no-store` for user-scoped APIs.
+- Be careful with caching on rewritten API responses; default to `no-store` for user-scoped APIs.
 
 ---
 
@@ -136,14 +148,85 @@ If finalization risks exceeding the Vercel proxy timeout, move the finalize step
 
 ## Vercel configuration (repo-specific)
 
+## Setup (Vercel)
+
+### Setup via Dashboard (recommended)
+
+Vercel docs walkthrough:
+
+- Import an existing project: https://vercel.com/docs/getting-started-with-vercel/import
+
+Utter-specific steps:
+
+1. Create a new Vercel project by importing this Git repo.
+2. In the “Configure Project” step (or later in Project Settings), set:
+   - Root Directory: `frontend/`
+   - Framework Preset: Vite
+   - Install Command: `npm ci`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+3. Add `frontend/vercel.json` with:
+   - rewrite `/api/*` → `https://<project-ref>.supabase.co/functions/v1/api/*`
+   - SPA fallback rewrite to `/index.html`
+4. Add required environment variables (build-time `VITE_*` vars).
+5. Deploy.
+
+### Setup via CLI (optional)
+
+Vercel docs:
+
+- Deploying via CLI: https://vercel.com/docs/deployments
+- Import via CLI (monorepo-friendly): https://vercel.com/docs/getting-started-with-vercel/import
+
+From the repo root:
+
+```bash
+npm i -g vercel
+vercel --cwd frontend
+```
+
+Notes:
+
+- This links `frontend/` to a Vercel project and creates a preview deployment by default.
+- Use `vercel --cwd frontend --prod` for a production deployment.
+- The CLI creates a `.vercel/` directory; keep it ignored (this repo’s `frontend/.gitignore` already includes it).
+
 ### Root Directory
 
 Set Vercel "Root Directory" to `frontend/` so it builds and serves `frontend/dist/`.
+
+### Build settings
+
+Recommended (Vercel Project Settings):
+
+- Install Command: `npm ci` (uses `frontend/package-lock.json` for reproducible installs)
+- Build Command: `npm run build`
+- Output Directory: `dist`
 
 ### Environment variables (Vite)
 
 - Any `VITE_*` variables are build-time. Changing them requires a rebuild/deploy.
 - Do not put secrets in `VITE_*` variables.
+
+### Environments (dev / preview / production)
+
+Two things are true at the same time:
+
+1. We want **separate Supabase projects** for dev/staging/prod (see `docs/supabase.md`).
+2. `vercel.json` rewrites are **static**, so `/api/*` rewrite targets cannot change per Vercel environment without introducing a proxy layer.
+
+Practical recommendation for Utter:
+
+- Use **two Vercel projects**:
+  - **Staging Vercel project** (deploys `develop`): rewrites `/api/*` to the **staging** Supabase project.
+  - **Production Vercel project** (deploys `main`): rewrites `/api/*` to the **production** Supabase project.
+
+This prevents Vercel Preview Deployments for staging from accidentally pointing at the production database.
+
+### Monitoring (minimum)
+
+- Use Vercel Deployments + Logs to debug build/runtime issues.
+- Add application error tracking (e.g. Sentry) early; most production problems show up in the browser and in Edge Function logs.
 
 ---
 
@@ -175,10 +258,14 @@ See `docs/supabase-security.md`.
 
 Vercel:
 
+- Getting started: https://vercel.com/docs/getting-started-with-vercel
 - Rewrites: https://vercel.com/docs/rewrites
 - `ROUTER_EXTERNAL_TARGET_ERROR`: https://vercel.com/docs/errors/ROUTER_EXTERNAL_TARGET_ERROR
 - 120s origin timeout changelog: https://vercel.com/changelog/cdn-origin-timeout-increased-to-two-minutes
 - Environment variables: https://vercel.com/docs/environment-variables
+- Configure a build (build command/output dir): https://vercel.com/docs/deployments/configure-a-build
+- Builds overview: https://vercel.com/docs/deployments/builds/
+- Add a domain: https://vercel.com/docs/getting-started-with-vercel/use-existing
 
 Supabase:
 
@@ -187,4 +274,3 @@ Supabase:
 - RLS: https://supabase.com/docs/guides/database/postgres/row-level-security
 - Storage access control: https://supabase.com/docs/guides/storage/security/access-control
 - Hardening the Data API: https://supabase.com/docs/guides/database/hardening-data-api
-

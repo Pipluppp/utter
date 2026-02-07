@@ -1,13 +1,15 @@
 # Supabase grounding (Utter backend)
 
-Last updated: **2026-02-05**
+Last updated: **2026-02-07**
 
 This doc is the Supabase "source of truth" for our migration plan: how Supabase Postgres + Auth + Storage + Edge Functions fit Utter's requirements, and the workflows we should standardize so the plan is deployable.
 
 Read order:
 1) [`architecture.md`](./architecture.md) — comprehensive architecture reference
-2) this doc — Supabase grounding + CLI workflows
-3) [`backend.md`](./backend.md) and [`database.md`](./database.md) — implementation details
+2) [`vercel-frontend.md`](./vercel-frontend.md) — frontend hosting + `/api/*` rewrite strategy (Pattern A)
+3) [`supabase-security.md`](./supabase-security.md) — security checklist (RLS, keys, Storage, Data API hardening)
+4) this doc — Supabase grounding + CLI workflows
+5) [`backend.md`](./backend.md) and [`database.md`](./database.md) — implementation details
 
 ## Official Supabase docs (primary sources)
 
@@ -49,6 +51,33 @@ Auth + Storage:
 - Storage signed upload URL API:
   - https://supabase.com/docs/reference/javascript/storage-createsigneduploadurl
 
+## Setup (Supabase CLI + projects)
+
+Supabase CLI docs:
+
+- CLI getting started: https://supabase.com/docs/guides/local-development/cli/getting-started
+- CLI reference: https://supabase.com/docs/reference/cli/introduction
+- Local development overview: https://supabase.com/docs/guides/local-development/overview
+- Managing environments: https://supabase.com/docs/guides/deployment/managing-environments
+
+Recommended Utter setup:
+
+1. Install and log into the Supabase CLI.
+2. Create separate Supabase projects for:
+   - dev (local)
+   - staging
+   - production
+3. Initialize Supabase in this repo and commit:
+   - `supabase/migrations/*`
+   - `supabase/functions/*`
+   - `supabase/config.toml`
+4. Use the CLI to link and deploy:
+   - migrations: `supabase db push`
+   - functions: `supabase functions deploy`
+   - secrets: `supabase secrets set ...`
+
+Note: this repo’s target architecture expects a single “fat” Edge Function named `api` and Vercel rewrites to keep the frontend contract stable (`/api/*`). See `docs/vercel-frontend.md`.
+
 ## What "Supabase-first backend" means for Utter
 
 Utter's deploy blockers today:
@@ -65,6 +94,20 @@ Supabase replaces those pieces directly:
 | Audio storage + delivery | Supabase Storage | private buckets + signed URLs |
 | Backend APIs | Edge Functions (+ optional PostgREST) | orchestration in Edge |
 | Long-running TTS | Modal jobs | Edge orchestrates, Modal executes |
+
+## Frontend deployment (how it affects Supabase)
+
+In production, the React + Vite SPA is hosted on Vercel and keeps calling the stable `/api/*` contract. Vercel rewrites `/api/*` to the Supabase `api` Edge Function (`/functions/v1/api/*`).
+
+Why this matters for backend design:
+
+- The `/api/*` Edge API is the primary integration point; PostgREST remains available but is not the default frontend path.
+- Vercel external rewrites have a **120s proxy timeout**, so any endpoint that might "finalize" work must remain fast and retry-safe (poll-driven finalization).
+
+See:
+
+- [`vercel-frontend.md`](./vercel-frontend.md)
+- [`supabase-security.md`](./supabase-security.md)
 
 ## Edge Functions: constraints and limits that shape our design
 
@@ -107,6 +150,20 @@ Use Edge Functions when:
 Default stance for the migration:
 - preserve today's `/api/*` contract via an Edge API router (see `backend.md`)
 - optionally adopt direct PostgREST reads later (after RLS + hardening is mature)
+
+## Performance basics we should treat as required
+
+These are not "micro-optimizations"—they keep the app stable as data grows:
+
+- Index all columns used for tenant isolation and filtering (typically `user_id`), including columns referenced in RLS policies.
+- Index foreign key columns (Postgres does not auto-index them).
+- Prefer composite indexes that match our common list views (e.g. `(user_id, created_at desc)`).
+- Keep database transactions short; do not hold locks while calling Modal/Stripe.
+
+See also:
+
+- [`database.md`](./database.md) (schema + indexes)
+- [`supabase-security.md`](./supabase-security.md) (RLS + hardening)
 
 ## Connecting Edge Functions to Postgres (what actually works)
 
@@ -160,9 +217,13 @@ const { data, error } = await supabase.storage
 
 ## CORS (browser access)
 
-Edge Functions must handle CORS explicitly:
-- respond to `OPTIONS` preflight
-- include `Access-Control-Allow-*` headers on all responses
+Edge Functions must handle CORS explicitly when called cross-origin.
+
+However, with Pattern A (Vercel rewrites to keep `/api/*` same-origin), browsers will typically not perform CORS preflights for our SPA calls.
+
+Practical stance:
+
+- Keep CORS handling in the Edge Function anyway (it helps for direct calls, local testing, and non-browser clients).
 
 Supabase documents a small CORS helper (`corsHeaders`) in the HTTP methods guide. Use that pattern rather than hand-rolling headers in every handler.
 
