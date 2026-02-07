@@ -55,13 +55,32 @@ This gives access to all Geist font families (Sans, Mono, and all 5 Pixel varian
 
 ### 2. Register the font in the app entry point
 
-In `frontend/src/main.tsx` (or a dedicated `fonts.ts` file imported by `main.tsx`):
+This repo uses **React + Vite** (not Next.js), and the `geist` package is primarily exported for `next/font`.
 
-```ts
-import "geist/font/pixel/square.css";
+In Vite, register Geist Pixel Square by adding an explicit `@font-face` that points at the woff2 in `node_modules`,
+then import it from the global stylesheet.
+
+Add `frontend/src/styles/geist-pixel.css`:
+
+```css
+@font-face {
+  font-family: "Geist Pixel Square";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Square.woff2")
+    format("woff2");
+}
 ```
 
-This registers the `@font-face` for Geist Pixel Square and exposes the CSS variable `--font-geist-pixel-square`.
+Then import it near the top of `frontend/src/styles/index.css`:
+
+```css
+@import "tailwindcss";
+@import "./geist-pixel.css";
+```
+
+This registers the `@font-face` for Geist Pixel Square and makes it usable in Tailwind via a token + utility (next step).
 
 ### 3. Add a Tailwind v4 theme token
 
@@ -88,11 +107,7 @@ The fallback chain (Geist Mono → system monospace) means the layout stays stab
 
 ### 4. Remove Google Fonts dependency for Geist Mono (optional cleanup)
 
-Since the `geist` npm package includes Geist Mono as well, the Google Fonts `<link>` for it can be replaced with a local import:
-
-```ts
-import "geist/font/mono.css";
-```
+Since the `geist` npm package includes Geist Mono as well, the Google Fonts `<link>` for it can be replaced with local `@font-face` definitions that point at the relevant woff2 files in `node_modules/geist/dist/fonts/geist-mono/`.
 
 This reduces external network dependencies and gives consistent versioning. IBM Plex Mono can remain on Google Fonts (it isn't in the `geist` package).
 
@@ -229,7 +244,7 @@ Language codes, file sizes, duration displays — any short technical string tha
 ### Phase 1 — Setup + Brand (small PR)
 
 1. `npm i geist`
-2. Import `geist/font/pixel/square.css` in entry point
+2. Register Geist Pixel Square via `frontend/src/styles/geist-pixel.css`
 3. Add `--font-pixel` token to `@theme` block in `index.css`
 4. Apply `font-pixel` to the "UTTER" wordmark in Layout.tsx and Footer.tsx
 5. Visual QA in both light and dark modes
@@ -265,7 +280,7 @@ This is the smallest possible change that validates the font renders correctly i
 |------|-----------|
 | Pixel font looks muddy at small sizes (10-12px) | Only use at 12px+ for multi-character strings; test on actual screens, not just dev tools zoom |
 | Overuse dilutes the effect | Strict tier system — pixel font is an accent, not a replacement. Most UI text stays in standard mono |
-| Bundle size increase | The `geist` package is tree-shakeable; importing only `pixel/square.css` loads a single woff2 file. Negligible impact |
+| Bundle size increase | Only load Geist Pixel **Square** (a single woff2). Negligible impact |
 | Layout shifts from metric differences | Geist Pixel shares vertical metrics with Geist Mono, and the fallback chain preserves layout if the font fails to load |
 | Inconsistency across variants if multiple are used | Start with Square only; only introduce a second variant if there's a clear design rationale |
 

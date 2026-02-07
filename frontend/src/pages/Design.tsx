@@ -228,7 +228,7 @@ export function DesignPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-center gap-2">
-        <h2 className="text-balance text-center text-xl font-semibold uppercase tracking-[2px]">
+        <h2 className="text-balance text-center text-xl font-pixel font-medium uppercase tracking-[2px]">
           Design
         </h2>
         <InfoTip align="end" label="Design tips">

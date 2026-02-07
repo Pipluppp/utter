@@ -32,7 +32,7 @@ export function PricingGrid({
           )}
         >
           {plan.id === 'pro' ? (
-            <div className="absolute -top-3 left-4 border border-border-strong bg-background px-2 py-1 text-[11px] font-semibold uppercase tracking-wide">
+            <div className="absolute -top-3 left-4 border border-border-strong bg-background px-2 py-1 text-[11px] font-pixel font-medium uppercase tracking-wide">
               Most picked
             </div>
           ) : null}
@@ -43,7 +43,7 @@ export function PricingGrid({
                 {plan.name}
               </div>
               <div className="mt-3 flex items-baseline gap-2">
-                <div className="text-2xl font-semibold">
+                <div className="text-2xl font-pixel font-medium">
                   ${plan.priceMonthlyUsd}
                 </div>
                 <div className="text-sm text-muted-foreground">/month</div>

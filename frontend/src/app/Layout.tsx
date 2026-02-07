@@ -100,7 +100,7 @@ export function Layout() {
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 md:px-6">
           <NavLink
             to="/"
-            className="text-[16px] font-semibold tracking-[2px] uppercase focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="text-[16px] font-pixel font-medium tracking-[2px] uppercase focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             UTTER
           </NavLink>

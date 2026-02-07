@@ -39,7 +39,7 @@ export function AccountLayoutPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold uppercase tracking-[2px]">
+          <h2 className="text-xl font-pixel font-medium uppercase tracking-[2px]">
             Account
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">

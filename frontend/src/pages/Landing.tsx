@@ -47,7 +47,7 @@ export function LandingPage() {
       <section className="space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold uppercase tracking-[2px]">
+            <h2 className="text-xl font-pixel font-medium uppercase tracking-[2px]">
               How it works
             </h2>
             <p className="mt-2 max-w-xl text-sm text-muted-foreground">

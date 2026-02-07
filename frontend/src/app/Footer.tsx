@@ -27,8 +27,8 @@ export function AppFooter() {
       <div className="mx-auto w-full max-w-5xl px-4 py-10 md:px-6">
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
           <div className="space-y-2">
-            <div className="text-[12px] font-semibold uppercase tracking-[2px]">
-              Utter
+            <div className="text-[12px] font-pixel font-medium uppercase tracking-[2px]">
+              UTTER
             </div>
             <div className="text-sm text-muted-foreground">
               Voice cloning & speech generation.
