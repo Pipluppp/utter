@@ -33,16 +33,6 @@ async function getDefaultAuthHeaders(): Promise<Record<string, string>> {
 
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`
 
-  if (import.meta.env.DEV) {
-    const debugUserId = (
-      import.meta.env.VITE_DEBUG_USER_ID as string | undefined
-    )
-      ?.trim()
-      .toLowerCase()
-    const userId = debugUserId || session?.user?.id
-    if (userId) headers['x-utter-user-id'] = userId
-  }
-
   return headers
 }
 
@@ -66,6 +56,11 @@ export async function apiJson<T>(
     throw new ApiError(await parseErrorMessage(res), res.status)
   }
 
+  const ct = res.headers.get('content-type') ?? ''
+  if (!ct.includes('application/json')) {
+    throw new ApiError('Server returned non-JSON response', res.status)
+  }
+
   return (await res.json()) as T
 }
 
@@ -87,6 +82,11 @@ export async function apiForm<T>(
 
   if (!res.ok) {
     throw new ApiError(await parseErrorMessage(res), res.status)
+  }
+
+  const ct = res.headers.get('content-type') ?? ''
+  if (!ct.includes('application/json')) {
+    throw new ApiError('Server returned non-JSON response', res.status)
   }
 
   return (await res.json()) as T
