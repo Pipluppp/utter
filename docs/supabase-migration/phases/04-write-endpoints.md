@@ -1,6 +1,6 @@
 # Phase 04 — Write Endpoints (Clone + Deletes)
 
-> **Status**: Not Started
+> **Status**: Complete
 > **Prerequisites**: [Phase 03](./03-read-endpoints.md) complete
 > **Goal**: Implement the clone voice 2-step upload flow and all delete endpoints. This is the first phase that writes to the database and modifies the frontend.
 
@@ -16,8 +16,8 @@ Clone is the most significant API contract change in the migration (multipart �
 
 ### 1. Create `routes/clone.ts`
 
-- [ ] Create `supabase/functions/api/routes/clone.ts`
-- [ ] Mount in `index.ts`: `app.route('/', cloneRoutes)`
+- [x] Create `supabase/functions/api/routes/clone.ts`
+- [x] Mount in `index.ts`: `app.route('/', cloneRoutes)`
 
 ### 2. Implement `POST /clone/upload-url`
 
@@ -43,20 +43,20 @@ Clone is the most significant API contract change in the migration (multipart �
 ```
 
 **Implementation steps**:
-- [ ] `requireUser()` → extract `user_id`
-- [ ] Validate `name` (1-100 chars, not empty)
-- [ ] Validate `language` (non-empty string)
-- [ ] Validate `transcript` (non-empty string — Qwen requires reference transcript)
-- [ ] Generate `voice_id = crypto.randomUUID()`
-- [ ] Compute `object_key = ${user_id}/${voice_id}/reference.wav`
-- [ ] Create signed upload URL via admin client:
+- [x] `requireUser()` → extract `user_id`
+- [x] Validate `name` (1-100 chars, not empty)
+- [x] Validate `language` (non-empty string)
+- [x] Validate `transcript` (non-empty string — Qwen requires reference transcript)
+- [x] Generate `voice_id = crypto.randomUUID()`
+- [x] Compute `object_key = ${user_id}/${voice_id}/reference.wav`
+- [x] Create signed upload URL via admin client:
   ```typescript
   const { data, error } = await adminClient.storage
     .from('references')
     .createSignedUploadUrl(object_key)
   ```
-- [ ] Return `{ voice_id, upload_url: data.signedUrl, object_key }`
-- [ ] Return errors as `{ detail: string }` with appropriate status codes
+- [x] Return `{ voice_id, upload_url: data.signedUrl, object_key }`
+- [x] Return errors as `{ detail: string }` with appropriate status codes
 
 **Test**: `curl -X POST /api/clone/upload-url -H "Authorization: Bearer ..." -H "Content-Type: application/json" -d '{"name":"Test","language":"English","transcript":"Hello"}'` → should return a signed URL.
 
@@ -81,17 +81,17 @@ Clone is the most significant API contract change in the migration (multipart �
 ```
 
 **Implementation steps**:
-- [ ] `requireUser()` → extract `user_id`
-- [ ] Validate all required fields
-- [ ] Verify the uploaded object exists in Storage:
+- [x] `requireUser()` → extract `user_id`
+- [x] Validate all required fields
+- [x] Verify the uploaded object exists in Storage:
   ```typescript
   const { data } = await adminClient.storage
     .from('references')
     .list(`${user_id}/${voice_id}`)
   // Check that reference.wav is in the listing
   ```
-- [ ] If object doesn't exist, return 400 `{ detail: 'Audio file not uploaded' }`
-- [ ] INSERT into `voices` via admin client:
+- [x] If object doesn't exist, return 400 `{ detail: 'Audio file not uploaded' }`
+- [x] INSERT into `voices` via admin client:
   ```typescript
   const { data, error } = await adminClient
     .from('voices')
@@ -108,13 +108,13 @@ Clone is the most significant API contract change in the migration (multipart �
     .select('id, name')
     .single()
   ```
-- [ ] Return `{ id: data.id, name: data.name }`
+- [x] Return `{ id: data.id, name: data.name }`
 
 **Test**: After getting a signed URL and uploading a .wav file, call finalize → voice should appear in `GET /voices`.
 
 ### 4. Update `Clone.tsx` for the 2-step flow
 
-- [ ] Edit `frontend/src/pages/Clone.tsx`
+- [x] Edit `frontend/src/pages/Clone.tsx`
 
 **Current flow** (single call):
 ```typescript
@@ -151,45 +151,45 @@ const result = await apiJson<CloneResponse>('/api/clone/finalize', {
 ```
 
 **What to change in Clone.tsx**:
-- [ ] Find the submit handler that calls `apiForm('/api/clone', ...)`
-- [ ] Replace with the 3-step flow above
-- [ ] Keep all existing validation, loading states, and error handling
-- [ ] The audio file (`Blob`) should already be available from the recording/upload UI
+- [x] Find the submit handler that calls `apiForm('/api/clone', ...)`
+- [x] Replace with the 3-step flow above
+- [x] Keep all existing validation, loading states, and error handling
+- [x] The audio file (`Blob`) should already be available from the recording/upload UI
 
 **Test**: Full clone flow in the SPA — record or upload audio → fill in name/transcript → submit → voice appears in Voices list → preview plays.
 
 ### 5. Implement `DELETE /voices/:id`
 
-- [ ] Add to `routes/voices.ts`
+- [x] Add to `routes/voices.ts`
 
 **Goal**: Delete a voice and its reference audio from Storage.
 
 **Implementation**:
-- [ ] `requireUser()` → extract `user_id`
-- [ ] SELECT voice via user-scoped client (RLS enforces ownership)
-- [ ] If not found, return 404
-- [ ] Delete Storage objects via admin client:
+- [x] `requireUser()` → extract `user_id`
+- [x] SELECT voice via user-scoped client (RLS enforces ownership)
+- [x] If not found, return 404
+- [x] Delete Storage objects via admin client:
   ```typescript
   await adminClient.storage
     .from('references')
     .remove([voice.reference_object_key])
   ```
-- [ ] DELETE the voice row via admin client (or user-scoped client, since we have a `voices_delete_own` RLS policy)
-- [ ] Return 200 `{ ok: true }`
+- [x] DELETE the voice row via admin client (or user-scoped client, since we have a `voices_delete_own` RLS policy)
+- [x] Return 200 `{ ok: true }`
 
 **Test**: Delete a voice → it disappears from the Voices list → reference audio is gone from Storage (verify in Studio → Storage).
 
 ### 6. Implement `DELETE /generations/:id`
 
-- [ ] Add to `routes/generations.ts`
+- [x] Add to `routes/generations.ts`
 
 **Goal**: Delete a generation and its audio from Storage.
 
 **Implementation**:
-- [ ] `requireUser()`
-- [ ] SELECT generation via user-scoped client (RLS)
-- [ ] If not found, return 404
-- [ ] Delete Storage object if `audio_object_key` is set:
+- [x] `requireUser()`
+- [x] SELECT generation via user-scoped client (RLS)
+- [x] If not found, return 404
+- [x] Delete Storage object if `audio_object_key` is set:
   ```typescript
   if (generation.audio_object_key) {
     await adminClient.storage
@@ -197,23 +197,23 @@ const result = await apiJson<CloneResponse>('/api/clone/finalize', {
       .remove([generation.audio_object_key])
   }
   ```
-- [ ] DELETE the generation row
-- [ ] Return 200 `{ ok: true }`
+- [x] DELETE the generation row
+- [x] Return 200 `{ ok: true }`
 
 **Test**: Delete a generation from History → it disappears → audio file is gone from Storage.
 
 ### 7. Implement `DELETE /tasks/:id`
 
-- [ ] Add to `routes/tasks.ts`
+- [x] Add to `routes/tasks.ts`
 
 **Goal**: Delete a task row. Used by `TaskProvider` to clear completed/failed task UI.
 
 **Implementation**:
-- [ ] `requireUser()`
-- [ ] SELECT task via user-scoped client (RLS)
-- [ ] If not found, return 404
-- [ ] DELETE via admin client (because `authenticated` doesn't have DELETE on tasks — we revoked it in Phase 02)
-- [ ] Return 200 `{ ok: true }`
+- [x] `requireUser()`
+- [x] SELECT task via user-scoped client (RLS)
+- [x] If not found, return 404
+- [x] DELETE via admin client (because `authenticated` doesn't have DELETE on tasks — we revoked it in Phase 02)
+- [x] Return 200 `{ ok: true }`
 
 **Note**: The frontend currently calls this without auth headers (`TaskProvider.tsx:136`). That bug is fixed in Phase 07. For now, the Edge Function requires auth — the unauthenticated call from TaskProvider will 401. This is expected and not a blocker (task UI will still function, just won't auto-clean).
 
@@ -239,21 +239,21 @@ const result = await apiJson<CloneResponse>('/api/clone/finalize', {
 
 ## Acceptance criteria
 
-- [ ] `POST /api/clone/upload-url` returns `{ voice_id, upload_url, object_key }` with valid signed URL
-- [ ] Uploading a `.wav` file to the signed URL succeeds (200/201)
-- [ ] `POST /api/clone/finalize` creates the voice row and returns `{ id, name }`
-- [ ] Full Clone.tsx flow works: record/upload → submit → voice appears in Voices list
-- [ ] Cloned voice preview plays via `GET /voices/:id/preview`
-- [ ] `DELETE /voices/:id` removes the DB row AND the Storage object
-- [ ] `DELETE /generations/:id` removes the DB row AND the Storage object
-- [ ] `DELETE /tasks/:id` removes the DB row
-- [ ] All deletes return 404 for non-existent or other-user's resources (RLS)
+- [x] `POST /api/clone/upload-url` returns `{ voice_id, upload_url, object_key }` with valid signed URL
+- [x] Uploading a `.wav` file to the signed URL succeeds (200/201)
+- [x] `POST /api/clone/finalize` creates the voice row and returns `{ id, name }`
+- [x] Full Clone.tsx flow works: record/upload → submit → voice appears in Voices list
+- [x] Cloned voice preview plays via `GET /voices/:id/preview`
+- [x] `DELETE /voices/:id` removes the DB row AND the Storage object
+- [x] `DELETE /generations/:id` removes the DB row AND the Storage object
+- [x] `DELETE /tasks/:id` removes the DB row
+- [x] All deletes return 404 for non-existent or other-user's resources (RLS)
 
 ---
 
 ## Gotchas
 
 - **Signed URL TTL**: Keep it short (5 minutes). If the user takes too long between upload-url and actually uploading, the URL expires. The frontend should handle this gracefully (retry upload-url).
-- **Content-Type on upload**: The browser must set `Content-Type: audio/wav` (or appropriate MIME type) when uploading to the signed URL. Some Storage configurations reject uploads without a content type.
+- **Content-Type on upload**: The browser must set an appropriate `Content-Type` (e.g. `audio/wav`) when uploading to the signed URL. Some Storage configurations reject uploads without a content type.
 - **Clone.tsx is the biggest frontend change**: This is the only page that needs structural modification. All other pages just need minor tweaks (Phase 07).
 - **TaskProvider 401**: After this phase, `DELETE /tasks/:id` from TaskProvider will fail because it doesn't include auth headers. This is a known issue, fixed in Phase 07. It doesn't break the app — tasks just aren't auto-cleaned.

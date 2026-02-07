@@ -122,9 +122,9 @@ Option B is better for development since it survives resets.
 
 ---
 
-## Phases 4–8 — No Manual Steps
+## Phases 4–7 — No Manual Steps
 
-Everything in these phases is code changes and testing. No accounts or dashboard interactions needed.
+Everything in these phases is code changes and (mostly) automated verification. No extra accounts or dashboard interactions needed beyond what you already set up in Phase 1.
 
 ---
 
@@ -136,8 +136,9 @@ For multi-tenant RLS testing, you need two separate users:
 
 1. Open the SPA in a **private/incognito window**
 2. Sign up with a different email (e.g., `user2@test.com`)
-3. Confirm via Inbucket (`http://localhost:54324`)
-4. Or create via Studio: Authentication → Users → Add User
+3. If using **password sign-up**, local config uses `enable_confirmations = false`, so you'll be signed in immediately.
+4. If using **magic link**, confirm via Inbucket (`http://localhost:54324`).
+5. Alternative: create via Studio: Authentication → Users → Add User
 
 Then verify that user 1's data is invisible to user 2 and vice versa.
 

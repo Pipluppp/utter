@@ -1,14 +1,30 @@
-# Phase 09 — Staging Supabase Deploy
+# Phase 09 — Supabase Cloud Deploy (Staging)
 
 > **Status**: Not Started
 > **Prerequisites**: [Phase 08](./08-qa-security.md) complete (all QA passed)
-> **Goal**: Deploy the Supabase backend to a real cloud project and verify it works outside of Docker. This is the first time the backend runs on Supabase infrastructure.
+> **Goal**: Deploy the Supabase backend to a real cloud project (staging) and verify it works outside of Docker. This is the first time the backend runs on Supabase infrastructure.
 
 ---
 
 ## Why this phase exists
 
-Local development uses Docker containers. Production uses Supabase's managed infrastructure. There can be differences: cold starts, connection limits, real network latency to Modal, real Storage CDN, real Auth (email delivery, not Inbucket). This phase catches those issues.
+Local development uses Docker containers. Production uses Supabase's managed infrastructure. There can be differences: cold starts, connection limits, real network latency to Modal, real Storage CDN, real Auth (email delivery, not Inbucket). This phase catches those issues against a staging project before touching production.
+
+---
+
+## Environment strategy
+
+We use three environments, all free:
+
+| Environment | Supabase | Vercel | Git branch |
+|---|---|---|---|
+| **Local dev** | CLI (Docker, port 54321) | — | any |
+| **Staging** | Cloud project `utter-staging` | Preview deploys | feature branches |
+| **Production** | Cloud project `utter` | Production deploy | `main` |
+
+The free plan allows **2 active cloud projects**. The local CLI runs in Docker and doesn't count. This gives us full isolation — a bad migration or broken edge function on staging can never affect production users.
+
+**Why not just one project?** The Reddit/community consensus is clear: separate projects for staging and production. The cost is minimal (set secrets twice, CORS twice) and the safety is worth it. You can test migrations, edge functions, real email delivery, and real Storage CDN against staging before touching production.
 
 ---
 
@@ -35,7 +51,7 @@ Local development uses Docker containers. Production uses Supabase's managed inf
 
 - [ ] Run:
   ```bash
-  npx supabase link --project-ref <your-reference-id>
+  npx supabase link --project-ref <staging-reference-id>
   ```
 - [ ] Enter your database password when prompted
 - [ ] Verify: `npx supabase projects list` shows your project
@@ -46,7 +62,7 @@ Local development uses Docker containers. Production uses Supabase's managed inf
   ```bash
   npx supabase db push --dry-run
   ```
-- [ ] Review the SQL that will be applied — should match your local migration
+- [ ] Review the SQL that will be applied — should match your local migrations
 - [ ] Apply:
   ```bash
   npx supabase db push
@@ -62,7 +78,7 @@ Local development uses Docker containers. Production uses Supabase's managed inf
 
 | Setting | Value |
 |---------|-------|
-| **Allowed Origins** | `http://localhost:5173`, `https://your-staging.vercel.app` (add production domain later) |
+| **Allowed Origins** | `http://localhost:5173`, `https://<your-vercel-app>.vercel.app` |
 | **Allowed Headers** | `authorization, x-client-info, apikey, content-type, range` |
 | **Allowed Methods** | `GET, POST, PUT, DELETE, OPTIONS` |
 | **Exposed Headers** | `content-range, content-length, content-type` |
@@ -70,7 +86,7 @@ Local development uses Docker containers. Production uses Supabase's managed inf
 
 **Why `range` header**: Audio playback uses range requests. Without this, `<audio>` seeking and WaveSurfer loading may fail.
 
-**Why this matters**: WaveSurfer uses `fetch()` to load audio. The 302 redirect from `/api/generations/:id/audio` lands on Storage CDN, which needs CORS headers for the frontend origin.
+**Note**: The Vercel frontend is already deployed. Use your actual Vercel preview URL here. You can also add `https://utter-*.vercel.app` as a wildcard to cover all preview deploys.
 
 ### 6. Set Edge Function secrets
 
@@ -101,7 +117,7 @@ Local development uses Docker containers. Production uses Supabase's managed inf
 
 - [ ] Open in browser:
   ```
-  https://<your-ref>.supabase.co/functions/v1/api/languages
+  https://<staging-ref>.supabase.co/functions/v1/api/languages
   ```
 - [ ] Should return the languages JSON (same as local)
 - [ ] If you get a CORS or 404 error, check:
@@ -109,17 +125,17 @@ Local development uses Docker containers. Production uses Supabase's managed inf
   - `verify_jwt = false` is set in `config.toml`
   - Function deployed successfully (`npx supabase functions list`)
 
-### 9. Test authenticated flow
+### 9. Test authenticated flow (local frontend → staging backend)
 
 - [ ] Point your local frontend at the staging backend:
   ```env
-  # frontend/.env (temporarily)
-  VITE_SUPABASE_URL=https://<your-ref>.supabase.co
+  # frontend/.env.local
+  VITE_SUPABASE_URL=https://<staging-ref>.supabase.co
   VITE_SUPABASE_ANON_KEY=<staging-anon-key>
   ```
-  And update `vite.config.ts` proxy (or use the staging URL directly):
+  And set the proxy target:
   ```env
-  BACKEND_ORIGIN=https://<your-ref>.supabase.co/functions/v1
+  BACKEND_ORIGIN=https://<staging-ref>.supabase.co/functions/v1
   ```
 - [ ] Start the frontend: `npm --prefix frontend run dev`
 - [ ] Sign up with a real email (staging uses real email delivery, not Inbucket)
@@ -141,7 +157,7 @@ Local development uses Docker containers. Production uses Supabase's managed inf
 
 ### 11. Revert frontend to local
 
-- [ ] After testing, revert `frontend/.env` back to local values:
+- [ ] After testing, revert `frontend/.env.local` back to local values:
   ```env
   VITE_SUPABASE_URL=http://127.0.0.1:54321
   VITE_SUPABASE_ANON_KEY=<local-anon-key>
@@ -154,7 +170,7 @@ Local development uses Docker containers. Production uses Supabase's managed inf
 
 | File | Change |
 |------|--------|
-| `frontend/.env` | Temporarily pointed to staging for testing (reverted after) |
+| `frontend/.env.local` | Temporarily pointed to staging for testing (reverted after) |
 
 ## No new files created
 
@@ -166,7 +182,7 @@ All deployment is done via CLI commands against the existing codebase.
 
 - [ ] Staging project created and linked
 - [ ] Migrations pushed successfully (all tables + RLS + storage)
-- [ ] Storage CORS configured for staging domain
+- [ ] Storage CORS configured for Vercel domain
 - [ ] Secrets set (Modal endpoints)
 - [ ] Edge Functions deployed
 - [ ] `GET /api/languages` works on staging URL
@@ -182,4 +198,6 @@ All deployment is done via CLI commands against the existing codebase.
 - **Cold starts**: First request to an idle Edge Function takes 1-2s. Subsequent requests are fast. This is expected Supabase behavior.
 - **Free tier limits**: 500K Edge Function invocations/month, 500MB database, 1GB storage. More than enough for staging.
 - **CORS on Storage**: This is the most likely thing to break. If audio doesn't play, check the CORS config in the dashboard. The `range` header is especially important for audio seeking.
-- **Secrets are per-project**: Secrets set on staging are NOT on production. You'll set them again for the production project later.
+- **Secrets are per-project**: Secrets set on staging are NOT on production. You'll set them again for the production project in a later phase.
+- **Free plan pausing**: Inactive free projects pause after 7 days. Paused projects don't count toward your 2-project limit but need to be manually resumed.
+- **`supabase link` targets one project at a time**: When you later create the production project, you'll re-link with `supabase link --project-ref <prod-ref>`. The link is stored in `.supabase/` (gitignored).

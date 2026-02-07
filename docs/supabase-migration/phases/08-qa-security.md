@@ -1,6 +1,6 @@
 # Phase 08 — QA + Security Validation
 
-> **Status**: Not Started
+> **Status**: In Progress
 > **Prerequisites**: [Phase 07](./07-frontend-cleanup.md) complete
 > **Goal**: Comprehensive testing of all user flows, multi-tenant isolation, failure modes, and security properties. This is the "sign-off" phase before deploying anything.
 
@@ -16,11 +16,14 @@ Phases 01-07 built and wired up everything. But individual per-phase tests don't
 
 ### 1. Create two test users
 
-- [ ] Sign up as User A (e.g., `usera@test.com`) via the SPA
-- [ ] Confirm via Inbucket (`http://localhost:54324`)
-- [ ] Sign up as User B (e.g., `userb@test.com`) in a **private/incognito window**
-- [ ] Confirm via Inbucket
-- [ ] See [manual-steps.md](../manual-steps.md#phase-8--qa--security-validation) for details
+- [x] Sign up as User A (e.g., `usera@test.com`) via the SPA
+- [x] Sign up as User B (e.g., `userb@test.com`) in a **private/incognito window**
+- [ ] Optional: test Magic Link delivery via Inbucket (`http://localhost:54324`)
+- [x] See [manual-steps.md](../manual-steps.md#phase-8--qa--security-validation) for details
+
+Notes:
+- Local config uses `enable_confirmations = false`, so **password sign-ups are immediately signed in** (no Inbucket confirmation required).
+- Magic links still route through Inbucket locally.
 
 ### 2. Core user flow walkthrough (as User A)
 
@@ -42,18 +45,18 @@ Test every feature end-to-end in order:
 
 - [ ] As User A: create a voice and a generation
 - [ ] Switch to User B's session (incognito window)
-- [ ] As User B: verify Voices page shows **empty** (no User A voices)
-- [ ] As User B: verify History page shows **empty** (no User A generations)
-- [ ] As User B: try to access User A's voice preview directly:
+- [x] As User B: verify Voices page shows **empty** (no User A voices) *(verified via curl)*
+- [x] As User B: verify History page shows **empty** (no User A generations) *(verified via curl)*
+- [x] As User B: try to access User A's voice preview directly:
   ```
   GET /api/voices/<user-a-voice-id>/preview
   ```
-  → Should return 404 or 403 (RLS blocks access)
-- [ ] As User B: try to access User A's generation audio:
+  → Returns 404 (RLS blocks access) *(verified via curl)*
+- [x] As User B: try to access User A's generation audio:
   ```
   GET /api/generations/<user-a-generation-id>/audio
   ```
-  → Should return 404 or 403
+  → Returns 404 *(verified via curl)*
 - [ ] As User B: try to delete User A's voice:
   ```
   DELETE /api/voices/<user-a-voice-id>
@@ -65,22 +68,20 @@ Test every feature end-to-end in order:
 
 Verify that direct PostgREST access (bypassing Edge Functions) is locked down:
 
-- [ ] Open Supabase Studio SQL Editor
-- [ ] Test as `authenticated` role (use User A's JWT):
+- [x] Test as `authenticated` role (use User A's JWT):
   ```sql
   -- These should FAIL (grants revoked)
   INSERT INTO tasks (user_id, type, status) VALUES ('<user-a-id>', 'generate', 'pending');
   INSERT INTO generations (user_id, text, language) VALUES ('<user-a-id>', 'test', 'en');
   UPDATE voices SET name = 'hacked' WHERE id = '<user-a-voice-id>';
   ```
-- [ ] All should fail with permission denied errors
-- [ ] Test as `anon` role:
+- [x] All fail with permission denied errors *(verified via curl against PostgREST)*
+- [x] Test as `anon` role:
   ```sql
-  -- These should ALL fail
   SELECT * FROM profiles;
   INSERT INTO voices (user_id, name, source, language) VALUES ('...', 'test', 'uploaded', 'en');
   ```
-- [ ] All should fail (anon has no write grants, and RLS blocks reads without auth)
+- [x] Anon cannot write, and RLS blocks reads without auth *(verified via curl)*
 
 ### 5. Failure mode testing
 
@@ -104,7 +105,7 @@ Verify that direct PostgREST access (bypassing Edge Functions) is locked down:
 - [ ] **No debug headers**: Open Network tab → make several API calls → verify NO request contains `x-utter-user-id`
 - [ ] **Authenticated task deletion**: Dismiss a completed task → verify the DELETE request has `Authorization` header
 - [ ] **Service role key not exposed**: Check all requests in Network tab → none should contain the service role key. Only the anon key should appear in frontend requests.
-- [ ] **`supabase/.env.local` not in git**: Run `git status` → file should NOT appear. Run `git log --all --full-history -- supabase/.env.local` → should return nothing.
+- [x] **`supabase/.env.local` not in git**: Run `git log --all --full-history -- supabase/.env.local` → returns nothing. *(verified via git)*
 - [ ] **No sensitive data in HTML source**: View page source → no API keys, no service role key, no Modal URLs
 
 ### 8. Console error sweep
@@ -127,12 +128,23 @@ All checkboxes above should be checked. Summary:
 
 - [ ] All core user flows work end-to-end
 - [ ] Multi-tenant isolation is verified (User A and User B can't see each other's data)
-- [ ] PostgREST direct access is hardened (grants revoked, verified)
+- [x] PostgREST direct access is hardened (grants revoked, verified)
 - [ ] Failure modes produce clear errors (not crashes)
 - [ ] Double-poll finalization is idempotent
 - [ ] WaveSurfer renders waveforms correctly
 - [ ] No security regressions (no debug headers, no exposed keys)
 - [ ] No console errors on any page
+
+---
+
+## Verification notes
+
+Partial automated checks completed on **2026-02-07**:
+- RLS isolation (partial): User B cannot list or access User A's voices/generations via curl (returns 404s / empty lists). Cross-user delete and User B creating own data not yet verified.
+- PostgREST hardening: authenticated writes to `tasks` / `generations`, and `voices` updates fail with `permission denied` as intended.
+- `.env.local` not in git history: confirmed via `git log`.
+
+Remaining items require manual browser testing (see [08-testing-guide.md](./08-testing-guide.md) for the full breakdown of CLI-testable vs browser-required checks).
 
 ---
 

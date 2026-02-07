@@ -8,17 +8,17 @@
 
 | Phase | Name | Status | Manual steps? |
 |-------|------|--------|---------------|
-| [00](./phases/00-prerequisites.md) | Repo Prerequisites | Not Started | [Docker install](./manual-steps.md#phase-0--repo-prerequisites) |
-| [01](./phases/01-init-scaffold-proxy.md) | Init + Scaffold + Proxy Switch | Not Started | [Copy keys, Inbucket auth](./manual-steps.md#phase-1--init--scaffold--proxy-switch) |
-| [02](./phases/02-schema-rls-storage.md) | Schema + RLS + Storage | Not Started | None |
-| [03](./phases/03-read-endpoints.md) | Read Endpoints | Not Started | [Seed test data](./manual-steps.md#phase-3--read-endpoints) |
-| [04](./phases/04-write-endpoints.md) | Write Endpoints (Clone + Deletes) | Not Started | None |
-| [05](./phases/05-generate-tasks.md) | Generate + Task Orchestration | Not Started | None |
-| [06](./phases/06-voice-design.md) | Voice Design | Not Started | None |
-| [07](./phases/07-frontend-cleanup.md) | Frontend Cleanup | Not Started | None |
-| [08](./phases/08-qa-security.md) | QA + Security Validation | Not Started | [Create second user](./manual-steps.md#phase-8--qa--security-validation) |
-| [09](./phases/09-staging-deploy.md) | Staging Supabase Deploy | Not Started | [Account + project setup](./manual-steps.md#phase-9--staging-supabase-deploy) |
-| [10](./phases/10-vercel.md) | Vercel (Deferred) | Not Started | [Vercel account + project](./manual-steps.md#phase-10--vercel-deferred) |
+| [00](./phases/00-prerequisites.md) | Repo Prerequisites | Complete | [Docker install](./manual-steps.md#phase-0--repo-prerequisites) |
+| [01](./phases/01-init-scaffold-proxy.md) | Init + Scaffold + Proxy Switch | Complete | [Copy keys, Inbucket auth](./manual-steps.md#phase-1--init--scaffold--proxy-switch) |
+| [02](./phases/02-schema-rls-storage.md) | Schema + RLS + Storage | Complete | None |
+| [03](./phases/03-read-endpoints.md) | Read Endpoints | Complete | [Seed test data](./manual-steps.md#phase-3--read-endpoints) |
+| [04](./phases/04-write-endpoints.md) | Write Endpoints (Clone + Deletes) | Complete | None |
+| [05](./phases/05-generate-tasks.md) | Generate + Task Orchestration | Complete | None |
+| [06](./phases/06-voice-design.md) | Voice Design | Complete | None |
+| [07](./phases/07-frontend-cleanup.md) | Frontend Cleanup | Complete | None |
+| [08](./phases/08-qa-security.md) | QA + Security Validation | In Progress | [Create second user](./manual-steps.md#phase-8--qa--security-validation) |
+| [09](./phases/09-staging-deploy.md) | Supabase Cloud Deploy (Staging) | Not Started | [Account + project setup](./manual-steps.md#phase-9--staging-supabase-deploy) |
+| [10](./phases/10-vercel.md) | Vercel Backend Connection | In Progress | [Env vars + API rewrite](./manual-steps.md#phase-10--vercel-deferred) |
 
 Related docs: [manual-steps.md](./manual-steps.md) | [architecture.md](../architecture.md) | [database.md](../database.md) | [edge-orchestration.md](../edge-orchestration.md) | [supabase-security.md](../supabase-security.md)
 

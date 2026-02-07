@@ -1,6 +1,6 @@
 # Phase 03 — Read Endpoints
 
-> **Status**: Not Started
+> **Status**: Complete
 > **Prerequisites**: [Phase 02](./02-schema-rls-storage.md) complete
 > **Goal**: Implement all read-only API endpoints and verify the full pipeline: Edge Function → Supabase client → Postgres (RLS) → JSON response → React SPA.
 
@@ -16,7 +16,7 @@ Read endpoints are the simplest to implement and test. They prove that auth, RLS
 
 ### 1. Create route file structure
 
-- [ ] Create the route files:
+- [x] Create the route files:
   ```
   supabase/functions/api/routes/
     languages.ts
@@ -25,8 +25,8 @@ Read endpoints are the simplest to implement and test. They prove that auth, RLS
     generations.ts
     tasks.ts
   ```
-- [ ] Move the `/languages` handler from `index.ts` into `routes/languages.ts`
-- [ ] Update `index.ts` to import and mount all route modules
+- [x] Move the `/languages` handler from `index.ts` into `routes/languages.ts`
+- [x] Update `index.ts` to import and mount all route modules
 
 **`index.ts` pattern after refactor:**
 ```typescript
@@ -59,9 +59,9 @@ Deno.serve(app.fetch)
 
 ### 2. Seed test data
 
-- [ ] Before testing reads, you need data in the database
-- [ ] See [manual-steps.md](../manual-steps.md#phase-3--read-endpoints) for options (Studio SQL Editor or `seed.sql`)
-- [ ] At minimum, create a test user, a few voices, and a few generations
+- [x] Before testing reads, you need data in the database
+- [x] See [manual-steps.md](../manual-steps.md#phase-3--read-endpoints) for options (Studio SQL Editor or `seed.sql`)
+- [x] At minimum, create a test user, a few voices, and a few generations
 
 **Option: Add to `supabase/seed.sql`** for repeatable data:
 ```sql
@@ -92,7 +92,7 @@ LIMIT 1;
 
 ### 3. Implement `GET /me`
 
-- [ ] Create `routes/me.ts`
+- [x] Create `routes/me.ts`
 
 **Goal**: Return the current user's profile, creating one if it doesn't exist (defensive — the trigger should have created it on signup, but handle the edge case).
 
@@ -123,7 +123,7 @@ LIMIT 1;
 
 ### 4. Implement `PATCH /profile`
 
-- [ ] Add to `routes/me.ts`
+- [x] Add to `routes/me.ts`
 
 **Goal**: Update allowed profile fields with server-side validation.
 
@@ -145,7 +145,7 @@ LIMIT 1;
 
 ### 5. Implement `GET /voices`
 
-- [ ] Create `routes/voices.ts`
+- [x] Create `routes/voices.ts`
 
 **Goal**: Paginated list of the user's voices with optional search and source filter.
 
@@ -170,7 +170,7 @@ LIMIT 1;
 
 ### 6. Implement `GET /voices/:id/preview`
 
-- [ ] Add to `routes/voices.ts`
+- [x] Add to `routes/voices.ts`
 
 **Goal**: Return a 302 redirect to a signed Storage URL for the voice's reference audio.
 
@@ -189,7 +189,7 @@ LIMIT 1;
 
 ### 7. Implement `GET /generations`
 
-- [ ] Create `routes/generations.ts`
+- [x] Create `routes/generations.ts`
 
 **Goal**: Paginated list of the user's generations with voice name join.
 
@@ -216,7 +216,7 @@ LIMIT 1;
 
 ### 8. Implement `GET /generations/:id/audio`
 
-- [ ] Add to `routes/generations.ts`
+- [x] Add to `routes/generations.ts`
 
 **Goal**: Return a 302 redirect to a signed Storage URL for the generation's audio.
 
@@ -232,7 +232,7 @@ LIMIT 1;
 
 ### 9. Implement `GET /tasks/:id` (simple read, no Modal polling yet)
 
-- [ ] Create `routes/tasks.ts`
+- [x] Create `routes/tasks.ts`
 
 **Goal**: Return a task by ID. In this phase, just a simple read — no Modal status check. Modal polling is added in Phase 05.
 
@@ -281,17 +281,17 @@ LIMIT 1;
 
 ## Acceptance criteria
 
-- [ ] `GET /api/me` returns `{ signed_in: true, user, profile }` when authenticated
-- [ ] `GET /api/me` returns `{ signed_in: false }` (or 401) when unauthenticated
-- [ ] `PATCH /api/profile` updates display_name and persists across refreshes
-- [ ] `GET /api/voices` returns paginated voices with correct shape
-- [ ] `GET /api/voices` with `?search=test` filters results
-- [ ] `GET /api/voices/:id/preview` returns 302 to a signed URL
-- [ ] `GET /api/generations` returns generations with `voice_name` populated and `audio_path` set to `/api/generations/:id/audio`
-- [ ] `GET /api/generations/:id/audio` returns 302 to a signed URL
-- [ ] `GET /api/tasks/:id` returns a task with correct `BackendTask` shape
-- [ ] Cross-user isolation: User A cannot see User B's voices/generations/tasks
-- [ ] SPA pages work: Voices page, History page, Profile page all render correctly
+- [x] `GET /api/me` returns `{ signed_in: true, user, profile }` when authenticated
+- [x] `GET /api/me` returns `{ signed_in: false }` (or 401) when unauthenticated
+- [x] `PATCH /api/profile` updates display_name and persists across refreshes
+- [x] `GET /api/voices` returns paginated voices with correct shape
+- [x] `GET /api/voices` with `?search=test` filters results
+- [x] `GET /api/voices/:id/preview` returns 302 to a signed URL
+- [x] `GET /api/generations` returns generations with `voice_name` populated and `audio_path` set to `/api/generations/:id/audio`
+- [x] `GET /api/generations/:id/audio` returns 302 to a signed URL
+- [x] `GET /api/tasks/:id` returns a task with correct `BackendTask` shape
+- [x] Cross-user isolation: User A cannot see User B's voices/generations/tasks
+- [x] SPA pages work: Voices page, History page, Profile page all render correctly
 
 ---
 
@@ -299,10 +299,10 @@ LIMIT 1;
 
 After implementing each endpoint, compare response JSON against `frontend/src/lib/types.ts`:
 
-- [ ] `GET /me` response matches what `Profile.tsx` expects
-- [ ] `GET /voices` response matches `VoicesResponse` type
-- [ ] `GET /generations` response matches `GenerationsResponse` type
-- [ ] `GET /tasks/:id` response matches `BackendTask` type
+- [x] `GET /me` response matches what `Profile.tsx` expects
+- [x] `GET /voices` response matches `VoicesResponse` type
+- [x] `GET /generations` response matches `GenerationsResponse` type
+- [x] `GET /tasks/:id` response matches `BackendTask` type
 
 ---
 

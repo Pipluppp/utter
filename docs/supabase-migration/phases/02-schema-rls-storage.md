@@ -1,6 +1,6 @@
 # Phase 02 — Schema + RLS + Storage
 
-> **Status**: Not Started
+> **Status**: Complete
 > **Prerequisites**: [Phase 01](./01-init-scaffold-proxy.md) complete
 > **Goal**: Create the full Postgres schema, RLS policies, storage buckets, and triggers via SQL migrations. After this phase, the database is production-ready in structure.
 
@@ -16,16 +16,16 @@ Everything in Phases 03-06 reads from or writes to these tables. Getting the sch
 
 ### 1. Create the migration file
 
-- [ ] Run:
+- [x] Run:
   ```bash
   npx supabase migration new initial_schema
   ```
-- [ ] This creates `supabase/migrations/<timestamp>_initial_schema.sql`
-- [ ] Open the file — it will be empty. We'll populate it next.
+- [x] This creates `supabase/migrations/<timestamp>_initial_schema.sql`
+- [x] Open the file — it will be empty. We'll populate it next.
 
 ### 2. Add tables
 
-- [ ] Add the following SQL to the migration file:
+- [x] Add the following SQL to the migration file:
 
 ```sql
 -- ============================================================
@@ -105,7 +105,7 @@ create table public.tasks (
 
 ### 3. Add indexes
 
-- [ ] Add to the migration:
+- [x] Add to the migration:
 
 ```sql
 -- ============================================================
@@ -142,7 +142,7 @@ create index idx_tasks_active on public.tasks (created_at)
 
 ### 4. Add RLS policies
 
-- [ ] Add to the migration:
+- [x] Add to the migration:
 
 ```sql
 -- ============================================================
@@ -202,7 +202,7 @@ create policy "tasks_select_own" on public.tasks
 
 ### 5. Add grant revocations (Data API hardening)
 
-- [ ] Add to the migration:
+- [x] Add to the migration:
 
 ```sql
 -- ============================================================
@@ -233,7 +233,7 @@ revoke insert, update, delete on public.tasks from anon;
 
 ### 6. Add triggers
 
-- [ ] Add to the migration:
+- [x] Add to the migration:
 
 ```sql
 -- ============================================================
@@ -274,7 +274,7 @@ create trigger on_auth_user_created after insert on auth.users
 
 ### 7. Add Storage buckets and policies
 
-- [ ] Add to the migration:
+- [x] Add to the migration:
 
 ```sql
 -- ============================================================
@@ -320,31 +320,31 @@ create policy "generations_select_own" on storage.objects
 
 ### 8. Apply the migration
 
-- [ ] Run:
+- [x] Run:
   ```bash
   npm run sb:reset
   ```
-- [ ] This drops and recreates the database from all migrations + runs `seed.sql`
-- [ ] Should complete without errors
+- [x] This drops and recreates the database from all migrations + runs `seed.sql`
+- [x] Should complete without errors
 
 ### 9. Verify via Studio
 
-- [ ] Open `http://localhost:54323` (Supabase Studio)
-- [ ] Navigate to Table Editor → verify all 4 tables exist: `profiles`, `voices`, `generations`, `tasks`
-- [ ] Check each table has the expected columns and constraints
-- [ ] Navigate to Authentication → Policies → verify RLS policies are listed for each table
-- [ ] Navigate to Storage → verify `references` and `generations` buckets exist and are private
+- [x] Open `http://localhost:54323` (Supabase Studio)
+- [x] Navigate to Table Editor → verify all 4 tables exist: `profiles`, `voices`, `generations`, `tasks`
+- [x] Check each table has the expected columns and constraints
+- [x] Navigate to Authentication → Policies → verify RLS policies are listed for each table
+- [x] Navigate to Storage → verify `references` and `generations` buckets exist and are private
 
 ### 10. Test RLS isolation
 
-- [ ] Open SQL Editor in Studio
-- [ ] Run as service role (default in Studio):
+- [x] Open SQL Editor in Studio
+- [x] Run as service role (default in Studio):
   ```sql
   -- This bypasses RLS, should work
   INSERT INTO auth.users (id, email) VALUES (gen_random_uuid(), 'test@test.com');
   SELECT * FROM profiles; -- Should see the auto-created profile
   ```
-- [ ] Verify the `handle_new_user` trigger created a `profiles` row
+- [x] Verify the `handle_new_user` trigger created a `profiles` row
 
 ---
 
@@ -362,12 +362,12 @@ None.
 
 ## Acceptance criteria
 
-- [ ] `npm run sb:reset` completes without SQL errors
-- [ ] All 4 tables exist with correct columns and constraints
-- [ ] RLS is enabled on all 4 tables (verify in Studio → Policies)
-- [ ] Storage buckets `references` and `generations` exist and are private
-- [ ] Signing up a user auto-creates a `profiles` row (trigger works)
-- [ ] `authenticated` role cannot INSERT into `tasks` or `generations` via PostgREST
+- [x] `npm run sb:reset` completes without SQL errors
+- [x] All 4 tables exist with correct columns and constraints
+- [x] RLS is enabled on all 4 tables (verify in Studio → Policies)
+- [x] Storage buckets `references` and `generations` exist and are private
+- [x] Signing up a user auto-creates a `profiles` row (trigger works)
+- [x] `authenticated` role cannot INSERT into `tasks` or `generations` via PostgREST
 
 ---
 

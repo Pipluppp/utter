@@ -1,6 +1,6 @@
 # Phase 00 — Repo Prerequisites
 
-> **Status**: Not Started
+> **Status**: Complete
 > **Prerequisites**: None
 > **Goal**: Set up the repo-level tooling so `supabase` CLI commands work from the project root. No Supabase containers yet — just the scaffolding.
 
@@ -16,15 +16,15 @@ The Supabase CLI needs to be pinned as a devDependency (not globally installed) 
 
 ### 1. Ensure Docker Desktop is running
 
-- [ ] Verify Docker is installed: `docker --version` in terminal
+- [x] Verify Docker is installed: `docker --version` in terminal
 - [ ] If not installed, see [manual-steps.md](../manual-steps.md#install-docker-desktop-if-not-already-installed) for install instructions
-- [ ] Verify Docker daemon is running: `docker info` should print system info (not an error)
+- [x] Verify Docker daemon is running: `docker info` should print system info (not an error)
 
 **Why**: `supabase start` launches ~10 Docker containers (Postgres, Auth, Storage, Studio, etc.). Without Docker, nothing works.
 
 ### 2. Create repo-root `package.json`
 
-- [ ] Create `package.json` in the repo root (not inside `frontend/`)
+- [x] Create `package.json` in the repo root (not inside `frontend/`)
 
 ```json
 {
@@ -51,14 +51,14 @@ The Supabase CLI needs to be pinned as a devDependency (not globally installed) 
 
 ### 3. Install dependencies
 
-- [ ] Run `npm install` from repo root
-- [ ] Verify: `npx supabase --version` prints a version number
+- [x] Run `npm install` from repo root
+- [x] Verify: `npx supabase --version` prints a version number
 
 **What to verify**: The `node_modules/.bin/supabase` binary exists after install.
 
 ### 4. Update `.gitignore`
 
-- [ ] Add these entries to the repo-root `.gitignore`:
+- [x] Add these entries to the repo-root `.gitignore`:
 
 ```gitignore
 # Supabase local
@@ -92,10 +92,10 @@ supabase/.temp/
 
 ## Acceptance criteria
 
-- [ ] `npx supabase --version` prints a version from repo root
-- [ ] `npm run sb:start` is a valid command (don't run it yet — Phase 01 will)
-- [ ] `supabase/.env.local` is in `.gitignore`
-- [ ] No `node_modules/` or lockfile issues when running `npm install` in repo root (should not conflict with `frontend/package.json`)
+- [x] `npx supabase --version` prints a version from repo root
+- [x] `npm run sb:start` is a valid command (don't run it yet — Phase 01 will)
+- [x] `supabase/.env.local` is in `.gitignore`
+- [x] No `node_modules/` or lockfile issues when running `npm install` in repo root (should not conflict with `frontend/package.json`)
 
 ---
 

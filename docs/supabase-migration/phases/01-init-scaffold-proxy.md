@@ -1,6 +1,6 @@
 # Phase 01 — Init + Scaffold + Proxy Switch
 
-> **Status**: Not Started
+> **Status**: Complete
 > **Prerequisites**: [Phase 00](./00-prerequisites.md) complete
 > **Goal**: Get the React SPA calling a Supabase Edge Function. This is the "hello world" moment — proof that the new stack works end-to-end.
 
@@ -16,12 +16,12 @@ Switching the Vite proxy early means every subsequent phase can be tested agains
 
 ### 1. Initialize Supabase in the repo
 
-- [ ] Run from repo root:
+- [x] Run from repo root:
   ```bash
   npx supabase init
   ```
-- [ ] This creates `supabase/` with `config.toml`, `.gitignore`, and `seed.sql`
-- [ ] Verify the directory structure:
+- [x] This creates `supabase/` with `config.toml`, `.gitignore`, and `seed.sql`
+- [x] Verify the directory structure:
   ```
   supabase/
     config.toml
@@ -33,7 +33,7 @@ Switching the Vite proxy early means every subsequent phase can be tested agains
 
 ### 2. Configure `verify_jwt = false` for the `api` function
 
-- [ ] Edit `supabase/config.toml` and add:
+- [x] Edit `supabase/config.toml` and add:
 
 ```toml
 [functions.api]
@@ -44,12 +44,12 @@ verify_jwt = false
 
 ### 3. Start the local Supabase stack
 
-- [ ] Run:
+- [x] Run:
   ```bash
   npm run sb:start
   ```
-- [ ] First run pulls Docker images (~2-5 min depending on network)
-- [ ] Note the output — it prints all local URLs and keys:
+- [x] First run pulls Docker images (~2-5 min depending on network)
+- [x] Note the output — it prints all local URLs and keys:
   ```
   API URL: http://127.0.0.1:54321
   anon key: eyJhbGciOi...
@@ -57,14 +57,14 @@ verify_jwt = false
   Studio URL: http://127.0.0.1:54323
   Inbucket URL: http://127.0.0.1:54324
   ```
-- [ ] **Save these values** — you'll need the anon key for the frontend `.env`
+- [x] **Save these values** — you'll need the anon key for the frontend `.env`
 
 **What to verify**: `http://localhost:54323` loads Supabase Studio in your browser.
 
 ### 4. Copy local keys into `frontend/.env`
 
-- [ ] See [manual-steps.md](../manual-steps.md#copy-local-supabase-keys-into-frontend-env) for details
-- [ ] Add/update in `frontend/.env`:
+- [x] See [manual-steps.md](../manual-steps.md#copy-local-supabase-keys-into-frontend-env) for details
+- [x] Add/update in `frontend/.env`:
   ```env
   VITE_SUPABASE_URL=http://127.0.0.1:54321
   VITE_SUPABASE_ANON_KEY=<anon key from step 3>
@@ -76,7 +76,7 @@ verify_jwt = false
 
 ### 5. Create the `supabase/.env.local` secrets file
 
-- [ ] Create `supabase/.env.local` with your Modal endpoint URLs:
+- [x] Create `supabase/.env.local` with your Modal endpoint URLs:
   ```env
   MODAL_JOB_SUBMIT=<url from backend/config.py or existing .env>
   MODAL_JOB_STATUS=<url>
@@ -85,7 +85,7 @@ verify_jwt = false
   MODAL_ENDPOINT_VOICE_DESIGN=<url>
   TTS_PROVIDER=qwen
   ```
-- [ ] See [manual-steps.md](../manual-steps.md#copy-modal-endpoint-urls-into-supabaseenvlocal) for where to find these values
+- [x] See [manual-steps.md](../manual-steps.md#copy-modal-endpoint-urls-into-supabaseenvlocal) for where to find these values
 
 **Why**: Edge Functions need Modal endpoints for generate/design. These are separate from Vite env vars to prevent accidental frontend exposure.
 
@@ -93,17 +93,17 @@ verify_jwt = false
 
 ### 6. Create the Edge Function scaffold
 
-- [ ] Run:
+- [x] Run:
   ```bash
   npx supabase functions new api
   ```
-- [ ] This creates `supabase/functions/api/index.ts` with a starter template
+- [x] This creates `supabase/functions/api/index.ts` with a starter template
 
 Now create the shared modules and the initial router:
 
 #### 6a. `supabase/functions/_shared/cors.ts`
 
-- [ ] Create this file:
+- [x] Create this file:
 
 ```typescript
 export const corsHeaders = {
@@ -118,7 +118,7 @@ export const corsHeaders = {
 
 #### 6b. `supabase/functions/_shared/supabase.ts`
 
-- [ ] Create this file with two client factories:
+- [x] Create this file with two client factories:
 
 ```typescript
 import { createClient } from 'npm:@supabase/supabase-js@2'
@@ -149,7 +149,7 @@ export function createAdminClient() {
 
 #### 6c. `supabase/functions/_shared/auth.ts`
 
-- [ ] Create the `requireUser` middleware:
+- [x] Create the `requireUser` middleware:
 
 ```typescript
 import { createUserClient } from './supabase.ts'
@@ -181,7 +181,7 @@ export async function requireUser(req: Request) {
 
 #### 6d. `supabase/functions/api/index.ts` — Hono router
 
-- [ ] Replace the generated `index.ts` with:
+- [x] Replace the generated `index.ts` with:
 
 ```typescript
 import { Hono } from 'npm:hono@4'
@@ -235,7 +235,7 @@ Deno.serve(app.fetch)
 
 ### 7. Switch the frontend Vite proxy
 
-- [ ] Edit `frontend/vite.config.ts`:
+- [x] Edit `frontend/vite.config.ts`:
 
 **Change from:**
 ```typescript
@@ -275,25 +275,25 @@ export default defineConfig({
 
 ### 8. Serve Edge Functions locally
 
-- [ ] In a second terminal, run:
+- [x] In a second terminal, run:
   ```bash
   npm run sb:serve
   ```
-- [ ] Output should show the `api` function is being served
-- [ ] Test directly: `curl http://localhost:54321/functions/v1/api/languages`
-- [ ] Should return the languages JSON
+- [x] Output should show the `api` function is being served
+- [x] Test directly: `curl http://localhost:54321/functions/v1/api/languages`
+- [x] Should return the languages JSON
 
 ### 9. Test the full loop
 
-- [ ] In a third terminal, start the frontend:
+- [x] In a third terminal, start the frontend:
   ```bash
   npm --prefix frontend run dev
   ```
-- [ ] Open `http://localhost:5173` in your browser
-- [ ] Navigate to the Generate page (which calls `GET /api/languages` on mount)
-- [ ] The languages dropdown should populate with the list from the Edge Function
-- [ ] Open browser DevTools → Network tab → filter for `languages`
-- [ ] Verify the request goes to `localhost:5173/api/languages` and is proxied to `localhost:54321/functions/v1/api/languages`
+- [x] Open `http://localhost:5173` in your browser
+- [x] Navigate to the Generate page (which calls `GET /api/languages` on mount)
+- [x] The languages dropdown should populate with the list from the Edge Function
+- [x] Open browser DevTools → Network tab → filter for `languages`
+- [x] Verify the request goes to `localhost:5173/api/languages` and is proxied to `localhost:54321/functions/v1/api/languages`
 
 **This is the "hello world" moment.** The React SPA is now calling a Supabase Edge Function.
 
@@ -321,12 +321,12 @@ export default defineConfig({
 
 ## Acceptance criteria
 
-- [ ] `npm run sb:start` boots Supabase without errors
-- [ ] `npm run sb:serve` serves the `api` function
-- [ ] `curl http://localhost:54321/functions/v1/api/health` returns `{"ok":true}`
-- [ ] `curl http://localhost:54321/functions/v1/api/languages` returns languages JSON
-- [ ] Frontend Generate page shows languages dropdown populated from Edge Function
-- [ ] Network tab shows proxy chain: `localhost:5173/api/languages` → `localhost:54321/functions/v1/api/languages`
+- [x] `npm run sb:start` boots Supabase without errors
+- [x] `npm run sb:serve` serves the `api` function
+- [x] `curl http://localhost:54321/functions/v1/api/health` returns `{"ok":true}`
+- [x] `curl http://localhost:54321/functions/v1/api/languages` returns languages JSON
+- [x] Frontend Generate page shows languages dropdown populated from Edge Function
+- [x] Network tab shows proxy chain: `localhost:5173/api/languages` → `localhost:54321/functions/v1/api/languages`
 
 ---
 
@@ -334,5 +334,6 @@ export default defineConfig({
 
 - **First `sb:start` is slow**: Docker pulls ~10 images. Subsequent starts are fast (~10s).
 - **Port conflicts**: If port 54321/54322/54323 is in use, `supabase start` will fail. Stop other services or configure ports in `config.toml`.
+- **Analytics warning**: If you see `WARNING: analytics requires docker daemon exposed on tcp://localhost:2375`, set `[analytics].enabled = false` in `supabase/config.toml` for local dev.
 - **CORS must be first**: If you add middleware or imports above the OPTIONS handler that throw, CORS preflight breaks and the browser blocks everything.
 - **Hono `basePath`**: Don't forget `.basePath('/api')`. Without it, routes won't match the proxied paths.
