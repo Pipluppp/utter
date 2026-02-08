@@ -1,0 +1,6 @@
+-- Seed data (loaded by `supabase db reset`).
+-- Intentionally empty by default.
+--
+-- NOTE: Auth seeding via direct SQL inserts is brittle (GoTrue expects a set of
+-- non-null token fields). Phase 03 adds repeatable fixtures after we lock down
+-- a safe seed strategy.

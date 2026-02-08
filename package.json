@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "name": "utter",
+  "scripts": {
+    "sb:start": "supabase start",
+    "sb:stop": "supabase stop",
+    "sb:reset": "supabase db reset",
+    "sb:serve": "supabase functions serve api --env-file ./supabase/.env.local --no-verify-jwt",
+    "sb:status": "supabase status"
+  },
+  "devDependencies": {
+    "supabase": "^1.200.0"
+  }
+}
