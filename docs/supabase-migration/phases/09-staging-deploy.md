@@ -1,7 +1,7 @@
 # Phase 09 — Supabase Cloud Deploy (Staging)
 
 > **Status**: Not Started
-> **Prerequisites**: [Phase 08](./08-qa-security.md) complete (all QA passed)
+> **Prerequisites**: [Phase 08](./08-testing/) complete (all QA passed)
 > **Goal**: Deploy the Supabase backend to a real cloud project (staging) and verify it works outside of Docker. This is the first time the backend runs on Supabase infrastructure.
 
 ---

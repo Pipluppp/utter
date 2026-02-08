@@ -1,7 +1,7 @@
 # Phase 08 — QA + Security Validation
 
 > **Status**: In Progress
-> **Prerequisites**: [Phase 07](./07-frontend-cleanup.md) complete
+> **Prerequisites**: [Phase 07](../07-frontend-cleanup.md) complete
 > **Goal**: Comprehensive testing of all user flows, multi-tenant isolation, failure modes, and security properties. This is the "sign-off" phase before deploying anything.
 
 ---

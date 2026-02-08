@@ -1,6 +1,6 @@
 # Phase 08 — Testing Guide for AI Agent
 
-This is a companion to `08-qa-security.md`. That document lists what to test. This document tells you how to set up, execute, and verify each test as a CLI agent that can run shell commands but cannot interact with a browser GUI.
+This is a companion to [qa-security.md](./qa-security.md). That document lists what to test. This document tells you how to set up, execute, and verify each test as a CLI agent that can run shell commands but cannot interact with a browser GUI.
 
 ## Understanding your limitations
 

@@ -16,7 +16,7 @@
 | [05](./phases/05-generate-tasks.md) | Generate + Task Orchestration | Complete | None |
 | [06](./phases/06-voice-design.md) | Voice Design | Complete | None |
 | [07](./phases/07-frontend-cleanup.md) | Frontend Cleanup | Complete | None |
-| [08](./phases/08-qa-security.md) | QA + Security Validation | In Progress | [Create second user](./manual-steps.md#phase-8--qa--security-validation) |
+| [08](./phases/08-testing/) | QA + Security + Testing | In Progress | [Create second user](./manual-steps.md#phase-8--qa--security-validation) |
 | [09](./phases/09-staging-deploy.md) | Supabase Cloud Deploy (Staging) | Not Started | [Account + project setup](./manual-steps.md#phase-9--staging-supabase-deploy) |
 | [10](./phases/10-vercel.md) | Vercel Backend Connection | In Progress | [Env vars + API rewrite](./manual-steps.md#phase-10--vercel-deferred) |
 
