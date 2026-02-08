@@ -1,6 +1,6 @@
 # Qwen TTS (Alibaba Cloud Model Studio) API deep dive — Voice Cloning/Design + Realtime Synthesis
 
-> **Last verified**: 2026-02-08  
+> **Last verified**: 2026-02-09
 > **Purpose**: Integration reference for using Alibaba Cloud Model Studio (DashScope) Qwen TTS from our Supabase backend — voice cloning (VC), voice design (VD), and realtime speech synthesis via WebSocket.
 
 ## Sources (official docs)
@@ -40,7 +40,7 @@ Key gotchas that matter for product + architecture:
 - **Voice design “create voice” returns preview audio — but it’s still a billable “create voice” operation.**
 - The customization response includes **`target_model`**, and **you must synthesize with that exact model** later (model mismatch → synthesis fails).
 
-Given our product constraints (generate then play), we run **fully on Supabase** — no external worker. Edge Functions handle both orchestration and synthesis via the Qwen WS API. A **text length limit** (initially 5,000 characters, ~6-7 min audio) ensures synthesis completes within Edge Function wall-clock constraints. This limit can increase after empirical speed testing.
+We run **fully on Supabase** — no external worker. Edge Functions handle both orchestration and synthesis via the Qwen WS API. The Edge Function uses a **pass-through streaming** architecture: audio chunks from Qwen are simultaneously streamed to the frontend for immediate playback *and* buffered in memory for Storage upload. This gives <2s time-to-first-byte while also persisting the complete file. A **text length limit** (initially 5,000 characters, ~6-7 min audio) is enforced server-side; streaming relaxes wall-clock pressure since each chunk sent resets the Edge idle timer, but the 400s hard wall-clock limit still applies.
 
 ---
 
@@ -495,7 +495,7 @@ Server streams audio through the response lifecycle:
 - `response.audio.done` — audio generation complete
 - `response.content_part.done` → `response.output_item.done` → `response.done` — response finalized
 
-For "generate then play", we accumulate the decoded bytes, then upload a final file to Storage.
+For our streaming architecture, we decode each chunk and simultaneously stream it to the frontend + buffer it for Storage upload.
 
 Practical implementation note:
 - All Qwen3 models (including VC/VD) support `mp3` and `wav` output directly — request the browser-friendly format in `session.update` rather than requesting `pcm` and converting. If `pcm` is used, wrap it as WAV before storing.
@@ -578,15 +578,14 @@ Validate with real production scripts to pin down chars-per-minute for our conte
 
 **There is no batch/non-streaming API for custom voices.** The non-realtime HTTP API (`qwen3-tts-flash`) exists and returns a complete audio file URL, but it only supports preset voices — not cloned or designed voices. Verified 2026-02-08.
 
-**This is fine for our "generate then play" use case.** We use the streaming API in a "collect everything" mode:
+**We leverage the streaming nature directly.** The Edge Function streams decoded audio chunks to the frontend in real-time via a chunked HTTP response, while simultaneously buffering them for Storage upload:
 
 1. Send all text via `input_text_buffer.append`
 2. Send `session.finish`
-3. Accumulate all `response.audio.delta` chunks
-4. When `session.finished` arrives → we have the complete audio
-5. Upload to Supabase Storage → return signed URL to frontend
+3. On each `response.audio.delta`: base64-decode → write to HTTP response stream (frontend plays immediately) + push to in-memory buffer
+4. On `session.finished`: close HTTP stream → concatenate buffer → upload to Supabase Storage → update task row
 
-We never play audio in real-time. The streaming nature is transparent to us — we just buffer until done.
+The frontend begins playback within seconds of submitting. The complete audio file is also persisted for replay/history.
 
 ---
 
@@ -616,10 +615,10 @@ All Qwen3 models (including VC/VD) support `pcm`, `wav`, `mp3`, `opus` via the `
 - **How mp3/wav/opus chunks are structured in streaming is not explicitly documented.**
 
 Recommended approach:
-- **Request `mp3`** in `session.update`. MP3 is frame-based; frames are self-describing and should concatenate into a valid MP3 file. MP3 plays directly in all browsers.
-- **Fallback**: Request `pcm`, concatenate all chunks, prepend a 44-byte WAV header (with correct data size) to produce a valid WAV file.
+- **Request `mp3`** in `session.update`. MP3 is frame-based; frames are self-describing and should concatenate into a valid MP3 file. MP3 plays directly in all browsers. **MP3 is also required for our streaming architecture** — the frontend needs a format it can play progressively, and MP3 frames are self-delimiting.
+- **Fallback**: Request `pcm`, concatenate all chunks, prepend a 44-byte WAV header (with correct data size) to produce a valid WAV file. Note: PCM fallback breaks progressive frontend playback (must accumulate fully before playing).
 
-**This needs empirical verification** (see Unknowns section). The official examples show PCM only.
+**MP3 support is confirmed** by the official feature comparison table (VC/VD models support `pcm`, `wav`, `mp3`, `opus`). However, **chunk concatenation behavior still needs empirical verification** (see Unknowns section). The official examples show PCM only.
 
 ---
 
@@ -644,17 +643,18 @@ Why this works:
 │ Supabase Edge Functions (TypeScript/Deno)                            │
 │                                                                      │
 │ ✅ Voice clone/design   → REST fetch() to DashScope (<10s)           │
-│ ✅ Speech synthesis     → WS to DashScope, accumulate MP3 chunks,    │
-│                           upload to Storage, return signed URL       │
+│ ✅ Speech synthesis     → WS to DashScope, "Tee" MP3 chunks:        │
+│                           • Stream decoded chunks to frontend (HTTP) │
+│                           • Buffer in memory for Storage upload      │
 │ ✅ Task management      → DB reads/writes (create, update status)    │
 │ ✅ Storage signed URLs, input validation, auth                       │
 │                                                                      │
-│ Constraint: wall clock (free 150s / paid 400s)                       │
+│ Constraint: 400s hard wall clock (idle timeout reset by streaming)   │
 │ Mitigation: server-side text length limit                            │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-### Synthesis flow (POST /api/generate)
+### Synthesis flow (POST /api/generate — streaming response)
 
 ```
 Frontend ── POST /api/generate { voice_id, text } ──→ Edge Function
@@ -662,38 +662,56 @@ Frontend ── POST /api/generate { voice_id, text } ──→ Edge Function
   1. Validate input (text ≤ limit, voice exists, user owns voice)
   2. Create task row (status: processing)
   3. Look up voice → get provider_voice_id + target_model
-  4. Open WS: wss://dashscope-intl.../realtime?model=<target_model>
-  5. Send session.update { voice, response_format: "mp3", ... }
-  6. Send input_text_buffer.append (full text)
-  7. Send session.finish
-  8. Accumulate response.audio.delta chunks → base64 decode → buffer
-  9. On session.finished:
-     → Upload MP3 buffer to Supabase Storage
-     → Update task row: status = completed, audio_path = ...
-     → Return { task_id, audio_url (signed) }
+  4. Initialize TransformStream (for streaming HTTP response to frontend)
+  5. Initialize Array<Uint8Array> (for Storage buffer)
+  6. Return streaming Response immediately (Content-Type: audio/mpeg)
+  7. Open WS: wss://dashscope-intl.../realtime?model=<target_model>
+  8. Send session.update { voice, response_format: "mp3", language_type: "Auto", ... }
+  9. Send input_text_buffer.append { text: fullText }
+     ⚠️  Field is "text", NOT "delta" — verified against official WebSocket client
+  10. Send session.finish
+  11. On each response.audio.delta:
+      → Base64 decode the "delta" field → Uint8Array
+      → writer.write(chunk)    // Path A: stream to frontend (immediate playback)
+      → buffer.push(chunk)     // Path B: accumulate for Storage
+  12. On session.finished:
+      → writer.close()         // end frontend stream
+      → Concatenate buffer → upload MP3 to Supabase Storage
+      → Update task row: status = completed, audio_path = ...
+  13. On error event or WS disconnect:
+      → writer.abort()         // signal error to frontend
+      → Update task row: status = failed, error = ...
 ```
 
-Total wall-clock budget: WS handshake (~2s) + synthesis (variable) + Storage upload (~3-5s) + margin.
+The frontend receives a binary MP3 stream and can begin playback within ~2s (TTFB).
+The complete file is persisted to Storage after the stream ends.
+
+Key protocol detail: Qwen sends JSON events with base64-encoded audio, NOT raw binary WebSocket frames.
+The Edge Function decodes base64 → binary before writing to the HTTP stream.
 
 ### Text length limits
 
 Enforced server-side in the Edge Function. Set conservatively until the validation spike confirms actual synthesis speed.
 
+**Streaming changes the constraint model.** Because we stream chunks to the frontend as they arrive, each chunk resets the Edge Function idle timer (150s). The binding constraint becomes the **400s hard wall-clock limit only** (not idle timeout). This is significantly more generous than the accumulate-and-respond model.
+
 | Plan | Wall clock | Overhead | Synthesis budget | Limit @ 3x RT | Limit @ 5x RT |
 |---|---|---|---|---|---|
-| **Free (150s)** | 150s | ~20s | ~130s | ~4,800 chars (~6.5 min) | ~8,000 chars (~10.8 min) |
-| **Paid (400s)** | 400s | ~20s | ~380s | ~14,000 chars (~19 min) | ~23,500 chars (~31 min) |
+| **Free (150s idle, 400s wall)** | 400s* | ~10s | ~390s | ~14,400 chars (~19 min) | ~24,000 chars (~32 min) |
+| **Paid (150s idle, 400s wall)** | 400s | ~10s | ~390s | ~14,400 chars (~19 min) | ~24,000 chars (~32 min) |
 
-**Initial default: 5,000 characters** — conservative, works at 3x realtime even on the free plan.
+*With streaming, the free plan benefits from the same 400s wall clock as paid, because the idle timer is continuously reset by outbound audio chunks.
+
+**Initial default: 5,000 characters** — conservative, safe at any synthesis speed ratio. Can increase substantially after empirical validation.
 
 Assumptions behind the table:
 - English speech ≈ 750 characters/minute at normal pace
-- Overhead = WS handshake + session setup + Storage upload + DB writes
+- Overhead = WS handshake + session setup + DB writes (Storage upload happens after stream ends, outside wall clock)
 - "3x realtime" = 1 minute of audio takes ~20s to synthesize (conservative floor)
 - "5x realtime" = 1 minute of audio takes ~12s to synthesize (probable, per Qwen3-TTS paper RTF data)
 - Chinese text produces longer audio per character (~1.5-2s each vs ~0.15s for English letters); the limit should ultimately be based on estimated audio duration, not raw character count
 
-After the validation spike confirms speed, increase the limit. On the paid plan at 5x realtime, we could safely support ~20,000+ characters (~25 min of audio).
+After the validation spike confirms speed, increase the limit. At 5x realtime, we could safely support ~20,000+ characters (~27 min of audio).
 
 ### Edge Function memory
 
@@ -709,68 +727,73 @@ At our initial 5,000-char limit, the in-memory buffer is ~6 MB — well within E
 
 ### Why the JS SDK absence is a non-issue
 
-The WS protocol is simple JSON messages. Deno's native `WebSocket` handles the connection:
+The WS protocol is simple JSON messages. Deno's native `WebSocket` handles the connection. We implement a lightweight client that wraps the `session.update`, `input_text_buffer.append`, and `response.audio.delta` JSON protocol:
 
 ```typescript
 const ws = new WebSocket(wsUrl)
 
 ws.onopen = () => {
   ws.send(JSON.stringify({
+    event_id: `evt_${Date.now()}`,
     type: "session.update",
-    session: { voice: voiceId, response_format: "mp3", sample_rate: 24000, mode: "server_commit" }
+    session: {
+      voice: voiceId,
+      response_format: "mp3",
+      sample_rate: 24000,
+      mode: "server_commit",
+      language_type: "Auto"
+    }
   }))
-  ws.send(JSON.stringify({ type: "input_text_buffer.append", delta: text }))
-  ws.send(JSON.stringify({ type: "session.finish" }))
+  // NOTE: field is "text", NOT "delta" — "delta" is only used in server→client response.audio.delta events
+  ws.send(JSON.stringify({ event_id: `evt_${Date.now()}`, type: "input_text_buffer.append", text: inputText }))
+  ws.send(JSON.stringify({ event_id: `evt_${Date.now()}`, type: "session.finish" }))
 }
 
 const chunks: Uint8Array[] = []
 ws.onmessage = (event) => {
   const msg = JSON.parse(event.data)
   if (msg.type === "response.audio.delta") {
-    chunks.push(base64decode(msg.delta))
+    const decoded = base64decode(msg.delta)
+    writer.write(decoded)        // Path A: stream to frontend immediately
+    chunks.push(decoded)          // Path B: buffer for Storage upload
   }
   if (msg.type === "session.finished") {
-    // concatenate chunks → upload to Storage → respond to frontend
+    writer.close()                // end frontend stream
+    // concatenate chunks → upload to Storage → update task row
   }
   if (msg.type === "error") {
-    // update task as failed → respond with error
+    // update task as failed → abort stream with error
   }
 }
 ```
 
-~30 lines. No SDK needed.
+~35 lines. No SDK needed.
 
 ### Job semantics
 
-For our synchronous flow (Edge Function holds the WS connection and responds when done), the task row tracks state for observability and recovery:
+For the streaming flow, the Edge Function returns a streaming HTTP response immediately. The task row tracks state for observability, history, and recovery:
 
 | Trigger | Task state |
 |---|---|
 | Task row created, WS connection opening | `status = processing` |
-| `session.finished` received, audio uploaded | `status = completed` |
+| `session.finished` received, Storage upload complete | `status = completed` |
 | `error` event, WS disconnect, or Edge timeout | `status = failed` |
 
-In the normal flow, the POST itself returns the result — the frontend gets `{ audio_url }` directly. The task row is for:
-- Showing generation history
-- Recovery if the frontend loses connection mid-request (user can poll `GET /api/tasks/:id`)
+The POST returns a **streaming binary response** (`Content-Type: audio/mpeg`). The frontend plays audio progressively as chunks arrive. The task row is for:
+- Showing generation history (with `audio_path` pointing to the persisted file)
+- Recovery if the frontend loses connection mid-stream (user can fetch the completed file via `GET /api/tasks/:id`)
 - Debugging (metadata stores provider info, timing, error snapshots)
 
-### Future enhancement: live streaming playback
+### Frontend streaming playback
 
-The current architecture accumulates all audio then responds. A future enhancement could **stream audio to the frontend in real-time**:
+The Edge Function returns a streaming HTTP response. The frontend handles it as a binary MP3 stream:
 
-1. Edge Function returns a streaming HTTP response (`ReadableStream` / chunked transfer)
-2. Audio chunks flow to the frontend as Qwen generates them
-3. Frontend plays audio progressively (Web Audio API / MediaSource Extensions)
-4. Each chunk sent to the client resets the Edge idle timer
-5. Binding constraint becomes 400s wall clock only (not idle timeout)
+1. `fetch()` returns a `Response` with a `ReadableStream` body
+2. Frontend reads chunks via `response.body.getReader()`
+3. Chunks are fed to an `<audio>` element via a `MediaSource` / blob URL, or accumulated and played after stream ends
+4. The `Content-Type: audio/mpeg` header tells the browser this is MP3 data
 
-Benefits:
-- Instant first-audio latency (user hears speech within seconds of submitting)
-- Higher effective text limits (streaming keeps the connection alive)
-- Better UX for longer texts
-
-Deferred until after the core accumulate-and-respond integration is working.
+Note: MP3 is frame-based and self-delimiting, so partial MP3 data can be played progressively by browsers that support streaming audio. If progressive playback proves unreliable, the frontend can fall back to accumulating the full stream before playing (still much better UX than waiting for the server to accumulate + upload + return a URL).
 
 ### Alignment with architecture.md
 
@@ -794,16 +817,18 @@ These updates should be applied when architecture.md is next revised.
 
 These gaps in official documentation directly affect our text limit and output format decisions. The validation spike should answer them before writing production Edge Function code.
 
-### 1. Synthesis speed ratio (CRITICAL — determines text limit)
+### 1. Synthesis speed ratio (IMPORTANT — determines text limit ceiling)
 - **Not documented.** How fast does the Qwen API generate audio relative to playback time?
-- **Impact**: Directly determines our text length limit. At 5x realtime, 5,000 chars synthesizes in ~50s. At 1x realtime, it would take ~390s — too slow for the free plan.
+- **Impact**: Determines how high we can raise the text limit. With streaming, the constraint is relaxed (400s wall clock), but speed ratio still matters for total generation time.
 - **Qwen paper suggests low RTF** (fast generation), but cloud API performance may differ from local inference benchmarks.
 - **Test**: Time synthesis from WS open to `session.finished` for 1,000 / 5,000 / 10,000 character inputs. Calculate speed ratio.
 
-### 2. MP3 chunk concatenation (CRITICAL — determines output format)
-- **Not documented.** Official examples only show PCM output. When `response_format: "mp3"`, are the delta chunks valid MP3 frames that concatenate into a playable file?
-- **Risk**: If chunks don't concatenate cleanly, fall back to PCM + WAV header wrapping.
-- **Test**: Request `mp3`, concatenate all chunks, verify playback in browser and mobile.
+### 2. MP3 chunk concatenation (CRITICAL — determines output format and streaming viability)
+- **Confirmed supported** by the official feature comparison table: VC/VD models support `mp3` output format.
+- **Still not empirically verified** for streaming concatenation. Official examples only show PCM output. When `response_format: "mp3"`, are the delta chunks valid MP3 frames that concatenate into a playable file?
+- **For streaming to frontend**: MP3 frames are self-delimiting, so decoded chunks *should* be playable progressively. But this needs verification.
+- **Risk**: If chunks don't concatenate cleanly, fall back to PCM + WAV header wrapping (but this breaks progressive frontend playback — would need full accumulation).
+- **Test**: Request `mp3`, concatenate all chunks, verify playback in browser and mobile. Also test progressive playback of partial MP3 data.
 
 ### 3. Max text per session
 - **Not documented.** No stated limit on text buffer size.
@@ -818,6 +843,11 @@ These gaps in official documentation directly affect our text limit and output f
 - Each "create" costs $0.20 and consumes quota (1,000 max).
 - **Mitigation**: Consider our open-source Qwen3-TTS VoiceDesign for free unlimited previews; only call the official API for "save" operations.
 
+### 6. Edge Function streaming response + background work
+- **Not documented for Supabase Edge Functions**: After the streaming HTTP response ends, can the function continue executing (Storage upload, DB update)?
+- Deno Deploy typically allows post-response work within the same isolate until it's cleaned up. Supabase may differ.
+- **Fallback**: If post-response work isn't reliable, upload to Storage *before* closing the stream (adds latency at end but ensures reliability).
+
 ### Validation spike (run before writing production code)
 
 ```
@@ -827,6 +857,8 @@ These gaps in official documentation directly affect our text limit and output f
 4. Synthesize 5,000 chars (WS, mp3) → verify, record time
 5. Synthesize 10,000 chars (WS, mp3) → verify, record time (if 5k works)
 6. Calculate speed ratio → set production text limit
-7. Try pcm format → verify WAV header wrapping works as fallback
-8. Update this doc with empirical results
+7. Test progressive MP3 playback: feed partial chunks to browser <audio> element
+8. Try pcm format → verify WAV header wrapping works as fallback
+9. Test Supabase Edge Function streaming response + post-response Storage upload
+10. Update this doc with empirical results
 ```
