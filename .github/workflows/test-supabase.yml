@@ -1,0 +1,76 @@
+name: Supabase Tests
+
+on:
+  push:
+    branches: [main, "refactor/backend-db-supabase"]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/test-supabase.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/test-supabase.yml"
+
+jobs:
+  database-tests:
+    name: pgTAP Database Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start -x analytics,vector,pooler
+
+      - name: Run pgTAP tests
+        run: supabase test db
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup
+
+  edge-function-tests:
+    name: Deno Edge Function Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start -x analytics,vector,pooler
+
+      - name: Serve edge functions with test env
+        run: |
+          supabase functions serve api \
+            --env-file ./supabase/.env.test \
+            --no-verify-jwt &
+          # Wait for functions to be ready
+          for i in $(seq 1 30); do
+            if curl -s http://127.0.0.1:54321/functions/v1/api/health \
+              -H "apikey: $(supabase status -o json | jq -r '.API.AnonKey // empty' 2>/dev/null || echo 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0')" \
+              | grep -q '"ok":true'; then
+              echo "Edge functions ready"
+              break
+            fi
+            echo "Waiting for edge functions... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run Deno tests
+        working-directory: supabase/functions/tests
+        run: deno test --allow-net --allow-env --allow-read .
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup

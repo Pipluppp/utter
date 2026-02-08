@@ -6,7 +6,11 @@
     "sb:stop": "supabase stop",
     "sb:reset": "supabase db reset",
     "sb:serve": "supabase functions serve api --env-file ./supabase/.env.local --no-verify-jwt",
-    "sb:status": "supabase status"
+    "sb:serve:test": "supabase functions serve api --env-file ./supabase/.env.test --no-verify-jwt",
+    "sb:status": "supabase status",
+    "test:db": "supabase test db",
+    "test:edge": "cd supabase/functions/tests && deno test --allow-net --allow-env --allow-read .",
+    "test:all": "npm run test:db && npm run test:edge"
   },
   "devDependencies": {
     "supabase": "^1.200.0"
