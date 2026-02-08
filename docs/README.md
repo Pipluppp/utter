@@ -69,6 +69,7 @@ npm run dev
 | [tooling.md](./tooling.md) | Local tooling and conventions |
 | [biome.md](./biome.md) | Frontend formatting/linting (Biome) |
 | [qwen3-tts-models-map.md](./qwen3-tts-models-map.md) | Qwen3-TTS model variants and mapping |
+| [qwen-api.md](./qwen-api.md) | Official Alibaba (DashScope) Qwen TTS APIs (clone/design + realtime synthesis) |
 | [transcription.md](./transcription.md) | Voxtral/Mistral transcription plan (optional) |
 
 ## Modal deployment guides (historical)

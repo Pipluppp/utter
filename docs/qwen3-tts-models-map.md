@@ -5,6 +5,9 @@
 
 This document maps the different Qwen3-TTS model variants to help select the right model for specific features in Utter.
 
+Related:
+- `docs/qwen-api.md` (official Alibaba/DashScope Qwen TTS APIs and Supabase/Edge fit)
+
 ---
 
 ## Model Summary Table
