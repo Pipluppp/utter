@@ -1,6 +1,7 @@
 import { lazy } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { Layout } from './Layout'
+import { RequireAuth } from './RequireAuth'
 
 const LandingPage = lazy(async () => {
   const m = await import('../pages/Landing')
@@ -47,6 +48,10 @@ const AccountProfilePage = lazy(async () => {
   const m = await import('../pages/account/Profile')
   return { default: m.AccountProfilePage }
 })
+const AccountAuthPage = lazy(async () => {
+  const m = await import('../pages/account/Auth')
+  return { default: m.AccountAuthPage }
+})
 const AccountUsagePage = lazy(async () => {
   const m = await import('../pages/account/Usage')
   return { default: m.AccountUsagePage }
@@ -61,11 +66,46 @@ export const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { path: '/', element: <LandingPage /> },
-      { path: '/clone', element: <ClonePage /> },
-      { path: '/generate', element: <GeneratePage /> },
-      { path: '/design', element: <DesignPage /> },
-      { path: '/voices', element: <VoicesPage /> },
-      { path: '/history', element: <HistoryPage /> },
+      {
+        path: '/clone',
+        element: (
+          <RequireAuth>
+            <ClonePage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: '/generate',
+        element: (
+          <RequireAuth>
+            <GeneratePage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: '/design',
+        element: (
+          <RequireAuth>
+            <DesignPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: '/voices',
+        element: (
+          <RequireAuth>
+            <VoicesPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: '/history',
+        element: (
+          <RequireAuth>
+            <HistoryPage />
+          </RequireAuth>
+        ),
+      },
       { path: '/pricing', element: <Navigate to="/#pricing" replace /> },
       { path: '/privacy', element: <PrivacyPage /> },
       { path: '/terms', element: <TermsPage /> },
@@ -73,7 +113,8 @@ export const router = createBrowserRouter([
         path: '/account',
         element: <AccountLayoutPage />,
         children: [
-          { index: true, element: <Navigate to="/account/profile" replace /> },
+          { index: true, element: <Navigate to="/account/auth" replace /> },
+          { path: 'auth', element: <AccountAuthPage /> },
           { path: 'profile', element: <AccountProfilePage /> },
           { path: 'usage', element: <AccountUsagePage /> },
           { path: 'billing', element: <AccountBillingPage /> },

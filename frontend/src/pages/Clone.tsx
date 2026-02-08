@@ -9,7 +9,7 @@ import { Message } from '../components/ui/Message'
 import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
 import { getUtterDemo } from '../content/utterDemo'
-import { apiForm } from '../lib/api'
+import { apiForm, apiJson } from '../lib/api'
 import {
   createWavHeaderPcm16Mono,
   downsampleFloat32,
@@ -28,6 +28,17 @@ const ALLOWED_EXTS = new Set(['.wav', '.mp3', '.m4a'])
 function extOf(name: string) {
   const idx = name.lastIndexOf('.')
   return idx >= 0 ? name.slice(idx).toLowerCase() : ''
+}
+
+function contentTypeForFile(file: File): string {
+  const byType = file.type?.trim()
+  if (byType) return byType
+
+  const ext = extOf(file.name)
+  if (ext === '.wav') return 'audio/wav'
+  if (ext === '.mp3') return 'audio/mpeg'
+  if (ext === '.m4a') return 'audio/mp4'
+  return 'application/octet-stream'
 }
 
 export function ClonePage() {
@@ -75,6 +86,11 @@ export function ClonePage() {
   const [created, setCreated] = useState<CloneResponse | null>(null)
 
   useEffect(() => setLanguage(defaultLanguage), [defaultLanguage])
+
+  useEffect(() => {
+    if (transcriptionEnabled) return
+    if (audioMode === 'record') setAudioMode('upload')
+  }, [audioMode, transcriptionEnabled])
 
   useEffect(() => {
     if (!submitting || !startedAt) return
@@ -549,14 +565,36 @@ export function ClonePage() {
     setElapsedLabel('0:00')
 
     try {
-      const form = new FormData()
-      form.set('name', name.trim())
-      form.set('audio', file)
-      form.set('transcript', transcript.trim())
-      form.set('language', language)
-
-      const res = await apiForm<CloneResponse>('/api/clone', form, {
+      const { voice_id, upload_url } = await apiJson<{
+        voice_id: string
+        upload_url: string
+        object_key: string
+      }>('/api/clone/upload-url', {
         method: 'POST',
+        json: {
+          name: name.trim(),
+          language,
+          transcript: transcript.trim(),
+        },
+      })
+
+      const uploadRes = await fetch(upload_url, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': contentTypeForFile(file) },
+      })
+      if (!uploadRes.ok) {
+        throw new Error('Failed to upload audio file.')
+      }
+
+      const res = await apiJson<CloneResponse>('/api/clone/finalize', {
+        method: 'POST',
+        json: {
+          voice_id,
+          name: name.trim(),
+          language,
+          transcript: transcript.trim(),
+        },
       })
       setCreated(res)
     } catch (e) {
@@ -602,13 +640,20 @@ export function ClonePage() {
               Upload WAV/MP3/M4A (max 50MB) or record 3+ seconds of clean
               speech.
             </div>
+            {transcriptionEnabled ? (
+              <div>
+                Record mode: live transcription fills the transcript. Review and
+                fix any errors before cloning.
+              </div>
+            ) : (
+              <div>
+                Recording and transcription are disabled on this server.
+              </div>
+            )}
             <div>
-              Record mode: live transcription fills the transcript. Review and
-              fix any errors before cloning.
-            </div>
-            <div>
-              Upload mode: use "Transcribe" to create a draft transcript, then
-              edit it to match the audio.
+              {transcriptionEnabled
+                ? 'Upload mode: use "Transcribe" to create a draft transcript, then edit it to match the audio.'
+                : 'Upload mode: type/paste the transcript manually.'}
             </div>
             <div>
               {transcriptRequired
@@ -640,77 +685,26 @@ export function ClonePage() {
           >
             Upload
           </button>
-          <button
-            type="button"
-            className={cn(
-              'px-4 py-2 text-xs font-medium uppercase tracking-wide',
-              audioMode === 'record'
-                ? 'bg-foreground text-background'
-                : 'bg-background text-foreground hover:bg-subtle',
-            )}
-            aria-pressed={audioMode === 'record'}
-            onClick={() => setAudioMode('record')}
-            disabled={recording}
-          >
-            Record
-          </button>
+          {transcriptionEnabled ? (
+            <button
+              type="button"
+              className={cn(
+                'px-4 py-2 text-xs font-medium uppercase tracking-wide',
+                audioMode === 'record'
+                  ? 'bg-foreground text-background'
+                  : 'bg-background text-foreground hover:bg-subtle',
+              )}
+              aria-pressed={audioMode === 'record'}
+              onClick={() => setAudioMode('record')}
+              disabled={recording}
+            >
+              Record
+            </button>
+          ) : null}
         </div>
       </div>
 
-      {audioMode === 'upload' ? (
-        <div className="relative">
-          <button
-            type="button"
-            className={cn(
-              'w-full cursor-pointer border border-dashed border-border bg-background p-6 text-center shadow-elevated hover:bg-subtle',
-              'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-            )}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault()
-              validateAndSetFile(e.dataTransfer.files?.[0] ?? null)
-            }}
-            onClick={() => inputRef.current?.click()}
-            aria-label="Select audio file"
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              className="hidden"
-              accept=".wav,.mp3,.m4a"
-              onChange={(e) => validateAndSetFile(e.target.files?.[0] ?? null)}
-            />
-            <div className="text-sm text-muted-foreground">
-              Drag &amp; drop audio here, or click to browse.
-            </div>
-            <div className="mt-2 text-xs text-faint">
-              WAV / MP3 / M4A • max 50MB
-            </div>
-            {fileInfo ? (
-              <div className="mt-3 text-xs text-foreground">{fileInfo}</div>
-            ) : null}
-            {fileError ? (
-              <div className="mt-3 text-xs text-red-700 dark:text-red-400">
-                {fileError}
-              </div>
-            ) : null}
-          </button>
-
-          {transcriptionEnabled && file ? (
-            <Button
-              className="absolute right-4 top-4 z-10"
-              variant="secondary"
-              size="sm"
-              type="button"
-              loading={transcribing}
-              disabled={submitting}
-              onClick={() => void onTranscribeAudio()}
-            >
-              {transcribing ? 'Transcribing...' : 'Transcribe'}
-            </Button>
-          ) : null}
-        </div>
-      ) : (
+      {audioMode === 'record' && transcriptionEnabled ? (
         <div className="space-y-4 border border-border bg-background p-6 shadow-elevated">
           <div className="flex items-center justify-between gap-3">
             <div className="text-sm font-semibold uppercase tracking-wide">
@@ -774,12 +768,7 @@ export function ClonePage() {
                     : 'Start recording to see live text.')}
               </div>
             </div>
-          ) : (
-            <Message variant="info">
-              Transcription is not configured on this server. You can still
-              record audio, then type/paste the transcript manually.
-            </Message>
-          )}
+          ) : null}
 
           {recordedPreviewUrl ? (
             <div className="border border-border bg-background p-3">
@@ -788,6 +777,59 @@ export function ClonePage() {
                 audioBlob={file ?? undefined}
               />
             </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="relative">
+          <button
+            type="button"
+            className={cn(
+              'w-full cursor-pointer border border-dashed border-border bg-background p-6 text-center shadow-elevated hover:bg-subtle',
+              'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+            )}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault()
+              validateAndSetFile(e.dataTransfer.files?.[0] ?? null)
+            }}
+            onClick={() => inputRef.current?.click()}
+            aria-label="Select audio file"
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              className="hidden"
+              accept=".wav,.mp3,.m4a"
+              onChange={(e) => validateAndSetFile(e.target.files?.[0] ?? null)}
+            />
+            <div className="text-sm text-muted-foreground">
+              Drag &amp; drop audio here, or click to browse.
+            </div>
+            <div className="mt-2 text-xs text-faint">
+              WAV / MP3 / M4A • max 50MB
+            </div>
+            {fileInfo ? (
+              <div className="mt-3 text-xs text-foreground">{fileInfo}</div>
+            ) : null}
+            {fileError ? (
+              <div className="mt-3 text-xs text-red-700 dark:text-red-400">
+                {fileError}
+              </div>
+            ) : null}
+          </button>
+
+          {transcriptionEnabled && file ? (
+            <Button
+              className="absolute right-4 top-4 z-10"
+              variant="secondary"
+              size="sm"
+              type="button"
+              loading={transcribing}
+              disabled={submitting}
+              onClick={() => void onTranscribeAudio()}
+            >
+              {transcribing ? 'Transcribing...' : 'Transcribe'}
+            </Button>
           ) : null}
         </div>
       )}

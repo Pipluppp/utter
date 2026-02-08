@@ -21,13 +21,6 @@ type DesignFormState = {
   instruct: string
 }
 
-function base64ToBlob(base64: string, mime: string) {
-  const bin = atob(base64)
-  const bytes = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-  return new Blob([bytes], { type: mime })
-}
-
 const EXAMPLES: Array<{ title: string; name: string; instruct: string }> = [
   {
     title: 'Warm & steady',
@@ -129,19 +122,50 @@ export function DesignPage() {
     handledTerminalRef.current = terminalKey
 
     if (task.status === 'completed') {
-      const result = task.result as { audio_base64?: string } | undefined
-      if (result?.audio_base64) {
-        if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
-        const blob = base64ToBlob(result.audio_base64, 'audio/wav')
-        previewBlobRef.current = blob
-        const url = URL.createObjectURL(blob)
-        objectUrlRef.current = url
-        setPreviewUrl(url)
-        setError(null)
-        setSuccess(null)
+      const result = task.result as
+        | { audio_base64?: string; audio_url?: string }
+        | undefined
+
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
+      objectUrlRef.current = null
+      previewBlobRef.current = null
+
+      const audioUrl = result?.audio_url?.trim()
+      if (audioUrl) {
+        void (async () => {
+          try {
+            const res = await fetch(audioUrl)
+            if (!res.ok) throw new Error('Failed to load preview audio.')
+            const blob = await res.blob()
+            previewBlobRef.current = blob
+            const url = URL.createObjectURL(blob)
+            objectUrlRef.current = url
+            setPreviewUrl(url)
+            setError(null)
+            setSuccess(null)
+          } catch (e) {
+            setError(e instanceof Error ? e.message : 'Failed to load preview.')
+          }
+        })()
+      } else {
+        const audioBase64 = result?.audio_base64?.trim()
+        if (audioBase64) {
+          const bin = atob(audioBase64)
+          const bytes = new Uint8Array(bin.length)
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+          const blob = new Blob([bytes], { type: 'audio/wav' })
+          previewBlobRef.current = blob
+          const url = URL.createObjectURL(blob)
+          objectUrlRef.current = url
+          setPreviewUrl(url)
+          setError(null)
+          setSuccess(null)
+        }
       }
     } else if (task.status === 'failed') {
       setError(task.error ?? 'Failed to generate preview.')
+    } else if (task.status === 'cancelled') {
+      setError('Preview cancelled.')
     }
 
     window.setTimeout(() => clearTask('design'), 50)

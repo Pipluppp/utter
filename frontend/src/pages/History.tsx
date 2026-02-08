@@ -66,13 +66,9 @@ function Highlight({ text, tokens }: { text: string; tokens: string[] }) {
   return <>{out}</>
 }
 
-function basename(path: string) {
-  return path.split(/[\\/]/).pop() ?? path
-}
-
 function generationAudioUrl(gen: Generation) {
   if (!gen.audio_path) return null
-  return `/uploads/generated/${basename(gen.audio_path)}`
+  return gen.audio_path
 }
 
 type PlayState = 'idle' | 'loading' | 'playing' | 'paused' | 'stopped'

@@ -133,7 +133,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     (taskType: TaskType) => {
       const task = state.tasks[taskType]
       if (task?.taskId) {
-        fetch(`/api/tasks/${task.taskId}`, { method: 'DELETE' }).catch(() => {})
+        apiJson(`/api/tasks/${task.taskId}`, { method: 'DELETE' }).catch(
+          () => {},
+        )
       }
       localStorage.removeItem(taskStorageKey(taskType))
       dispatch({ type: 'remove', taskType })
