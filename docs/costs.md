@@ -58,5 +58,4 @@ Call the speech synthesis API and pass the voice obtained in the previous step. 
 
 ## Mistral Voxtral transcription
 
-In voice cloning, a user can transcribe their uploaded audio using `voxtral-mini-2602` for $0.003 per minute and also record their audio and do realtiem transcription with `voxtral-mini-transcribe-realtime-2602` for $0.006 per minutes. Since cloning only needs a little
-bit of audio, this is basically free.
+In voice cloning, a user can transcribe their uploaded audio using `voxtral-mini-2602` for $0.003 per minute and also record their audio and do transcription.
