@@ -92,6 +92,11 @@ enabled = true
 # allowed_mime_types = ["image/png", "image/jpeg"]
 # objects_path = "./images"
 
+[storage.buckets.references]
+public = false
+file_size_limit = "10MiB"
+allowed_mime_types = ["audio/wav", "audio/x-wav", "audio/mpeg", "audio/mp4", "audio/m4a"]
+
 [auth]
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
@@ -241,7 +246,7 @@ enabled = false
 [edge_runtime]
 enabled = true
 # Configure one of the supported request policies: `oneshot`, `per_worker`.
-policy = "oneshot"
+policy = "per_worker"
 # Port to attach the Chrome inspector for debugging edge functions.
 inspector_port = 8083
 

@@ -2,6 +2,7 @@ import { Hono } from "npm:hono@4"
 
 import { requireUser } from "../../_shared/auth.ts"
 import { createAdminClient, createUserClient } from "../../_shared/supabase.ts"
+import { resolveStorageUrl } from "../../_shared/urls.ts"
 import {
   cancelJob,
   checkJobStatus,
@@ -30,24 +31,6 @@ function parseIsoDate(value: unknown): Date | null {
 
 function secondsBetween(start: Date, end: Date): number {
   return Math.max(0, (end.getTime() - start.getTime()) / 1000)
-}
-
-function publicizeSignedUrl(req: Request, signedUrl: string): string {
-  const proto =
-    req.headers.get("x-forwarded-proto") ??
-    new URL(req.url).protocol.replace(":", "")
-  const forwardedHost =
-    req.headers.get("x-forwarded-host") ??
-    req.headers.get("host") ??
-    new URL(req.url).host
-  const forwardedPort = req.headers.get("x-forwarded-port")
-  const host =
-    !forwardedHost.includes(":") && forwardedPort
-      ? `${forwardedHost}:${forwardedPort}`
-      : forwardedHost
-  const origin = `${proto}://${host}`
-  const url = new URL(signedUrl)
-  return `${origin}${url.pathname}${url.search}`
 }
 
 tasksRoutes.get("/tasks/:id", async (c) => {
@@ -92,17 +75,25 @@ tasksRoutes.get("/tasks/:id", async (c) => {
 
   if (!isTerminal(status) && type === "design_preview" && !modalJobId) {
     const admin = createAdminClient()
-    const claimed =
-      status === "pending"
-        ? await admin
-          .from("tasks")
-          .update({ status: "processing" })
-          .eq("id", taskId)
-          .eq("user_id", userId)
-          .eq("status", "pending")
-          .select("id")
-          .maybeSingle()
-        : { data: { id: taskId }, error: null }
+    if (status !== "pending") {
+      const { data: pollCount, error: pollError } = await admin.rpc(
+        "increment_task_modal_poll_count",
+        { p_task_id: taskId, p_user_id: userId },
+      )
+      if (!pollError && typeof pollCount === "number") base.modal_poll_count = pollCount
+      base.status = "processing"
+      base.modal_status = "processing"
+      return c.json(base)
+    }
+
+    const claimed = await admin
+      .from("tasks")
+      .update({ status: "processing" })
+      .eq("id", taskId)
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle()
 
     if (claimed.error) return jsonDetail("Failed to start design preview.", 500)
     if (!claimed.data) {
@@ -145,59 +136,71 @@ tasksRoutes.get("/tasks/:id", async (c) => {
       return c.json(base)
     }
 
+    EdgeRuntime.waitUntil((async () => {
+      const bgAdmin = createAdminClient()
+      try {
+        const bytes = await designVoicePreviewBytes({ text, language, instruct })
+        const objectKey = `${userId}/preview_${taskId}.wav`
+        const upload = await bgAdmin.storage
+          .from("references")
+          .upload(objectKey, new Uint8Array(bytes), {
+            contentType: "audio/wav",
+            upsert: true,
+          })
+        if (upload.error) throw new Error("Failed to upload preview audio.")
+
+        const nowIso = new Date().toISOString()
+        await bgAdmin
+          .from("tasks")
+          .update({
+            status: "completed",
+            completed_at: nowIso,
+            result: { object_key: objectKey },
+            error: null,
+          })
+          .eq("id", taskId)
+          .eq("user_id", userId)
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to design voice preview."
+        await bgAdmin
+          .from("tasks")
+          .update({
+            status: "failed",
+            error: message,
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", taskId)
+          .eq("user_id", userId)
+      }
+    })())
+
+    base.status = "processing"
     base.modal_status = "processing"
-
-    let bytes: ArrayBuffer
-    try {
-      bytes = await designVoicePreviewBytes({ text, language, instruct })
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to design voice preview."
-      const nowIso = new Date().toISOString()
-      await admin
-        .from("tasks")
-        .update({ status: "failed", error: message, completed_at: nowIso })
-        .eq("id", taskId)
-        .eq("user_id", userId)
-      base.status = "failed"
-      base.error = message
-      return c.json(base)
-    }
-
-    const objectKey = `${userId}/preview_${taskId}.wav`
-    const upload = await admin.storage
-      .from("references")
-      .upload(objectKey, new Uint8Array(bytes), {
-        contentType: "audio/wav",
-        upsert: true,
-      })
-    if (upload.error) return jsonDetail("Failed to upload preview audio.", 500)
-
-    const { data: signed, error: signedError } = await admin.storage
-      .from("references")
-      .createSignedUrl(objectKey, 3600)
-    if (signedError || !signed?.signedUrl) return jsonDetail("Failed to create signed URL.", 500)
-
-    const publicUrl = publicizeSignedUrl(c.req.raw, signed.signedUrl)
-    const nowIso = new Date().toISOString()
-    await admin
-      .from("tasks")
-      .update({
-        status: "completed",
-        completed_at: nowIso,
-        result: { audio_url: publicUrl },
-        error: null,
-      })
-      .eq("id", taskId)
-      .eq("user_id", userId)
-
-    base.status = "completed"
-    base.result = { audio_url: publicUrl }
-    base.error = null
-    base.modal_status = "completed"
     return c.json(base)
   }
 
   if (isTerminal(status) || !modalJobId) {
+    if (status === "completed" && type === "design_preview") {
+      const currentResult = (typeof base.result === "object" && base.result)
+        ? base.result as Record<string, unknown>
+        : {}
+      const objectKey = typeof currentResult.object_key === "string"
+        ? currentResult.object_key
+        : null
+      if (objectKey) {
+        const admin = createAdminClient()
+        const { data: signed, error: signedError } = await admin.storage
+          .from("references")
+          .createSignedUrl(objectKey, 3600)
+        if (!signedError && signed?.signedUrl) {
+          base.result = {
+            ...currentResult,
+            audio_url: resolveStorageUrl(c.req.raw, signed.signedUrl),
+          }
+        }
+      }
+    }
+
     if (status === "completed" && generationId) {
       base.result = {
         ...(typeof base.result === "object" && base.result ? base.result : {}),

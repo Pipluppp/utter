@@ -217,7 +217,7 @@ Deno.test({ name: "POST /tasks/:id/cancel denies other user's task", ...noLeaks,
 }});
 
 // --- Design preview task lifecycle ---
-Deno.test({ name: "Design preview task: create → poll → completes via Modal mock", ...noLeaks, fn: async () => {
+Deno.test({ name: "Design preview task: create -> poll -> completes via Modal mock", ...noLeaks, fn: async () => {
   mock.reset();
 
   // Step 1: Create design preview task
@@ -234,13 +234,31 @@ Deno.test({ name: "Design preview task: create → poll → completes via Modal 
   const { task_id } = await createRes.json();
   assertExists(task_id);
 
-  // Step 2: Poll the task — first poll triggers Modal design call and completes
-  // NOTE: This test only fully works with edge functions served via .env.test
-  const pollRes = await apiFetch(`/tasks/${task_id}`, userA.accessToken);
-  assertEquals(pollRes.status, 200);
-  const pollBody = await pollRes.json();
+  // Step 2: First poll should return processing immediately.
+  const firstPollRes = await apiFetch(`/tasks/${task_id}`, userA.accessToken);
+  assertEquals(firstPollRes.status, 200);
+  let pollBody = await firstPollRes.json();
   assertEquals(pollBody.id, task_id);
   assertEquals(pollBody.type, "design_preview");
+  assertEquals(pollBody.status, "processing");
+
+  // Step 3: Poll until background completion (or failure).
+  for (let i = 0; i < 30; i++) {
+    if (pollBody.status === "completed" || pollBody.status === "failed") break;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const nextPollRes = await apiFetch(`/tasks/${task_id}`, userA.accessToken);
+    assertEquals(nextPollRes.status, 200);
+    pollBody = await nextPollRes.json();
+  }
+
+  assertEquals(
+    pollBody.status === "completed" || pollBody.status === "failed",
+    true,
+  );
+  if (pollBody.status === "completed") {
+    const result = pollBody.result as { audio_url?: unknown } | undefined;
+    assertEquals(typeof result?.audio_url, "string");
+  }
 
   // Clean up
   const admin = await getAdmin();
@@ -252,3 +270,4 @@ Deno.test({ name: "tasks: teardown", ...noLeaks, fn: async () => {
   await deleteTestUser(userA.userId);
   await deleteTestUser(userB.userId);
 }});
+

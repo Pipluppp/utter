@@ -34,6 +34,19 @@ function isUniqueViolation(error: unknown): boolean {
   return code === "23505"
 }
 
+function getObjectSizeBytes(
+  object: {
+    size?: number | string | null
+    metadata?: { size?: number | string | null; contentLength?: number | string | null }
+  } | null,
+): number | null {
+  if (!object) return null
+  const sizeValue = object.size ?? object.metadata?.size ?? object.metadata?.contentLength
+  if (sizeValue == null) return null
+  const parsed = Number(sizeValue)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 export const generateRoutes = new Hono()
 
 generateRoutes.post("/generate", async (c) => {
@@ -81,6 +94,27 @@ generateRoutes.post("/generate", async (c) => {
   if (!refKey) return jsonDetail("Voice has no reference audio.", 400)
 
   const admin = createAdminClient()
+  const refPathParts = refKey.split("/")
+  const refFileName = refPathParts.pop() ?? ""
+  const refFolder = refPathParts.join("/")
+
+  const { data: refMeta, error: refMetaError } = await admin.storage
+    .from("references")
+    .list(refFolder, { limit: 100 })
+  if (refMetaError) return jsonDetail("Failed to load reference audio metadata.", 500)
+
+  const refFile = (refMeta ?? []).find((obj) => obj.name === refFileName)
+  if (!refFile) return jsonDetail("Voice has no reference audio.", 400)
+
+  const MAX_REFERENCE_BYTES = 10 * 1024 * 1024
+  const refSize = getObjectSizeBytes(refFile)
+  if (refSize !== null && refSize > MAX_REFERENCE_BYTES) {
+    return jsonDetail(
+      "Reference audio too large for generation. Re-clone with a shorter clip.",
+      400,
+    )
+  }
+
   const { data: activeTask, error: activeTaskError } = await userClient
     .from("tasks")
     .select("id")

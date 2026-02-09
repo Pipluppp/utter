@@ -2,6 +2,7 @@ import { Hono } from "npm:hono@4"
 
 import { requireUser } from "../../_shared/auth.ts"
 import { createAdminClient, createUserClient } from "../../_shared/supabase.ts"
+import { resolveStorageUrl } from "../../_shared/urls.ts"
 
 function jsonDetail(detail: string, status: number) {
   return new Response(JSON.stringify({ detail }), {
@@ -91,21 +92,7 @@ voicesRoutes.get("/voices/:id/preview", async (c) => {
     return jsonDetail("Failed to create signed URL.", 500)
   }
 
-  const proto =
-    c.req.raw.headers.get("x-forwarded-proto") ??
-    new URL(c.req.url).protocol.replace(":", "")
-  const forwardedHost =
-    c.req.raw.headers.get("x-forwarded-host") ??
-    c.req.raw.headers.get("host") ??
-    new URL(c.req.url).host
-  const forwardedPort = c.req.raw.headers.get("x-forwarded-port")
-  const host =
-    !forwardedHost.includes(":") && forwardedPort
-      ? `${forwardedHost}:${forwardedPort}`
-      : forwardedHost
-  const origin = `${proto}://${host}`
-  const url = new URL(signed.signedUrl)
-  const publicUrl = `${origin}${url.pathname}${url.search}`
+  const publicUrl = resolveStorageUrl(c.req.raw, signed.signedUrl)
   return c.redirect(publicUrl, 302)
 })
 

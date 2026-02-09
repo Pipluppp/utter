@@ -2,6 +2,7 @@ import { Hono } from "npm:hono@4"
 
 import { requireUser } from "../../_shared/auth.ts"
 import { createAdminClient, createUserClient } from "../../_shared/supabase.ts"
+import { resolveStorageUrl } from "../../_shared/urls.ts"
 
 function jsonDetail(detail: string, status: number) {
   return new Response(JSON.stringify({ detail }), {
@@ -14,24 +15,6 @@ function normalizeString(value: unknown): string | null {
   if (typeof value !== "string") return null
   const trimmed = value.trim()
   return trimmed ? trimmed : null
-}
-
-function publicizeSignedUrl(req: Request, signedUrl: string): string {
-  const proto =
-    req.headers.get("x-forwarded-proto") ??
-    new URL(req.url).protocol.replace(":", "")
-  const forwardedHost =
-    req.headers.get("x-forwarded-host") ??
-    req.headers.get("host") ??
-    new URL(req.url).host
-  const forwardedPort = req.headers.get("x-forwarded-port")
-  const host =
-    !forwardedHost.includes(":") && forwardedPort
-      ? `${forwardedHost}:${forwardedPort}`
-      : forwardedHost
-  const origin = `${proto}://${host}`
-  const url = new URL(signedUrl)
-  return `${origin}${url.pathname}${url.search}`
 }
 
 export const designRoutes = new Hono()
@@ -128,7 +111,10 @@ designRoutes.post("/voices/design", async (c) => {
     .select("id, name, description, language, source")
     .single()
 
-  if (insertError || !voice) return jsonDetail("Failed to create voice.", 500)
+  if (insertError || !voice) {
+    await admin.storage.from("references").remove([objectKey]).catch(() => {})
+    return jsonDetail("Failed to create voice.", 500)
+  }
 
   const { data: signed, error: signedError } = await admin.storage
     .from("references")
@@ -138,6 +124,6 @@ designRoutes.post("/voices/design", async (c) => {
 
   return c.json({
     ...(voice as Record<string, unknown>),
-    preview_url: publicizeSignedUrl(c.req.raw, signed.signedUrl),
+    preview_url: resolveStorageUrl(c.req.raw, signed.signedUrl),
   })
 })

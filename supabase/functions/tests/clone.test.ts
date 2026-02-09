@@ -13,6 +13,36 @@ import {
 import { TEST_USER_A, VALID_VOICE_PAYLOAD, MINIMAL_WAV } from "./_helpers/fixtures.ts";
 
 let userA: TestUser;
+const noLeaks = { sanitizeResources: false, sanitizeOps: false };
+const MAX_REFERENCE_BYTES = 10 * 1024 * 1024;
+
+async function getAdminClient() {
+  const admin = await import("npm:@supabase/supabase-js@2");
+  return admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+}
+
+async function waitForReferenceSize(
+  admin: Awaited<ReturnType<typeof getAdminClient>>,
+  userId: string,
+  voiceId: string,
+  minBytes: number,
+): Promise<boolean> {
+  for (let i = 0; i < 20; i++) {
+    const listing = await admin.storage.from("references").list(`${userId}/${voiceId}`, {
+      limit: 100,
+    });
+    if (listing.error) return false;
+    const ref = (listing.data ?? []).find((obj) => obj.name === "reference.wav");
+    const refWithSize = ref as
+      | { size?: number | string | null; metadata?: { size?: number | string | null; contentLength?: number | string | null } }
+      | undefined;
+    const value = refWithSize?.metadata?.size ?? refWithSize?.metadata?.contentLength ?? refWithSize?.size ?? null;
+    const size = value == null ? null : Number(value);
+    if (size !== null && Number.isFinite(size) && size >= minBytes) return true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return false;
+}
 
 Deno.test({ name: "clone: setup", sanitizeResources: false, sanitizeOps: false, fn: async () => {
   userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
@@ -105,6 +135,100 @@ Deno.test("POST /clone/finalize rejects missing voice_id", async () => {
   });
   assertEquals(res.status, 400);
   await res.body?.cancel();
+});
+
+Deno.test({
+  name: "POST /clone/finalize rejects oversized reference audio",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdminClient();
+    const voiceId = crypto.randomUUID();
+    const objectKey = `${userA.userId}/${voiceId}/reference.wav`;
+    const oversizedAudio = new Uint8Array(MAX_REFERENCE_BYTES + 1);
+
+    try {
+      const upload = await admin.storage.from("references").upload(objectKey, oversizedAudio, {
+        contentType: "audio/wav",
+        upsert: true,
+      });
+
+      if (upload.error) {
+        assertEquals(typeof upload.error.message, "string");
+        return;
+      }
+
+      const sizeReady = await waitForReferenceSize(admin, userA.userId, voiceId, oversizedAudio.length);
+      if (!sizeReady) {
+        throw new Error("Reference metadata size was not available in time.");
+      }
+
+      const res = await apiFetch("/clone/finalize", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          voice_id: voiceId,
+          ...VALID_VOICE_PAYLOAD,
+        }),
+      });
+
+      assertEquals(res.status, 400);
+      const body = await res.json();
+      assertEquals(typeof body.detail, "string");
+    } finally {
+      await admin.storage.from("references").remove([objectKey]);
+      await admin.from("voices").delete().eq("id", voiceId).eq("user_id", userA.userId);
+    }
+  },
+});
+
+Deno.test({
+  name: "POST /clone/finalize cleans orphaned upload when voice insert fails",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdminClient();
+    const voiceId = crypto.randomUUID();
+    const objectKey = `${userA.userId}/${voiceId}/reference.wav`;
+
+    try {
+      const upload = await admin.storage.from("references").upload(objectKey, MINIMAL_WAV, {
+        contentType: "audio/wav",
+        upsert: true,
+      });
+      if (upload.error) throw new Error(upload.error.message);
+
+      const seed = await admin.from("voices").insert({
+        id: voiceId,
+        user_id: userA.userId,
+        name: "Existing Voice",
+        source: "uploaded",
+        language: "English",
+        reference_object_key: objectKey,
+        reference_transcript: "seed",
+      });
+      if (seed.error) throw new Error(seed.error.message);
+
+      const res = await apiFetch("/clone/finalize", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          voice_id: voiceId,
+          ...VALID_VOICE_PAYLOAD,
+        }),
+      });
+      assertEquals(res.status, 500);
+      await res.body?.cancel();
+
+      const listing = await admin.storage.from("references").list(`${userA.userId}/${voiceId}`, {
+        limit: 100,
+      });
+      if (listing.error) throw new Error(listing.error.message);
+      const hasReference = (listing.data ?? []).some((obj) => obj.name === "reference.wav");
+      assertEquals(hasReference, false);
+    } finally {
+      await admin.from("voices").delete().eq("id", voiceId).eq("user_id", userA.userId);
+      await admin.storage.from("references").remove([objectKey]);
+    }
+  },
 });
 
 // --- Full clone flow: upload-url → upload → finalize ---
