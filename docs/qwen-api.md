@@ -20,6 +20,8 @@ https://www.alibabacloud.com/help/en/model-studio/qwen-tts-voice-design
 https://www.alibabacloud.com/help/en/model-studio/model-pricing
 https://www.alibabacloud.com/help/en/model-studio/getting-started/models
 https://www.alibabacloud.com/help/en/model-studio/install-sdk
+https://supabase.com/docs/guides/functions/limits
+https://supabase.com/docs/guides/functions/background-tasks
 ```
 
 ## Executive summary (what exists, what we need)
@@ -40,7 +42,7 @@ Key gotchas that matter for product + architecture:
 - **Voice design “create voice” returns preview audio — but it’s still a billable “create voice” operation.**
 - The customization response includes **`target_model`**, and **you must synthesize with that exact model** later (model mismatch → synthesis fails).
 
-We run **fully on Supabase** — no external worker. Edge Functions handle both orchestration and synthesis via the Qwen WS API. The Edge Function uses a **pass-through streaming** architecture: audio chunks from Qwen are simultaneously streamed to the frontend for immediate playback *and* buffered in memory for Storage upload. This gives <2s time-to-first-byte while also persisting the complete file. A **text length limit** (initially 5,000 characters, ~6-7 min audio) is enforced server-side; streaming relaxes wall-clock pressure since each chunk sent resets the Edge idle timer, but the 400s hard wall-clock limit still applies.
+Target architecture is **fully on Supabase** (no external worker): Edge Functions handle both orchestration and synthesis via the Qwen WS API. However, this repository has **not migrated yet**. Current implementation is still Modal-based (submit/poll/result), so this document now separates current state and target state explicitly.
 
 ---
 
@@ -622,243 +624,155 @@ Recommended approach:
 
 ---
 
-## Supabase integration architecture (committed — fully Supabase, no Modal)
 
-### Decision: no external worker
+## Supabase integration architecture (target state)
 
-We remove Modal.com entirely. Supabase Edge Functions handle both orchestration (REST) and speech synthesis (WS). The trade-off: a **text length limit** ensures synthesis completes within Edge Function wall-clock constraints.
+### Current status in this repo (verified 2026-02-09)
 
-Why this works:
-- Voice creation (REST): <10s round-trip, trivially within Edge limits
-- Speech synthesis (WS): Qwen TTS generates faster than realtime; with a text limit, synthesis fits within Edge wall clock
-- No audio processing needed — request MP3 directly from Qwen API
-- Removes an entire service dependency (Modal account, Python runtime, separate deployment pipeline)
+The codebase is still Modal-backed today:
 
-**Note:** `docs/architecture.md` still references Modal in several places (decision matrix, risk register, shared code). Those sections need updating — see "Alignment with architecture.md" below.
+- `POST /api/generate` submits Modal jobs and stores `modal_job_id` (`supabase/functions/api/routes/generate.ts` + `supabase/functions/_shared/modal.ts`).
+- `GET /api/tasks/:id` polls Modal and finalizes results (`supabase/functions/api/routes/tasks.ts`).
+- Schema is Modal-centric (`tasks.modal_job_id`, `tasks.modal_poll_count`) and does not yet store Qwen custom-voice fields such as provider voice ID / target model (`supabase/migrations/20260207190731_initial_schema.sql`).
+- Frontend generation UX expects async task polling (`frontend/src/pages/Generate.tsx`, `frontend/src/components/tasks/TaskProvider.tsx`), not a streamed `/api/generate` audio response.
 
-### What runs where
+This section describes the **target** migration architecture.
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ Supabase Edge Functions (TypeScript/Deno)                            │
-│                                                                      │
-│ ✅ Voice clone/design   → REST fetch() to DashScope (<10s)           │
-│ ✅ Speech synthesis     → WS to DashScope, "Tee" MP3 chunks:        │
-│                           • Stream decoded chunks to frontend (HTTP) │
-│                           • Buffer in memory for Storage upload      │
-│ ✅ Task management      → DB reads/writes (create, update status)    │
-│ ✅ Storage signed URLs, input validation, auth                       │
-│                                                                      │
-│ Constraint: 400s hard wall clock (idle timeout reset by streaming)   │
-│ Mitigation: server-side text length limit                            │
-└──────────────────────────────────────────────────────────────────────┘
-```
+### Decision: no external worker (target)
 
-### Synthesis flow (POST /api/generate — streaming response)
+Target decision remains: remove Modal.com entirely and run clone/design/synthesis through DashScope APIs from Supabase Edge Functions.
 
-```
-Frontend ── POST /api/generate { voice_id, text } ──→ Edge Function
-                                                         │
-  1. Validate input (text ≤ limit, voice exists, user owns voice)
-  2. Create task row (status: processing)
-  3. Look up voice → get provider_voice_id + target_model
-  4. Initialize TransformStream (for streaming HTTP response to frontend)
-  5. Initialize Array<Uint8Array> (for Storage buffer)
-  6. Return streaming Response immediately (Content-Type: audio/mpeg)
-  7. Open WS: wss://dashscope-intl.../realtime?model=<target_model>
-  8. Send session.update { voice, response_format: "mp3", language_type: "Auto", ... }
-  9. Send input_text_buffer.append { text: fullText }
-     ⚠️  Field is "text", NOT "delta" — verified against official WebSocket client
-  10. Send session.finish
-  11. On each response.audio.delta:
-      → Base64 decode the "delta" field → Uint8Array
-      → writer.write(chunk)    // Path A: stream to frontend (immediate playback)
-      → buffer.push(chunk)     // Path B: accumulate for Storage
-  12. On session.finished:
-      → writer.close()         // end frontend stream
-      → Concatenate buffer → upload MP3 to Supabase Storage
-      → Update task row: status = completed, audio_path = ...
-  13. On error event or WS disconnect:
-      → writer.abort()         // signal error to frontend
-      → Update task row: status = failed, error = ...
+Why this is still viable:
+
+- Voice creation REST calls are short-lived.
+- Realtime WS synthesis can run inside Edge limits with strict server-side text limits.
+- We can request browser-playable formats (`mp3`) directly from Qwen.
+- We remove Modal deployment and job orchestration complexity.
+
+### Verified Edge Function limits (Supabase)
+
+As of 2026-02-09 (Supabase docs):
+
+| Plan | Hard wall clock | Notes |
+|---|---|---|
+| Free | **150s** | The key constraint for long synthesis sessions on free tier. |
+| Paid | **400s** | Larger envelope, but still finite. |
+
+Important implications:
+
+- Streaming output helps avoid idle-time stalls, but **does not increase hard wall clock**.
+- Post-response work (`EdgeRuntime.waitUntil`) is supported, but should still be treated as bounded by function execution limits. Do not assume unlimited background runtime.
+
+### Target synthesis flow (streaming)
+
+```text
+Frontend -> POST /api/generate { voice_id, text }
+  1. Validate input + ownership
+  2. Resolve voice mapping: provider_voice_id + target_model
+  3. Open WS: wss://.../realtime?model=<target_model>
+  4. Send session.update (voice, response_format, mode, language_type)
+  5. Send input_text_buffer.append { text: ... }
+  6. Send session.finish
+  7. For each response.audio.delta:
+     - base64 decode
+     - stream bytes to client (optional endpoint variant)
+     - append bytes for final persisted object
+  8. On session.finished:
+     - finalize storage upload
+     - update task/generation rows
 ```
 
-The frontend receives a binary MP3 stream and can begin playback within ~2s (TTFB).
-The complete file is persisted to Storage after the stream ends.
+Protocol correctness reminder:
 
-Key protocol detail: Qwen sends JSON events with base64-encoded audio, NOT raw binary WebSocket frames.
-The Edge Function decodes base64 → binary before writing to the HTTP stream.
+- Client -> server text event uses `input_text_buffer.append` with **`text`**.
+- Server -> client audio event uses `response.audio.delta` with **`delta`** (base64 audio chunk).
 
-### Text length limits
+### Text length limits under 150s/400s
 
-Enforced server-side in the Edge Function. Set conservatively until the validation spike confirms actual synthesis speed.
-
-**Streaming changes the constraint model.** Because we stream chunks to the frontend as they arrive, each chunk resets the Edge Function idle timer (150s). The binding constraint becomes the **400s hard wall-clock limit only** (not idle timeout). This is significantly more generous than the accumulate-and-respond model.
+Use conservative planning with ~10s overhead and ~750 chars/min spoken English.
 
 | Plan | Wall clock | Overhead | Synthesis budget | Limit @ 3x RT | Limit @ 5x RT |
 |---|---|---|---|---|---|
-| **Free (150s idle, 400s wall)** | 400s* | ~10s | ~390s | ~14,400 chars (~19 min) | ~24,000 chars (~32 min) |
-| **Paid (150s idle, 400s wall)** | 400s | ~10s | ~390s | ~14,400 chars (~19 min) | ~24,000 chars (~32 min) |
+| Free | 150s | ~10s | ~140s | ~5,250 chars (~7.0 min audio) | ~8,750 chars (~11.7 min audio) |
+| Paid | 400s | ~10s | ~390s | ~14,625 chars (~19.5 min audio) | ~24,375 chars (~32.5 min audio) |
 
-*With streaming, the free plan benefits from the same 400s wall clock as paid, because the idle timer is continuously reset by outbound audio chunks.
+Recommended guardrails:
 
-**Initial default: 5,000 characters** — conservative, safe at any synthesis speed ratio. Can increase substantially after empirical validation.
+- Keep default cap near **5,000 chars** until empirical throughput is measured in-prod.
+- Current code still allows 10,000 chars; migration should explicitly re-evaluate and likely reduce this for free-tier safety.
+- Ultimately prefer estimated audio-duration limits over raw character count (especially for CJK-heavy inputs).
 
-Assumptions behind the table:
-- English speech ≈ 750 characters/minute at normal pace
-- Overhead = WS handshake + session setup + DB writes (Storage upload happens after stream ends, outside wall clock)
-- "3x realtime" = 1 minute of audio takes ~20s to synthesize (conservative floor)
-- "5x realtime" = 1 minute of audio takes ~12s to synthesize (probable, per Qwen3-TTS paper RTF data)
-- Chinese text produces longer audio per character (~1.5-2s each vs ~0.15s for English letters); the limit should ultimately be based on estimated audio duration, not raw character count
+### Audio assembly strategy
 
-After the validation spike confirms speed, increase the limit. At 5x realtime, we could safely support ~20,000+ characters (~27 min of audio).
+- Prefer `response_format: "mp3"` for browser playback and simpler transport.
+- Continue treating MP3 chunk concatenation as an empirical requirement to validate before rollout.
+- Keep PCM -> WAV fallback path documented for compatibility.
 
-### Edge Function memory
+### API contract choice (must be explicit)
 
-MP3 at 128 kbps ≈ 960 KB/min of audio:
+Because the frontend currently expects task polling, migration has two valid paths:
 
-| Text limit | Approx. audio | Buffer size |
-|---|---|---|
-| 5,000 chars | ~6.5 min | ~6.2 MB |
-| 10,000 chars | ~13 min | ~12.5 MB |
-| 20,000 chars | ~26 min | ~25 MB |
+1. Keep existing async contract:
+   - `POST /api/generate` returns `task_id`
+   - Backend performs WS synthesis and persists output
+   - Frontend polls tasks as it does today
+2. Introduce streaming contract:
+   - `POST /api/generate` returns streaming audio bytes
+   - Frontend playback logic changes substantially
+   - Task rows become optional/secondary telemetry
 
-At our initial 5,000-char limit, the in-memory buffer is ~6 MB — well within Edge Function memory. If limits increase significantly in the future, consider streaming to Storage via resumable upload instead of in-memory accumulation.
+Pick one contract before implementation to avoid half-migrated behavior.
 
-### Why the JS SDK absence is a non-issue
+### Alignment updates needed in docs/architecture.md
 
-The WS protocol is simple JSON messages. Deno's native `WebSocket` handles the connection. We implement a lightweight client that wraps the `session.update`, `input_text_buffer.append`, and `response.audio.delta` JSON protocol:
-
-```typescript
-const ws = new WebSocket(wsUrl)
-
-ws.onopen = () => {
-  ws.send(JSON.stringify({
-    event_id: `evt_${Date.now()}`,
-    type: "session.update",
-    session: {
-      voice: voiceId,
-      response_format: "mp3",
-      sample_rate: 24000,
-      mode: "server_commit",
-      language_type: "Auto"
-    }
-  }))
-  // NOTE: field is "text", NOT "delta" — "delta" is only used in server→client response.audio.delta events
-  ws.send(JSON.stringify({ event_id: `evt_${Date.now()}`, type: "input_text_buffer.append", text: inputText }))
-  ws.send(JSON.stringify({ event_id: `evt_${Date.now()}`, type: "session.finish" }))
-}
-
-const chunks: Uint8Array[] = []
-ws.onmessage = (event) => {
-  const msg = JSON.parse(event.data)
-  if (msg.type === "response.audio.delta") {
-    const decoded = base64decode(msg.delta)
-    writer.write(decoded)        // Path A: stream to frontend immediately
-    chunks.push(decoded)          // Path B: buffer for Storage upload
-  }
-  if (msg.type === "session.finished") {
-    writer.close()                // end frontend stream
-    // concatenate chunks → upload to Storage → update task row
-  }
-  if (msg.type === "error") {
-    // update task as failed → abort stream with error
-  }
-}
-```
-
-~35 lines. No SDK needed.
-
-### Job semantics
-
-For the streaming flow, the Edge Function returns a streaming HTTP response immediately. The task row tracks state for observability, history, and recovery:
-
-| Trigger | Task state |
+| architecture.md reference | Needed update |
 |---|---|
-| Task row created, WS connection opening | `status = processing` |
-| `session.finished` received, Storage upload complete | `status = completed` |
-| `error` event, WS disconnect, or Edge timeout | `status = failed` |
-
-The POST returns a **streaming binary response** (`Content-Type: audio/mpeg`). The frontend plays audio progressively as chunks arrive. The task row is for:
-- Showing generation history (with `audio_path` pointing to the persisted file)
-- Recovery if the frontend loses connection mid-stream (user can fetch the completed file via `GET /api/tasks/:id`)
-- Debugging (metadata stores provider info, timing, error snapshots)
-
-### Frontend streaming playback
-
-The Edge Function returns a streaming HTTP response. The frontend handles it as a binary MP3 stream:
-
-1. `fetch()` returns a `Response` with a `ReadableStream` body
-2. Frontend reads chunks via `response.body.getReader()`
-3. Chunks are fed to an `<audio>` element via a `MediaSource` / blob URL, or accumulated and played after stream ends
-4. The `Content-Type: audio/mpeg` header tells the browser this is MP3 data
-
-Note: MP3 is frame-based and self-delimiting, so partial MP3 data can be played progressively by browsers that support streaming audio. If progressive playback proves unreliable, the frontend can fall back to accumulating the full stream before playing (still much better UX than waiting for the server to accumulate + upload + return a URL).
-
-### Alignment with architecture.md
-
-The fully-Supabase architecture is compatible with `docs/architecture.md` with these updates needed:
-
-| architecture.md reference | Change needed |
-|---|---|
-| `_shared/modal.ts` (line 117) | → `_shared/dashscope.ts` |
-| "Submit generation job → Needs Modal API call" (line 94) | → "Needs DashScope WS synthesis" |
-| "Poll task status → Performs one Modal status check" (line 95) | → "Returns task row from DB" |
-| "Design voice preview → Calls Modal VoiceDesign API" (line 98) | → "Calls DashScope voice design REST API" |
-| Risk: "Edge fn CPU limit NOT fine for audio processing — must stay on Modal" (line 832) | → Edge doesn't process audio; Qwen outputs MP3 directly |
-| Risk: "Long-running background jobs — use Modal" (line 843) | → Text limit ensures synthesis fits in wall clock |
-| Custom secrets: `MODAL_TOKEN` (line 772) | → `DASHSCOPE_API_KEY` |
-
-These updates should be applied when architecture.md is next revised.
+| `_shared/modal.ts` | Replace with DashScope integration helper(s). |
+| "Submit generation job -> Needs Modal API call" | Replace with DashScope WS synthesis path. |
+| "Poll task status -> Performs one Modal status check" | Update to chosen migration contract (polling task state vs streaming endpoint). |
+| Risk notes saying long-running jobs must stay on Modal | Reframe around 150s/400s Supabase constraints + text caps. |
+| Secrets list mentioning `MODAL_*` | Replace with `DASHSCOPE_API_KEY` (+ region choice). |
 
 ---
 
 ## Unknowns that need empirical testing
 
-These gaps in official documentation directly affect our text limit and output format decisions. The validation spike should answer them before writing production Edge Function code.
+These still need validation before production rollout:
 
-### 1. Synthesis speed ratio (IMPORTANT — determines text limit ceiling)
-- **Not documented.** How fast does the Qwen API generate audio relative to playback time?
-- **Impact**: Determines how high we can raise the text limit. With streaming, the constraint is relaxed (400s wall clock), but speed ratio still matters for total generation time.
-- **Qwen paper suggests low RTF** (fast generation), but cloud API performance may differ from local inference benchmarks.
-- **Test**: Time synthesis from WS open to `session.finished` for 1,000 / 5,000 / 10,000 character inputs. Calculate speed ratio.
+### 1. Real API speed ratio under Supabase constraints
+- Measure wall-clock from WS open to `session.finished` for 1k/5k/10k chars.
+- Free-tier planning must use **150s** hard cap.
 
-### 2. MP3 chunk concatenation (CRITICAL — determines output format and streaming viability)
-- **Confirmed supported** by the official feature comparison table: VC/VD models support `mp3` output format.
-- **Still not empirically verified** for streaming concatenation. Official examples only show PCM output. When `response_format: "mp3"`, are the delta chunks valid MP3 frames that concatenate into a playable file?
-- **For streaming to frontend**: MP3 frames are self-delimiting, so decoded chunks *should* be playable progressively. But this needs verification.
-- **Risk**: If chunks don't concatenate cleanly, fall back to PCM + WAV header wrapping (but this breaks progressive frontend playback — would need full accumulation).
-- **Test**: Request `mp3`, concatenate all chunks, verify playback in browser and mobile. Also test progressive playback of partial MP3 data.
+### 2. MP3 chunk concatenation and progressive playback
+- Validate concatenated MP3 across desktop/mobile browsers.
+- Validate partial playback behavior with real network jitter.
 
-### 3. Max text per session
-- **Not documented.** No stated limit on text buffer size.
-- **Our limit (5,000 chars) is well below any likely server cap**, but verify there's no hidden maximum below our limit.
-- **Test**: Send 5,000 and 10,000 characters, confirm sessions complete without error.
+### 3. Qwen per-session input envelope
+- Official docs do not publish a practical max text buffer for our exact path.
+- Confirm behavior at and above planned caps.
 
-### 4. Connection stability
-- **Not documented.** For sessions lasting 1-3 minutes, are there disconnects?
-- **Test**: Run several synthesis sessions at max text length, monitor for drops.
+### 4. Connection stability near limit windows
+- Run repeated near-cap sessions and observe disconnect/error frequencies.
 
-### 5. Voice design iteration cost
-- Each "create" costs $0.20 and consumes quota (1,000 max).
-- **Mitigation**: Consider our open-source Qwen3-TTS VoiceDesign for free unlimited previews; only call the official API for "save" operations.
+### 5. Voice-design iteration economics
+- Each create is billable and consumes quota.
+- Confirm product limits to prevent accidental cost spikes.
 
-### 6. Edge Function streaming response + background work
-- **Not documented for Supabase Edge Functions**: After the streaming HTTP response ends, can the function continue executing (Storage upload, DB update)?
-- Deno Deploy typically allows post-response work within the same isolate until it's cleaned up. Supabase may differ.
-- **Fallback**: If post-response work isn't reliable, upload to Storage *before* closing the stream (adds latency at end but ensures reliability).
+### 6. `waitUntil`/post-response finalization behavior
+- Validate operationally in Supabase Edge Functions for our workload.
+- Ensure persistence/finalization completes reliably without assuming unbounded runtime.
 
-### Validation spike (run before writing production code)
+### Validation spike checklist
 
-```
-1. Get a DashScope API key (Singapore / International region)
-2. Clone a voice (REST) → confirm voice ID + target_model
-3. Synthesize 1,000 chars (WS, mp3) → verify MP3 plays, record wall-clock time
-4. Synthesize 5,000 chars (WS, mp3) → verify, record time
-5. Synthesize 10,000 chars (WS, mp3) → verify, record time (if 5k works)
-6. Calculate speed ratio → set production text limit
-7. Test progressive MP3 playback: feed partial chunks to browser <audio> element
-8. Try pcm format → verify WAV header wrapping works as fallback
-9. Test Supabase Edge Function streaming response + post-response Storage upload
-10. Update this doc with empirical results
+```text
+1. Acquire DashScope API key in target region (Singapore or Beijing)
+2. Clone voice (REST) and record voice + target_model
+3. Synthesize 1,000 chars (WS mp3), record wall-clock and output validity
+4. Synthesize 5,000 chars (WS mp3), record wall-clock and output validity
+5. Attempt 10,000 chars (WS mp3), confirm pass/fail envelope
+6. Verify progressive playback in browser for streamed chunks
+7. Verify fallback pcm->wav pipeline
+8. Verify finalization behavior with and without waitUntil
+9. Set production text cap from measured results (not assumptions)
+10. Update this document with measured timings and chosen API contract
 ```
