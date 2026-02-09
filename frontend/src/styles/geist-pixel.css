@@ -6,3 +6,12 @@
   src: url("../../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Square.woff2")
     format("woff2");
 }
+
+@font-face {
+  font-family: "Geist Pixel Line";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Line.woff2")
+    format("woff2");
+}

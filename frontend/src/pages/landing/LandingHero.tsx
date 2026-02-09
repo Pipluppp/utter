@@ -8,7 +8,7 @@ export function LandingHero() {
   return (
     <section className="py-6 md:py-14">
       <div className="mx-auto max-w-4xl text-center">
-        <h1 className="text-balance text-[clamp(34px,6vw,56px)] font-pixel font-medium uppercase tracking-[2px]">
+        <h1 className="text-balance text-[clamp(34px,6vw,64px)] font-pixel font-medium uppercase tracking-[2px]">
           Clone voices.
           <br />
           Design new ones.
