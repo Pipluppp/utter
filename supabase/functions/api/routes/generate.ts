@@ -28,6 +28,12 @@ function estimateGenerationMinutes(text: string): number {
   return Math.max(0.1, minutes)
 }
 
+function isUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false
+  const code = (error as { code?: string }).code
+  return code === "23505"
+}
+
 export const generateRoutes = new Hono()
 
 generateRoutes.post("/generate", async (c) => {
@@ -75,6 +81,22 @@ generateRoutes.post("/generate", async (c) => {
   if (!refKey) return jsonDetail("Voice has no reference audio.", 400)
 
   const admin = createAdminClient()
+  const { data: activeTask, error: activeTaskError } = await userClient
+    .from("tasks")
+    .select("id")
+    .eq("type", "generate")
+    .in("status", ["pending", "processing"])
+    .limit(1)
+    .maybeSingle()
+
+  if (activeTaskError) return jsonDetail("Failed to check active tasks.", 500)
+  if (activeTask) {
+    return jsonDetail(
+      "A generation is already in progress. Please wait for it to finish before starting another.",
+      409,
+    )
+  }
+
   const { data: audioBlob, error: downloadError } = await admin.storage
     .from("references")
     .download(refKey)
@@ -119,7 +141,22 @@ generateRoutes.post("/generate", async (c) => {
     .select("id")
     .single()
 
-  if (taskError || !task) return jsonDetail("Failed to create task.", 500)
+  if (taskError || !task) {
+    await admin
+      .from("generations")
+      .delete()
+      .eq("id", (generation as { id: string }).id)
+      .eq("user_id", userId)
+
+    if (isUniqueViolation(taskError)) {
+      return jsonDetail(
+        "A generation is already in progress. Please wait for it to finish before starting another.",
+        409,
+      )
+    }
+
+    return jsonDetail("Failed to create task.", 500)
+  }
 
   try {
     const { job_id } = await submitJob({
@@ -166,4 +203,3 @@ generateRoutes.post("/generate", async (c) => {
     return jsonDetail("Failed to submit generation job.", 502)
   }
 })
-

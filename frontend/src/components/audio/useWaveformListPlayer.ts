@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import WaveSurfer from 'wavesurfer.js'
 import { useTheme } from '../../app/theme/ThemeProvider'
+import { resolveProtectedMediaUrl } from '../../lib/protectedMedia'
 
 type Active = { id: string; container: HTMLElement }
 
@@ -50,6 +51,14 @@ export function useWaveformListPlayer() {
       activeRef.current = { id, container }
       setActiveId(id)
       onState?.('loading')
+      let resolvedAudioUrl = audioUrl
+      try {
+        resolvedAudioUrl = await resolveProtectedMediaUrl(audioUrl)
+      } catch {
+        stopAll()
+        onState?.('stopped')
+        return
+      }
 
       container.classList.remove('hidden')
       const styles = getComputedStyle(document.documentElement)
@@ -75,7 +84,7 @@ export function useWaveformListPlayer() {
         barRadius: 0,
         height: 48,
         normalize: true,
-        url: audioUrl,
+        url: resolvedAudioUrl,
       })
       wsRef.current = ws
 

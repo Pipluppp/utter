@@ -91,3 +91,24 @@ export async function apiForm<T>(
 
   return (await res.json()) as T
 }
+
+export async function apiRedirectUrl(path: string): Promise<string> {
+  const authHeaders = await getDefaultAuthHeaders()
+  const res = await fetch(path, {
+    method: 'GET',
+    redirect: 'follow',
+    headers: {
+      ...authHeaders,
+    },
+  })
+
+  if (!res.ok) {
+    throw new ApiError(await parseErrorMessage(res), res.status)
+  }
+
+  // We only need the final resolved URL (typically a signed Storage URL).
+  // Cancel any body stream so this probe doesn't download audio bytes.
+  await res.body?.cancel().catch(() => {})
+
+  return res.url || path
+}

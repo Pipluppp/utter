@@ -128,6 +128,52 @@ Deno.test("POST /generate rejects text > 10000 chars", async () => {
   await res.body?.cancel();
 });
 
+Deno.test({
+  name: "POST /generate rejects when another generation is already active",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    const admin = await import("npm:@supabase/supabase-js@2");
+    const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    const existingGenerationId = crypto.randomUUID();
+    const existingTaskId = crypto.randomUUID();
+
+    await client.from("generations").insert({
+      id: existingGenerationId,
+      user_id: userA.userId,
+      voice_id: voiceId,
+      text: "existing in-flight generation",
+      language: "English",
+      status: "processing",
+    });
+
+    await client.from("tasks").insert({
+      id: existingTaskId,
+      user_id: userA.userId,
+      type: "generate",
+      status: "processing",
+      generation_id: existingGenerationId,
+      voice_id: voiceId,
+    });
+
+    const res = await apiFetch("/generate", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...VALID_GENERATE_PAYLOAD,
+        voice_id: voiceId,
+      }),
+    });
+    assertEquals(res.status, 409);
+    const body = await res.json();
+    assertEquals(typeof body.detail, "string");
+
+    await client.from("tasks").delete().eq("id", existingTaskId);
+    await client.from("generations").delete().eq("id", existingGenerationId);
+  },
+});
+
 Deno.test("POST /generate handles Modal submit failure gracefully", async () => {
   mock.reset();
   mock.shouldFailSubmit = true;
