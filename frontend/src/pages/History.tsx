@@ -8,6 +8,10 @@ import { Message } from '../components/ui/Message'
 import { Select } from '../components/ui/Select'
 import { apiJson } from '../lib/api'
 import { cn } from '../lib/cn'
+import {
+  resolveProtectedMediaUrl,
+  triggerDownload,
+} from '../lib/protectedMedia'
 import type {
   Generation,
   GenerationsResponse,
@@ -66,13 +70,9 @@ function Highlight({ text, tokens }: { text: string; tokens: string[] }) {
   return <>{out}</>
 }
 
-function basename(path: string) {
-  return path.split(/[\\/]/).pop() ?? path
-}
-
 function generationAudioUrl(gen: Generation) {
   if (!gen.audio_path) return null
-  return `/uploads/generated/${basename(gen.audio_path)}`
+  return gen.audio_path
 }
 
 type PlayState = 'idle' | 'loading' | 'playing' | 'paused' | 'stopped'
@@ -202,9 +202,18 @@ export function HistoryPage() {
     })
   }
 
+  async function onDownload(audioUrl: string) {
+    try {
+      const resolvedUrl = await resolveProtectedMediaUrl(audioUrl)
+      triggerDownload(resolvedUrl)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to download audio.')
+    }
+  }
+
   return (
     <div className="space-y-8">
-      <h2 className="text-balance text-center text-xl font-semibold uppercase tracking-[2px]">
+      <h2 className="text-balance text-center text-xl font-pixel font-medium uppercase tracking-[2px]">
         History
       </h2>
 
@@ -339,15 +348,16 @@ export function HistoryPage() {
                       >
                         {playLabel}
                       </button>
-                      <a
+                      <button
+                        type="button"
                         className={buttonStyles({
                           variant: 'secondary',
                           size: 'sm',
                         })}
-                        href={audioUrl}
+                        onClick={() => void onDownload(audioUrl)}
                       >
                         Download
-                      </a>
+                      </button>
                     </>
                   ) : (
                     <span className="text-xs text-faint">

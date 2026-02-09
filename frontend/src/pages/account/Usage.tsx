@@ -14,7 +14,7 @@ function Stat({
       <div className="text-[12px] font-semibold uppercase tracking-wide">
         {label}
       </div>
-      <div className="mt-2 text-xl font-semibold">{value}</div>
+      <div className="mt-2 text-xl font-pixel font-medium">{value}</div>
       <div className="mt-1 text-sm text-muted-foreground">{hint}</div>
     </div>
   )

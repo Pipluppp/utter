@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { WaveformPlayer } from '../components/audio/WaveformPlayer'
 import { useTasks } from '../components/tasks/TaskProvider'
@@ -11,7 +11,11 @@ import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
 import { apiForm, apiJson } from '../lib/api'
 import { formatElapsed } from '../lib/time'
-import type { DesignPreviewResponse, StoredTask } from '../lib/types'
+import type {
+  DesignPreviewResponse,
+  DesignSaveResponse,
+  StoredTask,
+} from '../lib/types'
 import { useLanguages } from './hooks'
 
 type DesignFormState = {
@@ -19,13 +23,6 @@ type DesignFormState = {
   language: string
   text: string
   instruct: string
-}
-
-function base64ToBlob(base64: string, mime: string) {
-  const bin = atob(base64)
-  const bytes = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-  return new Blob([bytes], { type: mime })
 }
 
 const EXAMPLES: Array<{ title: string; name: string; instruct: string }> = [
@@ -63,6 +60,9 @@ export function DesignPage() {
 
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [isSavingVoice, setIsSavingVoice] = useState(false)
+  const [savedVoiceId, setSavedVoiceId] = useState<string | null>(null)
+  const [savedVoiceName, setSavedVoiceName] = useState<string | null>(null)
 
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [elapsedLabel, setElapsedLabel] = useState('0:00')
@@ -120,6 +120,53 @@ export function DesignPage() {
     return () => window.clearInterval(t)
   }, [startedAt])
 
+  const saveDesignedVoice = useCallback(
+    async (blob: Blob, snapshot: DesignFormState) => {
+      setIsSavingVoice(true)
+      setSavedVoiceId(null)
+      setSavedVoiceName(null)
+      setSuccess(null)
+
+      try {
+        const form = new FormData()
+        form.set('name', snapshot.name.trim())
+        form.set('text', snapshot.text.trim())
+        form.set('language', snapshot.language)
+        form.set('instruct', snapshot.instruct.trim())
+        form.set(
+          'audio',
+          new File([blob], 'preview.wav', {
+            type: 'audio/wav',
+          }),
+        )
+
+        const saved = await apiForm<DesignSaveResponse>(
+          '/api/voices/design',
+          form,
+          {
+            method: 'POST',
+          },
+        )
+        setSavedVoiceId(saved.id)
+        setSavedVoiceName(saved.name)
+        setError(null)
+        setSuccess(`Voice "${saved.name}" saved and ready to use.`)
+      } catch (e) {
+        setSavedVoiceId(null)
+        setSavedVoiceName(null)
+        setSuccess(null)
+        const detail =
+          e instanceof Error ? e.message : 'Failed to save voice automatically.'
+        setError(
+          `Preview generated, but automatic save failed. ${detail} You can try Generate Preview again.`,
+        )
+      } finally {
+        setIsSavingVoice(false)
+      }
+    },
+    [],
+  )
+
   useEffect(() => {
     if (!task?.taskId) return
     if (task.status === 'pending' || task.status === 'processing') return
@@ -129,35 +176,84 @@ export function DesignPage() {
     handledTerminalRef.current = terminalKey
 
     if (task.status === 'completed') {
-      const result = task.result as { audio_base64?: string } | undefined
-      if (result?.audio_base64) {
-        if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
-        const blob = base64ToBlob(result.audio_base64, 'audio/wav')
-        previewBlobRef.current = blob
-        const url = URL.createObjectURL(blob)
-        objectUrlRef.current = url
-        setPreviewUrl(url)
-        setError(null)
-        setSuccess(null)
+      const taskState = task.formState as Partial<DesignFormState> | null
+      const snapshot: DesignFormState = {
+        name: typeof taskState?.name === 'string' ? taskState.name : name,
+        language:
+          typeof taskState?.language === 'string'
+            ? taskState.language
+            : language,
+        text: typeof taskState?.text === 'string' ? taskState.text : text,
+        instruct:
+          typeof taskState?.instruct === 'string'
+            ? taskState.instruct
+            : instruct,
+      }
+      const result = task.result as
+        | { audio_base64?: string; audio_url?: string }
+        | undefined
+
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
+      objectUrlRef.current = null
+      previewBlobRef.current = null
+
+      const audioUrl = result?.audio_url?.trim()
+      if (audioUrl) {
+        void (async () => {
+          try {
+            const res = await fetch(audioUrl)
+            if (!res.ok) throw new Error('Failed to load preview audio.')
+            const blob = await res.blob()
+            previewBlobRef.current = blob
+            const url = URL.createObjectURL(blob)
+            objectUrlRef.current = url
+            setPreviewUrl(url)
+            setError(null)
+            setSuccess(null)
+            await saveDesignedVoice(blob, snapshot)
+          } catch (e) {
+            setError(e instanceof Error ? e.message : 'Failed to load preview.')
+          }
+        })()
+      } else {
+        const audioBase64 = result?.audio_base64?.trim()
+        if (audioBase64) {
+          const bin = atob(audioBase64)
+          const bytes = new Uint8Array(bin.length)
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+          const blob = new Blob([bytes], { type: 'audio/wav' })
+          previewBlobRef.current = blob
+          const url = URL.createObjectURL(blob)
+          objectUrlRef.current = url
+          setPreviewUrl(url)
+          setError(null)
+          setSuccess(null)
+          void saveDesignedVoice(blob, snapshot)
+        } else {
+          setError('Failed to load preview audio.')
+        }
       }
     } else if (task.status === 'failed') {
       setError(task.error ?? 'Failed to generate preview.')
+    } else if (task.status === 'cancelled') {
+      setError('Preview cancelled.')
     }
 
     window.setTimeout(() => clearTask('design'), 50)
-  }, [clearTask, task])
-
-  const formState: DesignFormState = useMemo(
-    () => ({ name, language, text, instruct }),
-    [instruct, language, name, text],
-  )
+  }, [clearTask, instruct, language, name, saveDesignedVoice, task, text])
 
   async function onPreview() {
     setError(null)
     setSuccess(null)
+    setSavedVoiceId(null)
+    setSavedVoiceName(null)
     setPreviewUrl(null)
     previewBlobRef.current = null
 
+    if (!name.trim()) {
+      setError('Voice name is required.')
+      return
+    }
     if (!text.trim()) {
       setError('Preview text is required.')
       return
@@ -176,6 +272,7 @@ export function DesignPage() {
     }
 
     try {
+      const snapshot: DesignFormState = { name, language, text, instruct }
       const res = await apiJson<DesignPreviewResponse>(
         '/api/voices/design/preview',
         {
@@ -183,43 +280,9 @@ export function DesignPage() {
           json: { text, language, instruct },
         },
       )
-      startTask(res.task_id, 'design', '/design', 'Design preview', formState)
+      startTask(res.task_id, 'design', '/design', 'Design preview', snapshot)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start preview.')
-    }
-  }
-
-  async function onSave() {
-    setError(null)
-    setSuccess(null)
-
-    if (!previewBlobRef.current) {
-      setError('Generate a preview first.')
-      return
-    }
-    if (!name.trim()) {
-      setError('Voice name is required.')
-      return
-    }
-
-    try {
-      const form = new FormData()
-      form.set('name', name.trim())
-      form.set('text', text.trim())
-      form.set('language', language)
-      form.set('instruct', instruct.trim())
-      form.set(
-        'audio',
-        new File([previewBlobRef.current], 'preview.wav', {
-          type: 'audio/wav',
-        }),
-      )
-
-      await apiForm('/api/voices/design', form, { method: 'POST' })
-      setSuccess('Voice saved. Redirecting to Voices…')
-      window.setTimeout(() => navigate('/voices'), 600)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save voice.')
     }
   }
 
@@ -228,15 +291,15 @@ export function DesignPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-center gap-2">
-        <h2 className="text-balance text-center text-xl font-semibold uppercase tracking-[2px]">
+        <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Design
         </h2>
         <InfoTip align="end" label="Design tips">
           <div className="space-y-2">
             <div>No reference audio needed. Describe the voice you want.</div>
             <div>
-              Generate a short preview first; saving the voice stores that
-              preview as the reference for later generation.
+              Generate a short preview first; it is automatically saved as a
+              reusable voice.
             </div>
             <div>Preview text and description are limited to 500 chars.</div>
           </div>
@@ -271,7 +334,7 @@ export function DesignPage() {
             name="instruct"
             value={instruct}
             onChange={(e) => setInstruct(e.target.value)}
-            placeholder="Describe the voice (tone, pacing, timbre, vibe)…"
+            placeholder="Describe the voice (tone, pacing, timbre, vibe)..."
           />
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-faint">
             <span>{instruct.length}/500</span>
@@ -300,7 +363,7 @@ export function DesignPage() {
             name="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="A short line to preview the voice…"
+            placeholder="A short line to preview the voice..."
           />
           <div className="mt-2 text-xs text-faint">{text.length}/500</div>
         </div>
@@ -322,17 +385,26 @@ export function DesignPage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Button type="submit" block loading={isRunning}>
-            {isRunning ? `Generating… ${elapsedLabel}` : 'Generate Preview'}
+          <Button type="submit" block disabled={isRunning || isSavingVoice}>
+            {isRunning
+              ? `Generating... ${elapsedLabel}`
+              : isSavingVoice
+                ? 'Saving voice...'
+                : 'Generate Preview'}
           </Button>
           <Button
             type="button"
             variant="secondary"
             block
-            onClick={() => void onSave()}
-            disabled={!previewUrl}
+            onClick={() => {
+              if (!savedVoiceId) return
+              void navigate(
+                `/generate?voice=${encodeURIComponent(savedVoiceId)}`,
+              )
+            }}
+            disabled={!savedVoiceId || isRunning || isSavingVoice}
           >
-            Save Voice
+            Use Voice
           </Button>
         </div>
       </form>
@@ -345,7 +417,7 @@ export function DesignPage() {
                 Progress
               </div>
               <div className="mt-1 text-sm text-muted-foreground">
-                Generating…
+                Generating...
               </div>
             </div>
             <div className="text-xs text-faint">{elapsedLabel}</div>
@@ -355,8 +427,13 @@ export function DesignPage() {
 
       {previewUrl ? (
         <div className="space-y-4 border border-border bg-background p-4 shadow-elevated">
-          <div className="text-sm font-medium uppercase tracking-wide">
-            Preview
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm font-medium uppercase tracking-wide">
+              Preview
+            </div>
+            {savedVoiceName ? (
+              <div className="text-xs text-faint">{savedVoiceName}</div>
+            ) : null}
           </div>
           <WaveformPlayer
             audioUrl={previewUrl}

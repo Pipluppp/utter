@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import WaveSurfer from 'wavesurfer.js'
 import { useTheme } from '../../app/theme/ThemeProvider'
 import { cn } from '../../lib/cn'
+import { resolveProtectedMediaUrl } from '../../lib/protectedMedia'
 
 const WAVEFORM_PLAY_EVENT = 'utter:waveform-play'
 
@@ -142,7 +143,15 @@ export function WaveformPlayer({
     if (audioBlob) {
       ws.loadBlob(audioBlob).catch(onError)
     } else if (audioUrl) {
-      ws.load(audioUrl).catch(onError)
+      void (async () => {
+        try {
+          const resolvedUrl = await resolveProtectedMediaUrl(audioUrl)
+          if (cancelled) return
+          ws.load(resolvedUrl).catch(onError)
+        } catch (e) {
+          onError(e)
+        }
+      })()
     }
 
     return () => {

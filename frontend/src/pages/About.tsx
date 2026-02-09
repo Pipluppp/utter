@@ -5,7 +5,7 @@ export function AboutPage() {
 
   return (
     <div className="space-y-8">
-      <h2 className="text-balance text-center text-xl font-semibold uppercase tracking-[2px]">
+      <h2 className="text-balance text-center text-xl font-pixel font-medium uppercase tracking-[2px]">
         About
       </h2>
 
@@ -28,8 +28,8 @@ export function AboutPage() {
             Design
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Describe a voice in plain language, generate a preview, then save it
-            for later use.
+            Describe a voice in plain language and generate a preview that is
+            saved automatically for later use.
           </p>
         </div>
         <div className="border border-border bg-background p-4 shadow-elevated">

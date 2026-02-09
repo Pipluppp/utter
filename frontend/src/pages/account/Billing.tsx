@@ -47,7 +47,7 @@ export function AccountBillingPage() {
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <NavLink
-            to="/pricing"
+            to="/#pricing"
             className={cn(
               'text-[12px] uppercase tracking-wide text-muted-foreground hover:text-foreground',
               'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',

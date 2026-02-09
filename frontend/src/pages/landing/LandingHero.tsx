@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { buttonStyles } from '../../components/ui/Button'
 import { useLanguages } from '../hooks'
 
@@ -8,7 +8,7 @@ export function LandingHero() {
   return (
     <section className="py-6 md:py-14">
       <div className="mx-auto max-w-4xl text-center">
-        <h1 className="text-balance text-[clamp(34px,6vw,56px)] font-semibold uppercase tracking-[2px]">
+        <h1 className="text-balance text-[clamp(34px,6vw,64px)] font-pixel font-medium uppercase tracking-[2px]">
           Clone voices.
           <br />
           Design new ones.
@@ -22,12 +22,12 @@ export function LandingHero() {
         </p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <a
-            href="#demos"
+          <Link
+            to={{ pathname: '/', hash: '#demos' }}
             className={buttonStyles({ variant: 'primary', size: 'md' })}
           >
             Hear the demos →
-          </a>
+          </Link>
           <NavLink
             to="/clone"
             className={buttonStyles({ variant: 'secondary', size: 'md' })}

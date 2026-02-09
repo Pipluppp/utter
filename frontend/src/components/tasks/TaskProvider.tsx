@@ -128,17 +128,30 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reduce, { tasks: {} })
 
   const pollIntervalsRef = useRef<Partial<Record<TaskType, number>>>({})
+  const pollInFlightRef = useRef<Partial<Record<TaskType, boolean>>>({})
+
+  const stopPolling = useCallback((taskType: TaskType) => {
+    const id = pollIntervalsRef.current[taskType]
+    if (id) {
+      window.clearInterval(id)
+      delete pollIntervalsRef.current[taskType]
+    }
+    delete pollInFlightRef.current[taskType]
+  }, [])
 
   const clearTask = useCallback(
     (taskType: TaskType) => {
-      const task = state.tasks[taskType]
+      const task = readJson<StoredTask>(taskStorageKey(taskType))
       if (task?.taskId) {
-        fetch(`/api/tasks/${task.taskId}`, { method: 'DELETE' }).catch(() => {})
+        apiJson(`/api/tasks/${task.taskId}`, { method: 'DELETE' }).catch(
+          () => {},
+        )
       }
+      stopPolling(taskType)
       localStorage.removeItem(taskStorageKey(taskType))
       dispatch({ type: 'remove', taskType })
     },
-    [state.tasks],
+    [stopPolling],
   )
 
   useEffect(() => {
@@ -245,13 +258,6 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   )
 
   useEffect(() => {
-    const stopPolling = (taskType: TaskType) => {
-      const id = pollIntervalsRef.current[taskType]
-      if (!id) return
-      window.clearInterval(id)
-      delete pollIntervalsRef.current[taskType]
-    }
-
     const ensurePolling = (taskType: TaskType) => {
       const task = state.tasks[taskType]
       if (!task?.taskId) {
@@ -265,35 +271,41 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (pollIntervalsRef.current[taskType]) return
 
       const poll = async () => {
-        const current = readJson<StoredTask>(taskStorageKey(taskType))
-        if (!current?.taskId) {
-          stopPolling(taskType)
-          return
-        }
-        if (isTerminal(current.status)) {
-          stopPolling(taskType)
-          return
-        }
+        if (pollInFlightRef.current[taskType]) return
+        pollInFlightRef.current[taskType] = true
 
+        const current = readJson<StoredTask>(taskStorageKey(taskType))
         try {
-          const taskData = await apiJson<BackendTask>(
-            `/api/tasks/${current.taskId}`,
-          )
-          const updated: StoredTask = {
-            ...current,
-            status: taskData.status,
-            result: taskData.result,
-            error: taskData.error ?? null,
-            modalStatus: taskData.modal_status ?? null,
-          }
-          if (isTerminal(updated.status)) updated.completedAt = Date.now()
-          writeJson(taskStorageKey(taskType), updated)
-          dispatch({ type: 'set', taskType, task: updated })
-        } catch (e) {
-          if (e instanceof ApiError && e.status === 404) {
-            clearTask(taskType)
+          if (!current?.taskId) {
             stopPolling(taskType)
+            return
           }
+          if (isTerminal(current.status)) {
+            stopPolling(taskType)
+            return
+          }
+
+          try {
+            const taskData = await apiJson<BackendTask>(
+              `/api/tasks/${current.taskId}`,
+            )
+            const updated: StoredTask = {
+              ...current,
+              status: taskData.status,
+              result: taskData.result,
+              error: taskData.error ?? null,
+              modalStatus: taskData.modal_status ?? null,
+            }
+            if (isTerminal(updated.status)) updated.completedAt = Date.now()
+            writeJson(taskStorageKey(taskType), updated)
+            dispatch({ type: 'set', taskType, task: updated })
+          } catch (e) {
+            if (e instanceof ApiError && e.status === 404) {
+              clearTask(taskType)
+            }
+          }
+        } finally {
+          pollInFlightRef.current[taskType] = false
         }
       }
 
@@ -302,10 +314,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
 
     TASK_TYPES.forEach(ensurePolling)
+  }, [clearTask, state.tasks, stopPolling])
+
+  useEffect(() => {
     return () => {
       TASK_TYPES.forEach(stopPolling)
     }
-  }, [clearTask, state.tasks])
+  }, [stopPolling])
 
   const value = useMemo<TaskContextValue>(() => {
     const activeCount = TASK_TYPES.filter((t) => {

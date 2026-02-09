@@ -88,7 +88,9 @@ function TaskRow({
           <Icon type={task.type} />
         </span>
         <span className="min-w-0 flex-1 truncate">{short}</span>
-        <span className="shrink-0 text-xs text-faint">{elapsed}</span>
+        <span className="shrink-0 text-xs font-pixel font-medium text-faint">
+          {elapsed}
+        </span>
       </NavLink>
 
       {showCancel ? (

@@ -41,7 +41,7 @@ npm run dev
 - Backend: Supabase Postgres + Storage + Edge Functions (job-based, poll-driven finalization)
 - Auth: Supabase Auth + RLS
 - Billing: Stripe (planned)
-- Frontend hosting: TBD (Vercel vs S3/CloudFront)
+- Frontend hosting: Vercel (Vite/React SPA) with `/api/*` rewrites to Supabase Edge Functions
 
 ---
 
@@ -56,8 +56,10 @@ npm run dev
 | [supabase.md](./supabase.md) | Supabase grounding (official docs + CLI workflows) |
 | [backend.md](./backend.md) | Edge API plan (routes, auth, storage flows) |
 | [database.md](./database.md) | Schema + RLS + Storage policies |
+| [supabase-security.md](./supabase-security.md) | Supabase security checklist (RLS, hardening, keys, Storage) |
 | [edge-orchestration.md](./edge-orchestration.md) | Modal jobs -> Edge orchestration (poll-driven finalization) |
 | [deployment-architecture.md](./deployment-architecture.md) | Billing integration + cost projections |
+| [vercel-frontend.md](./vercel-frontend.md) | Vercel frontend (React + Vite SPA) with `/api/*` rewrites to Supabase Edge Functions |
 
 ## Supporting docs
 
@@ -67,6 +69,7 @@ npm run dev
 | [tooling.md](./tooling.md) | Local tooling and conventions |
 | [biome.md](./biome.md) | Frontend formatting/linting (Biome) |
 | [qwen3-tts-models-map.md](./qwen3-tts-models-map.md) | Qwen3-TTS model variants and mapping |
+| [qwen-api.md](./qwen-api.md) | Official Alibaba (DashScope) Qwen TTS APIs (clone/design + realtime synthesis) |
 | [transcription.md](./transcription.md) | Voxtral/Mistral transcription plan (optional) |
 
 ## Modal deployment guides (historical)

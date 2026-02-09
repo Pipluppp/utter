@@ -27,6 +27,8 @@ ENV/
 
 # Environment variables
 .env
+.env.local
+.env.*.local
 
 # Database
 *.db
@@ -49,6 +51,10 @@ uploads/
 .codex/
 .tmp/
 
+# Supabase local
+supabase/.env.local
+supabase/.temp/
+
 # Windows device name artifacts
 nul
 
@@ -64,5 +70,7 @@ Thumbs.db
 .coverage
 htmlcov/
 
-utter_demo
-utter_demo_v2
+/utter_demo
+/utter_demo_v2
+
+node_modules/

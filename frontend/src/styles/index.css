@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./geist-pixel.css";
 
 @theme {
   --font-mono:
@@ -8,6 +9,10 @@
   --font-mono-ui:
     "Geist Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --font-pixel:
+    "Geist Pixel Line", "Geist Mono", ui-monospace, SFMono-Regular, Menlo,
+    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   --color-background: #ffffff;
   --color-subtle: #fafafa;
@@ -92,4 +97,9 @@
   box-shadow:
     var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000),
     var(--tw-shadow);
+}
+
+@utility font-pixel {
+  font-family: var(--font-pixel);
+  font-synthesis: none;
 }

@@ -19,7 +19,7 @@ export function PrivacyPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-semibold uppercase tracking-[2px]">
+        <h2 className="text-xl font-pixel font-medium uppercase tracking-[2px]">
           Privacy Policy
         </h2>
         <div className="mt-2 text-sm text-muted-foreground">

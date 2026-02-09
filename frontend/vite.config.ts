@@ -2,7 +2,8 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 
-const FASTAPI_ORIGIN = process.env.FASTAPI_ORIGIN ?? 'http://localhost:8000'
+const BACKEND_ORIGIN =
+  process.env.BACKEND_ORIGIN ?? 'http://localhost:54321/functions/v1'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -10,9 +11,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
-      '/api': { target: FASTAPI_ORIGIN, changeOrigin: true, ws: true },
-      '/uploads': { target: FASTAPI_ORIGIN, changeOrigin: true },
-      '/static': { target: FASTAPI_ORIGIN, changeOrigin: true },
+      '/api': { target: BACKEND_ORIGIN, changeOrigin: true },
     },
   },
 })

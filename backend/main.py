@@ -8,6 +8,7 @@ import uuid
 import asyncio
 import time
 import json
+import re
 from pathlib import Path
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
@@ -35,7 +36,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import create_tables, get_session
-from models import Voice, Generation
+from models import Profile, Voice, Generation
 from services import storage
 from services.audio import get_audio_duration, validate_reference_audio
 from services.transcription import (
@@ -53,6 +54,8 @@ from config import (
     SUPPORTED_LANGUAGES,
     TTS_PROVIDER,
 )
+
+HANDLE_RE = re.compile(r"^[a-z][a-z0-9_]{2,23}$")
 
 
 # ============================================================================
@@ -578,6 +581,111 @@ async def ws_transcriptions_realtime(websocket: WebSocket):
             await recv_task
         except Exception:
             pass
+
+
+def get_dev_user_id(request: Request) -> Optional[str]:
+    user_id = (request.headers.get("x-utter-user-id") or "").strip()
+    return user_id or None
+
+
+@app.get("/api/me")
+async def api_me(request: Request, session: AsyncSession = Depends(get_session)):
+    user_id = get_dev_user_id(request)
+    if not user_id:
+        return {"signed_in": False, "user": None, "profile": None}
+
+    result = await session.execute(select(Profile).where(Profile.id == user_id))
+    profile = result.scalar_one_or_none()
+
+    if not profile:
+        profile = Profile(id=user_id)
+        session.add(profile)
+        await session.commit()
+        await session.refresh(profile)
+
+    return {
+        "signed_in": True,
+        "user": {"id": user_id},
+        "profile": profile.to_dict(),
+    }
+
+
+@app.patch("/api/profile")
+async def api_update_profile(
+    request: Request, session: AsyncSession = Depends(get_session)
+):
+    user_id = get_dev_user_id(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not signed in")
+
+    payload = await request.json()
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Invalid request body")
+
+    result = await session.execute(select(Profile).where(Profile.id == user_id))
+    profile = result.scalar_one_or_none()
+    if not profile:
+        profile = Profile(id=user_id)
+        session.add(profile)
+        await session.commit()
+        await session.refresh(profile)
+
+    if "display_name" in payload:
+        display_name = payload.get("display_name")
+        if display_name is None:
+            profile.display_name = None
+        elif not isinstance(display_name, str):
+            raise HTTPException(status_code=400, detail="display_name must be a string")
+        else:
+            display_name = display_name.strip()
+            if len(display_name) > 50:
+                raise HTTPException(
+                    status_code=400, detail="Display name must be 50 characters or less"
+                )
+            profile.display_name = display_name or None
+
+    if "avatar_url" in payload:
+        avatar_url = payload.get("avatar_url")
+        if avatar_url is None:
+            profile.avatar_url = None
+        elif not isinstance(avatar_url, str):
+            raise HTTPException(status_code=400, detail="avatar_url must be a string")
+        else:
+            avatar_url = avatar_url.strip()
+            if len(avatar_url) > 500:
+                raise HTTPException(
+                    status_code=400, detail="Avatar URL must be 500 characters or less"
+                )
+            profile.avatar_url = avatar_url or None
+
+    if "handle" in payload:
+        handle = payload.get("handle")
+        if not isinstance(handle, str):
+            raise HTTPException(status_code=400, detail="handle must be a string")
+
+        handle = handle.strip().lower()
+        if not handle:
+            raise HTTPException(status_code=400, detail="Handle is required")
+        if not HANDLE_RE.match(handle):
+            raise HTTPException(
+                status_code=400,
+                detail="Handle must be 3-24 chars, start with a letter, and contain only lowercase letters, numbers, and underscores.",
+            )
+
+        existing = await session.execute(
+            select(Profile).where(Profile.handle == handle, Profile.id != user_id)
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="Handle is already taken")
+
+        profile.handle = handle
+
+    profile.updated_at = datetime.utcnow()
+    await session.commit()
+    await session.refresh(profile)
+
+    return {"profile": profile.to_dict()}
+
 
 @app.get("/api/voices")
 async def api_voices(

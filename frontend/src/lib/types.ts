@@ -100,13 +100,21 @@ export type LanguagesResponse = {
     enabled: boolean
     provider: string
     model: string
-    realtime_model: string
   }
 }
 
 export type CloneResponse = { id: string; name: string }
 
 export type DesignPreviewResponse = { task_id: string; status: TaskStatus }
+
+export type DesignSaveResponse = {
+  id: string
+  name: string
+  description: string
+  language: string
+  source: 'designed'
+  preview_url: string
+}
 
 export type RegenerateResponse = {
   voice_id: string

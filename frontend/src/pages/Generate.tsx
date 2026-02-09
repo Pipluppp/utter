@@ -12,6 +12,10 @@ import { getUtterDemo } from '../content/utterDemo'
 import { apiJson } from '../lib/api'
 import { cn } from '../lib/cn'
 import { fetchTextUtf8 } from '../lib/fetchTextUtf8'
+import {
+  resolveProtectedMediaUrl,
+  triggerDownload,
+} from '../lib/protectedMedia'
 import { formatElapsed } from '../lib/time'
 import type { GenerateResponse, StoredTask, VoicesResponse } from '../lib/types'
 import { useLanguages } from './hooks'
@@ -35,6 +39,7 @@ export function GeneratePage() {
   const [voiceId, setVoiceId] = useState('')
   const [language, setLanguage] = useState(defaultLanguage)
   const [text, setText] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [elapsedLabel, setElapsedLabel] = useState('0:00')
@@ -46,6 +51,7 @@ export function GeneratePage() {
   const restoredRef = useRef(false)
   const handledTerminalRef = useRef<string | null>(null)
   const loadedDemoRef = useRef<string | null>(null)
+  const submitInFlightRef = useRef(false)
 
   useEffect(() => setLanguage(defaultLanguage), [defaultLanguage])
 
@@ -135,10 +141,23 @@ export function GeneratePage() {
 
     if (task.status === 'completed') {
       const result = task.result as { audio_url?: string } | undefined
-      if (result?.audio_url) {
-        setAudioUrl(result.audio_url)
-        setDownloadUrl(result.audio_url)
-        setError(null)
+      const generatedAudioUrl = result?.audio_url
+      if (generatedAudioUrl) {
+        void (async () => {
+          try {
+            const resolvedUrl =
+              await resolveProtectedMediaUrl(generatedAudioUrl)
+            setAudioUrl(resolvedUrl)
+            setDownloadUrl(resolvedUrl)
+            setError(null)
+          } catch (e) {
+            setError(
+              e instanceof Error
+                ? e.message
+                : 'Failed to load generation audio.',
+            )
+          }
+        })()
       }
     } else if (task.status === 'failed') {
       setError(task.error ?? 'Generation failed. Please try again.')
@@ -149,8 +168,19 @@ export function GeneratePage() {
     window.setTimeout(() => clearTask('generate'), 50)
   }, [clearTask, task])
 
+  async function onDownload() {
+    if (!downloadUrl) return
+    try {
+      const resolvedUrl = await resolveProtectedMediaUrl(downloadUrl)
+      triggerDownload(resolvedUrl)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to download audio.')
+    }
+  }
+
   const charCount = text.length
   const isRunning = task?.status === 'pending' || task?.status === 'processing'
+  const isBusy = isSubmitting || isRunning
   const statusText = task
     ? getStatusText(task.status, task.modalStatus ?? null)
     : null
@@ -159,7 +189,8 @@ export function GeneratePage() {
     !loadingVoices &&
     Boolean(voiceId) &&
     Boolean(text.trim()) &&
-    charCount <= 10000
+    charCount <= 10000 &&
+    !isBusy
 
   const formState: GenerateFormState = useMemo(
     () => ({ voiceId, language, text }),
@@ -167,6 +198,8 @@ export function GeneratePage() {
   )
 
   async function onGenerate() {
+    if (submitInFlightRef.current) return
+
     setError(null)
     setAudioUrl(null)
     setDownloadUrl(null)
@@ -176,22 +209,27 @@ export function GeneratePage() {
       return
     }
 
+    submitInFlightRef.current = true
+    setIsSubmitting(true)
+
     try {
       const res = await apiJson<GenerateResponse>('/api/generate', {
         method: 'POST',
         json: { voice_id: voiceId, text, language, model: '0.6B' },
       })
-      const description = `Generate: ${text.slice(0, 50)}${text.length > 50 ? '…' : ''}`
+      const description = `Generate: ${text.slice(0, 50)}${text.length > 50 ? '...' : ''}`
       startTask(res.task_id, 'generate', '/generate', description, formState)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start generation.')
+    } finally {
+      setIsSubmitting(false)
+      submitInFlightRef.current = false
     }
   }
-
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-center gap-2">
-        <h2 className="text-balance text-center text-xl font-semibold uppercase tracking-[2px]">
+        <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Generate
         </h2>
         <InfoTip align="end" label="Generate tips">
@@ -273,12 +311,16 @@ export function GeneratePage() {
           </div>
         </div>
 
-        <Button type="submit" block loading={isRunning}>
-          {isRunning ? `Generating… ${elapsedLabel}` : 'Generate Speech'}
+        <Button type="submit" block disabled={!canSubmit}>
+          {isRunning
+            ? `Generating... ${elapsedLabel}`
+            : isSubmitting
+              ? 'Starting generation...'
+              : 'Generate Speech'}
         </Button>
       </form>
 
-      {isRunning ? (
+      {isBusy ? (
         <div className="border border-border bg-subtle p-4 shadow-elevated">
           <div className="flex items-center justify-between">
             <div className="text-sm">
@@ -286,7 +328,8 @@ export function GeneratePage() {
                 Progress
               </div>
               <div className="mt-1 text-sm text-muted-foreground">
-                {statusText ?? 'Processing…'}
+                {statusText ??
+                  (isSubmitting ? 'Starting generation...' : 'Processing...')}
               </div>
             </div>
             <div className="text-xs text-faint">{elapsedLabel}</div>
@@ -302,12 +345,13 @@ export function GeneratePage() {
             </div>
             <div className="flex items-center gap-2">
               {downloadUrl ? (
-                <a
+                <button
+                  type="button"
                   className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  href={downloadUrl}
+                  onClick={() => void onDownload()}
                 >
                   Download
-                </a>
+                </button>
               ) : null}
             </div>
           </div>

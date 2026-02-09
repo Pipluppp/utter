@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
 } from 'react'
@@ -51,7 +52,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => readStoredTheme())
   const resolvedTheme = useMemo<Theme>(() => theme, [theme])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     applyResolvedTheme(resolvedTheme)
   }, [resolvedTheme])
 
