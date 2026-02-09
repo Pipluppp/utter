@@ -60,6 +60,7 @@ npm run dev
 | [edge-orchestration.md](./edge-orchestration.md) | Modal jobs -> Edge orchestration (poll-driven finalization) |
 | [deployment-architecture.md](./deployment-architecture.md) | Billing integration + cost projections |
 | [vercel-frontend.md](./vercel-frontend.md) | Vercel frontend (React + Vite SPA) with `/api/*` rewrites to Supabase Edge Functions |
+| **[qwen-integration/README.md](./qwen-integration/README.md)** | Official Qwen integration orchestration (dual provider rollout, streaming v2, restoration) |
 
 ## Supporting docs
 
