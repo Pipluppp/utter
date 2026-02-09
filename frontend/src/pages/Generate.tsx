@@ -141,10 +141,12 @@ export function GeneratePage() {
 
     if (task.status === 'completed') {
       const result = task.result as { audio_url?: string } | undefined
-      if (result?.audio_url) {
+      const generatedAudioUrl = result?.audio_url
+      if (generatedAudioUrl) {
         void (async () => {
           try {
-            const resolvedUrl = await resolveProtectedMediaUrl(result.audio_url)
+            const resolvedUrl =
+              await resolveProtectedMediaUrl(generatedAudioUrl)
             setAudioUrl(resolvedUrl)
             setDownloadUrl(resolvedUrl)
             setError(null)
@@ -309,7 +311,7 @@ export function GeneratePage() {
           </div>
         </div>
 
-        <Button type="submit" block loading={isBusy}>
+        <Button type="submit" block disabled={!canSubmit}>
           {isRunning
             ? `Generating... ${elapsedLabel}`
             : isSubmitting

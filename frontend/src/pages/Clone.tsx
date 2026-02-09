@@ -779,12 +779,27 @@ export function ClonePage() {
           >
             Try Example Voice
           </Button>
-          <Button type="submit" block loading={submitting}>
+          <Button type="submit" block disabled={submitting}>
             {submitting ? `Cloning… ${elapsedLabel}` : 'Clone Voice'}
           </Button>
         </div>
       </form>
 
+      {submitting ? (
+        <div className="border border-border bg-subtle p-4 shadow-elevated">
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <div className="font-medium uppercase tracking-wide">
+                Progress
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Cloning...
+              </div>
+            </div>
+            <div className="text-xs text-faint">{elapsedLabel}</div>
+          </div>
+        </div>
+      ) : null}
       {created ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overscroll-contain backdrop-blur-sm">
           <div

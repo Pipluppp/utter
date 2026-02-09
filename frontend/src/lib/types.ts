@@ -107,6 +107,15 @@ export type CloneResponse = { id: string; name: string }
 
 export type DesignPreviewResponse = { task_id: string; status: TaskStatus }
 
+export type DesignSaveResponse = {
+  id: string
+  name: string
+  description: string
+  language: string
+  source: 'designed'
+  preview_url: string
+}
+
 export type RegenerateResponse = {
   voice_id: string
   text: string

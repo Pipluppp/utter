@@ -28,8 +28,8 @@ export function AboutPage() {
             Design
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Describe a voice in plain language, generate a preview, then save it
-            for later use.
+            Describe a voice in plain language and generate a preview that is
+            saved automatically for later use.
           </p>
         </div>
         <div className="border border-border bg-background p-4 shadow-elevated">
