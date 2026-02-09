@@ -1,8 +1,11 @@
 import { Hono } from "npm:hono@4"
+import { getTranscriptionConfig } from "../../_shared/mistral.ts"
 
 export const languagesRoutes = new Hono()
 
 languagesRoutes.get("/languages", (c) => {
+  const transcription = getTranscriptionConfig()
+
   return c.json({
     languages: [
       "Auto",
@@ -24,11 +27,9 @@ languagesRoutes.get("/languages", (c) => {
     default: "Auto",
     provider: "qwen",
     transcription: {
-      enabled: false,
-      provider: "mistral",
-      model: "mistral-large-latest",
-      realtime_model: "mistral-large-latest",
+      enabled: transcription.enabled,
+      provider: transcription.provider,
+      model: transcription.model,
     },
   })
 })
-

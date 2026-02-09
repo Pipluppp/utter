@@ -57,12 +57,9 @@ export function ClonePage() {
 
   const [recording, setRecording] = useState(false)
   const [recordingError, setRecordingError] = useState<string | null>(null)
-  const [liveTranscript, setLiveTranscript] = useState('')
   const [micLevel, setMicLevel] = useState(0)
   const [recordSeconds, setRecordSeconds] = useState(0)
 
-  const wsRef = useRef<WebSocket | null>(null)
-  const wsReadyRef = useRef(false)
   const streamRef = useRef<MediaStream | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const processorRef = useRef<ScriptProcessorNode | null>(null)
@@ -131,19 +128,6 @@ export function ClonePage() {
         recordTimerRef.current = null
       }
 
-      const ws = wsRef.current
-      wsRef.current = null
-      wsReadyRef.current = false
-      if (
-        ws &&
-        (ws.readyState === WebSocket.OPEN ||
-          ws.readyState === WebSocket.CONNECTING)
-      ) {
-        try {
-          ws.close()
-        } catch {}
-      }
-
       const processor = processorRef.current
       processorRef.current = null
       if (processor) {
@@ -184,14 +168,28 @@ export function ClonePage() {
     setFile(next)
   }, [])
 
-  async function onTranscribeAudio(nextFile: File | null = file) {
-    setError(null)
+  async function onTranscribeAudio(
+    nextFile: File | null = file,
+    opts?: { errorTarget?: 'page' | 'record' },
+  ) {
+    const errorTarget = opts?.errorTarget ?? 'page'
+
+    if (errorTarget === 'record') {
+      setRecordingError(null)
+    } else {
+      setError(null)
+    }
+
     if (!transcriptionEnabled) {
-      setError('Transcription is not enabled on this server.')
+      const msg = 'Transcription is not enabled on this server.'
+      if (errorTarget === 'record') setRecordingError(msg)
+      else setError(msg)
       return
     }
     if (!nextFile) {
-      setError('Please select an audio file to transcribe.')
+      const msg = 'Please select an audio file to transcribe.'
+      if (errorTarget === 'record') setRecordingError(msg)
+      else setError(msg)
       return
     }
 
@@ -207,7 +205,9 @@ export function ClonePage() {
       }>('/api/transcriptions', form, { method: 'POST' })
       setTranscript(res.text)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to transcribe audio.')
+      const msg = e instanceof Error ? e.message : 'Failed to transcribe audio.'
+      if (errorTarget === 'record') setRecordingError(msg)
+      else setError(msg)
     } finally {
       setTranscribing(false)
     }
@@ -220,28 +220,9 @@ export function ClonePage() {
     }
   }
 
-  async function cleanupRecording({
-    closeWs = true,
-  }: {
-    closeWs?: boolean
-  } = {}) {
+  async function cleanupRecording() {
     stopRecordingTimer()
     setMicLevel(0)
-
-    const ws = wsRef.current
-    wsReadyRef.current = false
-    if (closeWs) {
-      wsRef.current = null
-      if (
-        ws &&
-        (ws.readyState === WebSocket.OPEN ||
-          ws.readyState === WebSocket.CONNECTING)
-      ) {
-        try {
-          ws.close()
-        } catch {}
-      }
-    }
 
     const worklet = workletRef.current
     workletRef.current = null
@@ -285,78 +266,9 @@ export function ClonePage() {
 
     if (recording) return
 
-    setLiveTranscript('')
     setRecordSeconds(0)
     pcmChunksRef.current = []
     pcmBytesRef.current = 0
-
-    if (transcriptionEnabled) {
-      const wsUrl = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/transcriptions/realtime`
-      const ws = new WebSocket(wsUrl)
-      ws.binaryType = 'arraybuffer'
-      wsRef.current = ws
-
-      ws.onopen = () => {
-        ws.send(
-          JSON.stringify({
-            type: 'start',
-            v: 1,
-            language,
-            audio_format: { encoding: 'pcm_s16le', sample_rate: 16000 },
-          }),
-        )
-      }
-
-      ws.onmessage = (ev) => {
-        try {
-          const data = JSON.parse(
-            typeof ev.data === 'string' ? ev.data : '',
-          ) as unknown
-          if (!data || typeof data !== 'object') return
-
-          const type = (data as { type?: unknown }).type
-          if (type === 'ready') {
-            wsReadyRef.current = true
-            return
-          }
-          if (type === 'delta') {
-            const text = (data as { text?: unknown }).text
-            if (typeof text === 'string' && text) {
-              setLiveTranscript((t) => t + text)
-            }
-            return
-          }
-          if (type === 'final') {
-            const text = (data as { text?: unknown }).text
-            if (typeof text === 'string') {
-              setTranscript(text)
-            }
-            try {
-              ws.close()
-            } catch {}
-            return
-          }
-          if (type === 'error') {
-            const msg = (data as { message?: unknown }).message
-            setRecordingError(
-              typeof msg === 'string' ? msg : 'Transcription error',
-            )
-            try {
-              ws.close()
-            } catch {}
-          }
-        } catch {}
-      }
-
-      ws.onerror = () => {
-        setRecordingError('Realtime transcription connection failed.')
-      }
-
-      ws.onclose = () => {
-        wsReadyRef.current = false
-        if (wsRef.current === ws) wsRef.current = null
-      }
-    }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -382,15 +294,6 @@ export function ClonePage() {
 
         pcmChunksRef.current.push(pcmBytes.buffer)
         pcmBytesRef.current += pcmBytes.byteLength
-
-        const wsCurrent = wsRef.current
-        if (
-          wsCurrent &&
-          wsReadyRef.current &&
-          wsCurrent.readyState === WebSocket.OPEN
-        ) {
-          wsCurrent.send(pcmBytes)
-        }
       }
 
       let captureNode: AudioNode | null = null
@@ -453,15 +356,7 @@ export function ClonePage() {
 
     setRecording(false)
     stopRecordingTimer()
-
-    const ws = wsRef.current
-    try {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'stop' }))
-      }
-    } catch {}
-
-    await cleanupRecording({ closeWs: false })
+    await cleanupRecording()
 
     const pcmByteLength = pcmBytesRef.current
     if (pcmByteLength <= 0) {
@@ -478,6 +373,7 @@ export function ClonePage() {
     })
 
     validateAndSetFile(nextFile)
+    await onTranscribeAudio(nextFile, { errorTarget: 'record' })
   }
 
   async function onTryExample() {
@@ -642,8 +538,8 @@ export function ClonePage() {
             </div>
             {transcriptionEnabled ? (
               <div>
-                Record mode: live transcription fills the transcript. Review and
-                fix any errors before cloning.
+                Record mode: stopping capture auto-runs transcription and fills
+                the transcript box.
               </div>
             ) : (
               <div>
@@ -725,7 +621,7 @@ export function ClonePage() {
               type="button"
               size="sm"
               onClick={() => void startRecording()}
-              disabled={recording || submitting}
+              disabled={recording || submitting || transcribing}
             >
               {recording ? 'Recording...' : 'Start'}
             </Button>
@@ -745,28 +641,19 @@ export function ClonePage() {
               onClick={() => {
                 void cleanupRecording()
                 setRecordingError(null)
-                setLiveTranscript('')
                 setTranscript('')
                 setRecordSeconds(0)
                 setFile(null)
               }}
-              disabled={recording}
+              disabled={recording || transcribing}
             >
               Clear
             </Button>
           </div>
 
-          {transcriptionEnabled ? (
-            <div className="space-y-2">
-              <div className="text-xs font-medium uppercase tracking-wide text-faint">
-                Live Transcript
-              </div>
-              <div className="max-h-40 overflow-auto whitespace-pre-wrap border border-border bg-subtle p-3 text-sm">
-                {liveTranscript ||
-                  (recording
-                    ? 'Listening...'
-                    : 'Start recording to see live text.')}
-              </div>
+          {transcribing ? (
+            <div className="text-xs font-medium uppercase tracking-wide text-faint">
+              Transcribing recorded audio...
             </div>
           ) : null}
 

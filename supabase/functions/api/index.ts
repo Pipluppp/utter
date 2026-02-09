@@ -16,6 +16,7 @@ import { generateRoutes } from "./routes/generate.ts"
 import { languagesRoutes } from "./routes/languages.ts"
 import { meRoutes } from "./routes/me.ts"
 import { tasksRoutes } from "./routes/tasks.ts"
+import { transcriptionsRoutes } from "./routes/transcriptions.ts"
 import { voicesRoutes } from "./routes/voices.ts"
 
 const app = new Hono().basePath("/api")
@@ -37,6 +38,7 @@ app.route("/", cloneRoutes)
 app.route("/", voicesRoutes)
 app.route("/", generateRoutes)
 app.route("/", designRoutes)
+app.route("/", transcriptionsRoutes)
 app.route("/", generationsRoutes)
 app.route("/", tasksRoutes)
 

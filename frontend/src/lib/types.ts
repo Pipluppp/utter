@@ -100,7 +100,6 @@ export type LanguagesResponse = {
     enabled: boolean
     provider: string
     model: string
-    realtime_model: string
   }
 }
 
