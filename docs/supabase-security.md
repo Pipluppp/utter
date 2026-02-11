@@ -128,6 +128,26 @@ Apply column-guard triggers to **every table where the client has direct UPDATE 
 
 **Rule of thumb:** If the `authenticated` role has any direct INSERT/UPDATE/DELETE grants on a table, assume attackers can exploit PostgREST to craft arbitrary writes. Either (a) remove the grant and route the write through an Edge Function/RPC, or (b) add column-level protections (privileges and/or triggers) for server-owned fields.
 
+### Utter-specific gap: `profiles` has server-owned fields (credits/tier)
+
+Utter's `public.profiles` table is expected to contain **server-owned** fields (for example `credits_remaining` and `subscription_tier`) that must not be user-editable.
+
+However, as of the current migrations, `authenticated` users can update their own `profiles` row (RLS allows row access, and UPDATE is not revoked). Because RLS does not protect columns, a user can bypass the SPA and update **any column on their own row** via the Data API.
+
+Why this matters:
+- If we enforce usage limits or billing based on `profiles.credits_remaining` / `subscription_tier`, this becomes a trivial self-serve escalation unless we add column guards.
+- Even if the frontend UI never exposes these fields, the browser is not the security boundary (see section 1 and 3b).
+
+Recommended fixes (pick one; do before any paid/credit gating):
+1. **Server-only updates (recommended)**:
+   - Revoke `UPDATE` on `public.profiles` from `authenticated`.
+   - Keep `/api/profile` (Edge Function) or a `security definer` RPC as the only write path, and allowlist only safe fields like `handle`, `display_name`, `avatar_url`.
+   - Update credits/tier exclusively in Edge Functions (service role) and/or trusted RPC.
+2. **Keep client UPDATE but add column guards**:
+   - Add a `BEFORE UPDATE` trigger on `public.profiles` that rejects changes to server-owned columns and only permits a small allowlist.
+
+If we do neither, assume `credits_remaining` and `subscription_tier` are attacker-controlled values.
+
 ---
 
 ## 3c) Indexing and query performance (security-adjacent)
@@ -291,6 +311,35 @@ This is a lighter alternative to an Edge Function when no external calls are nee
 
 ---
 
+## 5c) Abuse prevention and cost containment (Edge invocations + provider spend)
+
+Supabase is public-by-design (section 1). Assume:
+- Anyone can send traffic to your Edge Function URL (even unauthenticated).
+- Authenticated users can always replay SPA requests outside the UI.
+- Every request counts toward Edge Function usage, and some requests may trigger real downstream cost (Modal today; Qwen API later).
+
+Design goals:
+- Make unauthenticated requests cheap (fast 401; do not write to DB; do not call external providers).
+- Make authenticated abuse bounded (rate limits, concurrency limits, and credit/quota enforcement).
+
+Mitigations (Utter-specific):
+1. **Auth-gate all expensive endpoints**: generate/clone/design must require a valid user JWT before any DB writes, Storage operations, or provider calls.
+2. **Enforce credits/quotas server-side before provider calls**:
+   - Check and decrement available credits atomically in the database.
+   - Only after the decrement succeeds, submit a Modal job or open a Qwen realtime session.
+   - Tie this to section 3b: credit enforcement is meaningless if credits are client-writable.
+3. **Rate-limit and bound concurrency**:
+   - Keep the "one active generate per user" constraint and add similar guards where needed.
+   - Add per-user request rate limits (DB-backed counters or a small rate-limit table).
+4. **Harden signup in production**:
+   - Enable email confirmations and consider restricting signups if abuse appears.
+5. **Observability**:
+   - Log provider request IDs and correlate them to `user_id`/`task_id` so anomalies can be detected and users can be blocked.
+
+Reminder: hiding behind Vercel rewrites is routing convenience, not an access control boundary.
+
+---
+
 ## 6) Storage security (audio files)
 
 ### Baseline rules
@@ -300,6 +349,10 @@ This is a lighter alternative to an Edge Function when no external calls are nee
 - For uploads:
   - do not proxy large files through Edge Functions
   - prefer signed upload URLs or resumable uploads
+
+Also treat storage object keys stored in tables as **server-owned** values:
+- If a client can write `reference_object_key` / `audio_object_key` into a row, and an Edge Function later uses a service-role client to sign that key, an attacker may be able to trick the server into signing an object they don't own.
+- Mitigation: prevent clients from writing these columns directly (revoke INSERT/UPDATE or add guard triggers) and validate the expected `{user_id}/...` prefix before signing.
 
 ### Storage-specific attack vectors
 
@@ -433,6 +486,7 @@ Fix is almost always:
 - [ ] RLS enabled + policies written for **all** exposed tables (`voices`, `generations`, `tasks`)
 - [ ] `(select auth.uid())` pattern used in policies (not bare `auth.uid()`)
 - [ ] Column-guard triggers on any table with direct client UPDATE (currently: none — but add if `voices` gets client-side UPDATE)
+- [ ] `profiles`: if credits/tier live here, prevent client tampering (revoke UPDATE or add a guard trigger allowlisting only safe fields)
 - [ ] `user_id` columns indexed on all RLS-filtered tables (`idx_voices_user_id`, `idx_generations_user_id`, `idx_tasks_user_id`)
 
 ### Grants & Data API
@@ -455,6 +509,7 @@ Fix is almost always:
 - [ ] Webhooks: auth disabled but signature verification enforced
 - [ ] Auth redirect URLs configured for prod + preview domains
 - [ ] Refresh token rotation enabled
+- [ ] Expensive endpoints have abuse controls (auth-gated, rate-limited, and credits/quotas enforced before provider calls)
 
 ### General
 - [ ] Supabase "Security Advisor" clean (or findings triaged)
