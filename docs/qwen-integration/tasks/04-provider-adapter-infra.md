@@ -29,7 +29,7 @@ New modules:
 - `supabase/functions/_shared/tts/providers/modal.ts`
 - `supabase/functions/_shared/tts/providers/qwen.ts`
 - `supabase/functions/_shared/tts/providers/qwen_customization.ts`
-- `supabase/functions/_shared/tts/providers/qwen_realtime.ts`
+- `supabase/functions/_shared/tts/providers/qwen_synthesis.ts`
 - `supabase/functions/_shared/tts/providers/qwen_audio.ts`
 - `supabase/functions/_shared/tts/providers/errors.ts`
 
@@ -42,7 +42,6 @@ Refactors:
 - `CloneVoiceInput/Result`
 - `DesignPreviewInput/Result`
 - `GenerateTaskInput/Result`
-- `GenerateStreamInput/Result`
 - `CancelTaskInput/Result`
 
 2. Define provider interface.
@@ -53,7 +52,6 @@ interface TtsProvider {
   cloneVoice(input: CloneVoiceInput): Promise<CloneVoiceResult>
   createDesignedVoice(input: DesignCreateInput): Promise<DesignCreateResult>
   generateTask(input: GenerateTaskInput): Promise<GenerateTaskResult>
-  generateStream?(input: GenerateStreamInput): Promise<ReadableStream<Uint8Array>>
   cancel?(input: CancelTaskInput): Promise<void>
 }
 ```
@@ -62,28 +60,28 @@ interface TtsProvider {
 - Read `TTS_PROVIDER_MODE`.
 - Return exactly one provider implementation.
 - Throw explicit startup/runtime error for invalid mode.
+
 4. Pin qwen env defaults in resolver/config layer:
 - `DASHSCOPE_BASE_URL=https://dashscope-intl.aliyuncs.com`
 - `DASHSCOPE_REGION=intl`
-- `QWEN_VC_TARGET_MODEL=qwen3-tts-vc-realtime-2026-01-15`
-- `QWEN_VD_TARGET_MODEL=qwen3-tts-vd-realtime-2026-01-15`
-- `QWEN_DEFAULT_RESPONSE_FORMAT=mp3`
-- `QWEN_MAX_TEXT_CHARS=2000`
+- `QWEN_VC_TARGET_MODEL=qwen3-tts-vc-2026-01-22`
+- `QWEN_VD_TARGET_MODEL=qwen3-tts-vd-2026-01-26`
+- `QWEN_MAX_TEXT_CHARS=600`
 
 5. Implement Modal adapter as compatibility wrapper around existing `_shared/modal.ts` logic.
 
-6. Implement Qwen adapter with protocol split:
-- REST customization helper for clone/design/list/delete.
-- WS realtime helper for synthesis.
+6. Implement Qwen adapter with non-streaming split:
+- REST customization helper for clone/design/list/query/delete.
+- REST synthesis helper for non-streaming generation endpoint.
+- Audio retrieval helper to download temporary provider URL and upload durable object.
 - In this phase, provider `delete` exists only for diagnostics/admin tooling, not user delete path.
 
-7. Grounded SDK constraint from `docs/qwen-api.md`:
+7. Grounded SDK/runtime constraint from `docs/qwen-api.md`:
 - Do not attempt DashScope Python/Java SDK usage in Edge runtime.
-- Implement Qwen integration with `fetch()` + native Deno `WebSocket`.
-- For this custom voice realtime flow, do not route through OpenAI-compatible `/compatible-mode/v1`.
+- Implement Qwen integration with `fetch()` only.
 - Use official endpoints:
 - `POST /api/v1/services/audio/tts/customization`
-- `wss://.../api-ws/v1/realtime?model=...`
+- `POST /api/v1/services/aigc/multimodal-generation/generation`
 
 8. Normalize provider errors into stable categories before route response mapping.
 
@@ -115,7 +113,7 @@ npm run test:edge
 ### Expected success output/state
 
 - Route modules use provider resolver instead of direct Modal client calls.
-- Qwen adapter modules are present with REST+WS split.
+- Qwen adapter modules are present with REST customization + REST synthesis split.
 - Edge tests pass with no contract regressions.
 
 ### Failure signatures
@@ -127,7 +125,7 @@ npm run test:edge
 ## Exit Criteria
 
 - Provider abstraction is the only integration point for TTS providers.
-- Qwen adapter design reflects Edge runtime constraints from `docs/qwen-api.md`.
+- Qwen adapter design reflects non-streaming runtime constraints from `docs/qwen-api.md`.
 - Error handling is normalized and reusable.
 
 ## Rollback Note

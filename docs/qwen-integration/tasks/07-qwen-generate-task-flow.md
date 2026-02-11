@@ -2,7 +2,7 @@
 
 ## Goal
 
-Keep the current task-based generate API while implementing qwen-mode synthesis via internal realtime WebSocket orchestration.
+Keep the current task-based generate API while implementing qwen-mode synthesis via non-streaming HTTP orchestration and durable audio persistence.
 
 ## In Scope
 
@@ -12,8 +12,8 @@ Keep the current task-based generate API while implementing qwen-mode synthesis 
 
 ## Out of Scope
 
-- New stream endpoint behavior (task 08).
-- Frontend UX branching logic (task 09).
+- Realtime streaming endpoints.
+- Frontend playback implementation details.
 
 ## Interfaces Impacted
 
@@ -25,51 +25,51 @@ Keep the current task-based generate API while implementing qwen-mode synthesis 
 
 - `supabase/functions/api/routes/generate.ts`
 - `supabase/functions/api/routes/tasks.ts`
-- `supabase/functions/_shared/tts/providers/qwen_realtime.ts`
+- `supabase/functions/_shared/tts/providers/qwen_synthesis.ts`
 - `supabase/functions/_shared/tts/providers/qwen_audio.ts`
 
 ## Step-by-Step Implementation Notes
 
 1. Keep request validation and response shape of `POST /api/generate` unchanged.
-- Enforce `text.length <= 2000` and return `400` on overflow.
+- Enforce `text.length <= QWEN_MAX_TEXT_CHARS` (default 600) and return `400` on overflow.
 
 2. In qwen mode, generation preconditions:
 - Voice exists and belongs to user.
 - Voice has `tts_provider='qwen'`.
 - Voice has non-null `provider_voice_id` and `provider_target_model`.
 - `provider_target_model` is one of the pinned models for this rollout:
-- `qwen3-tts-vc-realtime-2026-01-15` for cloned voices.
-- `qwen3-tts-vd-realtime-2026-01-15` for designed voices.
+- `qwen3-tts-vc-2026-01-22` for cloned voices.
+- `qwen3-tts-vd-2026-01-26` for designed voices.
 
 3. Create generation + task rows as today, but set provider fields:
 - task `provider='qwen'`
 - generation `tts_provider='qwen'`
 
-4. Start background synthesis using `EdgeRuntime.waitUntil`.
+4. Start background generation using `EdgeRuntime.waitUntil`.
 
-5. Qwen realtime synthesis protocol (grounded in `docs/qwen-api.md`):
-- Open WS to realtime endpoint with `model=<provider_target_model>`.
-- Send `session.update` with voice and output format (`response_format: \"mp3\"`).
-- Send `input_text_buffer.append` with requested text.
-- Send `session.finish`.
-- Decode each `response.audio.delta` chunk.
-- On terminal events (`response.done`, `session.finished`), finalize file upload and rows.
+5. Qwen non-streaming synthesis flow (grounded in `docs/qwen-api.md`):
+- Send HTTP request to synthesis endpoint with `model=<provider_target_model>`, `input.text`, `input.voice`, `input.language_type`.
+- Receive response containing `output.audio.url`, `output.audio.id`, `output.audio.expires_at`, `request_id`.
+- Download audio from temporary URL.
+- Upload bytes to app storage bucket.
+- Persist generation/task completion metadata.
 
 6. Task status model in qwen mode:
 - `pending` -> `processing` -> `completed|failed|cancelled`
-- `provider_status` examples: `ws_connecting`, `session_updated`, `streaming`, `finalizing`.
+- `provider_status` examples: `provider_submitting`, `provider_synthesizing`, `provider_downloading`, `provider_persisting`, `completed`.
 
 7. `GET /api/tasks/:id` in qwen mode reads DB state only.
-- Do not poll Qwen provider APIs here.
+- Do not poll provider status endpoints here.
 - Return latest persisted task state and result.
 
 8. Cancellation behavior:
 - `POST /api/tasks/:id/cancel` marks cancellation requested.
-- Worker checks cancellation state periodically and closes WS best effort.
-- Final status should converge to `cancelled` with generation row updated.
+- Worker checks cancellation state before provider call, before download, and before upload.
+- Final status should converge to `cancelled` where possible.
 
 9. Idempotent finalization guard:
 - Only upload/store if generation audio key is null.
+
 10. Throttling policy for this phase:
 - Do not add extra per-user provider rate limits here.
 - Credit-based enforcement is deferred to the billing/credit system.
@@ -77,13 +77,13 @@ Keep the current task-based generate API while implementing qwen-mode synthesis 
 ## Data and Failure Modes
 
 Failure modes:
-1. WS connection fails before audio deltas.
+1. Provider call fails before audio URL is returned.
 - Mitigation: mark task/generation failed with provider error category.
-2. Mid-stream disconnect.
-- Mitigation: fail task and preserve diagnostic metadata (`request_id`, last event id).
-3. Race in finalization with repeated task polls.
-- Mitigation: idempotent DB guard (`audio_object_key is null`).
-4. Cancellation arrives after completion.
+2. Temporary URL expires before download.
+- Mitigation: immediate download and bounded retry.
+3. Upload/persistence failure after successful provider synthesis.
+- Mitigation: fail task with explicit metadata and request ID.
+4. Cancellation arrives after finalization.
 - Mitigation: terminal state precedence rules.
 
 ## Validation Checks
@@ -97,7 +97,7 @@ Failure modes:
 
 ```bash
 npm run test:edge
-rg -n "session.update|input_text_buffer.append|response.audio.delta|session.finished" supabase/functions
+rg -n "qwen3-tts-vc-2026-01-22|qwen3-tts-vd-2026-01-26|multimodal-generation/generation" supabase/functions
 ```
 
 Manual smoke:
@@ -117,13 +117,13 @@ Manual smoke:
 
 ### Failure signatures
 
-- `/api/tasks/:id` tries calling Qwen status API.
+- `/api/tasks/:id` tries calling provider status API.
 - Completed task has no persisted audio key.
 - Cancel endpoint reports success but generation remains processing indefinitely.
 
 ## Exit Criteria
 
-- v1 task flow works in qwen mode with WS internals.
+- v1 task flow works in qwen mode with non-streaming internals.
 - Task endpoint remains backward compatible and deterministic.
 
 ## Rollback Note

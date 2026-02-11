@@ -6,8 +6,8 @@ Use this document when the Qwen rollout causes production risk, functional regre
 
 Trigger restoration when one or more conditions occur:
 1. Generate success rate drops below agreed SLO for two consecutive windows.
-2. Qwen realtime synthesis failures exceed threshold (transport, protocol, provider errors).
-3. Streaming endpoint causes unacceptable client playback failures.
+2. Qwen non-streaming synthesis failures exceed threshold (provider/network/errors).
+3. Temporary provider audio URL handling fails (expired before persistence, repeated download failures).
 4. Cost anomaly from repeated Qwen design creates or runaway generation volume.
 5. Data correctness issue (missing provider metadata, orphaned generations/tasks).
 6. Security issue (secret mismatch, wrong region key, leakage risk).
@@ -117,9 +117,9 @@ supabase secrets set MODAL_ENDPOINT_VOICE_DESIGN=<url>
 For forward re-cutover reference, qwen settings are pinned to:
 - `DASHSCOPE_BASE_URL=https://dashscope-intl.aliyuncs.com`
 - `DASHSCOPE_REGION=intl`
-- `QWEN_VC_TARGET_MODEL=qwen3-tts-vc-realtime-2026-01-15`
-- `QWEN_VD_TARGET_MODEL=qwen3-tts-vd-realtime-2026-01-15`
-- `QWEN_MAX_TEXT_CHARS=2000`
+- `QWEN_VC_TARGET_MODEL=qwen3-tts-vc-2026-01-22`
+- `QWEN_VD_TARGET_MODEL=qwen3-tts-vd-2026-01-26`
+- `QWEN_MAX_TEXT_CHARS=600`
 
 3. Redeploy edge function:
 

@@ -41,7 +41,7 @@ Execute a safe staged rollout from Modal-default to Qwen-default with measurable
 3. Verify Modal regressions.
 4. Set Qwen secrets and qwen target model envs.
 5. Flip staging `TTS_PROVIDER_MODE=qwen`.
-6. Run qwen smoke and streaming checks.
+6. Run qwen smoke checks (clone/design/generate task flow).
 7. Record metrics and defects.
 
 3. Production cutover sequence.
@@ -63,17 +63,16 @@ Execute a safe staged rollout from Modal-default to Qwen-default with measurable
 - `DASHSCOPE_API_KEY`
 - `DASHSCOPE_BASE_URL=https://dashscope-intl.aliyuncs.com`
 - `DASHSCOPE_REGION=intl`
-- `QWEN_VC_TARGET_MODEL=qwen3-tts-vc-realtime-2026-01-15`
-- `QWEN_VD_TARGET_MODEL=qwen3-tts-vd-realtime-2026-01-15`
-- `QWEN_DEFAULT_RESPONSE_FORMAT=mp3`
-- `QWEN_MAX_TEXT_CHARS=2000`
+- `QWEN_VC_TARGET_MODEL=qwen3-tts-vc-2026-01-22`
+- `QWEN_VD_TARGET_MODEL=qwen3-tts-vd-2026-01-26`
+- `QWEN_MAX_TEXT_CHARS=600`
 - Runtime:
 - `TTS_PROVIDER_MODE`
 
 5. Monitoring checkpoints.
 - Generate start success rate.
 - Task completion rate.
-- Stream error rate.
+- Durable audio persistence success rate.
 - Median generation latency.
 - Cancel success rate.
 - Provider-specific failure categories.
@@ -116,9 +115,9 @@ Operational checks:
 1) Clone finalize in qwen mode
 2) Design preview + save in qwen mode
 3) Generate v1 task mode
-4) Generate v2 stream mode
-5) Cancel task path
-6) Inputs over 2000 chars are rejected consistently in v1 and v2
+4) Cancel task path
+5) Inputs over configured cap are rejected consistently
+6) Completed tasks include durable replayable output
 ```
 
 ### Expected success output/state
@@ -131,7 +130,7 @@ Operational checks:
 
 - Mode flips but `/api/languages` capabilities do not update.
 - Qwen routes fail due to missing region/key mapping.
-- Stream endpoint returns inconsistent media payloads.
+- Completed qwen tasks are missing durable output.
 
 ## Exit Criteria
 

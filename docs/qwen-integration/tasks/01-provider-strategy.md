@@ -15,7 +15,7 @@ Define a single provider strategy that supports both Modal and official Qwen wit
 
 - Route-level implementation details.
 - Database DDL specifics (task 03).
-- Frontend realtime UI behavior (task 09).
+- Frontend UI implementation details (task 09).
 
 ## Interfaces Impacted
 
@@ -47,9 +47,9 @@ Define a single provider strategy that supports both Modal and official Qwen wit
 - Production: `qwen` after cutover task gates.
 5. Pin qwen integration defaults:
 - Provider lane: international (`dashscope-intl.aliyuncs.com`).
-- VC model: `qwen3-tts-vc-realtime-2026-01-15`.
-- VD model: `qwen3-tts-vd-realtime-2026-01-15`.
-- Realtime output format default: `mp3`.
+- VC model: `qwen3-tts-vc-2026-01-22`.
+- VD model: `qwen3-tts-vd-2026-01-26`.
+- Max text cap default: `QWEN_MAX_TEXT_CHARS=600`.
 6. Add legacy compatibility policy:
 - Modal voices remain usable in modal mode.
 - Qwen mode requires `provider_voice_id` and `provider_target_model` on voice rows.
@@ -88,7 +88,7 @@ Failure modes:
 ### Command list
 
 ```bash
-rg -n "TTS_PROVIDER_MODE|getTtsProvider|supports_stream_generate" supabase/functions
+rg -n "TTS_PROVIDER_MODE|getTtsProvider|supports_generate" supabase/functions
 curl -s http://127.0.0.1:54321/functions/v1/api/languages
 ```
 

@@ -33,7 +33,7 @@ Implement qwen-mode voice design so preview generation and voice persistence use
 
 2. In qwen mode, preview task execution performs one provider create call:
 - Customization REST `model = qwen-voice-design`.
-- Target model pinned to `qwen3-tts-vd-realtime-2026-01-15`.
+- Target model pinned to `qwen3-tts-vd-2026-01-26`.
 - Capture:
 - `output.voice`
 - `output.target_model`
@@ -47,7 +47,7 @@ Request payload shape:
   "model": "qwen-voice-design",
   "input": {
     "action": "create",
-    "target_model": "qwen3-tts-vd-realtime-2026-01-15",
+    "target_model": "qwen3-tts-vd-2026-01-26",
     "voice_prompt": "A deep, steady narrator voice",
     "preview_text": "Hello, this is a preview.",
     "preferred_name": "narrator_1",
@@ -67,7 +67,7 @@ Expected response fields:
   "output": {
     "voice": "qwen-tts-vd-...",
     "preview_audio": { "data": "<base64>" },
-    "target_model": "qwen3-tts-vd-realtime-2026-01-15"
+    "target_model": "qwen3-tts-vd-2026-01-26"
   },
   "usage": { "count": 1 },
   "request_id": "uuid"

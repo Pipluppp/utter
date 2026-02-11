@@ -2,7 +2,7 @@
 
 ## Goal
 
-Define a full validation matrix for Modal mode and Qwen mode, including API compatibility, data integrity, realtime behavior, and rollback readiness.
+Define a full validation matrix for Modal mode and Qwen mode, including API compatibility, data integrity, non-streaming generation behavior, and rollback readiness.
 
 ## In Scope
 
@@ -30,19 +30,19 @@ Define a full validation matrix for Modal mode and Qwen mode, including API comp
 ## Step-by-Step Implementation Notes
 
 1. Maintain current Modal regression suite as baseline.
-2. Add Qwen-mode test coverage for clone/design/generate/stream flows.
+2. Add Qwen-mode test coverage for clone/design/generate task flows.
 3. Add dual-mode contract tests for `/api/languages` capabilities.
 4. Add compatibility tests for legacy modal voices in qwen mode (expected `409`).
 5. Add cancellation tests for qwen task flow.
-6. Add streaming endpoint tests:
-- qwen mode streams bytes
-- modal mode returns `409`
+6. Add qwen finalization tests:
+- synthesis success returns temporary URL
+- download + durable storage persist succeeds
+- task only completes after persistence
 7. Add DB tests for new provider columns and constraints.
 8. Add max-text tests:
-- `/api/generate` rejects inputs over 2000 chars.
-- `/api/generate/stream` rejects inputs over 2000 chars.
+- `/api/generate` rejects inputs over configured cap.
 9. Add frontend behavior checks:
-- Generate UI counter/validation uses 2000-char limit.
+- Generate UI counter/validation uses configured cap.
 - Incompatible-provider voices are rendered but non-clickable.
 
 ## Data and Failure Modes
@@ -52,8 +52,8 @@ Failure modes:
 - Mitigation: keep modal tests mandatory in CI.
 2. Incomplete qwen metadata persistence.
 - Mitigation: assert provider fields after each flow.
-3. Stream endpoint passes locally but fails in deployed edge runtime.
-- Mitigation: stage-level smoke suite and canary gates.
+3. Temporary provider URL download fails but task marked completed.
+- Mitigation: completion assertion requires durable object path.
 4. Validation assumes throttling that is not implemented.
 - Mitigation: do not add per-user rate-limit assertions in this phase.
 
@@ -96,13 +96,13 @@ npm run test:edge
 - DB tests pass with new provider schema.
 - Edge tests pass in Modal mode and Qwen mode.
 - Frontend builds and typechecks with capability/type additions.
-- Stream endpoint behavior matches provider mode.
+- Qwen generation completion requires durable stored audio.
 
 ### Failure signatures
 
 - New tests only pass in one provider mode.
 - Contract shape changes break existing frontend parsing.
-- Streaming tests hang or produce non-audio output.
+- Completed qwen tasks missing durable audio artifacts.
 
 ## Exit Criteria
 

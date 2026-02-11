@@ -37,7 +37,7 @@ Implement qwen-mode voice cloning on top of the existing clone upload/finalize f
 2. Verify uploaded reference object exists and meets size/type policy.
 3. Create signed URL with short TTL for provider ingestion.
 4. Call customization REST create with `model = qwen-voice-enrollment`.
-5. Use pinned target model `qwen3-tts-vc-realtime-2026-01-15`.
+5. Use pinned target model `qwen3-tts-vc-2026-01-22`.
 6. Persist voice row with:
 - `tts_provider = 'qwen'`
 - `provider_voice_id = output.voice`
@@ -54,7 +54,7 @@ Request payload shape:
   "model": "qwen-voice-enrollment",
   "input": {
     "action": "create",
-    "target_model": "qwen3-tts-vc-realtime-2026-01-15",
+    "target_model": "qwen3-tts-vc-2026-01-22",
     "preferred_name": "my_voice_label",
     "audio": { "data": "<signed_or_data_url>" },
     "text": "Reference transcript",
@@ -69,7 +69,7 @@ Expected response fields:
 {
   "output": {
     "voice": "qwen-tts-vc-...",
-    "target_model": "qwen3-tts-vc-realtime-2026-01-15"
+    "target_model": "qwen3-tts-vc-2026-01-22"
   },
   "usage": { "count": 1 },
   "request_id": "uuid"
