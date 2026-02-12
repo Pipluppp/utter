@@ -7,7 +7,6 @@ Documentation for next development session focusing on UX polish and features.
 | File | Purpose |
 |------|---------|
 | [plans.md](./plans.md) | Comprehensive plan with context and implementation notes |
-| [next-steps.md](./next-steps.md) | Quick checklist version |
 
 ## Quick Reference
 
@@ -28,4 +27,4 @@ Documentation for next development session focusing on UX polish and features.
 
 ## Start Here
 
-Read [plans.md](./plans.md) for full context, then follow [next-steps.md](./next-steps.md) checklist.
+Read [plans.md](./plans.md) for full context.

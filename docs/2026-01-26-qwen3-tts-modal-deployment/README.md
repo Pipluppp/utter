@@ -186,7 +186,6 @@ This guide provides complete instructions for deploying Qwen3-TTS voice cloning 
 docs/qwen3-tts-modal-deployment/
 ├── README.md                    # This file - overview and quick start
 ├── IMPLEMENTATION-STATUS.md     # Current deployment status and changelog
-├── NEXT-TASKS.md               # Future tasks and planning
 ├── RUNNING-AND-TESTING.md      # How to run and test
 ├── guides/                      # Step-by-step deployment guides
 │   ├── 00-understanding-this-guide.md
@@ -354,12 +353,12 @@ Models are pre-downloaded to a Modal Volume to avoid cold-start downloads. The `
 
 ## Task Status
 
-See [NEXT-TASKS.md](./NEXT-TASKS.md) for detailed task history.
+See [docs/tasks.md](../tasks.md) for current deployment sequence and [qwen-integration/README.md](../qwen-integration/README.md) for official Qwen rollout planning.
 
 | Task | Status | Documentation |
 |------|--------|---------------|
 | Deploy 0.6B Model | **Complete** | [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md) |
-| Deploy Voice Design Model | Deferred | [NEXT-TASKS.md](./NEXT-TASKS.md#task-2-deploy-voice-design-model) |
+| Deploy Voice Design Model | Deferred | [qwen-integration/tasks/11-rollout-cutover.md](../qwen-integration/tasks/11-rollout-cutover.md) |
 | Utter Backend Integration | **Complete** | [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md) |
 
 ---
@@ -375,7 +374,8 @@ Research and deploy the Qwen3-TTS Voice Design model for generating voices
 from text descriptions.
 
 Context files to read:
-- @docs/qwen3-tts-modal-deployment/NEXT-TASKS.md (Task 2 section)
+- @docs/tasks.md
+- @docs/qwen-integration/README.md
 - @docs/qwen-tts-plan.md (original planning with voice design sketch)
 - @modal_app/qwen3_tts/app.py (pattern to follow)
 
@@ -395,7 +395,8 @@ Working on Qwen3-TTS voice cloning for the Utter application.
 Key context:
 - @docs/qwen3-tts-modal-deployment/README.md (overview)
 - @docs/qwen3-tts-modal-deployment/IMPLEMENTATION-STATUS.md (current state)
-- @docs/qwen3-tts-modal-deployment/NEXT-TASKS.md (task history)
+- @docs/tasks.md (current execution order)
+- @docs/qwen-integration/README.md (official Qwen rollout plan)
 
 Live 1.7B endpoints:
 - Clone: https://duncab013--qwen3-tts-voice-clone-qwen3ttsservice-clone.modal.run
@@ -417,7 +418,7 @@ Test files:
 | Purpose | File |
 |---------|------|
 | Implementation status & changelog | [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md) |
-| Next tasks planning | [NEXT-TASKS.md](./NEXT-TASKS.md) |
+| Current task sequence | [docs/tasks.md](../tasks.md) |
 | FA2 optimization plan | [optimization/flash-attention-optimization-plan.md](./optimization/flash-attention-optimization-plan.md) |
 | FA2 benchmark report | [optimization/FA2-BENCHMARK-REPORT.md](./optimization/FA2-BENCHMARK-REPORT.md) |
 | Utter integration guide | [guides/08-utter-integration.md](./guides/08-utter-integration.md) |

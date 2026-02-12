@@ -397,7 +397,7 @@ REQUEST_TIMEOUT = 300  # 5 minutes
 
 ## Next Steps
 
-See [NEXT-TASKS.md](./NEXT-TASKS.md) for detailed planning and prompting guidance.
+See [docs/tasks.md](../tasks.md) for current deployment sequence and [qwen-integration/README.md](../qwen-integration/README.md) for official Qwen rollout planning.
 
 ### Task 1: 0.6B Deployment - COMPLETE
 

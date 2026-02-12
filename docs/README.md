@@ -49,6 +49,7 @@ npm run dev
 
 | Doc | Purpose |
 |---|---|
+| **[tasks.md](./tasks.md)** | Quick jump point for current staged deployment sequence |
 | **[2026-02-13/README.md](./2026-02-13/README.md)** | Latest deployment task index (Task 1: Supabase staging deploy, Task 2: Vercel wiring, then Qwen cutover) |
 | [2026-02-13/deploy-supabase/README.md](./2026-02-13/deploy-supabase/README.md) | Full task plan: deploy local-working Supabase backend stack to live staging |
 | [2026-02-13/wire-vercel-supabase/README.md](./2026-02-13/wire-vercel-supabase/README.md) | Full task plan: wire deployed Vercel frontend to staging Supabase backend |

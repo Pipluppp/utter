@@ -129,6 +129,6 @@ Could expose as sliders:
 
 ## See Also
 
-- [next-steps.md](./next-steps.md) - Quick checklist version
+- [README.md](./README.md) - Session overview
 - [pain-points.md](../2026-01-18-modal-integration-plan/pain-points.md) - Modal gotchas
 - [2026-01-18 Echo-TTS constraints](../2026-01-18-modal-integration-plan/2026-01-18-modal-integration-plan.md#82-text-input-processing) - Model constraints
