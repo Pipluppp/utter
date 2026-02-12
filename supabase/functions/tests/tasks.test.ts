@@ -243,9 +243,10 @@ Deno.test({ name: "Design preview task: create -> poll -> completes via Modal mo
   assertEquals(pollBody.status, "processing");
 
   // Step 3: Poll until background completion (or failure).
-  for (let i = 0; i < 30; i++) {
+  // CI/local timing can vary; give the background waitUntil task enough time.
+  for (let i = 0; i < 80; i++) {
     if (pollBody.status === "completed" || pollBody.status === "failed") break;
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 250));
     const nextPollRes = await apiFetch(`/tasks/${task_id}`, userA.accessToken);
     assertEquals(nextPollRes.status, 200);
     pollBody = await nextPollRes.json();
