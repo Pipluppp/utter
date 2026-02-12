@@ -39,8 +39,8 @@ supabase/
       01_schema_tables.test.sql       # 4 tables: columns, types, constraints
       02_schema_indexes.test.sql      # All custom indexes + FK index invariant
       03_best_practices.test.sql      # Supabase Postgres best practices regression guards
-      04_rls_profiles.test.sql        # Profile read/update isolation
-      05_rls_voices.test.sql          # Voice CRUD isolation + no UPDATE
+      04_rls_profiles.test.sql        # Profile read-only isolation
+      05_rls_voices.test.sql          # Voice read/delete isolation + no INSERT/UPDATE
       06_rls_generations.test.sql     # Generation read/delete + no INSERT/UPDATE
       07_rls_tasks.test.sql           # Task read-only + all writes blocked
       08_grants.test.sql              # REVOKE hardening (authenticated + anon)
@@ -121,12 +121,12 @@ ROLLBACK;
 | `00_extensions` | 3 | pgTAP, pgcrypto, public schema exist |
 | `01_schema_tables` | ~45 | has_table, has_column, col_type_is, col_not_null, col_default_is, col_is_pk for all 4 tables |
 | `02_schema_indexes` | 9 | All custom indexes + FK index invariant (query for missing FK indexes → 0 rows) |
-| `03_best_practices` | ~21 | Supabase Postgres + security doc regression guards (see below) |
-| `04_rls_profiles` | 8 | SELECT own, can't SELECT other, UPDATE own, can't UPDATE other, anon blocked |
-| `05_rls_voices` | 10 | SELECT/INSERT/DELETE own, cross-user denied, no UPDATE (revoked), anon blocked |
+| `03_best_practices` | 21 | Supabase Postgres + security doc regression guards (see below) |
+| `04_rls_profiles` | 8 | SELECT own, can't SELECT other, UPDATE revoked for authenticated, anon blocked |
+| `05_rls_voices` | 10 | SELECT/DELETE own, INSERT/UPDATE revoked for authenticated, anon blocked |
 | `06_rls_generations` | 8 | SELECT/DELETE own, no INSERT/UPDATE (revoked), cross-user denied |
 | `07_rls_tasks` | 6 | SELECT own only, no INSERT/UPDATE/DELETE (all revoked), cross-user denied |
-| `08_grants` | 12 | Authenticated: can't INSERT/UPDATE generations, can't UPDATE voices, can't write tasks. Anon: all writes blocked on all tables |
+| `08_grants` | 14 | Authenticated: can't UPDATE profiles, can't INSERT/UPDATE voices, can't INSERT/UPDATE generations, can't write tasks. Anon: all writes blocked on all tables |
 | `09_triggers_functions` | 9 | handle_updated_at, handle_new_user, increment_task_modal_poll_count + function security audit |
 | `10_storage` | 8 | Bucket existence + privacy, policy existence, write restriction tests |
 
@@ -144,10 +144,10 @@ Derived from Supabase Postgres best practices AND `docs/supabase-security.md`:
 | 6 | FK cascade behavior works correctly | 3 | schema-foreign-key-indexes.md |
 | 7 | Security-sensitive functions use DEFINER + search_path | 2 | security doc §5b |
 
-> **Security Finding:** The profiles table allows authenticated users to UPDATE any column
-> (including `subscription_tier` and `credits_remaining`) via direct PostgREST requests.
-> Documented in `supabase-security.md §3b`. Fix: add a BEFORE UPDATE column-guard trigger
-> (allowlist: `handle`, `display_name`, `avatar_url`). Out of scope for test suite, flagged as follow-up.
+> **Security Update:** Profile and voice write-surface hardening is now enforced by grants:
+> `authenticated` cannot `UPDATE public.profiles` and cannot `INSERT public.voices` directly.
+> Corresponding grant checks are covered in `08_grants.test.sql` and least-privilege guards in
+> `03_best_practices.test.sql`.
 
 ### `10_storage.test.sql` — Storage Security
 

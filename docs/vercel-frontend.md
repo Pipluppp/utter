@@ -98,6 +98,17 @@ Notes:
 - The SPA fallback rewrite is required because we use React Router (browser history mode).
 - Be careful with caching on rewritten API responses; default to `no-store` for user-scoped APIs.
 
+### Staging readiness gate
+
+Before wiring Vercel to staging Supabase, confirm:
+
+- [ ] Staging Supabase project is created and linked (`npx supabase link --project-ref <staging-ref>`).
+- [ ] Migrations are pushed to staging.
+- [ ] `api` Edge Function is deployed.
+- [ ] Storage CORS includes the Vercel staging origin and allows the `range` header.
+- [ ] Supabase Auth redirect URLs include the Vercel staging URL.
+- [ ] Tests are validated: DB suite passes locally, and edge suite is validated locally or via green CI.
+
 ---
 
 ## Supabase features we rely on (frontend-facing)

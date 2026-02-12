@@ -10,8 +10,8 @@
 ## Quick Reference
 
 ```bash
-npm run test:db       # pgTAP database tests (140 tests)
-npm run test:edge     # Deno edge function tests (87 tests)
+npm run test:db       # pgTAP database tests (144 tests)
+npm run test:edge     # Deno edge function tests (90 tests)
 npm run test:all      # Both suites
 ```
 
@@ -24,19 +24,19 @@ npm run sb:start          # Start local Supabase (if not running)
 npm run test:db           # Run all pgTAP tests
 ```
 
-### What's tested (140 tests across 11 files)
+### What's tested (144 tests across 11 files)
 
 | File | Tests | Coverage |
 |------|-------|---------|
 | `00_extensions.test.sql` | 3 | pgTAP, pgcrypto, public schema |
 | `01_schema_tables.test.sql` | 51 | All 4 tables: columns, types, PKs, NOT NULL, defaults |
 | `02_schema_indexes.test.sql` | 10 | Custom indexes + FK index invariant |
-| `03_best_practices.test.sql` | 19 | RLS enabled, `(select auth.uid())` pattern, timestamptz, CHECK constraints, FK cascades, SECURITY DEFINER |
-| `04_rls_profiles.test.sql` | 8 | Read/update own, cross-user denied, anon blocked |
-| `05_rls_voices.test.sql` | 10 | SELECT/INSERT/DELETE own, UPDATE revoked |
+| `03_best_practices.test.sql` | 21 | RLS enabled, `(select auth.uid())` pattern, timestamptz, CHECK constraints, FK cascades, SECURITY DEFINER, least-privilege guards |
+| `04_rls_profiles.test.sql` | 8 | Read own, UPDATE revoked, cross-user denied, anon blocked |
+| `05_rls_voices.test.sql` | 10 | SELECT/DELETE own, INSERT/UPDATE revoked |
 | `06_rls_generations.test.sql` | 8 | SELECT/DELETE own, INSERT/UPDATE revoked |
 | `07_rls_tasks.test.sql` | 6 | SELECT own only, all writes revoked |
-| `08_grants.test.sql` | 12 | Grant revocations for authenticated + anon |
+| `08_grants.test.sql` | 14 | Grant revocations for authenticated + anon (includes profiles UPDATE + voices INSERT revoke) |
 | `09_triggers_functions.test.sql` | 7 | Auto-profile trigger, updated_at trigger, increment poll count |
 | `10_storage.test.sql` | 6 | Buckets exist + private, storage policies |
 
@@ -64,16 +64,16 @@ npm run sb:serve:test         # Serve with .env.test (Modal → localhost:9999)
 npm run test:edge             # Run Deno tests (mock server auto-starts)
 ```
 
-### What's tested (87 tests across 10 files)
+### What's tested (90 tests across 10 files)
 
 | File | Tests | Coverage |
 |------|-------|---------|
 | `health.test.ts` | 2 | Health endpoint liveness |
 | `languages.test.ts` | 3 | Language list, defaults, transcription config |
 | `auth.test.ts` | 8 | Auth guard on all protected endpoints |
-| `me.test.ts` | 11 | GET /me, PATCH /profile (handle, display_name, avatar_url validation) |
-| `voices.test.ts` | 9 | GET /voices (pagination, search, source filter), DELETE, cross-user isolation |
-| `generations.test.ts` | 12 | GET /generations (pagination, filters, voice join), regenerate, DELETE |
+| `me.test.ts` | 12 | GET /me, PATCH /profile (handle/display_name/avatar_url validation), server-owned fields immutable |
+| `voices.test.ts` | 10 | GET /voices (pagination, search, source filter), preview key-prefix guard, DELETE, cross-user isolation |
+| `generations.test.ts` | 13 | GET /generations (pagination, filters, voice join), audio key-prefix guard, regenerate, DELETE |
 | `clone.test.ts` | 10 | Upload URL, finalize validation, full clone flow |
 | `generate.test.ts` | 9 | POST /generate validation, Modal submit + failure handling |
 | `design.test.ts` | 11 | Design preview validation, POST /voices/design with audio |

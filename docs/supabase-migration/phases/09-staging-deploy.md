@@ -12,6 +12,19 @@ Local development uses Docker containers. Production uses Supabase's managed inf
 
 ---
 
+## Preflight Gate (Go / No-Go)
+
+Before creating or wiring cloud resources, confirm:
+
+- [ ] Local DB tests pass: `npm run test:db` (expected: 144/144)
+- [ ] Edge tests are validated:
+  - local pass: `npm run test:edge`, **or**
+  - CI pass: latest `edge-function-tests` job is green for the commit touching `supabase/**`
+
+Do not proceed to staging cutover with unknown edge test status.
+
+---
+
 ## Environment strategy
 
 We use three environments, all free:
@@ -67,9 +80,22 @@ The free plan allows **2 active cloud projects**. The local CLI runs in Docker a
   ```bash
   npx supabase db push
   ```
+- [ ] Verify migration history:
+  ```bash
+  npx supabase migration list
+  ```
+  Confirm `20260212120000_profiles_voices_write_hardening.sql` appears in the remote/applied list.
 - [ ] Verify in dashboard: Tables → all 4 tables exist with correct columns
 
 **What to verify**: Go to Supabase dashboard → Table Editor → verify `profiles`, `voices`, `generations`, `tasks` tables exist. Check Authentication → Policies → verify RLS policies are listed.
+
+- [ ] Post-push privilege sanity check (run in staging SQL Editor):
+  ```sql
+  select
+    has_table_privilege('authenticated', 'public.profiles', 'UPDATE') as auth_can_update_profiles,
+    has_table_privilege('authenticated', 'public.voices', 'INSERT') as auth_can_insert_voices;
+  ```
+  Expected: both values are `false`.
 
 ### 5. Configure Storage CORS
 

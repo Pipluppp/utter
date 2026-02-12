@@ -2,7 +2,7 @@
 
 > **Status**: Complete (automated suite), In Progress (manual browser QA)
 >
-> 227 automated tests passing: 140 pgTAP (database) + 87 Deno (edge functions)
+> 234 automated tests: 144 pgTAP (database) + 90 Deno (edge functions)
 
 ---
 
@@ -21,7 +21,7 @@
 
 The automated test suite replaces the ad-hoc bash/curl scripts (`scripts/phase08-test.sh`, `scripts/phase08-modal-e2e.sh`) with two proper test layers that run in CI.
 
-### Layer 1: pgTAP database tests (140 tests, 11 files)
+### Layer 1: pgTAP database tests (144 tests, 11 files)
 
 SQL-based tests that run inside Postgres via `supabase test db`. They validate the schema is correct and the security model holds. Each test file runs inside a `BEGIN/ROLLBACK` transaction so nothing persists.
 
@@ -42,7 +42,7 @@ SET LOCAL request.jwt.claims = '{"sub":"<user-uuid>","role":"authenticated"}';
 SELECT * FROM voices;  -- only sees own rows
 ```
 
-### Layer 2: Deno edge function tests (87 tests, 10 files)
+### Layer 2: Deno edge function tests (90 tests, 10 files)
 
 HTTP-level integration tests that call the running edge functions via `fetch()`. They test the actual API contract: request validation, auth guards, CRUD operations, cross-user isolation, and Modal integration.
 
@@ -79,11 +79,13 @@ HTTP-level integration tests that call the running edge functions via `fetch()`.
 
 ## Quick start
 
+Local prerequisite: install Deno to run edge function tests (`npm run test:edge` / `npm run test:all`).
+
 ```bash
 npm run sb:start          # Start local Supabase
-npm run test:db           # Run 140 pgTAP tests
+npm run test:db           # Run 144 pgTAP tests
 npm run sb:serve:test     # Serve edge functions with mock Modal (separate terminal)
-npm run test:edge         # Run 87 Deno tests
+npm run test:edge         # Run 90 Deno tests
 npm run test:all          # Both suites sequentially
 ```
 

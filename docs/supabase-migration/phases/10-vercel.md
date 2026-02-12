@@ -20,6 +20,13 @@ This phase just wires the existing deployment to the Supabase backend.
 
 ---
 
+## Current repo state
+
+- `frontend/vercel.json` currently has SPA fallback only.
+- `/api/*` rewrite to Supabase is not present yet and must be added first.
+
+---
+
 ## Why this phase exists
 
 The frontend is deployed but disconnected — it can't make API calls or authenticate users. This phase adds the API rewrite so `/api/*` requests proxy to Supabase Edge Functions, sets the Supabase env vars so the auth client initializes, and verifies the full production topology works.
@@ -40,6 +47,17 @@ This phase connects the Vercel deployment to the **staging** Supabase project fi
 ---
 
 ## Steps
+
+### Wiring order (staging first)
+
+Execute in this order:
+
+1. Update `frontend/vercel.json` with `/api/:path*` rewrite to the staging Supabase project (`https://<staging-ref>.supabase.co/functions/v1/api/:path*`).
+2. Set Vercel env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) for the environments you are using for staging validation (Preview and/or Production).
+3. Redeploy the frontend.
+4. Validate `https://<your-app>.vercel.app/api/languages` returns JSON from the backend (not SPA HTML).
+
+Only proceed to full smoke tests after step 4 is green.
 
 ### 1. Update `frontend/vercel.json` with API rewrite
 
@@ -103,6 +121,10 @@ The file already exists with SPA fallback. Add the API rewrite **before** the ca
 - [ ] Commit the updated `vercel.json` and push
 - [ ] Vercel will auto-deploy from the push
 - [ ] Wait for the build to complete (typically 30-60s)
+
+**Rollback (if staging backend fails):**
+- Revert `frontend/vercel.json` to SPA-only fallback (remove `/api/*` rewrite), push, and redeploy.
+- Keep env vars in Vercel but treat deployment as frontend-only until staging backend issues are resolved.
 
 **What to check if build fails**:
 - Check build logs in Vercel dashboard

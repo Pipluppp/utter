@@ -20,6 +20,8 @@
 | [09](./phases/09-staging-deploy.md) | Supabase Cloud Deploy (Staging) | Not Started | [Account + project setup](./manual-steps.md#phase-9--staging-supabase-deploy) |
 | [10](./phases/10-vercel.md) | Vercel Backend Connection | In Progress | [Env vars + API rewrite](./manual-steps.md#phase-10--vercel-deferred) |
 
+Current blocker: edge tests have not been re-run locally on this machine (`deno` missing). Require local `npm run test:edge` pass or green CI `edge-function-tests` before staging cutover.
+
 Related docs: [manual-steps.md](./manual-steps.md) | [architecture.md](../architecture.md) | [database.md](../database.md) | [edge-orchestration.md](../edge-orchestration.md) | [supabase-security.md](../supabase-security.md)
 
 ---
