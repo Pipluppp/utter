@@ -1,4 +1,4 @@
--- Phase 08b: RLS policies on profiles — read/update own, cross-user isolation
+-- Phase 08b: RLS policies on profiles — read-only own profile, cross-user isolation
 BEGIN;
 SELECT plan(8);
 
@@ -21,10 +21,12 @@ SELECT results_eq(
   'User A sees exactly 1 profile (their own)'
 );
 
--- Test 2: User A can update own profile
-SELECT lives_ok(
+-- Test 2: User A cannot update own profile (grant revoked)
+SELECT throws_ok(
   $$UPDATE public.profiles SET display_name = 'User A' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
-  'User A can update own profile'
+  '42501',
+  NULL,
+  'User A cannot update own profile (UPDATE revoked from authenticated)'
 );
 
 -- Test 3: User A cannot see User B profile
@@ -34,13 +36,12 @@ SELECT results_eq(
   'User A cannot see User B profile'
 );
 
--- Test 4: User A update to User B profile affects 0 rows
-SELECT results_eq(
-  $$WITH updated AS (
-    UPDATE public.profiles SET display_name = 'Hacked' WHERE id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' RETURNING id
-  ) SELECT count(*)::int FROM updated$$,
-  ARRAY[0],
-  'User A cannot update User B profile (0 rows affected)'
+-- Test 4: User A cannot update User B profile (grant revoked)
+SELECT throws_ok(
+  $$UPDATE public.profiles SET display_name = 'Hacked' WHERE id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'$$,
+  '42501',
+  NULL,
+  'User A cannot update User B profile (UPDATE revoked from authenticated)'
 );
 
 -- ============================================================

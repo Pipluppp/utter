@@ -103,6 +103,37 @@ Deno.test("DELETE /voices/:id returns 404 for non-existent", async () => {
   await res.body?.cancel();
 });
 
+Deno.test({
+  name: "GET /voices/:id/preview rejects storage key outside user prefix",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    const admin = await import("npm:@supabase/supabase-js@2");
+    const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const maliciousVoiceId = crypto.randomUUID();
+
+    try {
+      const insertRes = await client.from("voices").insert({
+        id: maliciousVoiceId,
+        user_id: userA.userId,
+        name: "Bad Key Voice",
+        source: "uploaded",
+        language: "English",
+        reference_transcript: "hello world",
+        reference_object_key: `${userB.userId}/foreign/reference.wav`,
+      });
+      assertEquals(insertRes.error, null);
+
+      const res = await apiFetch(`/voices/${maliciousVoiceId}/preview`, userA.accessToken);
+      assertEquals(res.status, 403);
+      const body = await res.json();
+      assertEquals(body.detail, "Invalid storage object key.");
+    } finally {
+      await client.from("voices").delete().eq("id", maliciousVoiceId);
+    }
+  },
+});
+
 Deno.test({ name: "voices: teardown", sanitizeResources: false, sanitizeOps: false, fn: async () => {
   await deleteTestUser(userA.userId);
   await deleteTestUser(userB.userId);

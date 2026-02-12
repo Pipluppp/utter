@@ -123,7 +123,7 @@ Apply column-guard triggers to **every table where the client has direct UPDATE 
 **Utter-specific note:** Our architecture (see `docs/architecture.md`) routes most writes through Edge Functions with `service_role`, which means the client never has direct INSERT/UPDATE on those tables. Currently:
 
 - **`generations`** and **`tasks`**: written exclusively by Edge Functions. No INSERT/UPDATE granted to `authenticated`. Column-guard triggers are **not needed** — the grant itself is absent.
-- **`voices`**: in Option A, voices are created/updated/deleted via the `/api/*` Edge Function (service role) so the client does not have direct PostgREST writes. If we ever grant direct client UPDATE in the future (e.g., rename), add column-level protections (privileges and/or triggers) to prevent tampering with server-owned fields like `user_id`, `source`, and storage object keys.
+- **`voices`**: in Option A, voice creation/updates are server-only via `/api/*` Edge Functions (service role). We still allow direct client DELETE on own rows. If we ever grant direct client UPDATE in the future (e.g., rename), add column-level protections (privileges and/or triggers) to prevent tampering with server-owned fields like `user_id`, `source`, and storage object keys.
 - **`profiles`**: we will maintain a `public.profiles` table (keyed by `auth.users.id`) for app-specific user data (display name, billing state, credits). `auth.users` remains the identity source but is not exposed via PostgREST.
 
 **Rule of thumb:** If the `authenticated` role has any direct INSERT/UPDATE/DELETE grants on a table, assume attackers can exploit PostgREST to craft arbitrary writes. Either (a) remove the grant and route the write through an Edge Function/RPC, or (b) add column-level protections (privileges and/or triggers) for server-owned fields.
@@ -132,7 +132,7 @@ Apply column-guard triggers to **every table where the client has direct UPDATE 
 
 Utter's `public.profiles` table is expected to contain **server-owned** fields (for example `credits_remaining` and `subscription_tier`) that must not be user-editable.
 
-However, as of the current migrations, `authenticated` users can update their own `profiles` row (RLS allows row access, and UPDATE is not revoked). Because RLS does not protect columns, a user can bypass the SPA and update **any column on their own row** via the Data API.
+If `authenticated` users can update their own `profiles` row (RLS allows row access, and UPDATE is granted), they can bypass the SPA and update **any column on their own row** via the Data API.
 
 Why this matters:
 - If we enforce usage limits or billing based on `profiles.credits_remaining` / `subscription_tier`, this becomes a trivial self-serve escalation unless we add column guards.
@@ -147,6 +147,8 @@ Recommended fixes (pick one; do before any paid/credit gating):
    - Add a `BEFORE UPDATE` trigger on `public.profiles` that rejects changes to server-owned columns and only permits a small allowlist.
 
 If we do neither, assume `credits_remaining` and `subscription_tier` are attacker-controlled values.
+
+**Current Utter enforcement:** `UPDATE` is revoked from `authenticated` on `public.profiles`, and profile edits go through `/api/profile` using trusted server-side validation.
 
 ---
 
@@ -196,8 +198,11 @@ This is not a vulnerability — it's by design. But it means **the Data API is y
    -- tasks: only Edge Functions write. Client reads only.
    revoke insert, update, delete on public.tasks from authenticated;
 
-   -- voices: client can insert (clone finalize) and delete. No direct update yet.
-   revoke update on public.voices from authenticated;
+   -- profiles: server-only update path (/api/profile or RPC)
+   revoke update on public.profiles from authenticated;
+
+   -- voices: no direct INSERT/UPDATE from authenticated (edge functions create rows)
+   revoke insert, update on public.voices from authenticated;
 
    -- anon role should have no write access to any application table
    revoke insert, update, delete on public.voices from anon;
@@ -490,9 +495,10 @@ Fix is almost always:
 - [ ] `user_id` columns indexed on all RLS-filtered tables (`idx_voices_user_id`, `idx_generations_user_id`, `idx_tasks_user_id`)
 
 ### Grants & Data API
+- [ ] `profiles`: UPDATE revoked from `authenticated` (server-only writes via `/api/profile` or RPC)
 - [ ] `generations`: INSERT/UPDATE revoked from `authenticated` (Edge Functions only)
 - [ ] `tasks`: INSERT/UPDATE/DELETE revoked from `authenticated` (Edge Functions only)
-- [ ] `voices`: UPDATE revoked from `authenticated` (unless we add client-side rename via RPC)
+- [ ] `voices`: INSERT/UPDATE revoked from `authenticated` (unless we explicitly re-enable client-side writes with additional safeguards)
 - [ ] `anon` role has no write access to any application table
 - [ ] No RLS policies reference `user_metadata` (use `app_metadata` for role-based checks)
 - [ ] Data API exposure reviewed: no unintended tables in exposed schemas

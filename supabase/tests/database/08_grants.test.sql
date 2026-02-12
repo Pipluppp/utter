@@ -1,7 +1,7 @@
 -- Phase 08b: Grant revocations — PostgREST surface hardening
 -- Ref: supabase-security.md §4
 BEGIN;
-SELECT plan(12);
+SELECT plan(14);
 
 -- Create test user
 INSERT INTO auth.users (id, instance_id, role, aud, email, encrypted_password, email_confirmed_at, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change)
@@ -21,6 +21,12 @@ VALUES ('33333333-3333-3333-3333-333333333333', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaa
 SET LOCAL role = 'authenticated';
 SET LOCAL request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","role":"authenticated","aud":"authenticated"}';
 
+-- Profiles: UPDATE revoked
+SELECT throws_ok(
+  $$UPDATE public.profiles SET display_name = 'Updated' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
+  '42501', NULL, 'authenticated: UPDATE revoked on profiles'
+);
+
 -- Generations: INSERT/UPDATE revoked
 SELECT throws_ok(
   $$INSERT INTO public.generations (id, user_id, text) VALUES (gen_random_uuid(), 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'x')$$,
@@ -32,6 +38,10 @@ SELECT throws_ok(
 );
 
 -- Voices: UPDATE revoked
+SELECT throws_ok(
+  $$INSERT INTO public.voices (id, user_id, name, source) VALUES (gen_random_uuid(), 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'x', 'uploaded')$$,
+  '42501', NULL, 'authenticated: INSERT revoked on voices'
+);
 SELECT throws_ok(
   $$UPDATE public.voices SET name = 'renamed' WHERE id = '11111111-1111-1111-1111-111111111111'$$,
   '42501', NULL, 'authenticated: UPDATE revoked on voices'

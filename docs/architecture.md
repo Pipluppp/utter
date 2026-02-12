@@ -342,24 +342,15 @@ alter table public.voices enable row level security;
 alter table public.generations enable row level security;
 alter table public.tasks enable row level security;
 
--- Profiles: users read their own; updates are restricted (see note below)
+-- Profiles: users read their own (writes go through edge/RPC server paths)
 create policy "profiles_select" on public.profiles
   for select to authenticated
   using ((select auth.uid()) = id);
 
-create policy "profiles_update" on public.profiles
-  for update to authenticated
-  using ((select auth.uid()) = id)
-  with check ((select auth.uid()) = id);
-
--- Voices: users CRUD their own
+-- Voices: users read/delete their own; inserts/updates are server-only
 create policy "voices_select" on public.voices
   for select to authenticated
   using ((select auth.uid()) = user_id);
-
-create policy "voices_insert" on public.voices
-  for insert to authenticated
-  with check ((select auth.uid()) = user_id);
 
 create policy "voices_delete" on public.voices
   for delete to authenticated
@@ -382,7 +373,7 @@ create policy "tasks_select" on public.tasks
 
 **Performance note:** Wrapping `auth.uid()` in `(select auth.uid())` triggers an `initPlan` optimization — Postgres evaluates it once per statement instead of once per row. This matters on tables with many rows.
 
-**Column-level protection note:** RLS only restricts which rows a user can update, not which columns. For tables where clients can UPDATE rows (e.g. `profiles`, and `voices` if we add client-side rename), use one of:
+**Column-level protection note:** RLS only restricts which rows a user can update, not which columns. For tables where clients can UPDATE rows (e.g. `voices` if we add client-side rename), use one of:
 
 - Postgres column privileges (`GRANT UPDATE (display_name, avatar_url) ...`) and revoke broad UPDATE, and/or
 - a `BEFORE UPDATE` trigger that rejects changes to protected columns
@@ -390,6 +381,8 @@ create policy "tasks_select" on public.tasks
 See `docs/supabase-security.md`.
 
 **INSERT/UPDATE on generations and tasks:** Done by edge functions using service role key (bypasses RLS). Users don't directly insert generations or tasks — edge functions do it on their behalf after validation.
+
+**Profiles/voices direct writes:** `authenticated` does not have direct `UPDATE` on `profiles` or direct `INSERT/UPDATE` on `voices`; these writes must go through edge functions or trusted RPCs.
 
 ### RLS + edge functions interaction
 

@@ -57,6 +57,23 @@ Deno.test("PATCH /profile updates display_name", async () => {
   assertEquals(body.profile.display_name, "Test User A");
 });
 
+Deno.test("PATCH /profile ignores server-owned fields in body", async () => {
+  const res = await apiFetch("/profile", userA.accessToken, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      display_name: "Safe Update",
+      subscription_tier: "pro",
+      credits_remaining: 999999,
+    }),
+  });
+  assertEquals(res.status, 200);
+  const body = await res.json();
+  assertEquals(body.profile.display_name, "Safe Update");
+  assertEquals(body.profile.subscription_tier, "free");
+  assertEquals(body.profile.credits_remaining, 100);
+});
+
 Deno.test("PATCH /profile updates handle", async () => {
   const handle = `test_${Date.now()}`;
   const res = await apiFetch("/profile", userA.accessToken, {

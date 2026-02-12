@@ -80,9 +80,12 @@ generationsRoutes.get("/generations", async (c) => {
 })
 
 generationsRoutes.get("/generations/:id/audio", async (c) => {
+  let userId: string
   let supabase: ReturnType<typeof createUserClient>
   try {
-    ;({ supabase } = await requireUser(c.req.raw))
+    const { user, supabase: userClient } = await requireUser(c.req.raw)
+    userId = user.id
+    supabase = userClient
   } catch (e) {
     if (e instanceof Response) return e
     return jsonDetail("Unauthorized", 401)
@@ -99,6 +102,7 @@ generationsRoutes.get("/generations/:id/audio", async (c) => {
   if (!gen) return jsonDetail("Generation not found.", 404)
   const key = (gen as { audio_object_key: string | null }).audio_object_key
   if (!key) return jsonDetail("Generation audio not available.", 404)
+  if (!key.startsWith(`${userId}/`)) return jsonDetail("Invalid storage object key.", 403)
 
   const admin = createAdminClient()
   const { data: signed, error: signedError } = await admin.storage

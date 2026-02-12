@@ -1,4 +1,4 @@
--- Phase 08b: RLS policies on voices — SELECT/INSERT/DELETE own, no UPDATE, cross-user isolation
+-- Phase 08b: RLS policies on voices — SELECT/DELETE own, no INSERT/UPDATE, cross-user isolation
 BEGIN;
 SELECT plan(10);
 
@@ -8,9 +8,11 @@ VALUES
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'rls_voice_a@test.com', crypt('pass', gen_salt('bf')), now(), now(), now(), '', '', '', ''),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'rls_voice_b@test.com', crypt('pass', gen_salt('bf')), now(), now(), now(), '', '', '', '');
 
--- Seed: User A has a voice (inserted as superuser to bypass grants)
+-- Seed: User A has voices (inserted as superuser to bypass grants)
 INSERT INTO public.voices (id, user_id, name, source)
-VALUES ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Voice A', 'uploaded');
+VALUES
+  ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Voice A', 'uploaded'),
+  ('22222222-2222-2222-2222-222222222222', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Voice A2', 'designed');
 
 -- ============================================================
 -- User A context
@@ -21,24 +23,26 @@ SET LOCAL request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","r
 -- Test 1: User A can read own voice
 SELECT results_eq(
   $$SELECT count(*)::int FROM public.voices$$,
-  ARRAY[1],
-  'User A sees exactly 1 voice'
+  ARRAY[2],
+  'User A sees exactly 2 voices'
 );
 
--- Test 2: User A can insert own voice
-SELECT lives_ok(
+-- Test 2: User A cannot insert own voice (grant revoked)
+SELECT throws_ok(
   $$INSERT INTO public.voices (id, user_id, name, source)
-    VALUES ('22222222-2222-2222-2222-222222222222', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Voice A2', 'designed')$$,
-  'User A can insert voice with own user_id'
+    VALUES (gen_random_uuid(), 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Voice A3', 'uploaded')$$,
+  '42501',
+  NULL,
+  'User A cannot insert voice with own user_id (INSERT revoked from authenticated)'
 );
 
--- Test 3: User A cannot insert voice as another user
+-- Test 3: User A cannot insert voice as another user (grant revoked)
 SELECT throws_ok(
   $$INSERT INTO public.voices (id, user_id, name, source)
     VALUES (gen_random_uuid(), 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Fake', 'uploaded')$$,
   '42501',
   NULL,
-  'User A cannot insert voice with User B user_id'
+  'User A cannot insert voice with User B user_id (INSERT revoked from authenticated)'
 );
 
 -- Test 4: User A can delete own voice

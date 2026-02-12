@@ -1,7 +1,7 @@
 -- Phase 08b: Supabase Postgres best practices + security doc regression guards
 -- Sources: supabase-postgres-best-practices skill, docs/supabase-security.md
 BEGIN;
-SELECT plan(19);
+SELECT plan(21);
 
 -- ============================================================
 -- 1. RLS ENABLED ON ALL PUBLIC TABLES (4 tests)
@@ -177,6 +177,20 @@ SELECT ok(
 SELECT ok(
   (SELECT prosecdef FROM pg_proc WHERE proname = 'increment_task_modal_poll_count' AND pronamespace = 'public'::regnamespace),
   'increment_task_modal_poll_count is SECURITY DEFINER'
+);
+
+-- ============================================================
+-- 8. LEAST PRIVILEGE GUARDS (2 tests)
+-- Ref: security-privileges.md, supabase-security.md §4
+-- ============================================================
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'public.profiles', 'UPDATE'),
+  'authenticated does not have UPDATE on profiles'
+);
+
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'public.voices', 'INSERT'),
+  'authenticated does not have INSERT on voices'
 );
 
 SELECT * FROM finish();

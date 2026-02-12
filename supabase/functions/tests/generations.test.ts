@@ -142,6 +142,36 @@ Deno.test("DELETE /generations/:id returns 404 for non-existent", async () => {
   await res.body?.cancel();
 });
 
+Deno.test({
+  name: "GET /generations/:id/audio rejects storage key outside user prefix",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    const admin = await import("npm:@supabase/supabase-js@2");
+    const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const maliciousGenerationId = crypto.randomUUID();
+
+    try {
+      const insertRes = await client.from("generations").insert({
+        id: maliciousGenerationId,
+        user_id: userA.userId,
+        text: "malicious audio key test",
+        language: "English",
+        status: "completed",
+        audio_object_key: `${userB.userId}/foreign.wav`,
+      });
+      assertEquals(insertRes.error, null);
+
+      const res = await apiFetch(`/generations/${maliciousGenerationId}/audio`, userA.accessToken);
+      assertEquals(res.status, 403);
+      const body = await res.json();
+      assertEquals(body.detail, "Invalid storage object key.");
+    } finally {
+      await client.from("generations").delete().eq("id", maliciousGenerationId);
+    }
+  },
+});
+
 Deno.test({ name: "generations: teardown", sanitizeResources: false, sanitizeOps: false, fn: async () => {
   // Clean up voice
   const admin = await import("npm:@supabase/supabase-js@2");
