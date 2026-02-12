@@ -49,6 +49,9 @@ npm run dev
 
 | Doc | Purpose |
 |---|---|
+| **[2026-02-13/README.md](./2026-02-13/README.md)** | Latest deployment task index (Task 1: Supabase staging deploy, Task 2: Vercel wiring, then Qwen cutover) |
+| [2026-02-13/deploy-supabase/README.md](./2026-02-13/deploy-supabase/README.md) | Full task plan: deploy local-working Supabase backend stack to live staging |
+| [2026-02-13/wire-vercel-supabase/README.md](./2026-02-13/wire-vercel-supabase/README.md) | Full task plan: wire deployed Vercel frontend to staging Supabase backend |
 | **[architecture.md](./architecture.md)** | Comprehensive architecture reference (schema, RLS, Edge Fns, Auth, Storage) |
 | **[architecture-learn.md](./architecture-learn.md)** | How the Supabase pieces work under the hood (educational companion) |
 | **[milestone.md](./milestone.md)** | Top-level milestone tracker (backend-focused) |
