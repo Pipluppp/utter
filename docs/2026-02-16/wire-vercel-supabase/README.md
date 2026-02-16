@@ -1,6 +1,6 @@
 # Task 2 - Wire Vercel Frontend to Staging Supabase
 
-Status: `Planned`  
+Status: `Done` (2026-02-17)  
 Owner: `Frontend/Deployment`  
 Priority: `P0` (after Task 1)
 

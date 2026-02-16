@@ -1,6 +1,6 @@
 # Task 1 - Deploy Supabase Staging Backend
 
-Status: `Planned`  
+Status: `Done` (2026-02-17)  
 Owner: `Backend/Supabase`  
 Priority: `P0`
 
