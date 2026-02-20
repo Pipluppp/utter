@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import { buttonStyles } from '../../components/ui/Button'
+import { TextReveal } from '../../components/animation/TextReveal'
 import { useLanguages } from '../hooks'
 
 export function LandingHero() {
@@ -8,13 +9,9 @@ export function LandingHero() {
   return (
     <section className="py-6 md:py-14">
       <div className="mx-auto max-w-4xl text-center">
-        <h1 className="text-balance text-[clamp(34px,6vw,64px)] font-pixel font-medium uppercase tracking-[2px]">
-          Clone voices.
-          <br />
-          Design new ones.
-          <br />
-          Generate speech.
-        </h1>
+        <TextReveal
+          lines={['Clone voices.', 'Design new ones.', 'Generate speech.']}
+        />
 
         <p className="mx-auto mt-5 max-w-2xl text-sm text-muted-foreground">
           A minimal workflow for voice cloning + generation. Hear real demos
