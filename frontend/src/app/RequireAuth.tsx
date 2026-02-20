@@ -74,7 +74,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   }
 
   if (!signedIn) {
-    return <Navigate to={`/account/auth?returnTo=${returnTo}`} replace />
+    return <Navigate to={`/auth?returnTo=${returnTo}`} replace />
   }
 
   return children

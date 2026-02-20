@@ -8,7 +8,6 @@ type AccountNavItem = {
 }
 
 const navItems: AccountNavItem[] = [
-  { to: '/account/auth', label: 'Auth', desc: 'Sign in, sign up, sign out' },
   { to: '/account/profile', label: 'Profile', desc: 'Identity & preferences' },
   { to: '/account/usage', label: 'Credits', desc: 'Balance, rates, history' },
   { to: '/account/billing', label: 'Billing', desc: 'Plans, invoices' },

@@ -40,6 +40,10 @@ const TermsPage = lazy(async () => {
   return { default: m.TermsPage }
 })
 
+const AuthPage = lazy(async () => {
+  const m = await import('../pages/Auth')
+  return { default: m.AuthPage }
+})
 const AccountLayoutPage = lazy(async () => {
   const m = await import('../pages/account/AccountLayout')
   return { default: m.AccountLayoutPage }
@@ -47,10 +51,6 @@ const AccountLayoutPage = lazy(async () => {
 const AccountProfilePage = lazy(async () => {
   const m = await import('../pages/account/Profile')
   return { default: m.AccountProfilePage }
-})
-const AccountAuthPage = lazy(async () => {
-  const m = await import('../pages/account/Auth')
-  return { default: m.AccountAuthPage }
 })
 const AccountUsagePage = lazy(async () => {
   const m = await import('../pages/account/Usage')
@@ -106,15 +106,20 @@ export const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
+      { path: '/auth', element: <AuthPage /> },
       { path: '/pricing', element: <Navigate to="/#pricing" replace /> },
       { path: '/privacy', element: <PrivacyPage /> },
       { path: '/terms', element: <TermsPage /> },
       {
         path: '/account',
-        element: <AccountLayoutPage />,
+        element: (
+          <RequireAuth>
+            <AccountLayoutPage />
+          </RequireAuth>
+        ),
         children: [
-          { index: true, element: <Navigate to="/account/auth" replace /> },
-          { path: 'auth', element: <AccountAuthPage /> },
+          { index: true, element: <Navigate to="/account/profile" replace /> },
+          { path: 'auth', element: <Navigate to="/auth" replace /> },
           { path: 'profile', element: <AccountProfilePage /> },
           { path: 'usage', element: <AccountUsagePage /> },
           { path: 'billing', element: <AccountBillingPage /> },
