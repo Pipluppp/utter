@@ -1,7 +1,7 @@
 -- Phase 08b: Grant revocations — PostgREST surface hardening
 -- Ref: supabase-security.md §4
 BEGIN;
-SELECT plan(14);
+SELECT plan(17);
 
 -- Create test user
 INSERT INTO auth.users (id, instance_id, role, aud, email, encrypted_password, email_confirmed_at, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change)
@@ -90,6 +90,24 @@ SELECT throws_ok(
 SELECT throws_ok(
   $$DELETE FROM public.generations WHERE id = '22222222-2222-2222-2222-222222222222'$$,
   '42501', NULL, 'anon: DELETE revoked on generations'
+);
+
+-- ============================================================
+-- RPC EXECUTE HARDENING
+-- ============================================================
+SELECT ok(
+  not has_function_privilege('anon', 'public.increment_task_modal_poll_count(uuid,uuid)', 'EXECUTE'),
+  'anon: EXECUTE revoked on increment_task_modal_poll_count'
+);
+
+SELECT ok(
+  not has_function_privilege('authenticated', 'public.increment_task_modal_poll_count(uuid,uuid)', 'EXECUTE'),
+  'authenticated: EXECUTE revoked on increment_task_modal_poll_count'
+);
+
+SELECT ok(
+  has_function_privilege('service_role', 'public.increment_task_modal_poll_count(uuid,uuid)', 'EXECUTE'),
+  'service_role: EXECUTE granted on increment_task_modal_poll_count'
 );
 
 SELECT * FROM finish();
