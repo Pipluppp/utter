@@ -41,7 +41,7 @@ We are using Vercel as a frontend host, not as a backend runtime.
 
 ## Chosen connectivity pattern: Pattern A only
 
-The deployed SPA keeps calling the same relative endpoints it uses today:
+The deployed SPA keeps calling these stable relative endpoints:
 
 - `https://<app-domain>/api/*`
 

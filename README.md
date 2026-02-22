@@ -10,10 +10,9 @@ Voice cloning + TTS app powered by Qwen3-TTS on Modal. React 19 + Vite + Tailwin
 
 ## What's in here
 
-- `frontend/`: React 19 + Vite + TS + Tailwind v4
-- `supabase/`: Supabase config, Edge Functions, migrations, and tests
-- `backend/`: Legacy FastAPI app (being replaced by Supabase Edge Functions)
-- `modal_app/`: Modal deploy code for Qwen3-TTS
+- `frontend/`: React 19 + Vite + TS + Tailwind v4 (hosted on Vercel)
+- `supabase/`: Edge Functions (Deno/Hono), Postgres migrations, Storage config, tests
+- `modal_app/`: Modal deploy code for Qwen3-TTS (serverless GPU)
 - `docs/`: docs (start with `docs/README.md`)
 
 ## Prerequisites
@@ -60,18 +59,6 @@ npm run dev
 Frontend: `http://localhost:5173`
 
 Vite proxies `/api` requests to `http://localhost:54321/functions/v1` (see `frontend/vite.config.ts`).
-
-### Legacy backend (optional)
-
-The FastAPI backend is being replaced by Supabase Edge Functions. If you still need it:
-
-```bash
-cd backend
-cp .env.example .env
-uv venv --allow-existing
-uv pip install -r requirements.txt -p .venv
-uv run -p .venv uvicorn main:app --reload --port 8000
-```
 
 ## Testing
 

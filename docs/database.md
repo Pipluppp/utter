@@ -1,8 +1,8 @@
-# Database + RLS plan (Supabase Postgres)
+# Database + RLS (Supabase Postgres)
 
-Last updated: **2026-02-05**
+Last updated: **2026-02-22** (schema deployed 2026-02-17)
 
-This doc defines the Postgres schema we need for a Supabase-first Utter backend:
+This doc describes the Postgres schema for Utter's Supabase backend:
 
 - tables and columns (voices, generations, tasks)
 - required indexes and constraints
@@ -17,13 +17,13 @@ Related docs:
 - Backend endpoint mapping: [`backend.md`](./backend.md)
 - Orchestration model: [`edge-orchestration.md`](./edge-orchestration.md)
 
-## Design goals
+## Design principles
 
 1) Multi-tenant by default: every row is owned by a Supabase Auth user (`user_id`).
-2) RLS is the security boundary: the schema should be safe even if someone calls PostgREST directly.
-3) Stateless backend: task state must be durable (`tasks` table), never in memory.
+2) RLS is the security boundary: safe even if someone calls PostgREST directly.
+3) Stateless backend: task state is durable (`tasks` table), never in memory.
 4) Storage is first-class: DB stores object keys; audio bytes live in Storage.
-5) Idempotent orchestration: support poll-driven finalization safely under concurrent polling.
+5) Idempotent orchestration: poll-driven finalization is safe under concurrent polling.
 
 ## Storage conventions (bucket + object key)
 
@@ -37,9 +37,9 @@ Recommended object key convention (user-scoped):
 
 DB columns should store object keys (not full URLs, not local paths).
 
-## Core tables (proposed)
+## Core tables
 
-This is a starting point, not final SQL. We should implement this via Supabase migrations.
+Implemented via migrations in `supabase/migrations/`. Source of truth is the migration SQL; the DDL below is a reference snapshot.
 
 ### Tables (DDL sketch)
 
@@ -254,10 +254,9 @@ Minimum expectations:
 - staging is always migrated from git, never edited manually in the dashboard
 - prod migrations are promoted after staging validation
 
-## Open decisions (database-specific)
+## Open items
 
-- Should `voices.name` be unique per user?
-- Do we need soft-delete (`deleted_at`) for voices/generations?
-- Do we store additional audio metadata (codec, sample rate, loudness) for future UX?
-- Do we model design preview as a `generation` (type=preview) or as a separate table?
+- Profile column guards: `credits_remaining` and `subscription_tier` need a `BEFORE UPDATE` trigger to prevent client-side writes (see `docs/2026-02-22/profile-column-guards.md`)
+- Soft-delete (`deleted_at`) for voices/generations — not implemented, not currently needed
+- Additional audio metadata (codec, sample rate) — not stored, could be added later
 

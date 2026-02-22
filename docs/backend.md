@@ -1,8 +1,8 @@
-# Backend plan: FastAPI -> Supabase Edge Functions
+# Backend: Supabase Edge Functions
 
-Last updated: **2026-02-05**
+Last updated: **2026-02-22** (migration completed 2026-02-17)
 
-This doc maps Utter's current FastAPI backend to a Supabase-first backend:
+This doc describes Utter's backend architecture:
 
 - Edge Functions (API + orchestration)
 - Postgres (durable state + RLS)
@@ -16,31 +16,28 @@ Related docs:
 - Orchestration model: [`edge-orchestration.md`](./edge-orchestration.md)
 - Current behaviors/contracts: [`features.md`](./features.md)
 
-## Current backend inventory (FastAPI)
+## API endpoints
 
-FastAPI endpoints (from `backend/main.py`):
+All endpoints are implemented in `supabase/functions/api/routes/`:
 
-- `POST /api/clone` (upload reference audio -> create voice)
-- `POST /api/generate` (start generation task)
-- `GET /api/tasks/{task_id}` (poll task)
-- `POST /api/tasks/{task_id}/cancel` (cancel)
-- `GET /api/voices` (list)
-- `DELETE /api/voices/{voice_id}` (delete)
-- `GET /api/voices/{voice_id}/preview` (stream reference audio)
-- `GET /api/generations` (list)
-- `DELETE /api/generations/{generation_id}` (delete)
-- `POST /api/generations/{generation_id}/regenerate` (new generation from existing)
-- `GET /api/languages` (supported languages)
-- `POST /api/voices/design/preview` (generate preview audio from description)
-- `POST /api/voices/design` (save designed voice)
-- `POST /api/transcriptions` (batch transcription, optional)
-- `WS /api/transcriptions/realtime` (realtime transcription proxy, optional)
+- `POST /api/clone` — upload reference audio + create voice
+- `POST /api/generate` — start generation task (returns task_id)
+- `GET /api/tasks/{task_id}` — poll task status
+- `POST /api/tasks/{task_id}/cancel` — cancel running task
+- `GET /api/voices` — list user's voices
+- `DELETE /api/voices/{voice_id}` — delete voice + storage
+- `GET /api/voices/{voice_id}/preview` — signed URL for reference audio
+- `GET /api/generations` — list user's generations
+- `DELETE /api/generations/{generation_id}` — delete generation + storage
+- `POST /api/generations/{generation_id}/regenerate` — get params to re-run
+- `GET /api/languages` — supported languages + provider info
+- `POST /api/voices/design/preview` — generate design preview (async task)
+- `POST /api/voices/design` — save designed voice
+- `POST /api/transcriptions` — batch transcription (Mistral Voxtral)
+- `GET /api/me` — current user profile
+- `PATCH /api/profile` — update profile
 
-Non-API responsibilities today:
-- local files under `backend/uploads/**` served via `/uploads/**`
-- in-memory task state (`TaskStore`)
-
-## Target backend architecture (Supabase)
+## Backend architecture
 
 ### Durable state
 
@@ -59,66 +56,33 @@ DB stores Storage object keys, and the API issues signed URLs (or redirects) for
 
 ### API runtime
 
-Supabase Edge Functions replace FastAPI endpoints. Per Supabase guidance, prefer a "fat function" with internal routing:
+A single "fat function" (`api`) with Hono router handles all requests:
 
 - Function name: `api`
+- Entry point: `supabase/functions/api/index.ts`
 - Local URL: `http://localhost:54321/functions/v1/api`
-- Deployed URL: `https://<project-ref>.supabase.co/functions/v1/api`
+- Production URL: `https://jgmivviwockcwjkvpqra.supabase.co/functions/v1/api`
 
-Frontend reachability options:
-- Preferred: CDN rewrite so the SPA can keep calling `/api/*`
-- Fallback: update the SPA to call `/functions/v1/api/*`
+Route files live in `supabase/functions/api/routes/`. Shared utilities (auth, CORS, Modal client, Supabase client) live in `supabase/functions/api/_shared/`.
 
 ## Routing strategy (stable API contract)
 
-We want the frontend contract to stay close to today's shapes under `features.md`.
-
-Proposed approach:
-- build a single Edge Function `api` and implement routing based on:
-  - `req.method`
-  - normalized `pathname`
-
-Example route table (conceptual):
-
-| Method | Route | Handler | Notes |
-|---|---|---|---|
-| `POST` | `/clone` | `cloneVoice()` | likely 2-step upload + finalize |
-| `POST` | `/generate` | `startGeneration()` | creates `generation` + `task`, submits Modal job |
-| `GET` | `/tasks/:id` | `getTask()` | polls Modal + idempotently finalizes |
-| `POST` | `/tasks/:id/cancel` | `cancelTask()` | best-effort cancel + DB state |
-| `GET` | `/voices` | `listVoices()` | thin wrapper around DB |
-| `DELETE` | `/voices/:id` | `deleteVoice()` | delete DB + Storage objects |
-| `GET` | `/voices/:id/preview` | `voicePreview()` | signed URL or redirect |
-| `GET` | `/generations` | `listGenerations()` | thin wrapper around DB |
-| `DELETE` | `/generations/:id` | `deleteGeneration()` | delete DB + Storage object |
-| `POST` | `/generations/:id/regenerate` | `regenerate()` | wrapper around `startGeneration()` |
-| `GET` | `/languages` | `languages()` | can be public |
-| `POST` | `/voices/design/preview` | `designPreview()` | task-backed or sync (decision) |
-| `POST` | `/voices/design` | `designSave()` | stores a "designed" voice |
-| `POST` | `/transcriptions` | `transcribeBatch()` | optional; can be "future" |
+The frontend calls `/api/*` paths. In production, Vercel rewrites these to Supabase Edge Functions (see `frontend/vercel.json`). In local dev, Vite proxies to `localhost:54321/functions/v1`.
 
 ## Auth + security model
 
-Supabase default posture:
-- clients use a publishable/anon key
-- authenticated requests include a JWT
-- RLS enforces row-level access
+- Clients use the publishable anon key + a user JWT from Supabase Auth
+- The `requireUser()` helper in `_shared/auth.ts` validates the JWT and returns the user context
+- Edge functions create a Supabase client scoped to the user's JWT so RLS applies automatically
+- The service role key is used only for server-owned writes (task updates, generation inserts)
+- `verify_jwt` is set to `false` in config (auth is handled in-function by Hono middleware)
 
-For our Edge API:
-- Protected endpoints should require a valid JWT.
-- The Edge Function should create a Supabase client that forwards the user's JWT so RLS is applied automatically.
-- Use the service role key only for explicitly server-owned workflows, never for user-scoped reads/writes.
+## CORS
 
-Function configuration:
-- `verify_jwt` defaults to true; disable only for truly public endpoints (e.g., `/languages`).
-
-## CORS (required for browser access)
-
-Edge Functions must handle CORS explicitly:
-- respond to `OPTIONS` preflight
-- include `Access-Control-Allow-*` headers on all responses
-
-Supabase documents a small CORS helper (`corsHeaders`) in the HTTP methods guide. Use that pattern rather than hand-rolling headers in every handler.
+Edge functions handle CORS explicitly via `_shared/cors.ts`:
+- Responds to `OPTIONS` preflight
+- Includes `Access-Control-Allow-*` headers on all responses
+- Currently allows all origins (`*`); production lockdown is planned (see `docs/2026-02-22/cors-lockdown.md`)
 
 ## File upload + download flows (Storage-first)
 
@@ -176,13 +140,15 @@ Local development nuance:
 
 This feature does not block the core clone/design/generate flows.
 
-## Migration/cutover plan (practical)
+## Implementation history
 
-Suggested implementation order:
-1) Create schema + RLS + buckets + policies (`database.md`)
-2) Build Edge API skeleton + auth + CORS (`supabase.md`, this doc)
-3) Implement read-only endpoints (`GET /voices`, `GET /generations`, `GET /tasks/:id`)
-4) Implement write endpoints (`/clone`, `/generate`, deletes)
-5) Validate parity with the React SPA against the Edge backend
-6) Cut over hosting rewrites and retire FastAPI for production
+Migration completed 2026-02-17. Implementation order was:
+1. Schema + RLS + buckets + policies (`database.md`)
+2. Edge API skeleton + auth + CORS
+3. Read-only endpoints (`GET /voices`, `GET /generations`, `GET /tasks/:id`)
+4. Write endpoints (`/clone`, `/generate`, deletes)
+5. Parity validation with React SPA
+6. Hosting rewrites (Vercel) + production deployment
+
+Phase-by-phase guides: [`supabase-migration/phases/`](./supabase-migration/phases/)
 

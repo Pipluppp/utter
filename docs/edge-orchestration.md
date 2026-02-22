@@ -1,10 +1,10 @@
 # Job-based orchestration: Modal jobs -> Supabase Edge Functions
 
-Date: **2026-02-03**
+Last updated: **2026-02-22** (migration completed 2026-02-17)
 
 Purpose:
-1) Explain how Utter currently uses Modal's job-based spawn/poll pattern.
-2) Define how we port the same architecture to a Supabase Edge Functions backend (stateless runtime + Postgres + Storage).
+1) Capture the job-based spawn/poll pattern used by Utter.
+2) Document the deployed Supabase Edge Functions orchestration model (stateless runtime + Postgres + Storage).
 
 Related:
 - Architecture (comprehensive reference): [`architecture.md`](./architecture.md)
@@ -17,8 +17,8 @@ Related:
 ## TL;DR
 
 - Modal jobs (spawn/poll) make long-running TTS reliable and enable cancellation.
-- Today, Utter still stores task state in an in-memory `TaskStore` (works locally, not durable).
-- In a Supabase Edge Functions backend, keep the Modal job pattern but move task state to Postgres (`tasks` table) and audio outputs to Supabase Storage.
+- Task state is stored in Postgres (`tasks` table), not in-memory state.
+- Audio outputs are stored in Supabase Storage.
 - Recommended Edge pattern: poll-driven finalization
   - `POST /generate` submits a Modal job and returns quickly.
   - `GET /tasks/:id` polls Modal and, when complete, finalizes (download -> Storage upload -> DB update).
@@ -33,7 +33,7 @@ Related:
 
 ---
 
-## Current implementation (FastAPI + SQLite + local uploads)
+## Legacy implementation (pre-2026-02-17, FastAPI + SQLite + local uploads)
 
 Where it lives:
 - Orchestration + API:
@@ -74,7 +74,7 @@ This is exactly the gap a Postgres `tasks` table fills.
 
 ---
 
-## Target implementation (Supabase-only backend)
+## Deployed implementation (Supabase-only backend)
 
 What changes:
 

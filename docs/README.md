@@ -1,86 +1,80 @@
 # Utter docs
 
-Start here to understand the project, find the current "source of truth", and track the Supabase deployment refactor.
+Start here to understand the project and find current documentation.
 
-The current planning docs live at the `docs/` root. Historical notes live under date folders like `docs/2026-02-05/` (and a few date+topic folders like `docs/2026-01-26-qwen3-tts-modal-deployment/`).
+**Production**: React 19 SPA on Vercel (`https://utter-wheat.vercel.app`) backed by Supabase project `utter-dev` (`jgmivviwockcwjkvpqra`). Supabase migration completed 2026-02-17.
 
 ---
 
 ## Quick start (local dev)
 
-Backend:
+Supabase (database + edge functions):
 
-```powershell
-cd backend
-uv venv --allow-existing
-uv pip install -r requirements.txt -p .venv
-uv run -p .venv uvicorn main:app --reload --port 8000
+```bash
+supabase start
+supabase functions serve --env-file supabase/.env.local
 ```
 
 Frontend (React dev server):
 
-```powershell
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-- FastAPI (legacy Jinja UI + APIs): `http://localhost:8000`
-- React dev UI (proxies `/api`, `/uploads`, `/static`): `http://localhost:5173`
+- Supabase local stack: `http://localhost:54321`
+- React dev UI (proxies `/api` to Supabase): `http://localhost:5173`
 
 ---
 
-## Current state (Feb 2026)
+## Active tasks
 
-- Backend: FastAPI + SQLite (`backend/utter.db`) + local uploads (`backend/uploads/`)
-- Frontend: React 19 + Vite + TS + Tailwind v4 (legacy Jinja pages still served for parity)
-- TTS: Qwen3-TTS on Modal.com (job-based spawn/poll supported)
+See **[tasks.md](./tasks.md)** for the current task queue.
 
-## Target state (deployment)
-
-- Backend: Supabase Postgres + Storage + Edge Functions (job-based, poll-driven finalization)
-- Auth: Supabase Auth + RLS
-- Billing: Stripe (planned)
-- Frontend hosting: Vercel (Vite/React SPA) with `/api/*` rewrites to Supabase Edge Functions
+Latest: **[2026-02-22/README.md](./2026-02-22/README.md)** — cleanup, security hardening, docs alignment.
 
 ---
 
-## Active planning (start here)
+## Core reference docs
 
 | Doc | Purpose |
 |---|---|
-| **[tasks.md](./tasks.md)** | Quick jump point for current staged deployment sequence |
-| **[2026-02-13/README.md](./2026-02-13/README.md)** | Latest deployment task index (Task 1: Supabase staging deploy, Task 2: Vercel wiring, then Qwen cutover) |
-| [2026-02-13/deploy-supabase/README.md](./2026-02-13/deploy-supabase/README.md) | Full task plan: deploy local-working Supabase backend stack to live staging |
-| [2026-02-13/wire-vercel-supabase/README.md](./2026-02-13/wire-vercel-supabase/README.md) | Full task plan: wire deployed Vercel frontend to staging Supabase backend |
+| **[features.md](./features.md)** | Feature + API reference (ground truth) |
 | **[architecture.md](./architecture.md)** | Comprehensive architecture reference (schema, RLS, Edge Fns, Auth, Storage) |
-| **[architecture-learn.md](./architecture-learn.md)** | How the Supabase pieces work under the hood (educational companion) |
-| **[milestone.md](./milestone.md)** | Top-level milestone tracker (backend-focused) |
-| **[features.md](./features.md)** | Current feature + API reference (parity ground truth) |
-| [supabase.md](./supabase.md) | Supabase grounding (official docs + CLI workflows) |
-| [backend.md](./backend.md) | Edge API plan (routes, auth, storage flows) |
-| [database.md](./database.md) | Schema + RLS + Storage policies |
-| [supabase-security.md](./supabase-security.md) | Supabase security checklist (RLS, hardening, keys, Storage) |
-| [edge-orchestration.md](./edge-orchestration.md) | Modal jobs -> Edge orchestration (poll-driven finalization) |
+| **[milestone.md](./milestone.md)** | Migration milestone tracker (all complete) |
+| [backend.md](./backend.md) | Edge Function backend (routes, auth, storage flows) |
+| [database.md](./database.md) | Postgres schema + RLS + Storage policies |
+| [supabase-security.md](./supabase-security.md) | Security checklist (RLS, hardening, keys, Storage) |
+| [edge-orchestration.md](./edge-orchestration.md) | Modal jobs + Edge orchestration (poll-driven finalization) |
+| [vercel-frontend.md](./vercel-frontend.md) | Vercel frontend hosting + `/api/*` rewrites |
 | [deployment-architecture.md](./deployment-architecture.md) | Billing integration + cost projections |
-| [vercel-frontend.md](./vercel-frontend.md) | Vercel frontend (React + Vite SPA) with `/api/*` rewrites to Supabase Edge Functions |
-| **[qwen-integration/README.md](./qwen-integration/README.md)** | Official Qwen integration orchestration (dual provider rollout, streaming v2, restoration) |
+| **[qwen-integration/README.md](./qwen-integration/README.md)** | Official Qwen API integration (dual provider rollout) |
 
 ## Supporting docs
 
 | Doc | Purpose |
 |---|---|
-| [design.md](./design.md) | Design direction + visual identity (React + Tailwind v4) |
+| [architecture-learn.md](./architecture-learn.md) | How the Supabase pieces work (educational) |
+| [supabase.md](./supabase.md) | Supabase CLI workflows + grounding |
+| [supabase-learn.md](./supabase-learn.md) | Supabase concepts explainer |
+| [design.md](./design.md) | Design direction + visual identity |
 | [tooling.md](./tooling.md) | Local tooling and conventions |
 | [biome.md](./biome.md) | Frontend formatting/linting (Biome) |
-| [qwen3-tts-models-map.md](./qwen3-tts-models-map.md) | Qwen3-TTS model variants and mapping |
-| [qwen-api.md](./qwen-api.md) | Official Alibaba (DashScope) Qwen TTS APIs (clone/design + realtime synthesis) |
-| [transcription.md](./transcription.md) | Voxtral/Mistral transcription plan (optional) |
+| [qwen3-tts-models-map.md](./qwen3-tts-models-map.md) | Qwen3-TTS model variants |
+| [qwen-api.md](./qwen-api.md) | Official Qwen TTS API reference |
+| [transcription.md](./transcription.md) | Mistral Voxtral transcription |
+| [costs.md](./costs.md) | Cost projections |
 
-## Modal deployment guides (historical)
+## Historical / planning docs
 
-Start here:
-- [2026-01-26-qwen3-tts-modal-deployment/README.md](./2026-01-26-qwen3-tts-modal-deployment/README.md)
+Date-stamped folders contain planning notes, brain dumps, and progress tracking from various phases. These are kept for historical reference:
+
+- `2026-02-19/` — Auth pages + Qwen cutover planning
+- `2026-02-16/` — Staging deploy + Vercel wiring (completed)
+- `2026-02-05/` — Migration planning
+- `2026-01-*/` — Early project planning, Modal deployment guides
+- `supabase-migration/phases/` — Phase-by-phase implementation guides (all complete)
 
 ---
 

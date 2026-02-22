@@ -76,13 +76,13 @@ Recommended Utter setup:
    - functions: `supabase functions deploy`
    - secrets: `supabase secrets set ...`
 
-Note: this repo’s target architecture expects a single “fat” Edge Function named `api` and Vercel rewrites to keep the frontend contract stable (`/api/*`). See `docs/vercel-frontend.md`.
+Note: this repo uses a single “fat” Edge Function named `api` and Vercel rewrites to keep the frontend contract stable (`/api/*`). See `docs/vercel-frontend.md`.
 
 ## What "Supabase-first backend" means for Utter
 
-Utter's deploy blockers today:
+Migration gaps this resolved:
 - local-only state: SQLite + filesystem + in-memory tasks
-- no auth / no tenant isolation
+- missing auth + tenant isolation
 
 Supabase replaces those pieces directly:
 
@@ -147,8 +147,8 @@ Use Edge Functions when:
 - it needs Storage signed URL creation, uploads, or object key conventions
 - it needs stable request validation + error contracts
 
-Default stance for the migration (Option A):
-- preserve today's `/api/*` contract via a single Edge API router (see `backend.md`)
+Default stance used for the migration:
+- preserve the `/api/*` contract via a single Edge API router (see `backend.md`)
 - the SPA does not call PostgREST directly; PostgREST/RPC are internal implementation details used by Edge Functions
 
 ## Performance basics we should treat as required

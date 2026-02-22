@@ -2,7 +2,7 @@
 
 > **Purpose**: Ground-truth documentation of all Utter features, constraints, and implementation details.  
 > **Audience**: Developers, deployment planning, architecture decisions  
-> **Last Updated**: 2026-02-05
+> **Last Updated**: 2026-02-22
 
 ---
 
@@ -34,46 +34,50 @@ Utter is an AI-powered voice cloning and text-to-speech application. Users can:
 2. **Design** new voices from text descriptions (no audio needed)
 3. **Generate** speech in any saved voice (up to 5,000 characters)
 
-### Current Technology Stack
+### Technology Stack
 
 | Component | Technology | Notes |
 |-----------|------------|-------|
-| **Backend** | FastAPI (Python 3.11+) | Async, single instance |
-| **Database** | SQLite + SQLAlchemy | Local file `utter.db` |
-| **Frontend** | React 19 SPA (Vite) + legacy Jinja | React dev server proxies to FastAPI; Jinja kept for parity |
+| **Frontend** | React 19 + Vite + Tailwind v4 | Hosted on Vercel |
+| **Backend API** | Supabase Edge Functions (Deno/Hono) | Single "fat function" with internal routing |
+| **Database** | Supabase Postgres | RLS for user isolation |
+| **Auth** | Supabase Auth | JWT, magic link + password |
+| **File Storage** | Supabase Storage | Private buckets: `references`, `generated` |
 | **TTS Engine** | Qwen3-TTS on Modal.com | Serverless GPU (A10G) |
+| **Transcription** | Mistral Voxtral | Batch + realtime |
 | **Audio Playback** | WaveSurfer.js | Waveform visualization |
-| **File Storage** | Local filesystem | `uploads/` directory |
 
-Note: In local dev, the React UI runs on `http://localhost:5173` and proxies `/api`, `/uploads`, and `/static` to FastAPI.
+In local dev, the React UI runs on `http://localhost:5173` and Vite proxies `/api` to `http://localhost:54321/functions/v1` (Supabase Edge Functions).
 
-### Current Architecture
+### Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        BROWSER                                   │
 │  ┌─────────────────────────────────────────────────────────┐    │
-│  │  Jinja2 Templates + Vanilla JS + WaveSurfer.js          │    │
+│  │  React 19 SPA + WaveSurfer.js + Supabase Auth SDK       │    │
 │  └─────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
                               │
+                    /api/* (Vercel rewrite)
+                              │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      FastAPI Backend                             │
+│                 Supabase Edge Functions (Deno)                   │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
-│  │   Routes    │  │  Services   │  │      TaskStore          │  │
-│  │  /api/*     │  │  tts_qwen   │  │  (in-memory dict)       │  │
-│  │  HTML pages │  │  audio      │  │                         │  │
-│  └─────────────┘  │  storage    │  └─────────────────────────┘  │
-│                   └─────────────┘                                │
+│  │ Hono Router │  │  Services   │  │   Supabase Clients      │  │
+│  │  /api/*     │  │  modal.ts   │  │  (service role + user)  │  │
+│  │             │  │  mistral.ts │  │                         │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
         │                   │                     │
         ▼                   ▼                     ▼
 ┌───────────────┐  ┌───────────────┐  ┌───────────────────────────┐
-│    SQLite     │  │  Local Files  │  │        Modal.com          │
-│   utter.db    │  │  uploads/     │  │  Qwen3-TTS-0.6B           │
-│               │  │  ├─ refs/     │  │  Qwen3-TTS-VoiceDesign    │
-│               │  │  └─ generated/│  │  (Serverless GPU)         │
+│   Postgres    │  │   Storage     │  │        Modal.com          │
+│  profiles     │  │  references/  │  │  Qwen3-TTS-0.6B           │
+│  voices       │  │  generated/   │  │  Qwen3-TTS-VoiceDesign    │
+│  generations  │  │ (signed URLs) │  │  (Serverless GPU)         │
+│  tasks        │  │               │  │                           │
 └───────────────┘  └───────────────┘  └───────────────────────────┘
 ```
 
@@ -83,15 +87,17 @@ Note: In local dev, the React UI runs on `http://localhost:5173` and proxies `/a
 
 ### Page Inventory
 
-| Route | Template | Purpose |
-|-------|----------|---------|
-| `/` | `index.html` | Landing page with feature cards |
-| `/clone` | `clone.html` | Voice cloning form |
-| `/generate` | `generate.html` | Speech generation form |
-| `/design` | `design.html` | Voice design from text |
-| `/voices` | `voices.html` | Voice library management |
-| `/history` | `history.html` | Past generations list |
-| `/about` | `about.html` | About/info page |
+| Route | Component | Auth | Purpose |
+|-------|-----------|------|---------|
+| `/` | `Landing.tsx` | No | Landing page with hero, demo wall, features, pricing |
+| `/clone` | `Clone.tsx` | Yes | Voice cloning (upload + record + transcription) |
+| `/generate` | `Generate.tsx` | Yes | Speech generation with task polling |
+| `/design` | `Design.tsx` | Yes | Voice design from text description |
+| `/voices` | `Voices.tsx` | Yes | Voice library with search + filtering |
+| `/history` | `History.tsx` | Yes | Past generations with playback |
+| `/auth` | `Auth.tsx` | No | Login / signup (magic link + password) |
+| `/account/*` | `AccountLayout.tsx` | Yes | Profile, usage, billing |
+| `/about` | `About.tsx` | No | About page |
 
 ### Page Details
 
@@ -169,7 +175,7 @@ Note: In local dev, the React UI runs on `http://localhost:5173` and proxies `/a
 **Technical Notes**:
 - Uses async task system (returns `task_id` immediately)
 - Polling endpoint: `GET /api/tasks/{task_id}`
-- Generated audio stored in `uploads/generated/`
+- Generated audio stored in Supabase Storage (`generated` bucket)
 - Generation record saved to database
 
 ---
@@ -253,7 +259,7 @@ Note: In local dev, the React UI runs on `http://localhost:5173` and proxies `/a
 1. User uploads reference audio (WAV/MP3/M4A)
 2. User provides transcript of what's spoken
 3. Backend validates audio duration (10s–5min)
-4. Audio saved to `uploads/references/{voice_id}.{ext}`
+4. Audio saved to Supabase Storage (`references` bucket)
 5. Voice record created in database
 6. Voice can now be used for generation
 
@@ -292,7 +298,7 @@ created_at: datetime
    - Loads reference audio from storage
    - Calls Modal.com Qwen3-TTS endpoint
    - Receives generated WAV audio
-   - Saves to `uploads/generated/{generation_id}.wav`
+   - Saves audio to Supabase Storage (`generated` bucket)
    - Creates Generation record in database
    - Updates task status to "completed"
 4. Frontend polls task status until complete
@@ -407,37 +413,45 @@ class Generation(Base):
 
 ### Voice Endpoints
 
-| Method | Endpoint | Purpose | Auth Required |
-|--------|----------|---------|---------------|
-| `POST` | `/api/clone` | Create voice from audio upload | No* |
-| `GET` | `/api/voices` | List all voices | No* |
-| `DELETE` | `/api/voices/{id}` | Delete voice | No* |
-| `GET` | `/api/voices/{id}/preview` | Stream reference audio | No* |
-| `POST` | `/api/voices/design/preview` | Generate design preview (async) | No* |
-| `POST` | `/api/voices/design` | Save designed voice | No* |
+| Method | Endpoint | Purpose | Auth |
+|--------|----------|---------|------|
+| `POST` | `/api/clone` | Create voice from audio upload | Yes |
+| `GET` | `/api/voices` | List user's voices | Yes |
+| `DELETE` | `/api/voices/{id}` | Delete voice | Yes |
+| `GET` | `/api/voices/{id}/preview` | Signed URL for reference audio | Yes |
+| `POST` | `/api/voices/design/preview` | Generate design preview (async) | Yes |
+| `POST` | `/api/voices/design` | Save designed voice | Yes |
 
 ### Generation Endpoints
 
-| Method | Endpoint | Purpose | Auth Required |
-|--------|----------|---------|---------------|
-| `POST` | `/api/generate` | Start generation (async) | No* |
-| `GET` | `/api/generations` | List past generations | No* |
-| `DELETE` | `/api/generations/{id}` | Delete generation | No* |
+| Method | Endpoint | Purpose | Auth |
+|--------|----------|---------|------|
+| `POST` | `/api/generate` | Start generation (async) | Yes |
+| `GET` | `/api/generations` | List user's generations | Yes |
+| `DELETE` | `/api/generations/{id}` | Delete generation | Yes |
+| `POST` | `/api/generations/{id}/regenerate` | Get params to re-run | Yes |
 
 ### Task Endpoints
 
-| Method | Endpoint | Purpose | Auth Required |
-|--------|----------|---------|---------------|
-| `GET` | `/api/tasks/{id}` | Poll task status | No* |
-| `DELETE` | `/api/tasks/{id}` | Cancel/delete task | No* |
+| Method | Endpoint | Purpose | Auth |
+|--------|----------|---------|------|
+| `GET` | `/api/tasks/{id}` | Poll task status | Yes |
+| `POST` | `/api/tasks/{id}/cancel` | Cancel running task | Yes |
+
+### Profile Endpoints
+
+| Method | Endpoint | Purpose | Auth |
+|--------|----------|---------|------|
+| `GET` | `/api/me` | Get current user profile | Yes |
+| `PATCH` | `/api/profile` | Update profile | Yes |
 
 ### Utility Endpoints
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| `GET` | `/api/languages` | List supported languages |
+| Method | Endpoint | Purpose | Auth |
+|--------|----------|---------|------|
+| `GET` | `/api/languages` | List supported languages | No |
 
-*\*Currently no auth - single user assumed. Auth required for production.*
+All authenticated endpoints require a valid Supabase JWT in the `Authorization: Bearer` header. RLS enforces user isolation at the database level.
 
 ---
 
@@ -486,83 +500,64 @@ class Generation(Base):
 
 ## 7. File Storage
 
-### Directory Structure
+Audio files are stored in **Supabase Storage** (private buckets with signed URLs).
 
-```
-uploads/
-├── references/           # Voice reference audio files
-│   ├── {voice_id}.wav
-│   ├── {voice_id}.mp3
-│   └── {voice_id}.m4a
-└── generated/            # Generated speech files
-    └── {generation_id}.wav
-```
+### Buckets
 
-### File Naming
+| Bucket | Content | Access |
+|--------|---------|--------|
+| `references` | Voice reference audio | User-scoped via RLS on `storage.objects` |
+| `generated` | Generated speech files | User-scoped via RLS; uploads via service role |
 
-| Type | Pattern | Example |
-|------|---------|---------|
-| Reference | `{voice_id}.{ext}` | `a1b2c3d4-....wav` |
-| Generated | `{generation_id}.wav` | `e5f6g7h8-....wav` |
+### Object Key Convention
 
-### Cleanup Rules (Current)
+| Type | Key pattern |
+|------|-------------|
+| Reference | `{user_id}/{voice_id}/reference.{ext}` |
+| Generated | `{user_id}/{generation_id}.wav` |
 
-- Reference files deleted when voice is deleted
-- Generated files deleted when generation is deleted
-- No automatic expiration (manual cleanup only)
+Database columns store object keys (not full URLs). Edge functions issue signed URLs for playback/download.
+
+### Cleanup Rules
+
+- Reference objects deleted when voice is deleted (edge function handles)
+- Generated objects deleted when generation is deleted
+- No automatic expiration
 
 ---
 
 ## 8. Task System
 
-### Current Implementation
+**Storage**: Postgres `tasks` table (durable across restarts).
 
-**Storage**: In-memory Python dictionary (`TaskStore` class)
+**Task States**: `pending` → `processing` → `completed` | `failed` | `cancelled`
 
-**Task States**:
-```python
-class TaskStatus(str, Enum):
-    PENDING = "pending"       # Created, not started
-    PROCESSING = "processing" # Worker picked up
-    COMPLETED = "completed"   # Success, result available
-    FAILED = "failed"         # Error occurred
-```
+**Task Flow**:
+1. Edge function creates a `tasks` row + submits Modal job
+2. Frontend polls `GET /api/tasks/{id}`
+3. Edge function checks Modal job status on each poll, updates task row
+4. On completion: generation record created, audio saved to Storage, task marked `completed`
 
-**Task Structure**:
-```python
+**Task Structure** (Postgres row, returned as JSON):
+```json
 {
-    "id": "uuid-string",
-    "type": "generate" | "design_preview",
-    "status": TaskStatus,
+    "id": "uuid",
+    "type": "generate | design_preview",
+    "status": "pending | processing | completed | failed | cancelled",
+    "modal_job_id": "modal-job-id",
+    "voice_id": "uuid",
+    "generation_id": "uuid",
+    "metadata": { "voice_name": "...", "text_preview": "...", "language": "..." },
+    "result": { "audio_url": "signed-url", "generation_id": "...", "duration": 12.5 },
+    "error": "Error message",
+    "cancellation_requested": false,
     "created_at": "ISO datetime",
     "updated_at": "ISO datetime",
-    "metadata": {
-        "voice_id": "...",
-        "voice_name": "...",
-        "text_preview": "first 50 chars...",
-        "language": "..."
-    },
-    "result": {              # On completion
-        "audio_url": "/uploads/generated/...",
-        "generation_id": "...",
-        "duration": 12.5
-    },
-    "error": "Error message"  # On failure
+    "completed_at": "ISO datetime"
 }
 ```
 
-**TTL**: 10 minutes (tasks auto-deleted)
-
-**Cleanup**: Background task every 5 minutes
-
-### Limitations
-
-| Issue | Impact | Production Fix |
-|-------|--------|----------------|
-| In-memory storage | Lost on restart | Database-backed tasks |
-| Single process | No horizontal scaling | Distributed task queue |
-| No retries | Failed tasks stay failed | Retry logic with backoff |
-| No progress | Only status changes | Percentage/stage tracking |
+**Frontend**: `TaskProvider` context polls active tasks every 500ms, persists state to localStorage for tab recovery.
 
 ---
 
@@ -615,40 +610,11 @@ SUPPORTED_LANGUAGES = [
 
 ---
 
-## 10. Future Features (Deployment-Related)
-
-### Authentication & Users
-
-**Required for production**:
-
-| Feature | Implementation |
-|---------|----------------|
-| User accounts | Supabase Auth (OAuth, email/password) |
-| User isolation | Row Level Security on all tables |
-| Session management | JWT tokens |
-| Profile data | New `profiles` table |
-
-**Schema Addition**:
-```sql
-CREATE TABLE profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id),
-    email TEXT,
-    display_name TEXT,
-    subscription_tier TEXT DEFAULT 'free',
-    credits_remaining INTEGER DEFAULT 100,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Add user_id to existing tables
-ALTER TABLE voices ADD COLUMN user_id UUID REFERENCES profiles(id);
-ALTER TABLE generations ADD COLUMN user_id UUID REFERENCES profiles(id);
-```
-
----
+## 10. Upcoming Features
 
 ### Credits & Usage Tracking
 
-**Credit System**:
+**Credit System** (planned):
 | Tier | Monthly Credits | Price |
 |------|----------------|-------|
 | Free | 100 | $0 |
@@ -662,22 +628,13 @@ ALTER TABLE generations ADD COLUMN user_id UUID REFERENCES profiles(id);
 | Voice design preview | 1 |
 | Generation (per 500 chars) | 1 |
 
-**Tracking Fields**:
-```sql
--- On profiles table
-credits_remaining INTEGER
-total_generations INTEGER
-total_clones INTEGER
-
--- On generations table  
-credits_used INTEGER
-```
+Schema fields already exist on `profiles` (`credits_remaining`, `subscription_tier`) but enforcement logic in edge functions is not yet implemented.
 
 ---
 
 ### Billing Integration
 
-**Stripe Integration**:
+**Stripe Integration** (planned):
 
 | Component | Implementation |
 |-----------|----------------|
@@ -685,60 +642,6 @@ credits_used INTEGER
 | Webhooks | Edge Function handles subscription events |
 | Portal | Stripe Customer Portal for management |
 | Metering | Track usage, deduct credits |
-
-**Subscription Events to Handle**:
-- `checkout.session.completed` - New subscription
-- `customer.subscription.updated` - Plan change
-- `customer.subscription.deleted` - Cancellation
-- `invoice.payment_failed` - Payment issue
-
----
-
-### Storage Migration
-
-**From local filesystem to Supabase Storage**:
-
-| Current | Production |
-|---------|------------|
-| `uploads/references/` | Supabase Storage `references` bucket |
-| `uploads/generated/` | Supabase Storage `generations` bucket |
-| Direct file paths | Signed URLs with expiration |
-
-**Access Control**:
-```sql
--- Users can only access their own files
-CREATE POLICY "Users access own files"
-ON storage.objects FOR ALL
-USING (auth.uid()::text = (storage.foldername(name))[1]);
-```
-
----
-
-### Task System Migration
-
-**From in-memory to database**:
-
-```sql
-CREATE TABLE tasks (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES profiles(id),
-    type TEXT NOT NULL,         -- 'generate' | 'design_preview' | 'clone'
-    status TEXT DEFAULT 'pending',
-    metadata JSONB DEFAULT '{}',
-    result JSONB,
-    error TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    started_at TIMESTAMPTZ,
-    completed_at TIMESTAMPTZ,
-    expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '1 hour'
-);
-```
-
-**Benefits**:
-- Persistent across restarts
-- Queryable history
-- Real-time subscriptions (Supabase Realtime)
-- Distributed processing support
 
 ---
 
@@ -749,23 +652,23 @@ CREATE TABLE tasks (
 | Aspect | Status |
 |--------|--------|
 | Core features | ✅ Complete (clone, generate, design) |
-| Database | ✅ Working (SQLite) |
+| Frontend | ✅ React 19 SPA on Vercel |
+| Backend | ✅ Supabase Edge Functions (Deno/Hono) |
+| Database | ✅ Supabase Postgres with RLS |
+| Auth | ✅ Supabase Auth (magic link + password) |
+| Storage | ✅ Supabase Storage (signed URLs) |
+| Task system | ✅ Postgres-backed tasks table |
 | Modal integration | ✅ Working (Qwen3-TTS) |
-| Task system | ⚠️ In-memory only |
-| Auth | ❌ None |
-| Billing | ❌ None |
-| Multi-user | ❌ Single user |
-| Production storage | ❌ Local filesystem |
+| Credit system | ❌ Not enforced yet |
+| Billing | ❌ No Stripe integration yet |
+| Monitoring | ❌ No error tracking yet |
 
-### Production Requirements
+### Next Up
 
-1. **Authentication** - Supabase Auth with RLS
-2. **Database migration** - SQLite → PostgreSQL
-3. **Storage migration** - Local → Supabase Storage
-4. **Task persistence** - In-memory → Database
-5. **Credit system** - Track usage per user
-6. **Billing** - Stripe subscription management
-7. **Monitoring** - Error tracking, logging
+1. **Credit enforcement** - Deduct credits per generation in edge functions
+2. **Billing** - Stripe subscription management
+3. **Profile column guards** - Prevent client-side escalation of credits/tier
+4. **Monitoring** - Error tracking, structured logging
 
 ---
 

@@ -732,7 +732,7 @@ npm run dev                      # Vite dev server (frontend)
 #   Edge Fns: http://localhost:54321/functions/v1/<fn-name>
 ```
 
-Frontend dev server proxies to `localhost:54321` instead of current `localhost:8000` (FastAPI).
+Frontend dev server proxies to `localhost:54321` (Supabase local stack).
 
 ### Migrations
 
