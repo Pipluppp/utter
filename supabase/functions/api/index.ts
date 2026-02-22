@@ -21,11 +21,15 @@ import { voicesRoutes } from "./routes/voices.ts"
 
 const app = new Hono().basePath("/api")
 
-app.options("*", (c) => c.body(null, 204, corsHeaders))
+app.options("*", (c) => {
+  const origin = c.req.raw.headers.get("Origin")
+  return c.body(null, 204, corsHeaders(origin))
+})
 
 app.use("*", async (c, next) => {
   await next()
-  for (const [key, value] of Object.entries(corsHeaders)) {
+  const origin = c.req.raw.headers.get("Origin")
+  for (const [key, value] of Object.entries(corsHeaders(origin))) {
     c.header(key, value)
   }
 })

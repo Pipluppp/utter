@@ -4,25 +4,11 @@ This is the quick launch page for the current task sequence.
 
 ## Current objective
 
-Standalone auth pages + Qwen API cutover. See `docs/2026-02-19/README.md`.
+Security hardening + legacy backend cleanup. See `docs/2026-02-22/README.md`.
 
 ## Active tasks
 
-1. **Remove legacy FastAPI backend**
-   Path: `docs/2026-02-22/remove-fastapi-backend.md`
-   What it achieves: deletes dead `backend/` directory and all references to FastAPI as current stack.
-
-2. **Profile column guards**
-   Path: `docs/2026-02-22/profile-column-guards.md`
-   What it achieves: prevents clients from escalating credits/subscription_tier via direct PostgREST writes.
-
-3. **CORS lockdown**
-   Path: `docs/2026-02-22/cors-lockdown.md`
-   What it achieves: restricts edge function CORS from `*` to the Vercel production origin.
-
-4. **Documentation cleanup**
-   Path: `docs/2026-02-22/docs-cleanup.md`
-   What it achieves: updates stale docs, archives obsolete planning docs, aligns everything to deployed reality.
+None currently.
 
 ## Queued
 
@@ -36,11 +22,27 @@ Standalone auth pages + Qwen API cutover. See `docs/2026-02-19/README.md`.
    Path: `docs/2026-02-19/auth-pages/README.md`
    Shipped in `cee4676`. Dedicated `/auth` page with magic link + password modes.
 
-2. ~~**Deploy Supabase staging backend**~~ — Done 2026-02-17
+2. ~~**Documentation cleanup**~~ — Done 2026-02-22
+   Path: `docs/2026-02-22/docs-cleanup.md`
+   Shipped in `813fce5`. Guide docs now describe the deployed Supabase/Vercel architecture.
+
+3. ~~**Profile column guards**~~ — Done 2026-02-22
+   Path: `docs/2026-02-22/profile-column-guards.md`
+   Verified existing hardening (`20260212120000_profiles_voices_write_hardening.sql`) already revoked direct `profiles` UPDATE for `authenticated`.
+
+4. ~~**CORS lockdown**~~ — Done 2026-02-22
+   Path: `docs/2026-02-22/cors-lockdown.md`
+   `supabase/functions/_shared/cors.ts` now uses `CORS_ALLOWED_ORIGIN` and per-request origin resolution (with local `*` fallback).
+
+5. ~~**Remove legacy FastAPI backend**~~ — Done 2026-02-22
+   Path: `docs/2026-02-22/remove-fastapi-backend.md`
+   Removed tracked `backend/` application files from the repository.
+
+6. ~~**Deploy Supabase staging backend**~~ — Done 2026-02-17
    Path: `docs/2026-02-16/deploy-supabase/README.md`
    Project: `jgmivviwockcwjkvpqra`, 5 migrations pushed, edge function deployed, hardening verified.
 
-3. ~~**Wire Vercel frontend to staging Supabase**~~ — Done 2026-02-17
+7. ~~**Wire Vercel frontend to staging Supabase**~~ — Done 2026-02-17
    Path: `docs/2026-02-16/wire-vercel-supabase/README.md`
    Live at `https://utter-wheat.vercel.app`. Auth, clone, and generation flows verified on production.
 
