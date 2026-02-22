@@ -4,9 +4,36 @@ import { TaskBadge } from '../components/tasks/TaskBadge'
 import { TaskDock } from '../components/tasks/TaskDock'
 import { Kbd } from '../components/ui/Kbd'
 import { cn } from '../lib/cn'
+import { supabase } from '../lib/supabase'
 import { AppFooter } from './Footer'
 import { useTheme } from './theme/ThemeProvider'
 import { useGlobalShortcuts } from './useGlobalShortcuts'
+
+const APP_PATHS = new Set([
+  '/clone',
+  '/generate',
+  '/design',
+  '/voices',
+  '/history',
+])
+
+function ProfileIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <circle cx="12" cy="8" r="4" />
+      <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
+    </svg>
+  )
+}
 
 function NavItem({
   to,
@@ -66,8 +93,20 @@ function MobileNavItem({
 export function Layout() {
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const { theme, toggleTheme } = useTheme()
-  const isLanding = location.pathname === '/'
+  const isApp = APP_PATHS.has(location.pathname) || location.pathname.startsWith('/account')
+
+  useEffect(() => {
+    if (!supabase) return
+    supabase.auth.getSession().then(({ data }) => {
+      setIsLoggedIn(!!data.session)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   useGlobalShortcuts()
 
@@ -149,7 +188,28 @@ export function Layout() {
           </NavLink>
 
           <nav className="hidden items-center gap-1 md:flex">
-            {isLanding ? (
+            {isApp ? (
+              <>
+                <NavItem to="/clone" shortcut="c">
+                  <span>Clone</span>
+                  <Kbd>c</Kbd>
+                </NavItem>
+                <NavItem to="/generate" shortcut="g">
+                  <span>Generate</span>
+                  <Kbd>g</Kbd>
+                </NavItem>
+                <NavItem to="/design" shortcut="d">
+                  <span>Design</span>
+                  <Kbd>d</Kbd>
+                </NavItem>
+                <span className="mx-2 h-4 w-px bg-border" />
+                <NavItem to="/voices">Voices</NavItem>
+                <NavItem to="/history">
+                  <span>History</span>
+                  <TaskBadge />
+                </NavItem>
+              </>
+            ) : (
               <>
                 <Link
                   to={{ pathname: '/', hash: '#demos' }}
@@ -181,34 +241,20 @@ export function Layout() {
                 >
                   Pricing
                 </Link>
-                <span className="mx-2 h-4 w-px bg-border" />
-                <NavItem to="/about">About</NavItem>
-                <NavItem to="/account">Account</NavItem>
-              </>
-            ) : (
-              <>
-                <NavItem to="/clone" shortcut="c">
-                  <span>Clone</span>
-                  <Kbd>c</Kbd>
-                </NavItem>
-                <NavItem to="/generate" shortcut="g">
-                  <span>Generate</span>
-                  <Kbd>g</Kbd>
-                </NavItem>
-                <NavItem to="/design" shortcut="d">
-                  <span>Design</span>
-                  <Kbd>d</Kbd>
-                </NavItem>
-                <span className="mx-2 h-4 w-px bg-border" />
-                <NavItem to="/voices">Voices</NavItem>
-                <NavItem to="/history">
-                  <span>History</span>
-                  <TaskBadge />
-                </NavItem>
-                <NavItem to="/account">Account</NavItem>
-                <NavItem to="/about">About</NavItem>
               </>
             )}
+            <span className="mx-2 h-4 w-px bg-border" />
+            <NavItem to="/about">About</NavItem>
+            <NavItem to={isLoggedIn ? '/account' : '/auth'}>
+              {isLoggedIn ? (
+                <>
+                  <ProfileIcon className="size-4" />
+                  <span>Account</span>
+                </>
+              ) : (
+                'Sign in'
+              )}
+            </NavItem>
           </nav>
 
           <button
@@ -245,60 +291,7 @@ export function Layout() {
         >
           <div className="mx-auto w-full max-w-5xl px-4 py-2 md:px-6">
             <div className="space-y-1">
-              {isLanding ? (
-                <>
-                  <Link
-                    to={{ pathname: '/', hash: '#demos' }}
-                    onClick={() => setMenuOpen(false)}
-                    className={cn(
-                      'flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
-                      'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                      location.hash === '#demos' && 'bg-muted text-foreground',
-                    )}
-                  >
-                    <span>Demo</span>
-                    <span />
-                  </Link>
-                  <Link
-                    to={{ pathname: '/', hash: '#features' }}
-                    onClick={() => setMenuOpen(false)}
-                    className={cn(
-                      'flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
-                      'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                      location.hash === '#features' &&
-                        'bg-muted text-foreground',
-                    )}
-                  >
-                    <span>Features</span>
-                    <span />
-                  </Link>
-                  <Link
-                    to={{ pathname: '/', hash: '#pricing' }}
-                    onClick={() => setMenuOpen(false)}
-                    className={cn(
-                      'flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
-                      'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                      location.hash === '#pricing' &&
-                        'bg-muted text-foreground',
-                    )}
-                  >
-                    <span>Pricing</span>
-                    <span />
-                  </Link>
-                  <div className="my-2 h-px bg-border" />
-                  <MobileNavItem to="/about" onClick={() => setMenuOpen(false)}>
-                    <span>About</span>
-                    <span />
-                  </MobileNavItem>
-                  <MobileNavItem
-                    to="/account"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    <span>Account</span>
-                    <span />
-                  </MobileNavItem>
-                </>
-              ) : (
+              {isApp ? (
                 <>
                   <MobileNavItem
                     to="/clone"
@@ -342,19 +335,64 @@ export function Layout() {
                     </span>
                     <span />
                   </MobileNavItem>
-                  <MobileNavItem
-                    to="/account"
+                </>
+              ) : (
+                <>
+                  <Link
+                    to={{ pathname: '/', hash: '#demos' }}
                     onClick={() => setMenuOpen(false)}
+                    className={cn(
+                      'flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
+                      'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                      location.hash === '#demos' && 'bg-muted text-foreground',
+                    )}
                   >
-                    <span>Account</span>
+                    <span>Demo</span>
                     <span />
-                  </MobileNavItem>
-                  <MobileNavItem to="/about" onClick={() => setMenuOpen(false)}>
-                    <span>About</span>
+                  </Link>
+                  <Link
+                    to={{ pathname: '/', hash: '#features' }}
+                    onClick={() => setMenuOpen(false)}
+                    className={cn(
+                      'flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
+                      'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                      location.hash === '#features' &&
+                        'bg-muted text-foreground',
+                    )}
+                  >
+                    <span>Features</span>
                     <span />
-                  </MobileNavItem>
+                  </Link>
+                  <Link
+                    to={{ pathname: '/', hash: '#pricing' }}
+                    onClick={() => setMenuOpen(false)}
+                    className={cn(
+                      'flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground',
+                      'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                      location.hash === '#pricing' &&
+                        'bg-muted text-foreground',
+                    )}
+                  >
+                    <span>Pricing</span>
+                    <span />
+                  </Link>
                 </>
               )}
+              <div className="my-2 h-px bg-border" />
+              <MobileNavItem to="/about" onClick={() => setMenuOpen(false)}>
+                <span>About</span>
+                <span />
+              </MobileNavItem>
+              <MobileNavItem
+                to={isLoggedIn ? '/account' : '/auth'}
+                onClick={() => setMenuOpen(false)}
+              >
+                <span className="flex items-center gap-2">
+                  {isLoggedIn && <ProfileIcon className="size-4" />}
+                  <span>{isLoggedIn ? 'Account' : 'Sign in'}</span>
+                </span>
+                <span />
+              </MobileNavItem>
             </div>
           </div>
         </div>
