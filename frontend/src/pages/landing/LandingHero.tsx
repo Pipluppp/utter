@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
-import { buttonStyles } from '../../components/ui/Button'
 import { TextReveal } from '../../components/animation/TextReveal'
+import { buttonStyles } from '../../components/ui/Button'
 import { useLanguages } from '../hooks'
 
 export function LandingHero() {

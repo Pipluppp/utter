@@ -72,7 +72,11 @@ function GridArt() {
       cx >= 3 && cx <= 25 && cy >= 12 && cy <= 19
     for (const [x, y] of seed) {
       if (x < cols && y < rows && !isNearText(x, y)) {
-        cells.push({ x, y, opacity: 0.08 + (((x * 7 + y * 13) % 10) / 10) * 0.15 })
+        cells.push({
+          x,
+          y,
+          opacity: 0.08 + (((x * 7 + y * 13) % 10) / 10) * 0.15,
+        })
       }
     }
     return cells
@@ -85,25 +89,26 @@ function GridArt() {
       preserveAspectRatio="xMidYMid slice"
       aria-hidden
     >
+      <title>Decorative grid background</title>
       {/* Grid lines */}
-      {Array.from({ length: cols + 1 }, (_, i) => (
+      {Array.from({ length: cols + 1 }, (_, col) => col).map((col) => (
         <line
-          key={`v${i}`}
-          x1={i * cellSize}
+          key={`v${col}`}
+          x1={col * cellSize}
           y1={0}
-          x2={i * cellSize}
+          x2={col * cellSize}
           y2={h}
           className="stroke-foreground/[0.06]"
           strokeWidth={1}
         />
       ))}
-      {Array.from({ length: rows + 1 }, (_, i) => (
+      {Array.from({ length: rows + 1 }, (_, row) => row).map((row) => (
         <line
-          key={`h${i}`}
+          key={`h${row}`}
           x1={0}
-          y1={i * cellSize}
+          y1={row * cellSize}
           x2={w}
-          y2={i * cellSize}
+          y2={row * cellSize}
           className="stroke-foreground/[0.06]"
           strokeWidth={1}
         />
@@ -123,26 +128,106 @@ function GridArt() {
       {/* Brand accent — UTTER centered in grid */}
       <g className="fill-foreground" opacity={0.12}>
         {/* U */}
-        <rect x={4 * cellSize} y={13 * cellSize} width={cellSize} height={cellSize * 4} />
-        <rect x={5 * cellSize} y={17 * cellSize} width={cellSize * 2} height={cellSize} />
-        <rect x={7 * cellSize} y={13 * cellSize} width={cellSize} height={cellSize * 4} />
+        <rect
+          x={4 * cellSize}
+          y={13 * cellSize}
+          width={cellSize}
+          height={cellSize * 4}
+        />
+        <rect
+          x={5 * cellSize}
+          y={17 * cellSize}
+          width={cellSize * 2}
+          height={cellSize}
+        />
+        <rect
+          x={7 * cellSize}
+          y={13 * cellSize}
+          width={cellSize}
+          height={cellSize * 4}
+        />
         {/* T */}
-        <rect x={9 * cellSize} y={13 * cellSize} width={cellSize * 3} height={cellSize} />
-        <rect x={10 * cellSize} y={14 * cellSize} width={cellSize} height={cellSize * 4} />
+        <rect
+          x={9 * cellSize}
+          y={13 * cellSize}
+          width={cellSize * 3}
+          height={cellSize}
+        />
+        <rect
+          x={10 * cellSize}
+          y={14 * cellSize}
+          width={cellSize}
+          height={cellSize * 4}
+        />
         {/* T */}
-        <rect x={13 * cellSize} y={13 * cellSize} width={cellSize * 3} height={cellSize} />
-        <rect x={14 * cellSize} y={14 * cellSize} width={cellSize} height={cellSize * 4} />
+        <rect
+          x={13 * cellSize}
+          y={13 * cellSize}
+          width={cellSize * 3}
+          height={cellSize}
+        />
+        <rect
+          x={14 * cellSize}
+          y={14 * cellSize}
+          width={cellSize}
+          height={cellSize * 4}
+        />
         {/* E */}
-        <rect x={17 * cellSize} y={13 * cellSize} width={cellSize * 3} height={cellSize} />
-        <rect x={17 * cellSize} y={14 * cellSize} width={cellSize} height={cellSize * 4} />
-        <rect x={17 * cellSize} y={15 * cellSize} width={cellSize * 2} height={cellSize} />
-        <rect x={17 * cellSize} y={17 * cellSize} width={cellSize * 3} height={cellSize} />
+        <rect
+          x={17 * cellSize}
+          y={13 * cellSize}
+          width={cellSize * 3}
+          height={cellSize}
+        />
+        <rect
+          x={17 * cellSize}
+          y={14 * cellSize}
+          width={cellSize}
+          height={cellSize * 4}
+        />
+        <rect
+          x={17 * cellSize}
+          y={15 * cellSize}
+          width={cellSize * 2}
+          height={cellSize}
+        />
+        <rect
+          x={17 * cellSize}
+          y={17 * cellSize}
+          width={cellSize * 3}
+          height={cellSize}
+        />
         {/* R */}
-        <rect x={21 * cellSize} y={13 * cellSize} width={cellSize} height={cellSize * 5} />
-        <rect x={21 * cellSize} y={13 * cellSize} width={cellSize * 3} height={cellSize} />
-        <rect x={23 * cellSize} y={14 * cellSize} width={cellSize} height={cellSize} />
-        <rect x={21 * cellSize} y={15 * cellSize} width={cellSize * 3} height={cellSize} />
-        <rect x={23 * cellSize} y={16 * cellSize} width={cellSize} height={cellSize * 2} />
+        <rect
+          x={21 * cellSize}
+          y={13 * cellSize}
+          width={cellSize}
+          height={cellSize * 5}
+        />
+        <rect
+          x={21 * cellSize}
+          y={13 * cellSize}
+          width={cellSize * 3}
+          height={cellSize}
+        />
+        <rect
+          x={23 * cellSize}
+          y={14 * cellSize}
+          width={cellSize}
+          height={cellSize}
+        />
+        <rect
+          x={21 * cellSize}
+          y={15 * cellSize}
+          width={cellSize * 3}
+          height={cellSize}
+        />
+        <rect
+          x={23 * cellSize}
+          y={16 * cellSize}
+          width={cellSize}
+          height={cellSize * 2}
+        />
       </g>
     </svg>
   )
@@ -386,19 +471,19 @@ export function AuthPage() {
             <div className="mt-4">
               <Message variant="success">
                 Magic link sent — check your{' '}
-              {isLocalHost ? (
-                <a
-                  href="http://localhost:54324"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline underline-offset-4 hover:text-foreground"
-                >
-                  Inbucket inbox
-                </a>
-              ) : (
-                'email'
-              )}
-              .
+                {isLocalHost ? (
+                  <a
+                    href="http://localhost:54324"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-4 hover:text-foreground"
+                  >
+                    Inbucket inbox
+                  </a>
+                ) : (
+                  'email'
+                )}
+                .
               </Message>
             </div>
           ) : null}
@@ -491,7 +576,9 @@ export function AuthPage() {
           {returnTo ? (
             <span className="text-faint">
               Redirecting to{' '}
-              <span className="text-muted-foreground">{decodeURIComponent(returnTo)}</span>
+              <span className="text-muted-foreground">
+                {decodeURIComponent(returnTo)}
+              </span>
             </span>
           ) : null}
         </div>

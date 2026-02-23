@@ -95,14 +95,17 @@ export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const { theme, toggleTheme } = useTheme()
-  const isApp = APP_PATHS.has(location.pathname) || location.pathname.startsWith('/account')
+  const isApp =
+    APP_PATHS.has(location.pathname) || location.pathname.startsWith('/account')
 
   useEffect(() => {
     if (!supabase) return
     supabase.auth.getSession().then(({ data }) => {
       setIsLoggedIn(!!data.session)
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session)
     })
     return () => subscription.unsubscribe()

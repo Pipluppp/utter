@@ -21,15 +21,22 @@ interface Props {
 }
 
 export function TextReveal({ lines, className }: Props) {
-  const { words, lineBreakAfter } = useMemo(() => {
+  const { words, wordKeys, lineBreakAfter } = useMemo(() => {
     const w: string[] = []
+    const keys: string[] = []
+    const wordCounts = new Map<string, number>()
     const breaks = new Set<number>()
     for (let i = 0; i < lines.length; i++) {
       const lineWords = lines[i].trim().split(/\s+/).filter(Boolean)
-      w.push(...lineWords)
+      for (const word of lineWords) {
+        const count = wordCounts.get(word) ?? 0
+        wordCounts.set(word, count + 1)
+        w.push(word)
+        keys.push(`${word}-${count}-${i}`)
+      }
       if (i < lines.length - 1) breaks.add(w.length - 1)
     }
-    return { words: w, lineBreakAfter: breaks }
+    return { words: w, wordKeys: keys, lineBreakAfter: breaks }
   }, [lines])
 
   // 2 steps per word: burst → reveal. +1 final step for period settle.
@@ -65,14 +72,13 @@ export function TextReveal({ lines, className }: Props) {
   return (
     <div className={className} style={{ position: 'relative' }}>
       {/* Invisible placeholder reserves layout space */}
-      <h1 className={h1Classes} aria-hidden style={{ visibility: 'hidden' }}>
-        {lines.map((line, i) => (
-          <Fragment key={i}>
-            {i > 0 && <br />}
-            {line}
-          </Fragment>
-        ))}
-      </h1>
+      <div
+        className={h1Classes}
+        aria-hidden
+        style={{ visibility: 'hidden', whiteSpace: 'pre-line' }}
+      >
+        {lines.join('\n')}
+      </div>
 
       {/* Animated overlay */}
       <h1
@@ -116,7 +122,7 @@ export function TextReveal({ lines, className }: Props) {
           }
 
           return (
-            <Fragment key={wi}>
+            <Fragment key={wordKeys[wi]}>
               {wi > 0 && !lineBreakAfter.has(wi - 1) && ' '}
               {lineBreakAfter.has(wi - 1) && <br />}
               {content}
