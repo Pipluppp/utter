@@ -34,6 +34,7 @@ export async function createTestUser(
     const data = await signInRes.json();
     return { accessToken: data.access_token, userId: data.user.id };
   }
+  await signInRes.body?.cancel();
 
   // Fall back to sign-up
   const signUpRes = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {

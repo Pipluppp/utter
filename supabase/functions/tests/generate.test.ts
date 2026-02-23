@@ -9,15 +9,15 @@ import {
   apiFetch,
   createTestUser,
   deleteTestUser,
-  SUPABASE_URL,
   SERVICE_ROLE_KEY,
+  SUPABASE_URL,
   type TestUser,
 } from "./_helpers/setup.ts";
 import {
+  MINIMAL_WAV,
   TEST_USER_A,
   TEST_USER_B,
   VALID_GENERATE_PAYLOAD,
-  MINIMAL_WAV,
 } from "./_helpers/fixtures.ts";
 import { ModalMock } from "./_helpers/modal_mock.ts";
 
@@ -43,7 +43,9 @@ async function cleanupActiveGenerateRows(userId: string): Promise<void> {
     .in("status", ["pending", "processing"]);
 
   if (activeTasksError) {
-    throw new Error(`Failed to load active generate tasks: ${activeTasksError.message}`);
+    throw new Error(
+      `Failed to load active generate tasks: ${activeTasksError.message}`,
+    );
   }
 
   const taskIds = (activeTasks ?? [])
@@ -54,9 +56,14 @@ async function cleanupActiveGenerateRows(userId: string): Promise<void> {
     .filter((id): id is string => typeof id === "string");
 
   if (taskIds.length > 0) {
-    const { error: deleteTasksError } = await client.from("tasks").delete().in("id", taskIds);
+    const { error: deleteTasksError } = await client.from("tasks").delete().in(
+      "id",
+      taskIds,
+    );
     if (deleteTasksError) {
-      throw new Error(`Failed to delete active generate tasks: ${deleteTasksError.message}`);
+      throw new Error(
+        `Failed to delete active generate tasks: ${deleteTasksError.message}`,
+      );
     }
   }
 
@@ -67,7 +74,9 @@ async function cleanupActiveGenerateRows(userId: string): Promise<void> {
       .eq("user_id", userId)
       .in("id", generationIds);
     if (deleteGenerationsError) {
-      throw new Error(`Failed to delete active generations: ${deleteGenerationsError.message}`);
+      throw new Error(
+        `Failed to delete active generations: ${deleteGenerationsError.message}`,
+      );
     }
   }
 }
@@ -79,15 +88,27 @@ async function waitForReferenceSize(
   minBytes: number,
 ): Promise<boolean> {
   for (let i = 0; i < 20; i++) {
-    const listing = await client.storage.from("references").list(`${userId}/${voiceId}`, {
-      limit: 100,
-    });
+    const listing = await client.storage.from("references").list(
+      `${userId}/${voiceId}`,
+      {
+        limit: 100,
+      },
+    );
     if (listing.error) return false;
-    const ref = (listing.data ?? []).find((obj) => obj.name === "reference.wav");
+    const ref = (listing.data ?? []).find((obj) =>
+      obj.name === "reference.wav"
+    );
     const refWithSize = ref as
-      | { size?: number | string | null; metadata?: { size?: number | string | null; contentLength?: number | string | null } }
+      | {
+        size?: number | string | null;
+        metadata?: {
+          size?: number | string | null;
+          contentLength?: number | string | null;
+        };
+      }
       | undefined;
-    const value = refWithSize?.metadata?.size ?? refWithSize?.metadata?.contentLength ??
+    const value = refWithSize?.metadata?.size ??
+      refWithSize?.metadata?.contentLength ??
       refWithSize?.size ?? null;
     const size = value == null ? null : Number(value);
     if (size !== null && Number.isFinite(size) && size >= minBytes) return true;
@@ -96,35 +117,61 @@ async function waitForReferenceSize(
   return false;
 }
 
-Deno.test({ name: "generate: setup", sanitizeResources: false, sanitizeOps: false, fn: async () => {
-  userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
-  userB = await createTestUser(TEST_USER_B.email, TEST_USER_B.password);
-  await mock.start();
+Deno.test({
+  name: "generate: setup",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
+    userB = await createTestUser(TEST_USER_B.email, TEST_USER_B.password);
+    await mock.start();
 
-  // Seed a voice with reference audio so /generate can find it
-  const admin = await import("npm:@supabase/supabase-js@2");
-  const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    // Seed a voice with reference audio so /generate can find it
+    const admin = await import("npm:@supabase/supabase-js@2");
+    const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-  voiceId = crypto.randomUUID();
-  const objectKey = `${userA.userId}/${voiceId}/reference.wav`;
+    await client
+      .from("profiles")
+      .upsert(
+        {
+          id: userA.userId,
+          credits_remaining: 250000,
+          subscription_tier: "pro",
+        },
+        { onConflict: "id" },
+      );
+    await client
+      .from("profiles")
+      .upsert(
+        {
+          id: userB.userId,
+          credits_remaining: 250000,
+          subscription_tier: "pro",
+        },
+        { onConflict: "id" },
+      );
 
-  // Upload reference audio to storage
-  await client.storage.from("references").upload(objectKey, MINIMAL_WAV, {
-    contentType: "audio/wav",
-    upsert: true,
-  });
+    voiceId = crypto.randomUUID();
+    const objectKey = `${userA.userId}/${voiceId}/reference.wav`;
 
-  // Insert voice record
-  await client.from("voices").insert({
-    id: voiceId,
-    user_id: userA.userId,
-    name: "Generate Test Voice",
-    source: "uploaded",
-    language: "English",
-    reference_object_key: objectKey,
-    reference_transcript: "This is a test reference.",
-  });
-}});
+    // Upload reference audio to storage
+    await client.storage.from("references").upload(objectKey, MINIMAL_WAV, {
+      contentType: "audio/wav",
+      upsert: true,
+    });
+
+    // Insert voice record
+    await client.from("voices").insert({
+      id: voiceId,
+      user_id: userA.userId,
+      name: "Generate Test Voice",
+      source: "uploaded",
+      language: "English",
+      reference_object_key: objectKey,
+      reference_transcript: "This is a test reference.",
+    });
+  },
+});
 
 // --- POST /generate ---
 Deno.test({
@@ -228,6 +275,39 @@ Deno.test("POST /generate rejects text > 10000 chars", async () => {
 });
 
 Deno.test({
+  name: "POST /generate returns 402 when credits are insufficient",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdminClient();
+    await admin
+      .from("profiles")
+      .update({ credits_remaining: 3 })
+      .eq("id", userA.userId);
+
+    try {
+      const res = await apiFetch("/generate", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          voice_id: voiceId,
+          text: "credits guard should block this request",
+          language: "English",
+        }),
+      });
+      assertEquals(res.status, 402);
+      const body = await res.json();
+      assertEquals(typeof body.detail, "string");
+    } finally {
+      await admin
+        .from("profiles")
+        .update({ credits_remaining: 250000 })
+        .eq("id", userA.userId);
+      await cleanupActiveGenerateRows(userA.userId);
+    }
+  },
+});
+
+Deno.test({
   name: "POST /generate rejects oversized reference audio before download",
   ...noLeaks,
   fn: async () => {
@@ -237,10 +317,14 @@ Deno.test({
     const oversizedAudio = new Uint8Array(MAX_REFERENCE_BYTES + 1);
 
     try {
-      const upload = await client.storage.from("references").upload(objectKey, oversizedAudio, {
-        contentType: "audio/wav",
-        upsert: true,
-      });
+      const upload = await client.storage.from("references").upload(
+        objectKey,
+        oversizedAudio,
+        {
+          contentType: "audio/wav",
+          upsert: true,
+        },
+      );
 
       if (upload.error) {
         assertEquals(typeof upload.error.message, "string");
@@ -281,7 +365,10 @@ Deno.test({
       const body = await res.json();
       assertEquals(typeof body.detail, "string");
     } finally {
-      await client.from("voices").delete().eq("id", oversizedVoiceId).eq("user_id", userA.userId);
+      await client.from("voices").delete().eq("id", oversizedVoiceId).eq(
+        "user_id",
+        userA.userId,
+      );
       await client.storage.from("references").remove([objectKey]);
     }
   },
@@ -353,13 +440,17 @@ Deno.test({
     await res.body?.cancel();
   },
 });
-Deno.test({ name: "generate: teardown", sanitizeResources: false, sanitizeOps: false, fn: async () => {
-  await mock.stop();
-  // Clean up via admin (cascade will handle tasks/generations)
-  const admin = await import("npm:@supabase/supabase-js@2");
-  const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-  await client.from("voices").delete().eq("id", voiceId);
-  await deleteTestUser(userA.userId);
-  await deleteTestUser(userB.userId);
-}});
-
+Deno.test({
+  name: "generate: teardown",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    await mock.stop();
+    // Clean up via admin (cascade will handle tasks/generations)
+    const admin = await import("npm:@supabase/supabase-js@2");
+    const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    await client.from("voices").delete().eq("id", voiceId);
+    await deleteTestUser(userA.userId);
+    await deleteTestUser(userB.userId);
+  },
+});

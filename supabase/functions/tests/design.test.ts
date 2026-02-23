@@ -6,11 +6,11 @@ import {
   apiFetch,
   createTestUser,
   deleteTestUser,
-  SUPABASE_URL,
   SERVICE_ROLE_KEY,
+  SUPABASE_URL,
   type TestUser,
 } from "./_helpers/setup.ts";
-import { TEST_USER_A, MINIMAL_WAV } from "./_helpers/fixtures.ts";
+import { MINIMAL_WAV, TEST_USER_A } from "./_helpers/fixtures.ts";
 
 let userA: TestUser;
 const noLeaks = { sanitizeResources: false, sanitizeOps: false };
@@ -20,9 +20,25 @@ async function getAdminClient() {
   return admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 }
 
-Deno.test({ name: "design: setup", sanitizeResources: false, sanitizeOps: false, fn: async () => {
-  userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
-}});
+Deno.test({
+  name: "design: setup",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
+    const admin = await getAdminClient();
+    await admin
+      .from("profiles")
+      .upsert(
+        {
+          id: userA.userId,
+          credits_remaining: 250000,
+          subscription_tier: "pro",
+        },
+        { onConflict: "id" },
+      );
+  },
+});
 
 // --- POST /voices/design/preview ---
 Deno.test("POST /voices/design/preview creates a pending task", async () => {
@@ -99,6 +115,38 @@ Deno.test("POST /voices/design/preview rejects instruct > 500 chars", async () =
   await res.body?.cancel();
 });
 
+Deno.test({
+  name: "POST /voices/design/preview returns 402 when credits are insufficient",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdminClient();
+    await admin
+      .from("profiles")
+      .update({ credits_remaining: 1 })
+      .eq("id", userA.userId);
+
+    try {
+      const res = await apiFetch("/voices/design/preview", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: "Hello, this is a preview.",
+          language: "English",
+          instruct: "A warm friendly voice",
+        }),
+      });
+      assertEquals(res.status, 402);
+      const body = await res.json();
+      assertEquals(typeof body.detail, "string");
+    } finally {
+      await admin
+        .from("profiles")
+        .update({ credits_remaining: 250000 })
+        .eq("id", userA.userId);
+    }
+  },
+});
+
 // --- POST /voices/design ---
 Deno.test("POST /voices/design creates voice with audio file", async () => {
   const formData = new FormData();
@@ -129,7 +177,10 @@ Deno.test({
   fn: async () => {
     const admin = await getAdminClient();
     const listUserFolders = async (): Promise<string[]> => {
-      const listing = await admin.storage.from("references").list(userA.userId, { limit: 1000 });
+      const listing = await admin.storage.from("references").list(
+        userA.userId,
+        { limit: 1000 },
+      );
       if (listing.error) throw new Error(listing.error.message);
       return (listing.data ?? []).map((obj) => obj.name).sort();
     };
@@ -209,6 +260,11 @@ Deno.test("POST /voices/design rejects missing name", async () => {
   await res.body?.cancel();
 });
 
-Deno.test({ name: "design: teardown", sanitizeResources: false, sanitizeOps: false, fn: async () => {
-  await deleteTestUser(userA.userId);
-}});
+Deno.test({
+  name: "design: teardown",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    await deleteTestUser(userA.userId);
+  },
+});

@@ -6,11 +6,15 @@ import {
   apiFetch,
   createTestUser,
   deleteTestUser,
-  SUPABASE_URL,
   SERVICE_ROLE_KEY,
+  SUPABASE_URL,
   type TestUser,
 } from "./_helpers/setup.ts";
-import { TEST_USER_A, VALID_VOICE_PAYLOAD, MINIMAL_WAV } from "./_helpers/fixtures.ts";
+import {
+  MINIMAL_WAV,
+  TEST_USER_A,
+  VALID_VOICE_PAYLOAD,
+} from "./_helpers/fixtures.ts";
 
 let userA: TestUser;
 const noLeaks = { sanitizeResources: false, sanitizeOps: false };
@@ -28,15 +32,27 @@ async function waitForReferenceSize(
   minBytes: number,
 ): Promise<boolean> {
   for (let i = 0; i < 20; i++) {
-    const listing = await admin.storage.from("references").list(`${userId}/${voiceId}`, {
-      limit: 100,
-    });
+    const listing = await admin.storage.from("references").list(
+      `${userId}/${voiceId}`,
+      {
+        limit: 100,
+      },
+    );
     if (listing.error) return false;
-    const ref = (listing.data ?? []).find((obj) => obj.name === "reference.wav");
+    const ref = (listing.data ?? []).find((obj) =>
+      obj.name === "reference.wav"
+    );
     const refWithSize = ref as
-      | { size?: number | string | null; metadata?: { size?: number | string | null; contentLength?: number | string | null } }
+      | {
+        size?: number | string | null;
+        metadata?: {
+          size?: number | string | null;
+          contentLength?: number | string | null;
+        };
+      }
       | undefined;
-    const value = refWithSize?.metadata?.size ?? refWithSize?.metadata?.contentLength ?? refWithSize?.size ?? null;
+    const value = refWithSize?.metadata?.size ??
+      refWithSize?.metadata?.contentLength ?? refWithSize?.size ?? null;
     const size = value == null ? null : Number(value);
     if (size !== null && Number.isFinite(size) && size >= minBytes) return true;
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -44,9 +60,25 @@ async function waitForReferenceSize(
   return false;
 }
 
-Deno.test({ name: "clone: setup", sanitizeResources: false, sanitizeOps: false, fn: async () => {
-  userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
-}});
+Deno.test({
+  name: "clone: setup",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
+    const admin = await getAdminClient();
+    await admin
+      .from("profiles")
+      .upsert(
+        {
+          id: userA.userId,
+          credits_remaining: 250000,
+          subscription_tier: "pro",
+        },
+        { onConflict: "id" },
+      );
+  },
+});
 
 // --- POST /clone/upload-url ---
 Deno.test("POST /clone/upload-url returns upload URL + voice_id", async () => {
@@ -138,6 +170,67 @@ Deno.test("POST /clone/finalize rejects missing voice_id", async () => {
 });
 
 Deno.test({
+  name: "POST /clone/finalize returns 402 when credits are insufficient",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdminClient();
+    await admin
+      .from("profiles")
+      .update({ credits_remaining: 2 })
+      .eq("id", userA.userId);
+
+    let voiceId = "";
+    let objectKey = "";
+
+    try {
+      const urlRes = await apiFetch("/clone/upload-url", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(VALID_VOICE_PAYLOAD),
+      });
+      assertEquals(urlRes.status, 200);
+      const uploadPayload = await urlRes.json();
+      voiceId = uploadPayload.voice_id as string;
+      objectKey = uploadPayload.object_key as string;
+
+      const uploadRes = await fetch(uploadPayload.upload_url as string, {
+        method: "PUT",
+        headers: { "Content-Type": "audio/wav" },
+        body: MINIMAL_WAV,
+      });
+      assertEquals(uploadRes.status, 200);
+      await uploadRes.body?.cancel();
+
+      const finalizeRes = await apiFetch("/clone/finalize", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          voice_id: voiceId,
+          ...VALID_VOICE_PAYLOAD,
+        }),
+      });
+      assertEquals(finalizeRes.status, 402);
+      const body = await finalizeRes.json();
+      assertEquals(typeof body.detail, "string");
+    } finally {
+      await admin
+        .from("profiles")
+        .update({ credits_remaining: 250000 })
+        .eq("id", userA.userId);
+      if (voiceId) {
+        await admin.from("voices").delete().eq("id", voiceId).eq(
+          "user_id",
+          userA.userId,
+        );
+      }
+      if (objectKey) {
+        await admin.storage.from("references").remove([objectKey]);
+      }
+    }
+  },
+});
+
+Deno.test({
   name: "POST /clone/finalize rejects oversized reference audio",
   ...noLeaks,
   fn: async () => {
@@ -147,17 +240,26 @@ Deno.test({
     const oversizedAudio = new Uint8Array(MAX_REFERENCE_BYTES + 1);
 
     try {
-      const upload = await admin.storage.from("references").upload(objectKey, oversizedAudio, {
-        contentType: "audio/wav",
-        upsert: true,
-      });
+      const upload = await admin.storage.from("references").upload(
+        objectKey,
+        oversizedAudio,
+        {
+          contentType: "audio/wav",
+          upsert: true,
+        },
+      );
 
       if (upload.error) {
         assertEquals(typeof upload.error.message, "string");
         return;
       }
 
-      const sizeReady = await waitForReferenceSize(admin, userA.userId, voiceId, oversizedAudio.length);
+      const sizeReady = await waitForReferenceSize(
+        admin,
+        userA.userId,
+        voiceId,
+        oversizedAudio.length,
+      );
       if (!sizeReady) {
         throw new Error("Reference metadata size was not available in time.");
       }
@@ -176,7 +278,10 @@ Deno.test({
       assertEquals(typeof body.detail, "string");
     } finally {
       await admin.storage.from("references").remove([objectKey]);
-      await admin.from("voices").delete().eq("id", voiceId).eq("user_id", userA.userId);
+      await admin.from("voices").delete().eq("id", voiceId).eq(
+        "user_id",
+        userA.userId,
+      );
     }
   },
 });
@@ -190,10 +295,14 @@ Deno.test({
     const objectKey = `${userA.userId}/${voiceId}/reference.wav`;
 
     try {
-      const upload = await admin.storage.from("references").upload(objectKey, MINIMAL_WAV, {
-        contentType: "audio/wav",
-        upsert: true,
-      });
+      const upload = await admin.storage.from("references").upload(
+        objectKey,
+        MINIMAL_WAV,
+        {
+          contentType: "audio/wav",
+          upsert: true,
+        },
+      );
       if (upload.error) throw new Error(upload.error.message);
 
       const seed = await admin.from("voices").insert({
@@ -218,14 +327,22 @@ Deno.test({
       assertEquals(res.status, 500);
       await res.body?.cancel();
 
-      const listing = await admin.storage.from("references").list(`${userA.userId}/${voiceId}`, {
-        limit: 100,
-      });
+      const listing = await admin.storage.from("references").list(
+        `${userA.userId}/${voiceId}`,
+        {
+          limit: 100,
+        },
+      );
       if (listing.error) throw new Error(listing.error.message);
-      const hasReference = (listing.data ?? []).some((obj) => obj.name === "reference.wav");
+      const hasReference = (listing.data ?? []).some((obj) =>
+        obj.name === "reference.wav"
+      );
       assertEquals(hasReference, false);
     } finally {
-      await admin.from("voices").delete().eq("id", voiceId).eq("user_id", userA.userId);
+      await admin.from("voices").delete().eq("id", voiceId).eq(
+        "user_id",
+        userA.userId,
+      );
       await admin.storage.from("references").remove([objectKey]);
     }
   },
@@ -266,6 +383,11 @@ Deno.test("Full clone flow: upload-url → upload WAV → finalize", async () =>
   assertExists(finalBody.name);
 });
 
-Deno.test({ name: "clone: teardown", sanitizeResources: false, sanitizeOps: false, fn: async () => {
-  await deleteTestUser(userA.userId);
-}});
+Deno.test({
+  name: "clone: teardown",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    await deleteTestUser(userA.userId);
+  },
+});
