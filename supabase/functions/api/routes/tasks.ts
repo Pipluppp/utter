@@ -1,61 +1,148 @@
-import { Hono } from "npm:hono@4"
+import { Hono } from "npm:hono@4";
 
-import { requireUser } from "../../_shared/auth.ts"
-import { createAdminClient, createUserClient } from "../../_shared/supabase.ts"
-import { resolveStorageUrl } from "../../_shared/urls.ts"
+import { requireUser } from "../../_shared/auth.ts";
+import { applyCreditEvent } from "../../_shared/credits.ts";
+import { createAdminClient, createUserClient } from "../../_shared/supabase.ts";
+import { resolveStorageUrl } from "../../_shared/urls.ts";
 import {
   cancelJob,
   checkJobStatus,
   designVoicePreviewBytes,
   getJobResultBytes,
-} from "../../_shared/modal.ts"
+} from "../../_shared/modal.ts";
+
+declare const EdgeRuntime: {
+  waitUntil: (promise: Promise<unknown>) => void;
+};
 
 function jsonDetail(detail: string, status: number) {
   return new Response(JSON.stringify({ detail }), {
     status,
     headers: { "Content-Type": "application/json" },
-  })
+  });
 }
 
-export const tasksRoutes = new Hono()
+export const tasksRoutes = new Hono();
 
 function isTerminal(status: string) {
-  return status === "completed" || status === "failed" || status === "cancelled"
+  return status === "completed" || status === "failed" ||
+    status === "cancelled";
 }
 
 function parseIsoDate(value: unknown): Date | null {
-  if (typeof value !== "string") return null
-  const d = new Date(value)
-  return Number.isNaN(d.getTime()) ? null : d
+  if (typeof value !== "string") return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 function secondsBetween(start: Date, end: Date): number {
-  return Math.max(0, (end.getTime() - start.getTime()) / 1000)
+  return Math.max(0, (end.getTime() - start.getTime()) / 1000);
+}
+
+function asPositiveInt(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  const normalized = Math.floor(value);
+  return normalized > 0 ? normalized : null;
+}
+
+function inferDebitedCredits(type: string, metadata: unknown): number | null {
+  if (!metadata || typeof metadata !== "object") return null;
+  const record = metadata as Record<string, unknown>;
+
+  const explicit = asPositiveInt(record.credits_debited);
+  if (explicit) return explicit;
+
+  if (type === "generate") {
+    return asPositiveInt(record.text_length);
+  }
+
+  if (type === "design_preview") {
+    const text = typeof record.text === "string" ? record.text.length : 0;
+    const instruct = typeof record.instruct === "string"
+      ? record.instruct.length
+      : 0;
+    const inferred = text + instruct;
+    return inferred > 0 ? inferred : null;
+  }
+
+  return null;
+}
+
+async function refundTaskCredits(params: {
+  admin: ReturnType<typeof createAdminClient>;
+  userId: string;
+  taskId: string;
+  taskType: string;
+  generationId: string | null;
+  metadata: unknown;
+  reason: string;
+}) {
+  const { admin, userId, taskId, taskType, generationId, metadata, reason } =
+    params;
+  const amount = inferDebitedCredits(taskType, metadata);
+  if (!amount) return;
+
+  if (taskType === "generate") {
+    const referenceId = generationId ?? taskId;
+    const idempotencyKey = generationId
+      ? `generate:${generationId}:refund`
+      : `generate:${taskId}:refund`;
+
+    await applyCreditEvent(admin, {
+      userId,
+      eventKind: "refund",
+      operation: "generate",
+      amount,
+      referenceType: "generation",
+      referenceId,
+      idempotencyKey,
+      metadata: {
+        reason,
+        task_id: taskId,
+      },
+    });
+    return;
+  }
+
+  if (taskType === "design_preview") {
+    await applyCreditEvent(admin, {
+      userId,
+      eventKind: "refund",
+      operation: "design_preview",
+      amount,
+      referenceType: "task",
+      referenceId: taskId,
+      idempotencyKey: `design-preview:${taskId}:refund`,
+      metadata: {
+        reason,
+      },
+    });
+  }
 }
 
 tasksRoutes.get("/tasks/:id", async (c) => {
-  let userId: string
-  let supabase: ReturnType<typeof createUserClient>
+  let userId: string;
+  let supabase: ReturnType<typeof createUserClient>;
   try {
-    const { user, supabase: userClient } = await requireUser(c.req.raw)
-    userId = user.id
-    supabase = userClient
+    const { user, supabase: userClient } = await requireUser(c.req.raw);
+    userId = user.id;
+    supabase = userClient;
   } catch (e) {
-    if (e instanceof Response) return e
-    return jsonDetail("Unauthorized", 401)
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
   }
 
-  const taskId = c.req.param("id")
+  const taskId = c.req.param("id");
   const { data: task, error } = await supabase
     .from("tasks")
     .select(
       "id, type, status, result, error, modal_poll_count, modal_job_id, generation_id, created_at, metadata",
     )
     .eq("id", taskId)
-    .maybeSingle()
+    .maybeSingle();
 
-  if (error) return jsonDetail("Failed to load task.", 500)
-  if (!task) return jsonDetail("Task not found.", 404)
+  if (error) return jsonDetail("Failed to load task.", 500);
+  if (!task) return jsonDetail("Task not found.", 404);
 
   const base = {
     id: (task as { id: string }).id,
@@ -65,25 +152,28 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     error: (task as { error: string | null }).error ?? null,
     modal_status: null as string | null,
     modal_elapsed_seconds: null as number | null,
-    modal_poll_count: (task as { modal_poll_count: number }).modal_poll_count ?? 0,
-  }
+    modal_poll_count: (task as { modal_poll_count: number }).modal_poll_count ??
+      0,
+  };
 
-  const status = base.status
-  const type = base.type
-  const modalJobId = (task as { modal_job_id: string | null }).modal_job_id
-  const generationId = (task as { generation_id: string | null }).generation_id
+  const status = base.status;
+  const type = base.type;
+  const modalJobId = (task as { modal_job_id: string | null }).modal_job_id;
+  const generationId = (task as { generation_id: string | null }).generation_id;
 
   if (!isTerminal(status) && type === "design_preview" && !modalJobId) {
-    const admin = createAdminClient()
+    const admin = createAdminClient();
     if (status !== "pending") {
       const { data: pollCount, error: pollError } = await admin.rpc(
         "increment_task_modal_poll_count",
         { p_task_id: taskId, p_user_id: userId },
-      )
-      if (!pollError && typeof pollCount === "number") base.modal_poll_count = pollCount
-      base.status = "processing"
-      base.modal_status = "processing"
-      return c.json(base)
+      );
+      if (!pollError && typeof pollCount === "number") {
+        base.modal_poll_count = pollCount;
+      }
+      base.status = "processing";
+      base.modal_status = "processing";
+      return c.json(base);
     }
 
     const claimed = await admin
@@ -93,32 +183,36 @@ tasksRoutes.get("/tasks/:id", async (c) => {
       .eq("user_id", userId)
       .eq("status", "pending")
       .select("id")
-      .maybeSingle()
+      .maybeSingle();
 
-    if (claimed.error) return jsonDetail("Failed to start design preview.", 500)
+    if (claimed.error) {
+      return jsonDetail("Failed to start design preview.", 500);
+    }
     if (!claimed.data) {
-      base.status = "processing"
-      base.modal_status = "processing"
-      return c.json(base)
+      base.status = "processing";
+      base.modal_status = "processing";
+      return c.json(base);
     }
 
     const { data: pollCount, error: pollError } = await admin.rpc(
       "increment_task_modal_poll_count",
       { p_task_id: taskId, p_user_id: userId },
-    )
-    if (!pollError && typeof pollCount === "number") base.modal_poll_count = pollCount
+    );
+    if (!pollError && typeof pollCount === "number") {
+      base.modal_poll_count = pollCount;
+    }
 
     const metadata = (task as { metadata: unknown }).metadata as
       | { text?: string; language?: string; instruct?: string }
-      | null
+      | null;
 
-    const text = typeof metadata?.text === "string" ? metadata.text.trim() : ""
+    const text = typeof metadata?.text === "string" ? metadata.text.trim() : "";
     const language = typeof metadata?.language === "string"
       ? metadata.language.trim()
-      : "English"
+      : "English";
     const instruct = typeof metadata?.instruct === "string"
       ? metadata.instruct.trim()
-      : ""
+      : "";
 
     if (!text || !instruct) {
       await admin
@@ -129,27 +223,40 @@ tasksRoutes.get("/tasks/:id", async (c) => {
           completed_at: new Date().toISOString(),
         })
         .eq("id", taskId)
-        .eq("user_id", userId)
+        .eq("user_id", userId);
+      await refundTaskCredits({
+        admin,
+        userId,
+        taskId,
+        taskType: type,
+        generationId,
+        metadata: (task as { metadata: unknown }).metadata,
+        reason: "invalid_design_preview_metadata",
+      });
 
-      base.status = "failed"
-      base.error = "Invalid design preview task metadata."
-      return c.json(base)
+      base.status = "failed";
+      base.error = "Invalid design preview task metadata.";
+      return c.json(base);
     }
 
     EdgeRuntime.waitUntil((async () => {
-      const bgAdmin = createAdminClient()
+      const bgAdmin = createAdminClient();
       try {
-        const bytes = await designVoicePreviewBytes({ text, language, instruct })
-        const objectKey = `${userId}/preview_${taskId}.wav`
+        const bytes = await designVoicePreviewBytes({
+          text,
+          language,
+          instruct,
+        });
+        const objectKey = `${userId}/preview_${taskId}.wav`;
         const upload = await bgAdmin.storage
           .from("references")
           .upload(objectKey, new Uint8Array(bytes), {
             contentType: "audio/wav",
             upsert: true,
-          })
-        if (upload.error) throw new Error("Failed to upload preview audio.")
+          });
+        if (upload.error) throw new Error("Failed to upload preview audio.");
 
-        const nowIso = new Date().toISOString()
+        const nowIso = new Date().toISOString();
         await bgAdmin
           .from("tasks")
           .update({
@@ -159,9 +266,11 @@ tasksRoutes.get("/tasks/:id", async (c) => {
             error: null,
           })
           .eq("id", taskId)
-          .eq("user_id", userId)
+          .eq("user_id", userId);
       } catch (e) {
-        const message = e instanceof Error ? e.message : "Failed to design voice preview."
+        const message = e instanceof Error
+          ? e.message
+          : "Failed to design voice preview.";
         await bgAdmin
           .from("tasks")
           .update({
@@ -170,33 +279,42 @@ tasksRoutes.get("/tasks/:id", async (c) => {
             completed_at: new Date().toISOString(),
           })
           .eq("id", taskId)
-          .eq("user_id", userId)
+          .eq("user_id", userId);
+        await refundTaskCredits({
+          admin: bgAdmin,
+          userId,
+          taskId,
+          taskType: "design_preview",
+          generationId: null,
+          metadata: (task as { metadata: unknown }).metadata,
+          reason: "design_preview_generation_failed",
+        });
       }
-    })())
+    })());
 
-    base.status = "processing"
-    base.modal_status = "processing"
-    return c.json(base)
+    base.status = "processing";
+    base.modal_status = "processing";
+    return c.json(base);
   }
 
   if (isTerminal(status) || !modalJobId) {
     if (status === "completed" && type === "design_preview") {
       const currentResult = (typeof base.result === "object" && base.result)
         ? base.result as Record<string, unknown>
-        : {}
+        : {};
       const objectKey = typeof currentResult.object_key === "string"
         ? currentResult.object_key
-        : null
+        : null;
       if (objectKey) {
-        const admin = createAdminClient()
+        const admin = createAdminClient();
         const { data: signed, error: signedError } = await admin.storage
           .from("references")
-          .createSignedUrl(objectKey, 3600)
+          .createSignedUrl(objectKey, 3600);
         if (!signedError && signed?.signedUrl) {
           base.result = {
             ...currentResult,
             audio_url: resolveStorageUrl(c.req.raw, signed.signedUrl),
-          }
+          };
         }
       }
     }
@@ -205,67 +323,83 @@ tasksRoutes.get("/tasks/:id", async (c) => {
       base.result = {
         ...(typeof base.result === "object" && base.result ? base.result : {}),
         audio_url: `/api/generations/${generationId}/audio`,
-      }
+      };
     }
-    return c.json(base)
+    return c.json(base);
   }
 
-  const admin = createAdminClient()
+  const admin = createAdminClient();
   const { data: pollCount, error: pollError } = await admin.rpc(
     "increment_task_modal_poll_count",
     { p_task_id: taskId, p_user_id: userId },
-  )
-  if (!pollError && typeof pollCount === "number") base.modal_poll_count = pollCount
-
-  let modal
-  try {
-    modal = await checkJobStatus(modalJobId)
-  } catch (e) {
-    base.modal_status = "status_error"
-    base.error = e instanceof Error ? e.message : "Failed to check job status."
-    return c.json(base)
+  );
+  if (!pollError && typeof pollCount === "number") {
+    base.modal_poll_count = pollCount;
   }
 
-  base.modal_status = modal.status ?? null
+  let modal;
+  try {
+    modal = await checkJobStatus(modalJobId);
+  } catch (e) {
+    base.modal_status = "status_error";
+    base.error = e instanceof Error ? e.message : "Failed to check job status.";
+    return c.json(base);
+  }
+
+  base.modal_status = modal.status ?? null;
   base.modal_elapsed_seconds = typeof modal.elapsed_seconds === "number"
     ? modal.elapsed_seconds
-    : null
+    : null;
 
-  const modalStatus = (modal.status ?? "").toLowerCase()
+  const modalStatus = (modal.status ?? "").toLowerCase();
 
   if (modalStatus === "failed") {
-    const message = modal.error || "Generation failed. Please try again."
-    const nowIso = new Date().toISOString()
+    const message = modal.error || "Generation failed. Please try again.";
+    const nowIso = new Date().toISOString();
     await admin
       .from("tasks")
       .update({ status: "failed", error: message, completed_at: nowIso })
       .eq("id", taskId)
-      .eq("user_id", userId)
+      .eq("user_id", userId);
 
     if (generationId) {
       await admin
         .from("generations")
-        .update({ status: "failed", error_message: message, completed_at: nowIso })
+        .update({
+          status: "failed",
+          error_message: message,
+          completed_at: nowIso,
+        })
         .eq("id", generationId)
-        .eq("user_id", userId)
+        .eq("user_id", userId);
     }
 
-    base.status = "failed"
-    base.error = message
-    return c.json(base)
+    await refundTaskCredits({
+      admin,
+      userId,
+      taskId,
+      taskType: type,
+      generationId,
+      metadata: (task as { metadata: unknown }).metadata,
+      reason: "modal_reported_failed",
+    });
+
+    base.status = "failed";
+    base.error = message;
+    return c.json(base);
   }
 
-  const ready = modalStatus === "completed" && Boolean(modal.result_ready)
+  const ready = modalStatus === "completed" && Boolean(modal.result_ready);
   if (!ready || !generationId) {
     if (status !== "processing") {
       await admin
         .from("tasks")
         .update({ status: "processing" })
         .eq("id", taskId)
-        .eq("user_id", userId)
+        .eq("user_id", userId);
     }
-    base.status = "processing"
-    return c.json(base)
+    base.status = "processing";
+    return c.json(base);
   }
 
   const { data: gen, error: genError } = await admin
@@ -273,25 +407,26 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     .select("id, created_at, audio_object_key")
     .eq("id", generationId)
     .eq("user_id", userId)
-    .maybeSingle()
+    .maybeSingle();
 
-  if (genError) return jsonDetail("Failed to load generation.", 500)
-  if (!gen) return jsonDetail("Generation not found.", 404)
+  if (genError) return jsonDetail("Failed to load generation.", 500);
+  if (!gen) return jsonDetail("Generation not found.", 404);
 
-  const existingKey = (gen as { audio_object_key: string | null }).audio_object_key
-  const objectKey = existingKey || `${userId}/${generationId}.wav`
-  const now = new Date()
-  const nowIso = now.toISOString()
+  const existingKey =
+    (gen as { audio_object_key: string | null }).audio_object_key;
+  const objectKey = existingKey || `${userId}/${generationId}.wav`;
+  const now = new Date();
+  const nowIso = now.toISOString();
 
   if (!existingKey) {
-    let bytes: ArrayBuffer
+    let bytes: ArrayBuffer;
     try {
-      bytes = await getJobResultBytes(modalJobId)
+      bytes = await getJobResultBytes(modalJobId);
     } catch (e) {
-      base.status = "processing"
-      base.modal_status = "finalizing"
-      base.error = e instanceof Error ? e.message : null
-      return c.json(base)
+      base.status = "processing";
+      base.modal_status = "finalizing";
+      base.error = e instanceof Error ? e.message : null;
+      return c.json(base);
     }
 
     const uploadRes = await admin.storage
@@ -299,11 +434,17 @@ tasksRoutes.get("/tasks/:id", async (c) => {
       .upload(objectKey, new Uint8Array(bytes), {
         contentType: "audio/wav",
         upsert: true,
-      })
-    if (uploadRes.error) return jsonDetail("Failed to upload generation audio.", 500)
+      });
+    if (uploadRes.error) {
+      return jsonDetail("Failed to upload generation audio.", 500);
+    }
 
-    const createdAt = parseIsoDate((gen as { created_at: string | null }).created_at)
-    const generationTimeSeconds = createdAt ? secondsBetween(createdAt, now) : null
+    const createdAt = parseIsoDate(
+      (gen as { created_at: string | null }).created_at,
+    );
+    const generationTimeSeconds = createdAt
+      ? secondsBetween(createdAt, now)
+      : null;
 
     await admin
       .from("generations")
@@ -315,7 +456,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
       })
       .eq("id", generationId)
       .eq("user_id", userId)
-      .is("audio_object_key", null)
+      .is("audio_object_key", null);
   }
 
   await admin
@@ -327,91 +468,102 @@ tasksRoutes.get("/tasks/:id", async (c) => {
       error: null,
     })
     .eq("id", taskId)
-    .eq("user_id", userId)
+    .eq("user_id", userId);
 
-  base.status = "completed"
-  base.result = { audio_url: `/api/generations/${generationId}/audio` }
-  base.error = null
-  return c.json(base)
-})
+  base.status = "completed";
+  base.result = { audio_url: `/api/generations/${generationId}/audio` };
+  base.error = null;
+  return c.json(base);
+});
 
 tasksRoutes.delete("/tasks/:id", async (c) => {
-  let userId: string
-  let supabase: ReturnType<typeof createUserClient>
+  let userId: string;
+  let supabase: ReturnType<typeof createUserClient>;
   try {
-    const { user, supabase: userClient } = await requireUser(c.req.raw)
-    userId = user.id
-    supabase = userClient
+    const { user, supabase: userClient } = await requireUser(c.req.raw);
+    userId = user.id;
+    supabase = userClient;
   } catch (e) {
-    if (e instanceof Response) return e
-    return jsonDetail("Unauthorized", 401)
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
   }
 
-  const taskId = c.req.param("id")
+  const taskId = c.req.param("id");
   const { data: task, error } = await supabase
     .from("tasks")
     .select("id")
     .eq("id", taskId)
-    .maybeSingle()
+    .maybeSingle();
 
-  if (error) return jsonDetail("Failed to load task.", 500)
-  if (!task) return jsonDetail("Task not found.", 404)
+  if (error) return jsonDetail("Failed to load task.", 500);
+  if (!task) return jsonDetail("Task not found.", 404);
 
-  const admin = createAdminClient()
+  const admin = createAdminClient();
   const { error: deleteError } = await admin
     .from("tasks")
     .delete()
     .eq("id", taskId)
-    .eq("user_id", userId)
+    .eq("user_id", userId);
 
-  if (deleteError) return jsonDetail("Failed to delete task.", 500)
-  return c.json({ ok: true })
-})
+  if (deleteError) return jsonDetail("Failed to delete task.", 500);
+  return c.json({ ok: true });
+});
 
 tasksRoutes.post("/tasks/:id/cancel", async (c) => {
-  let userId: string
-  let supabase: ReturnType<typeof createUserClient>
+  let userId: string;
+  let supabase: ReturnType<typeof createUserClient>;
   try {
-    const { user, supabase: userClient } = await requireUser(c.req.raw)
-    userId = user.id
-    supabase = userClient
+    const { user, supabase: userClient } = await requireUser(c.req.raw);
+    userId = user.id;
+    supabase = userClient;
   } catch (e) {
-    if (e instanceof Response) return e
-    return jsonDetail("Unauthorized", 401)
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
   }
 
-  const taskId = c.req.param("id")
+  const taskId = c.req.param("id");
   const { data: task, error } = await supabase
     .from("tasks")
-    .select("id, status, modal_job_id, generation_id, created_at")
+    .select(
+      "id, type, status, modal_job_id, generation_id, created_at, metadata",
+    )
     .eq("id", taskId)
-    .maybeSingle()
+    .maybeSingle();
 
-  if (error) return jsonDetail("Failed to load task.", 500)
-  if (!task) return jsonDetail("Task not found.", 404)
+  if (error) return jsonDetail("Failed to load task.", 500);
+  if (!task) return jsonDetail("Task not found.", 404);
 
-  const status = (task as { status: string }).status
+  const status = (task as { status: string }).status;
   if (status !== "pending" && status !== "processing") {
-    return jsonDetail(`Cannot cancel task with status: ${status}`, 400)
+    return jsonDetail(`Cannot cancel task with status: ${status}`, 400);
   }
 
-  const modalJobId = (task as { modal_job_id: string | null }).modal_job_id
-  if (modalJobId) await cancelJob(modalJobId)
+  const modalJobId = (task as { modal_job_id: string | null }).modal_job_id;
+  if (modalJobId) await cancelJob(modalJobId);
 
-  const admin = createAdminClient()
-  const now = new Date()
-  const nowIso = now.toISOString()
+  const admin = createAdminClient();
+  const now = new Date();
+  const nowIso = now.toISOString();
 
   await admin
     .from("tasks")
-    .update({ status: "cancelled", error: "Cancelled by user", completed_at: nowIso })
+    .update({
+      status: "cancelled",
+      error: "Cancelled by user",
+      completed_at: nowIso,
+    })
     .eq("id", taskId)
-    .eq("user_id", userId)
+    .eq("user_id", userId);
 
-  const generationId = (task as { generation_id: string | null }).generation_id
+  const generationId = (task as { generation_id: string | null }).generation_id;
+  const taskType = (task as { type: string }).type;
   if (generationId) {
-    const createdAt = parseIsoDate((task as { created_at: string | null }).created_at)
-    const generationTimeSeconds = createdAt ? secondsBetween(createdAt, now) : null
+    const createdAt = parseIsoDate(
+      (task as { created_at: string | null }).created_at,
+    );
+    const generationTimeSeconds = createdAt
+      ? secondsBetween(createdAt, now)
+      : null;
     await admin
       .from("generations")
       .update({
@@ -422,8 +574,18 @@ tasksRoutes.post("/tasks/:id/cancel", async (c) => {
       })
       .eq("id", generationId)
       .eq("user_id", userId)
-      .not("status", "in", "(completed,failed,cancelled)")
+      .not("status", "in", "(completed,failed,cancelled)");
   }
 
-  return c.json({ cancelled: true, task_id: taskId })
-})
+  await refundTaskCredits({
+    admin,
+    userId,
+    taskId,
+    taskType,
+    generationId,
+    metadata: (task as { metadata: unknown }).metadata,
+    reason: "cancelled_by_user",
+  });
+
+  return c.json({ cancelled: true, task_id: taskId });
+});

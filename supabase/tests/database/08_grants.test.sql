@@ -1,7 +1,7 @@
 -- Phase 08b: Grant revocations — PostgREST surface hardening
 -- Ref: supabase-security.md §4
 BEGIN;
-SELECT plan(27);
+SELECT plan(36);
 
 -- Create test user
 INSERT INTO auth.users (id, instance_id, role, aud, email, encrypted_password, email_confirmed_at, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change)
@@ -69,6 +69,18 @@ SELECT throws_ok(
   $$UPDATE public.rate_limit_counters SET request_count = request_count + 1$$,
   '42501', NULL, 'authenticated: UPDATE revoked on rate_limit_counters'
 );
+SELECT throws_ok(
+  $$INSERT INTO public.credit_ledger (
+      user_id, event_kind, operation, amount, signed_amount, balance_after, reference_type, idempotency_key
+    ) VALUES (
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'debit', 'generate', 10, -10, 90, 'task', 'auth-should-fail'
+    )$$,
+  '42501', NULL, 'authenticated: INSERT revoked on credit_ledger'
+);
+SELECT throws_ok(
+  $$UPDATE public.credit_ledger SET balance_after = 999999 WHERE user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
+  '42501', NULL, 'authenticated: UPDATE revoked on credit_ledger'
+);
 
 -- ============================================================
 -- ANON ROLE REVOCATIONS (all writes blocked on all tables)
@@ -96,6 +108,14 @@ SELECT throws_ok(
   $$INSERT INTO public.rate_limit_counters (actor_type, actor_key, tier, window_seconds, window_start, request_count)
     VALUES ('ip', 'anon-ip', 'tier1', 300, now(), 1)$$,
   '42501', NULL, 'anon: INSERT revoked on rate_limit_counters'
+);
+SELECT throws_ok(
+  $$INSERT INTO public.credit_ledger (
+      user_id, event_kind, operation, amount, signed_amount, balance_after, reference_type, idempotency_key
+    ) VALUES (
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'debit', 'generate', 10, -10, 90, 'task', 'anon-should-fail'
+    )$$,
+  '42501', NULL, 'anon: INSERT revoked on credit_ledger'
 );
 SELECT throws_ok(
   $$UPDATE public.profiles SET display_name = 'x' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
@@ -176,6 +196,42 @@ SELECT ok(
 );
 
 SELECT ok(
+  not has_function_privilege(
+    'anon',
+    'public.credit_apply_event(uuid,text,text,integer,text,uuid,text,jsonb)',
+    'EXECUTE'
+  ),
+  'anon: EXECUTE revoked on credit_apply_event'
+);
+
+SELECT ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.credit_apply_event(uuid,text,text,integer,text,uuid,text,jsonb)',
+    'EXECUTE'
+  ),
+  'authenticated: EXECUTE revoked on credit_apply_event'
+);
+
+SELECT ok(
+  not has_function_privilege(
+    'anon',
+    'public.credit_usage_window_totals(uuid,timestamptz)',
+    'EXECUTE'
+  ),
+  'anon: EXECUTE revoked on credit_usage_window_totals'
+);
+
+SELECT ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.credit_usage_window_totals(uuid,timestamptz)',
+    'EXECUTE'
+  ),
+  'authenticated: EXECUTE revoked on credit_usage_window_totals'
+);
+
+SELECT ok(
   has_function_privilege('service_role', 'public.increment_task_modal_poll_count(uuid,uuid)', 'EXECUTE'),
   'service_role: EXECUTE granted on increment_task_modal_poll_count'
 );
@@ -187,6 +243,23 @@ SELECT ok(
     'EXECUTE'
   ),
   'service_role: EXECUTE granted on rate_limit_check_and_increment'
+);
+SELECT ok(
+  has_function_privilege(
+    'service_role',
+    'public.credit_apply_event(uuid,text,text,integer,text,uuid,text,jsonb)',
+    'EXECUTE'
+  ),
+  'service_role: EXECUTE granted on credit_apply_event'
+);
+
+SELECT ok(
+  has_function_privilege(
+    'service_role',
+    'public.credit_usage_window_totals(uuid,timestamptz)',
+    'EXECUTE'
+  ),
+  'service_role: EXECUTE granted on credit_usage_window_totals'
 );
 
 SELECT * FROM finish();

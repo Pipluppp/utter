@@ -1,6 +1,6 @@
 -- Phase 08b: Triggers + database functions
 BEGIN;
-SELECT plan(7);
+SELECT plan(13);
 
 -- ============================================================
 -- 1. handle_new_user trigger: auto-creates profile on auth.users insert
@@ -61,6 +61,86 @@ SELECT results_eq(
   $$SELECT public.increment_task_modal_poll_count('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')$$,
   ARRAY[2],
   'increment_task_modal_poll_count returns 2 after second call'
+);
+
+-- ============================================================
+-- 4. credit_apply_event + credit_usage_window_totals RPCs
+-- ============================================================
+SELECT results_eq(
+  $$SELECT applied, duplicate, insufficient, balance_remaining
+    FROM public.credit_apply_event(
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      'debit',
+      'generate',
+      10,
+      'generation',
+      '11111111-1111-1111-1111-111111111111',
+      'trigger-test-debit-1',
+      '{"reason":"test"}'::jsonb
+    )$$,
+  $$VALUES (true, false, false, 90)$$,
+  'credit_apply_event debits credits atomically'
+);
+
+SELECT results_eq(
+  $$SELECT credits_remaining FROM public.profiles WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
+  ARRAY[90],
+  'credit_apply_event updates profiles.credits_remaining'
+);
+
+SELECT results_eq(
+  $$SELECT applied, duplicate, insufficient, balance_remaining
+    FROM public.credit_apply_event(
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      'debit',
+      'generate',
+      10,
+      'generation',
+      '11111111-1111-1111-1111-111111111111',
+      'trigger-test-debit-1',
+      '{"reason":"idempotency"}'::jsonb
+    )$$,
+  $$VALUES (false, true, false, 90)$$,
+  'credit_apply_event is idempotent per user+idempotency key'
+);
+
+SELECT results_eq(
+  $$SELECT applied, duplicate, insufficient, balance_remaining
+    FROM public.credit_apply_event(
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      'debit',
+      'generate',
+      1000,
+      'generation',
+      '11111111-1111-1111-1111-111111111111',
+      'trigger-test-debit-insufficient',
+      '{"reason":"insufficient"}'::jsonb
+    )$$,
+  $$VALUES (false, false, true, 90)$$,
+  'credit_apply_event reports insufficient credits without overdraft'
+);
+
+SELECT results_eq(
+  $$SELECT applied, duplicate, insufficient, balance_remaining
+    FROM public.credit_apply_event(
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      'refund',
+      'generate',
+      10,
+      'generation',
+      '11111111-1111-1111-1111-111111111111',
+      'trigger-test-refund-1',
+      '{"reason":"test_refund"}'::jsonb
+    )$$,
+  $$VALUES (true, false, false, 100)$$,
+  'credit_apply_event refund restores credits'
+);
+
+SELECT results_eq(
+  $$SELECT total_debited, total_credited, net_signed
+    FROM public.credit_usage_window_totals('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', now() - interval '7 days')$$,
+  $$VALUES (10, 10, 0)$$,
+  'credit_usage_window_totals aggregates debits and credits'
 );
 
 SELECT * FROM finish();

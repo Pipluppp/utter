@@ -1,117 +1,167 @@
-import { Hono } from "npm:hono@4"
+import { Hono } from "npm:hono@4";
 
-import { requireUser } from "../../_shared/auth.ts"
-import { createAdminClient } from "../../_shared/supabase.ts"
-import { resolveStorageUrl } from "../../_shared/urls.ts"
+import { requireUser } from "../../_shared/auth.ts";
+import {
+  applyCreditEvent,
+  creditsForCloneTranscript,
+  formatInsufficientCreditsDetail,
+} from "../../_shared/credits.ts";
+import { createAdminClient } from "../../_shared/supabase.ts";
+import { resolveStorageUrl } from "../../_shared/urls.ts";
 
 function jsonDetail(detail: string, status: number) {
   return new Response(JSON.stringify({ detail }), {
     status,
     headers: { "Content-Type": "application/json" },
-  })
+  });
 }
 
 function normalizeString(value: unknown): string | null {
-  if (typeof value !== "string") return null
-  const trimmed = value.trim()
-  return trimmed ? trimmed : null
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 function getObjectSizeBytes(
   object: {
-    size?: number | string | null
-    metadata?: { size?: number | string | null; contentLength?: number | string | null }
+    size?: number | string | null;
+    metadata?: {
+      size?: number | string | null;
+      contentLength?: number | string | null;
+    };
   } | null,
 ): number | null {
-  if (!object) return null
-  const sizeValue = object.size ?? object.metadata?.size ?? object.metadata?.contentLength
-  if (sizeValue == null) return null
-  const parsed = Number(sizeValue)
-  return Number.isFinite(parsed) ? parsed : null
+  if (!object) return null;
+  const sizeValue = object.size ?? object.metadata?.size ??
+    object.metadata?.contentLength;
+  if (sizeValue == null) return null;
+  const parsed = Number(sizeValue);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
-export const cloneRoutes = new Hono()
+export const cloneRoutes = new Hono();
 
 cloneRoutes.post("/clone/upload-url", async (c) => {
-  let userId: string
+  let userId: string;
   try {
-    const { user } = await requireUser(c.req.raw)
-    userId = user.id
+    const { user } = await requireUser(c.req.raw);
+    userId = user.id;
   } catch (e) {
-    if (e instanceof Response) return e
-    return jsonDetail("Unauthorized", 401)
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
   }
 
-  const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
-  if (!body) return jsonDetail("Invalid JSON body", 400)
+  const body = (await c.req.json().catch(() => null)) as
+    | Record<string, unknown>
+    | null;
+  if (!body) return jsonDetail("Invalid JSON body", 400);
 
-  const name = normalizeString(body.name)
-  const language = normalizeString(body.language)
-  const transcript = normalizeString(body.transcript)
-  const description = normalizeString(body.description)
+  const name = normalizeString(body.name);
+  const language = normalizeString(body.language);
+  const transcript = normalizeString(body.transcript);
+  const description = normalizeString(body.description);
 
-  if (!name || name.length > 100) return jsonDetail("Name must be 1-100 characters.", 400)
-  if (!language) return jsonDetail("Language is required.", 400)
-  if (!transcript) return jsonDetail("Transcript is required.", 400)
+  if (!name || name.length > 100) {
+    return jsonDetail("Name must be 1-100 characters.", 400);
+  }
+  if (!language) return jsonDetail("Language is required.", 400);
+  if (!transcript) return jsonDetail("Transcript is required.", 400);
 
-  const voiceId = crypto.randomUUID()
-  const objectKey = `${userId}/${voiceId}/reference.wav`
+  const voiceId = crypto.randomUUID();
+  const objectKey = `${userId}/${voiceId}/reference.wav`;
 
-  const admin = createAdminClient()
+  const admin = createAdminClient();
   const { data, error } = await admin.storage
     .from("references")
-    .createSignedUploadUrl(objectKey)
+    .createSignedUploadUrl(objectKey);
 
   if (error || !data?.signedUrl) {
-    return jsonDetail("Failed to create signed upload URL.", 500)
+    return jsonDetail("Failed to create signed upload URL.", 500);
   }
 
   return c.json({
     voice_id: voiceId,
     upload_url: resolveStorageUrl(c.req.raw, data.signedUrl),
     object_key: objectKey,
-  })
-})
+  });
+});
 
 cloneRoutes.post("/clone/finalize", async (c) => {
-  let userId: string
+  let userId: string;
   try {
-    const { user } = await requireUser(c.req.raw)
-    userId = user.id
+    const { user } = await requireUser(c.req.raw);
+    userId = user.id;
   } catch (e) {
-    if (e instanceof Response) return e
-    return jsonDetail("Unauthorized", 401)
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
   }
 
-  const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
-  if (!body) return jsonDetail("Invalid JSON body", 400)
+  const body = (await c.req.json().catch(() => null)) as
+    | Record<string, unknown>
+    | null;
+  if (!body) return jsonDetail("Invalid JSON body", 400);
 
-  const voiceId = normalizeString(body.voice_id)
-  const name = normalizeString(body.name)
-  const language = normalizeString(body.language)
-  const transcript = normalizeString(body.transcript)
-  const description = normalizeString(body.description)
+  const voiceId = normalizeString(body.voice_id);
+  const name = normalizeString(body.name);
+  const language = normalizeString(body.language);
+  const transcript = normalizeString(body.transcript);
+  const description = normalizeString(body.description);
 
-  if (!voiceId) return jsonDetail("voice_id is required.", 400)
-  if (!name || name.length > 100) return jsonDetail("Name must be 1-100 characters.", 400)
-  if (!language) return jsonDetail("Language is required.", 400)
-  if (!transcript) return jsonDetail("Transcript is required.", 400)
+  if (!voiceId) return jsonDetail("voice_id is required.", 400);
+  if (!name || name.length > 100) {
+    return jsonDetail("Name must be 1-100 characters.", 400);
+  }
+  if (!language) return jsonDetail("Language is required.", 400);
+  if (!transcript) return jsonDetail("Transcript is required.", 400);
 
-  const objectKey = `${userId}/${voiceId}/reference.wav`
+  const objectKey = `${userId}/${voiceId}/reference.wav`;
 
-  const admin = createAdminClient()
+  const admin = createAdminClient();
   const { data: listing, error: listError } = await admin.storage
     .from("references")
-    .list(`${userId}/${voiceId}`, { limit: 100 })
+    .list(`${userId}/${voiceId}`, { limit: 100 });
 
-  if (listError) return jsonDetail("Failed to verify uploaded audio.", 500)
-  const referenceObject = (listing ?? []).find((o) => o.name === "reference.wav")
-  if (!referenceObject) return jsonDetail("Audio file not uploaded.", 400)
+  if (listError) return jsonDetail("Failed to verify uploaded audio.", 500);
+  const referenceObject = (listing ?? []).find((o) =>
+    o.name === "reference.wav"
+  );
+  if (!referenceObject) return jsonDetail("Audio file not uploaded.", 400);
 
-  const MAX_REFERENCE_BYTES = 10 * 1024 * 1024
-  const referenceSize = getObjectSizeBytes(referenceObject)
+  const MAX_REFERENCE_BYTES = 10 * 1024 * 1024;
+  const referenceSize = getObjectSizeBytes(referenceObject);
   if (referenceSize !== null && referenceSize > MAX_REFERENCE_BYTES) {
-    return jsonDetail("Reference audio must be under 10MB.", 400)
+    return jsonDetail("Reference audio must be under 10MB.", 400);
+  }
+
+  const creditsToDebit = creditsForCloneTranscript(transcript);
+
+  const debit = await applyCreditEvent(admin, {
+    userId,
+    eventKind: "debit",
+    operation: "clone",
+    amount: creditsToDebit,
+    referenceType: "voice",
+    referenceId: voiceId,
+    idempotencyKey: `clone:${voiceId}:debit`,
+    metadata: {
+      reason: "clone_finalize",
+      transcript_length: transcript.length,
+      audio_bytes: referenceSize,
+    },
+  });
+
+  if (debit.error || !debit.row) {
+    return jsonDetail("Failed to debit credits.", 500);
+  }
+
+  if (debit.row.insufficient) {
+    return jsonDetail(
+      formatInsufficientCreditsDetail(
+        creditsToDebit,
+        debit.row.balance_remaining,
+      ),
+      402,
+    );
   }
 
   const { data, error } = await admin
@@ -127,12 +177,24 @@ cloneRoutes.post("/clone/finalize", async (c) => {
       description: description ?? null,
     })
     .select("id, name")
-    .single()
+    .single();
 
   if (error || !data) {
-    await admin.storage.from("references").remove([objectKey]).catch(() => {})
-    return jsonDetail("Failed to create voice.", 500)
+    await applyCreditEvent(admin, {
+      userId,
+      eventKind: "refund",
+      operation: "clone",
+      amount: creditsToDebit,
+      referenceType: "voice",
+      referenceId: voiceId,
+      idempotencyKey: `clone:${voiceId}:refund`,
+      metadata: {
+        reason: "voice_insert_failed",
+      },
+    });
+    await admin.storage.from("references").remove([objectKey]).catch(() => {});
+    return jsonDetail("Failed to create voice.", 500);
   }
 
-  return c.json({ id: data.id, name: data.name })
-})
+  return c.json({ id: data.id, name: data.name });
+});

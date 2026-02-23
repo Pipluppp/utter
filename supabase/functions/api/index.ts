@@ -18,6 +18,7 @@ import { createAdminClient } from "../_shared/supabase.ts"
 
 import { generationsRoutes } from "./routes/generations.ts"
 import { cloneRoutes } from "./routes/clone.ts"
+import { creditsRoutes } from "./routes/credits.ts"
 import { designRoutes } from "./routes/design.ts"
 import { generateRoutes } from "./routes/generate.ts"
 import { languagesRoutes } from "./routes/languages.ts"
@@ -201,6 +202,7 @@ app.get("/health", (c) => c.json({ ok: true }))
 app.route("/", languagesRoutes)
 app.route("/", meRoutes)
 app.route("/", cloneRoutes)
+app.route("/", creditsRoutes)
 app.route("/", voicesRoutes)
 app.route("/", generateRoutes)
 app.route("/", designRoutes)

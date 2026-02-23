@@ -1,6 +1,6 @@
 -- Phase 08b: Schema validation — tables, columns, types, constraints
 BEGIN;
-SELECT plan(60);
+SELECT plan(78);
 
 -- ============================================================
 -- PROFILES
@@ -68,6 +68,28 @@ SELECT has_column('public', 'tasks', 'status', 'tasks.status exists');
 SELECT col_default_is('public', 'tasks', 'status', 'pending', 'tasks.status defaults to pending');
 SELECT has_column('public', 'tasks', 'modal_poll_count', 'tasks.modal_poll_count exists');
 SELECT col_default_is('public', 'tasks', 'modal_poll_count', '0', 'modal_poll_count defaults to 0');
+
+-- ============================================================
+-- CREDIT LEDGER
+-- ============================================================
+SELECT has_table('public', 'credit_ledger', 'credit_ledger table exists');
+SELECT has_column('public', 'credit_ledger', 'id', 'credit_ledger.id exists');
+SELECT col_type_is('public', 'credit_ledger', 'id', 'bigint', 'credit_ledger.id is bigint');
+SELECT col_is_pk('public', 'credit_ledger', 'id', 'credit_ledger PK is id');
+SELECT has_column('public', 'credit_ledger', 'user_id', 'credit_ledger.user_id exists');
+SELECT col_not_null('public', 'credit_ledger', 'user_id', 'credit_ledger.user_id is NOT NULL');
+SELECT has_column('public', 'credit_ledger', 'event_kind', 'credit_ledger.event_kind exists');
+SELECT col_not_null('public', 'credit_ledger', 'event_kind', 'credit_ledger.event_kind is NOT NULL');
+SELECT has_column('public', 'credit_ledger', 'operation', 'credit_ledger.operation exists');
+SELECT col_not_null('public', 'credit_ledger', 'operation', 'credit_ledger.operation is NOT NULL');
+SELECT has_column('public', 'credit_ledger', 'amount', 'credit_ledger.amount exists');
+SELECT has_column('public', 'credit_ledger', 'signed_amount', 'credit_ledger.signed_amount exists');
+SELECT has_column('public', 'credit_ledger', 'balance_after', 'credit_ledger.balance_after exists');
+SELECT has_column('public', 'credit_ledger', 'reference_type', 'credit_ledger.reference_type exists');
+SELECT has_column('public', 'credit_ledger', 'idempotency_key', 'credit_ledger.idempotency_key exists');
+SELECT has_column('public', 'credit_ledger', 'metadata', 'credit_ledger.metadata exists');
+SELECT col_default_is('public', 'credit_ledger', 'metadata', '{}', 'credit_ledger.metadata defaults to {}');
+SELECT has_column('public', 'credit_ledger', 'created_at', 'credit_ledger.created_at exists');
 
 -- ============================================================
 -- RATE LIMIT COUNTERS
