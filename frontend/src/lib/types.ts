@@ -122,3 +122,39 @@ export type RegenerateResponse = {
   language: string
   redirect_url: string
 }
+
+export type CreditRateCardItem = {
+  action: string
+  cost: string
+  note: string
+}
+
+export type CreditLedgerEvent = {
+  id: number
+  event_kind: 'debit' | 'refund' | 'grant' | 'adjustment'
+  operation: string
+  amount: number
+  signed_amount: number
+  balance_after: number
+  reference_type: string
+  reference_id: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+export type CreditsUsageResponse = {
+  credit_unit: string
+  window_days: number
+  plan: {
+    tier: string
+    monthly_credits: number
+  }
+  balance: number
+  usage: {
+    debited: number
+    credited: number
+    net: number
+  }
+  rate_card: CreditRateCardItem[]
+  events: CreditLedgerEvent[]
+}

@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
-import { getBillingPlan } from '../../content/plans'
 import { cn } from '../../lib/cn'
+import { useCreditsUsage } from '../hooks'
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
@@ -12,11 +12,22 @@ function Row({ k, v }: { k: string; v: string }) {
   )
 }
 
+function formatTier(value: string) {
+  if (!value) return '—'
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
 export function AccountBillingPage() {
-  const plan = getBillingPlan('creator')
+  const { data, loading, error } = useCreditsUsage(30)
 
   return (
     <div className="space-y-4">
+      {error ? (
+        <section className="border border-border bg-subtle p-4 text-sm text-red-600 shadow-elevated">
+          {error}
+        </section>
+      ) : null}
+
       <section className="border border-border bg-background p-5 shadow-elevated">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -24,14 +35,17 @@ export function AccountBillingPage() {
               Current plan
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <div className="text-xl font-semibold">{plan.name}</div>
+              <div className="text-xl font-semibold">
+                {formatTier(data?.plan.tier ?? '')}
+              </div>
               <div className="text-sm text-muted-foreground">
-                ${plan.priceMonthlyUsd}/month
+                {data
+                  ? `${data.plan.monthly_credits.toLocaleString()} credits / month`
+                  : '—'}
               </div>
             </div>
             <div className="mt-1 text-sm text-muted-foreground">
-              {plan.creditsMonthly.toLocaleString()} credits included each
-              month.
+              1 credit = 1 character.
             </div>
           </div>
           <Button variant="secondary" size="sm" disabled>
@@ -40,8 +54,11 @@ export function AccountBillingPage() {
         </div>
 
         <div className="mt-4 border border-border bg-subtle px-4 shadow-elevated">
-          <Row k="Status" v="Active" />
-          <Row k="Renews" v="Monthly" />
+          <Row k="Status" v={loading ? 'Loading…' : 'Active'} />
+          <Row
+            k="Credits remaining"
+            v={data ? data.balance.toLocaleString() : '—'}
+          />
           <Row k="Payment method" v="—" />
         </div>
 

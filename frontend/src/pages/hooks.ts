@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { apiJson } from '../lib/api'
-import type { LanguagesResponse } from '../lib/types'
+import type { CreditsUsageResponse, LanguagesResponse } from '../lib/types'
 
 let languagesCache: LanguagesResponse | null = null
 let languagesInFlight: Promise<LanguagesResponse> | null = null
@@ -70,4 +70,31 @@ export function useLanguages() {
     loading,
     error,
   }
+}
+
+export function useCreditsUsage(windowDays = 30) {
+  const [data, setData] = useState<CreditsUsageResponse | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const refresh = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await apiJson<CreditsUsageResponse>(
+        `/api/credits/usage?window_days=${windowDays}`,
+      )
+      setData(res)
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load credits usage')
+    } finally {
+      setLoading(false)
+    }
+  }, [windowDays])
+
+  useEffect(() => {
+    void refresh()
+  }, [refresh])
+
+  return { data, loading, error, refresh }
 }

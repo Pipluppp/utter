@@ -2,68 +2,118 @@
 
 ## Goal
 
-Implement a reliable credits model that enforces usage limits, supports future pricing tiers, and produces auditable usage history.
+Ship a robust, auditable credits system with strict server-side enforcement and a clear product rule:
 
-## Why this is second
+- **`1 credit = 1 character`**
 
-- Monetization and plan enforcement require secure, atomic usage accounting.
-- This depends on Task 1 security controls to prevent direct credit tampering.
+## Core decisions
 
-## Scope (initial)
+### Credit unit + billable operations
 
-### A. Credits domain model
+- **Generate (`POST /api/generate`)**
+  - debit = `text.length`
+- **Design preview (`POST /api/voices/design/preview`)**
+  - debit = `text.length + instruct.length`
+- **Clone finalize (`POST /api/clone/finalize`)**
+  - debit = `transcript.length`
 
-- Define credit units per operation (clone, design preview, generation by text length, etc.).
-- Define tier defaults and monthly allocations.
-- Define insufficient-credit behavior.
+Non-billable in this phase:
+- clone upload URL allocation (`POST /api/clone/upload-url`)
+- voice save from already-generated preview audio (`POST /api/voices/design`)
 
-### B. Ledger-first accounting
+### Refund policy (phase 1)
 
-- Add or finalize immutable credit ledger records for every debit/credit event.
-- Keep `profiles.credits_remaining` as a derived/runtime convenience, not the only source of truth.
-- Ensure each event has reason + reference (task/generation/payment).
+- **Generate**: full refund if task fails/cancels before successful completion.
+- **Design preview**: full refund if preview task fails/cancels.
+- **Clone finalize**: immediate refund if voice insert fails after debit.
 
-### C. Atomic enforcement in generation flows
+### Idempotency rule
 
-- Perform credit checks before expensive job submission.
-- Deduct credits atomically with idempotency safeguards.
-- Add refund/reversal behavior for failed/cancelled operations (rules to be finalized).
+Every debit/refund uses a deterministic idempotency key tied to task/generation/voice IDs to guarantee exactly-once accounting under retries.
 
-### D. Usage visibility
+## Data model + DB enforcement
 
-- Populate usage page from real data (no placeholders).
-- Expose recent credit events and current balance.
-- Ensure totals are consistent with ledger.
+### Ledger-first schema
 
-## Explicit non-goals (for this task)
+Add immutable ledger table:
+- `public.credit_ledger`
+  - `event_kind` (`debit|refund|grant|adjustment`)
+  - `operation` (`generate|design_preview|clone|monthly_allocation|manual_adjustment`)
+  - `amount` (positive absolute units)
+  - `signed_amount` (negative for debits, positive for refunds/grants)
+  - `balance_after`
+  - `reference_type` + `reference_id`
+  - `idempotency_key` (unique per user)
+  - `metadata` JSONB
 
-- Final pricing copy and marketing content polish.
-- Full subscription lifecycle complexity beyond initial tier + credits wiring.
+### Atomic RPC
 
-## Deliverables
+Add `public.credit_apply_event(...)`:
+- row-locks profile balance
+- checks idempotency
+- checks insufficient credits (without overdraft)
+- updates `profiles.credits_remaining`
+- writes immutable ledger row
 
-- Credits rules doc (operations -> cost).
-- Ledger-backed schema and server logic.
-- Enforced checks/deductions in clone/generate/design flows.
-- Usage API/UI showing real balances and history.
+Add `public.credit_usage_window_totals(...)`:
+- server-side aggregate totals (debited/credited/net) for usage UI/API.
 
-## Acceptance criteria (initial)
+### Security / grants / RLS
 
-- [ ] Requests that exceed credits are blocked with clear error responses.
-- [ ] Credits are deducted exactly once per successful billable action.
-- [ ] Failed/cancelled actions follow defined refund rules.
-- [ ] Ledger entries reconcile with displayed balance.
-- [ ] Direct client tampering cannot increase credits.
+- `credit_ledger` RLS enabled.
+- `authenticated`: read-only own rows.
+- writes + RPC execution restricted to `service_role`.
 
-## Open questions for next planning pass
+## Edge/API integration
 
-- Exact per-feature cost schedule?
-- Refund policy for partial failures/timeouts?
-- Do we need monthly rollover or hard reset?
+### Enforced debit points
+
+- `generate.ts`: debit before task submission.
+- `design.ts` preview route: debit before task creation.
+- `clone.ts` finalize route: debit before voice insert.
+
+### Refund points
+
+- `tasks.ts`: refund on generate/design-preview failure and cancel.
+- `generate.ts`: refund on submission/setup failure path.
+- `clone.ts`: refund on insert failure path.
+
+### Usage endpoint
+
+Add `GET /api/credits/usage` response with:
+- current balance
+- tier + monthly allocation
+- period usage totals
+- recent ledger events
+- canonical rate card copy
+
+## Frontend updates (landing + account)
+
+- Landing pricing copy updated to **1 credit = 1 character** framing.
+- Rate card copy aligned with operation-specific character-based charging.
+- Account credits page now reads real usage/balance from `/api/credits/usage`.
+- Account billing page now reflects live tier/balance and credit unit.
+
+## Deliverables checklist
+
+- [x] Credits rules finalized (`1 credit = 1 character` across billable operations).
+- [x] Ledger-backed schema shipped with idempotent debit/refund RPC.
+- [x] Atomic credit enforcement integrated into clone/design/generate flows.
+- [x] Refund behavior integrated for failure/cancel paths.
+- [x] Usage API + account UI now backed by live ledger/profile data.
+- [x] Landing/account credit messaging aligned to the same unit model.
+
+## Acceptance criteria
+
+- [x] Requests that exceed credits are blocked with clear `402` responses.
+- [x] Credits are deducted exactly once per billable action.
+- [x] Failed/cancelled actions follow defined refund rules.
+- [x] Ledger entries reconcile with displayed balance and usage totals.
+- [x] Direct client tampering cannot increase credits (server-owned writes + restricted RPC).
 
 ## Mandatory post-implementation security gate
 
-After this task is implemented, run:
+After deploying this task, run:
 - `docs/2026-02-23/security-supabase/S9-post-credits-security-gate.md`
 
-Do not treat credits task as complete until S9 passes.
+Do not mark this task complete until S9 passes.

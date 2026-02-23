@@ -31,11 +31,6 @@ export const billingPlans: BillingPlan[] = [
   },
 ]
 
-export function getBillingPlan(id: BillingPlanId): BillingPlan {
-  const plan = billingPlans.find((p) => p.id === id)
-  return plan ?? billingPlans[0]
-}
-
 export type CreditRate = {
   action: string
   cost: string
@@ -45,17 +40,17 @@ export type CreditRate = {
 export const creditRates: CreditRate[] = [
   {
     action: 'Generate speech',
-    cost: '50 credits / minute',
-    note: 'Billed by output duration (rounded up).',
+    cost: '1 credit / character',
+    note: 'Charged from submitted text length.',
   },
   {
     action: 'Voice design preview',
-    cost: '300 credits',
-    note: 'Per preview generation.',
+    cost: 'text chars + description chars',
+    note: 'Charged from preview text plus voice description.',
   },
   {
     action: 'Voice clone',
-    cost: '500 credits',
-    note: 'Per clone submission.',
+    cost: 'transcript chars',
+    note: 'Charged from submitted transcript length.',
   },
 ]

@@ -13,7 +13,8 @@ export function PricingSection() {
               Pricing
             </h2>
             <p className="mt-2 max-w-xl text-base text-muted-foreground">
-              Credits buy throughput. Pick a plan that matches your output.
+              Simple metering: 1 credit = 1 character. Pick a plan that matches
+              your monthly output.
             </p>
           </div>
         </div>

@@ -52,8 +52,8 @@ export function PricingContent() {
               a="Monthly. Your credit balance resets on renewal."
             />
             <FAQItem
-              q="What counts as a minute?"
-              a="Credits are billed by output duration for generation (rounded up). Inputs like clone/design have fixed credit costs."
+              q="How are credits measured?"
+              a="1 credit = 1 character. Generate charges from text length, design preview from text + description length, and clone from transcript length."
             />
             <FAQItem
               q="Where do invoices live?"

@@ -43,8 +43,8 @@ export function AccountLayoutPage() {
             Account
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Account pages will be wired to Supabase Auth + Stripe billing in the
-            production deployment.
+            Credits and profile data are live from Supabase. Billing portal
+            controls will be added when Stripe is connected.
           </p>
         </div>
       </div>
