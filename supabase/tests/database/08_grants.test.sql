@@ -1,7 +1,7 @@
 -- Phase 08b: Grant revocations — PostgREST surface hardening
 -- Ref: supabase-security.md §4
 BEGIN;
-SELECT plan(17);
+SELECT plan(27);
 
 -- Create test user
 INSERT INTO auth.users (id, instance_id, role, aud, email, encrypted_password, email_confirmed_at, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change)
@@ -60,6 +60,15 @@ SELECT throws_ok(
   $$DELETE FROM public.tasks WHERE id = '33333333-3333-3333-3333-333333333333'$$,
   '42501', NULL, 'authenticated: DELETE revoked on tasks'
 );
+SELECT throws_ok(
+  $$INSERT INTO public.rate_limit_counters (actor_type, actor_key, tier, window_seconds, window_start, request_count)
+    VALUES ('user', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'tier1', 300, now(), 1)$$,
+  '42501', NULL, 'authenticated: INSERT revoked on rate_limit_counters'
+);
+SELECT throws_ok(
+  $$UPDATE public.rate_limit_counters SET request_count = request_count + 1$$,
+  '42501', NULL, 'authenticated: UPDATE revoked on rate_limit_counters'
+);
 
 -- ============================================================
 -- ANON ROLE REVOCATIONS (all writes blocked on all tables)
@@ -84,8 +93,21 @@ SELECT throws_ok(
   '42501', NULL, 'anon: INSERT revoked on tasks'
 );
 SELECT throws_ok(
+  $$INSERT INTO public.rate_limit_counters (actor_type, actor_key, tier, window_seconds, window_start, request_count)
+    VALUES ('ip', 'anon-ip', 'tier1', 300, now(), 1)$$,
+  '42501', NULL, 'anon: INSERT revoked on rate_limit_counters'
+);
+SELECT throws_ok(
+  $$UPDATE public.profiles SET display_name = 'x' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
+  '42501', NULL, 'anon: UPDATE revoked on profiles'
+);
+SELECT throws_ok(
   $$DELETE FROM public.voices WHERE id = '11111111-1111-1111-1111-111111111111'$$,
   '42501', NULL, 'anon: DELETE revoked on voices'
+);
+SELECT throws_ok(
+  $$UPDATE public.tasks SET status = 'failed' WHERE id = '33333333-3333-3333-3333-333333333333'$$,
+  '42501', NULL, 'anon: UPDATE revoked on tasks'
 );
 SELECT throws_ok(
   $$DELETE FROM public.generations WHERE id = '22222222-2222-2222-2222-222222222222'$$,
@@ -95,6 +117,36 @@ SELECT throws_ok(
 -- ============================================================
 -- RPC EXECUTE HARDENING
 -- ============================================================
+SELECT results_eq(
+  $$SELECT count(*)::int
+    FROM information_schema.routine_privileges rp
+    JOIN information_schema.routines r
+      ON r.specific_schema = rp.routine_schema
+     AND r.specific_name = rp.specific_name
+   WHERE rp.routine_schema = 'public'
+     AND rp.grantee = 'anon'
+     AND rp.privilege_type = 'EXECUTE'
+     AND r.routine_type = 'FUNCTION'
+     AND r.data_type <> 'trigger'$$,
+  ARRAY[0],
+  'anon: no EXECUTE on callable public functions'
+);
+
+SELECT results_eq(
+  $$SELECT count(*)::int
+    FROM information_schema.routine_privileges rp
+    JOIN information_schema.routines r
+      ON r.specific_schema = rp.routine_schema
+     AND r.specific_name = rp.specific_name
+   WHERE rp.routine_schema = 'public'
+     AND rp.grantee = 'authenticated'
+     AND rp.privilege_type = 'EXECUTE'
+     AND r.routine_type = 'FUNCTION'
+     AND r.data_type <> 'trigger'$$,
+  ARRAY[0],
+  'authenticated: no EXECUTE on callable public functions'
+);
+
 SELECT ok(
   not has_function_privilege('anon', 'public.increment_task_modal_poll_count(uuid,uuid)', 'EXECUTE'),
   'anon: EXECUTE revoked on increment_task_modal_poll_count'
@@ -106,8 +158,35 @@ SELECT ok(
 );
 
 SELECT ok(
+  not has_function_privilege(
+    'anon',
+    'public.rate_limit_check_and_increment(text,text,text,integer,integer,timestamptz)',
+    'EXECUTE'
+  ),
+  'anon: EXECUTE revoked on rate_limit_check_and_increment'
+);
+
+SELECT ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.rate_limit_check_and_increment(text,text,text,integer,integer,timestamptz)',
+    'EXECUTE'
+  ),
+  'authenticated: EXECUTE revoked on rate_limit_check_and_increment'
+);
+
+SELECT ok(
   has_function_privilege('service_role', 'public.increment_task_modal_poll_count(uuid,uuid)', 'EXECUTE'),
   'service_role: EXECUTE granted on increment_task_modal_poll_count'
+);
+
+SELECT ok(
+  has_function_privilege(
+    'service_role',
+    'public.rate_limit_check_and_increment(text,text,text,integer,integer,timestamptz)',
+    'EXECUTE'
+  ),
+  'service_role: EXECUTE granted on rate_limit_check_and_increment'
 );
 
 SELECT * FROM finish();

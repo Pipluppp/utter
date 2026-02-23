@@ -44,6 +44,16 @@ Deno.test("POST /clone/upload-url without auth returns 401", async () => {
   await res.body?.cancel();
 });
 
+Deno.test("POST /clone/finalize without auth returns 401", async () => {
+  const res = await apiPublicFetch("/clone/finalize", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ voice_id: crypto.randomUUID() }),
+  });
+  assertEquals(res.status, 401);
+  await res.body?.cancel();
+});
+
 Deno.test("GET /voices with invalid token returns 401", async () => {
   const res = await apiFetch("/voices", "bad-token-value");
   assertEquals(res.status, 401);
@@ -65,6 +75,43 @@ Deno.test("POST /voices/design/preview without auth returns 401", async () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text: "hi", instruct: "warm", language: "English" }),
+  });
+  assertEquals(res.status, 401);
+  await res.body?.cancel();
+});
+
+Deno.test("POST /voices/design without auth returns 401", async () => {
+  const form = new FormData();
+  form.set("name", "test");
+  form.set("text", "hello");
+  form.set("language", "English");
+  form.set("instruct", "warm");
+
+  const res = await apiPublicFetch("/voices/design", {
+    method: "POST",
+    body: form,
+  });
+  assertEquals(res.status, 401);
+  await res.body?.cancel();
+});
+
+Deno.test("GET /tasks/:id without auth returns 401", async () => {
+  const res = await apiPublicFetch("/tasks/00000000-0000-0000-0000-000000000001");
+  assertEquals(res.status, 401);
+  await res.body?.cancel();
+});
+
+Deno.test("DELETE /tasks/:id without auth returns 401", async () => {
+  const res = await apiPublicFetch("/tasks/00000000-0000-0000-0000-000000000001", {
+    method: "DELETE",
+  });
+  assertEquals(res.status, 401);
+  await res.body?.cancel();
+});
+
+Deno.test("POST /tasks/:id/cancel without auth returns 401", async () => {
+  const res = await apiPublicFetch("/tasks/00000000-0000-0000-0000-000000000001/cancel", {
+    method: "POST",
   });
   assertEquals(res.status, 401);
   await res.body?.cancel();

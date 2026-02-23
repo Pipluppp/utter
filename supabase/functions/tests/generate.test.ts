@@ -13,10 +13,16 @@ import {
   SERVICE_ROLE_KEY,
   type TestUser,
 } from "./_helpers/setup.ts";
-import { TEST_USER_A, VALID_GENERATE_PAYLOAD, MINIMAL_WAV } from "./_helpers/fixtures.ts";
+import {
+  TEST_USER_A,
+  TEST_USER_B,
+  VALID_GENERATE_PAYLOAD,
+  MINIMAL_WAV,
+} from "./_helpers/fixtures.ts";
 import { ModalMock } from "./_helpers/modal_mock.ts";
 
 let userA: TestUser;
+let userB: TestUser;
 let voiceId: string;
 const mock = new ModalMock();
 const noLeaks = { sanitizeResources: false, sanitizeOps: false };
@@ -92,6 +98,7 @@ async function waitForReferenceSize(
 
 Deno.test({ name: "generate: setup", sanitizeResources: false, sanitizeOps: false, fn: async () => {
   userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
+  userB = await createTestUser(TEST_USER_B.email, TEST_USER_B.password);
   await mock.start();
 
   // Seed a voice with reference audio so /generate can find it
@@ -187,6 +194,20 @@ Deno.test("POST /generate rejects non-existent voice_id", async () => {
     body: JSON.stringify({
       voice_id: "00000000-0000-0000-0000-000000000099",
       text: "hello",
+    }),
+  });
+  assertEquals(res.status, 404);
+  await res.body?.cancel();
+});
+
+Deno.test("POST /generate denies cross-user voice access", async () => {
+  const res = await apiFetch("/generate", userB.accessToken, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      voice_id: voiceId,
+      text: "cross-user probe",
+      language: "English",
     }),
   });
   assertEquals(res.status, 404);
@@ -339,5 +360,6 @@ Deno.test({ name: "generate: teardown", sanitizeResources: false, sanitizeOps: f
   const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   await client.from("voices").delete().eq("id", voiceId);
   await deleteTestUser(userA.userId);
+  await deleteTestUser(userB.userId);
 }});
 

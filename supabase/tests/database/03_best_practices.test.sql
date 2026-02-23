@@ -1,7 +1,7 @@
 -- Phase 08b: Supabase Postgres best practices + security doc regression guards
 -- Sources: supabase-postgres-best-practices skill, docs/supabase-security.md
 BEGIN;
-SELECT plan(21);
+SELECT plan(23);
 
 -- ============================================================
 -- 1. RLS ENABLED ON ALL PUBLIC TABLES (4 tests)
@@ -21,6 +21,14 @@ SELECT ok(
 SELECT ok(
   (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.tasks'::regclass),
   'RLS enabled on tasks'
+);
+SELECT ok(
+  (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.rate_limit_counters'::regclass),
+  'RLS enabled on rate_limit_counters'
+);
+SELECT ok(
+  (SELECT count(*) > 0 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'rate_limit_counters'),
+  'rate_limit_counters has explicit RLS policy'
 );
 
 -- ============================================================

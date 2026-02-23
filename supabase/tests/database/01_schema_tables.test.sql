@@ -1,6 +1,6 @@
 -- Phase 08b: Schema validation — tables, columns, types, constraints
 BEGIN;
-SELECT plan(51);
+SELECT plan(60);
 
 -- ============================================================
 -- PROFILES
@@ -68,6 +68,19 @@ SELECT has_column('public', 'tasks', 'status', 'tasks.status exists');
 SELECT col_default_is('public', 'tasks', 'status', 'pending', 'tasks.status defaults to pending');
 SELECT has_column('public', 'tasks', 'modal_poll_count', 'tasks.modal_poll_count exists');
 SELECT col_default_is('public', 'tasks', 'modal_poll_count', '0', 'modal_poll_count defaults to 0');
+
+-- ============================================================
+-- RATE LIMIT COUNTERS
+-- ============================================================
+SELECT has_table('public', 'rate_limit_counters', 'rate_limit_counters table exists');
+SELECT has_column('public', 'rate_limit_counters', 'actor_type', 'rate_limit_counters.actor_type exists');
+SELECT col_not_null('public', 'rate_limit_counters', 'actor_type', 'rate_limit_counters.actor_type is NOT NULL');
+SELECT has_column('public', 'rate_limit_counters', 'actor_key', 'rate_limit_counters.actor_key exists');
+SELECT col_not_null('public', 'rate_limit_counters', 'actor_key', 'rate_limit_counters.actor_key is NOT NULL');
+SELECT has_column('public', 'rate_limit_counters', 'tier', 'rate_limit_counters.tier exists');
+SELECT has_column('public', 'rate_limit_counters', 'window_start', 'rate_limit_counters.window_start exists');
+SELECT has_column('public', 'rate_limit_counters', 'request_count', 'rate_limit_counters.request_count exists');
+SELECT col_default_is('public', 'rate_limit_counters', 'request_count', '0', 'rate_limit_counters.request_count defaults to 0');
 
 SELECT * FROM finish();
 ROLLBACK;
