@@ -71,7 +71,40 @@ Out of scope for this phase:
 | 11 | Pinned target models | VC: `qwen3-tts-vc-2026-01-22`, VD: `qwen3-tts-vd-2026-01-26` |
 | 12 | Generate limit | 600 chars max by default (`QWEN_MAX_TEXT_CHARS`) |
 | 13 | Voice delete policy | App-level soft delete only; do not call Qwen delete API on user delete |
-| 14 | Rate limits | No extra per-user throttles in this phase (credit system later) |
+| 14 | Abuse controls | Enforce existing rate limits + payload bounds; defer advanced quota redesign |
+
+## Integrated Security Workstream (S8 mapped)
+
+Security controls are integrated across implementation tasks:
+
+1. Credential custody.
+- Qwen credentials exist only in server secrets.
+- no key leak in responses, logs, or frontend artifacts.
+
+2. AuthN/AuthZ.
+- Qwen-triggering routes remain protected by JWT.
+- cross-user access checks remain enforced on tasks/voices/audio artifacts.
+
+3. Abuse controls.
+- text/file/request bounds are validated before provider calls.
+- baseline rate limits are active and observable for cost-bearing routes.
+
+4. Failure safety.
+- upstream timeout/5xx handling is bounded and sanitized.
+- provider kill switch (`TTS_PROVIDER_MODE`) is validated as rollback control.
+
+5. Observability.
+- request-id/user-id/provider and cost-significant events are logged.
+- alert-ready counters for provider errors and 429 spikes are present.
+
+Security execution mapping:
+- Task 01/04: enforce protected provider entrypoints and adapter boundaries.
+- Task 07/08: enforce payload and lifecycle invariants around provider calls.
+- Task 10: run abuse/auth/isolation/failure test matrix.
+- Task 11: include security signoff in rollout gates before cutover.
+
+Security evidence checklist source:
+- `docs/2026-02-23/security-supabase/S8-post-qwen-security-gate.md`
 
 ## Dependency Graph (Tasks 01-12)
 
@@ -125,6 +158,8 @@ Out of scope for this phase:
 - [ ] Qwen generate uses non-streaming synthesis endpoint only.
 - [ ] Frontend uses submit/poll/final-playback (no live chunk playback).
 - [ ] Test suite green in Modal mode and Qwen mode.
+- [ ] Security matrix (auth, abuse, isolation, failure safety) passes in task 10.
 - [ ] Staging cutover completed with zero blocker defects.
 - [ ] Production cutover completed with restoration path verified.
+- [ ] S8 evidence artifact captured and approved before closure.
 - [ ] Cleanup is deferred until stabilization criteria in task 12 are met.

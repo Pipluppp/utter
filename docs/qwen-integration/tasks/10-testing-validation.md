@@ -44,6 +44,13 @@ Define a full validation matrix for Modal mode and Qwen mode, including API comp
 9. Add frontend behavior checks:
 - Generate UI counter/validation uses configured cap.
 - Incompatible-provider voices are rendered but non-clickable.
+10. Add security matrix checks (integrated S8 controls):
+- secrets custody scan (no credential leakage in bundle/logs/test artifacts)
+- auth checks for protected Qwen-cost routes (no anon access)
+- burst/abuse checks for 429 behavior on cost-bearing endpoints
+- provider-failure safety checks (bounded retry + safe errors)
+- cross-user isolation checks for voices/tasks/audio artifacts
+- observability checks for request_id/user_id/provider log fields
 
 ## Data and Failure Modes
 
@@ -55,7 +62,7 @@ Failure modes:
 3. Temporary provider URL download fails but task marked completed.
 - Mitigation: completion assertion requires durable object path.
 4. Validation assumes throttling that is not implemented.
-- Mitigation: do not add per-user rate-limit assertions in this phase.
+- Mitigation: assert baseline endpoint protections and bounded behavior only.
 
 ## Validation Checks
 
@@ -73,6 +80,7 @@ npm run test:all
 npm --prefix frontend run check
 npm --prefix frontend run typecheck
 npm --prefix frontend run build
+gitleaks detect --source . --no-git --verbose
 ```
 
 Recommended mode-specific runs:
@@ -97,18 +105,23 @@ npm run test:edge
 - Edge tests pass in Modal mode and Qwen mode.
 - Frontend builds and typechecks with capability/type additions.
 - Qwen generation completion requires durable stored audio.
+- Security matrix checks pass and evidence is captured for rollout task.
 
 ### Failure signatures
 
 - New tests only pass in one provider mode.
 - Contract shape changes break existing frontend parsing.
 - Completed qwen tasks missing durable audio artifacts.
+- Provider secrets appear in logs or build output.
+- Burst traffic remains unbounded (no controlled deny behavior).
+- Cross-user artifact access succeeds in qwen mode.
 
 ## Exit Criteria
 
 - Test matrix is green for both providers.
 - CI can enforce regressions before deployment.
 - Failure signatures are documented with clear triage ownership.
+- Security evidence is ready to attach to S8 artifact and task 11 rollout gate.
 
 ## Rollback Note
 

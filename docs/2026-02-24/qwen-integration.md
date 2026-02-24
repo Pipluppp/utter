@@ -33,6 +33,34 @@ Integrate official Qwen API as a production provider path while preserving relia
 - Remove dead code paths once confidence is high.
 - Update docs and runbooks to reflect final provider topology.
 
+## Integrated security requirements (blocking)
+
+Security checks are part of this plan execution, not a later add-on:
+
+1. Credential custody.
+- Qwen API key is server-side secret only.
+- no credential leak in frontend bundle, logs, or error responses.
+
+2. Route access control.
+- all Qwen cost-bearing routes remain JWT-protected.
+- no anonymous trigger path for generate/design/clone.
+
+3. Abuse resistance.
+- payload bounds are enforced (text/file/request constraints).
+- burst attempts are rate-limited and return controlled `429`.
+
+4. Failure safety.
+- upstream provider errors/timeouts do not leak internals.
+- retries are bounded.
+- kill switch/fallback to Modal is fast and documented.
+
+5. Cross-user data boundary.
+- no cross-tenant task/voice/audio read or write through Qwen path.
+
+6. Observability.
+- logs include request_id, user_id, endpoint, provider, and cost-significant outcomes.
+- alertable signals exist for provider failures and abuse spikes.
+
 ## Explicit non-goals (for this task)
 
 - Broad model experimentation unrelated to current product flows.
@@ -51,6 +79,7 @@ Integrate official Qwen API as a production provider path while preserving relia
 - [ ] Fallback to existing provider is immediate and reliable.
 - [ ] Error rates and latency are within agreed thresholds.
 - [ ] Provider usage is visible in logs/metrics for operational debugging.
+- [ ] Security checks above are validated in testing + rollout steps with evidence artifacts.
 
 ## Open questions for next planning pass
 
@@ -60,7 +89,7 @@ Integrate official Qwen API as a production provider path while preserving relia
 
 ## Mandatory post-implementation security gate
 
-After this task is implemented, run:
+During implementation and before final completion, execute and record:
 - `docs/2026-02-23/security-supabase/S8-post-qwen-security-gate.md`
 
-Do not treat Qwen integration as complete until S8 passes.
+Do not treat Qwen integration as complete until S8-mapped evidence passes.

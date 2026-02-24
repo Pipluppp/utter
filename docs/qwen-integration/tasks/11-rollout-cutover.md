@@ -34,6 +34,8 @@ Execute a safe staged rollout from Modal-default to Qwen-default with measurable
 - Restoration playbook tested once in staging.
 - Model Studio is activated in the target account.
 - DashScope API key is created in the intended workspace and validated against intl endpoint.
+- Security matrix from task 10 is green (auth, abuse, isolation, failure safety, observability).
+- S8 evidence draft is prepared for final signoff.
 
 2. Staging rollout sequence.
 1. Deploy additive schema migrations.
@@ -42,15 +44,18 @@ Execute a safe staged rollout from Modal-default to Qwen-default with measurable
 4. Set Qwen secrets and qwen target model envs.
 5. Flip staging `TTS_PROVIDER_MODE=qwen`.
 6. Run qwen smoke checks (clone/design/generate task flow).
-7. Record metrics and defects.
+7. Run staging security probes (auth deny, burst behavior, cross-user isolation, failure safety).
+8. Record metrics and defects.
 
 3. Production cutover sequence.
 1. Confirm staging gates met.
 2. Confirm restoration owner on call.
-3. Set production `TTS_PROVIDER_MODE=qwen`.
-4. Redeploy edge function.
-5. Run production smoke checks.
-6. Monitor first window intensively.
+3. Confirm S8 security evidence has no unresolved high/critical findings.
+4. Set production `TTS_PROVIDER_MODE=qwen`.
+5. Redeploy edge function.
+6. Run production smoke checks.
+7. Run focused post-deploy security checks (auth deny + burst + cross-user spot checks).
+8. Monitor first window intensively.
 
 4. Required secrets matrix.
 - Modal:
@@ -81,7 +86,8 @@ Execute a safe staged rollout from Modal-default to Qwen-default with measurable
 - Breach of error/latency thresholds for sustained window.
 - Data corruption or cross-tenant exposure.
 - Unbounded provider billing behavior.
-- Note: this phase does not add extra per-user rate limiting. Cost control is via existing product controls and later credit system work.
+- Security regression in authz/abuse/failure-safety checks.
+- Note: this phase does not add a new advanced quota system. Cost control relies on existing controls plus verified route-level abuse protections.
 
 ## Data and Failure Modes
 
@@ -118,6 +124,9 @@ Operational checks:
 4) Cancel task path
 5) Inputs over configured cap are rejected consistently
 6) Completed tasks include durable replayable output
+7) Protected routes deny anon/invalid-token requests
+8) Burst traffic shows controlled limiting behavior
+9) Cross-user read/write spot checks remain denied
 ```
 
 ### Expected success output/state
@@ -125,18 +134,22 @@ Operational checks:
 - Provider mode flips cleanly by env without code change.
 - Core flows pass smoke checks immediately after deploy.
 - Monitoring remains within agreed thresholds.
+- Security checks remain green after cutover.
 
 ### Failure signatures
 
 - Mode flips but `/api/languages` capabilities do not update.
 - Qwen routes fail due to missing region/key mapping.
 - Completed qwen tasks are missing durable output.
+- Auth-protected Qwen endpoints accept unauthenticated traffic.
+- Provider failure responses leak internal details or sensitive config.
 
 ## Exit Criteria
 
 - Production runs in qwen mode within SLOs.
 - Restoration path remains available and tested.
 - Stabilization window starts with no blocker defects.
+- S8 security gate evidence is complete and approved.
 
 ## Rollback Note
 

@@ -1,119 +1,84 @@
-# Task 2: Credits Management Foundation
+# Task 2: Credits Management Foundation (Shipped) + Next-Phase Contract
 
-## Goal
+## Status
 
-Ship a robust, auditable credits system with strict server-side enforcement and a clear product rule:
+The foundation is already implemented in the codebase:
 
-- **`1 credit = 1 character`**
+- immutable credit ledger (`public.credit_ledger`)
+- atomic idempotent credit RPC (`public.credit_apply_event`)
+- debit/refund paths in generate/design/clone flows
+- usage API (`GET /api/credits/usage`) + account usage UI
 
-## Core decisions
+This document now serves as the bridge from shipped foundation to the next implementation task.
 
-### Credit unit + billable operations
+## Canonical Credit Rule
 
-- **Generate (`POST /api/generate`)**
-  - debit = `text.length`
-- **Design preview (`POST /api/voices/design/preview`)**
-  - debit = `text.length + instruct.length`
-- **Clone finalize (`POST /api/clone/finalize`)**
-  - debit = `transcript.length`
+- `1 credit = 1 character` for generation.
 
-Non-billable in this phase:
-- clone upload URL allocation (`POST /api/clone/upload-url`)
-- voice save from already-generated preview audio (`POST /api/voices/design`)
+## Finalized Product Rules (next phase)
 
-### Refund policy (phase 1)
+- `POST /api/generate`: debit `text.length` credits.
+- `POST /api/voices/design/preview`: first `2` attempts free per account, then `5000` credits flat.
+- `POST /api/clone/finalize`: first `2` attempts free per account, then `1000` credits flat.
+- prepaid packs only (no monthly reset, no expiry):
+  - `pack_150k`: `$10` -> `150000` credits
+  - `pack_500k`: `$25` -> `500000` credits
+- starter balance remains `100` credits by default.
 
-- **Generate**: full refund if task fails/cancels before successful completion.
-- **Design preview**: full refund if preview task fails/cancels.
-- **Clone finalize**: immediate refund if voice insert fails after debit.
+## Trial Rules
 
-### Idempotency rule
+- trial scope: all accounts get `2` design trials and `2` clone trials.
+- trial counters do not reset on pack purchase.
+- failed attempts restore a consumed trial.
+- trial consume/restore must be idempotent and race-safe.
 
-Every debit/refund uses a deterministic idempotency key tied to task/generation/voice IDs to guarantee exactly-once accounting under retries.
+## Data Model Additions Required
 
-## Data model + DB enforcement
+- `profiles.design_trials_remaining integer not null default 2`
+- `profiles.clone_trials_remaining integer not null default 2`
+- `public.trial_consumption` (immutable-ish event table for idempotent trial accounting)
+  - unique `(user_id, idempotency_key)`
+  - operation (`design_preview|clone`)
+  - status (`consumed|restored`)
+  - reference fields + metadata + timestamps
 
-### Ledger-first schema
+## RPC Additions Required
 
-Add immutable ledger table:
-- `public.credit_ledger`
-  - `event_kind` (`debit|refund|grant|adjustment`)
-  - `operation` (`generate|design_preview|clone|monthly_allocation|manual_adjustment`)
-  - `amount` (positive absolute units)
-  - `signed_amount` (negative for debits, positive for refunds/grants)
-  - `balance_after`
-  - `reference_type` + `reference_id`
-  - `idempotency_key` (unique per user)
-  - `metadata` JSONB
+- `public.trial_or_debit(...)`
+  - consumes trial when available (exactly once per idempotency key)
+  - otherwise delegates to `credit_apply_event` for debit
+  - returns whether trial or credit path was used
+- `public.trial_restore(...)`
+  - restores a previously consumed trial exactly once
+  - no-op on duplicate restore attempts
 
-### Atomic RPC
+## Ledger Operation Expansion Required
 
-Add `public.credit_apply_event(...)`:
-- row-locks profile balance
-- checks idempotency
-- checks insufficient credits (without overdraft)
-- updates `profiles.credits_remaining`
-- writes immutable ledger row
+- add operations: `paid_purchase`, `paid_reversal`
+- keep existing: `generate`, `design_preview`, `clone`, `monthly_allocation`, `manual_adjustment`
 
-Add `public.credit_usage_window_totals(...)`:
-- server-side aggregate totals (debited/credited/net) for usage UI/API.
+## Usage API Contract (target)
 
-### Security / grants / RLS
+`GET /api/credits/usage` should return:
 
-- `credit_ledger` RLS enabled.
-- `authenticated`: read-only own rows.
-- writes + RPC execution restricted to `service_role`.
+- `credit_unit`
+- `balance`
+- `usage` totals
+- `rate_card`
+- `events`
+- `trials`:
+  - `design_remaining`
+  - `clone_remaining`
 
-## Edge/API integration
+`monthly_credits` should be removed from the response for prepaid mode.
 
-### Enforced debit points
+## Security Requirements (non-negotiable)
 
-- `generate.ts`: debit before task submission.
-- `design.ts` preview route: debit before task creation.
-- `clone.ts` finalize route: debit before voice insert.
+- only `service_role` can mutate credits/trials/billing events.
+- clients cannot call credit/trial mutation RPCs directly.
+- paid grants only happen from verified webhook events.
+- grant amounts must be derived from trusted server mapping (`price_id -> pack -> credits`).
 
-### Refund points
+## Source of Truth for Implementation
 
-- `tasks.ts`: refund on generate/design-preview failure and cancel.
-- `generate.ts`: refund on submission/setup failure path.
-- `clone.ts`: refund on insert failure path.
-
-### Usage endpoint
-
-Add `GET /api/credits/usage` response with:
-- current balance
-- tier + monthly allocation
-- period usage totals
-- recent ledger events
-- canonical rate card copy
-
-## Frontend updates (landing + account)
-
-- Landing pricing copy updated to **1 credit = 1 character** framing.
-- Rate card copy aligned with operation-specific character-based charging.
-- Account credits page now reads real usage/balance from `/api/credits/usage`.
-- Account billing page now reflects live tier/balance and credit unit.
-
-## Deliverables checklist
-
-- [x] Credits rules finalized (`1 credit = 1 character` across billable operations).
-- [x] Ledger-backed schema shipped with idempotent debit/refund RPC.
-- [x] Atomic credit enforcement integrated into clone/design/generate flows.
-- [x] Refund behavior integrated for failure/cancel paths.
-- [x] Usage API + account UI now backed by live ledger/profile data.
-- [x] Landing/account credit messaging aligned to the same unit model.
-
-## Acceptance criteria
-
-- [x] Requests that exceed credits are blocked with clear `402` responses.
-- [x] Credits are deducted exactly once per billable action.
-- [x] Failed/cancelled actions follow defined refund rules.
-- [x] Ledger entries reconcile with displayed balance and usage totals.
-- [x] Direct client tampering cannot increase credits (server-owned writes + restricted RPC).
-
-## Mandatory post-implementation security gate
-
-After deploying this task, run:
-- `docs/2026-02-23/security-supabase/S9-post-credits-security-gate.md`
-
-Do not mark this task complete until S9 passes.
+Use `credits-trials-and-billing-task.md` as the executable implementation plan.

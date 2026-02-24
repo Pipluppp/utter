@@ -61,8 +61,9 @@ Define a single provider strategy that supports both Modal and official Qwen wit
 - Do not call Qwen provider delete API on user delete.
 - Use app-level soft delete semantics to remove user access.
 9. Rate limiting policy:
-- No extra per-user provider throttles in this phase.
-- Credit/rate policy will be introduced in the billing system later.
+- Keep existing route-level abuse controls active for provider-cost endpoints.
+- Enforce request/payload bounds before provider calls.
+- Defer advanced quota redesign to billing/credits follow-up work.
 10. Expose capabilities in `/api/languages` so frontend can branch behavior by provider features.
 
 ## Data and Failure Modes
