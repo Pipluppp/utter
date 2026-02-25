@@ -48,16 +48,16 @@ export function PricingContent() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <FAQItem
-              q="When do limits reset?"
-              a="Monthly. Your credit balance resets on renewal."
+              q="Do credits reset?"
+              a="No monthly reset in this phase. Purchased credits stay on your balance."
             />
             <FAQItem
               q="How are credits measured?"
-              a="1 credit = 1 character. Generate charges from text length, design preview from text + description length, and clone from transcript length."
+              a="Generate is 1 credit = 1 character. Design preview and clone each include 2 free trials, then switch to flat credit pricing."
             />
             <FAQItem
-              q="Where do invoices live?"
-              a="Account → Billing. We’ll also link to the Stripe portal once billing is enabled."
+              q="Where do purchases appear?"
+              a="Account → Billing shows balance, purchase actions, and paid credit history from ledger events."
             />
           </div>
         </div>

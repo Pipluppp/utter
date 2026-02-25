@@ -18,7 +18,11 @@ This bucket holds implementation plans moved from `docs/2026-02-23/`.
    Path: `credits-trials-and-billing-task.md`
    Purpose: explicit file-level implementation plan for DB, edge, frontend, and tests.
 
-5. **Qwen API integration**
+5. **Credits + trials + billing completion**
+   Path: `credits-trials-and-billing-completion.md`
+   Purpose: concise execution record of what shipped, validation evidence, and deployment status.
+
+6. **Qwen API integration**
    Path: `qwen-integration.md`
    Security integration: provider-abuse and data-boundary checks are embedded and validated against `../2026-02-23/security-supabase/S8-post-qwen-security-gate.md`.
 

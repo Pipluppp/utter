@@ -147,9 +147,12 @@ export type CreditsUsageResponse = {
   window_days: number
   plan: {
     tier: string
-    monthly_credits: number
   }
   balance: number
+  trials: {
+    design_remaining: number
+    clone_remaining: number
+  }
   usage: {
     debited: number
     credited: number

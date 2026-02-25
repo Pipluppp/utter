@@ -13,8 +13,8 @@ export function PricingSection() {
               Pricing
             </h2>
             <p className="mt-2 max-w-xl text-base text-muted-foreground">
-              Simple metering: 1 credit = 1 character. Pick a plan that matches
-              your monthly output.
+              Simple metering: 1 credit = 1 character, with prepaid packs and
+              trial-first design + clone pricing.
             </p>
           </div>
         </div>

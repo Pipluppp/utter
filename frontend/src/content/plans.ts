@@ -1,33 +1,32 @@
-export type BillingPlanId = 'creator' | 'pro'
+export type CreditPackId = 'pack_150k' | 'pack_500k'
 
-export type BillingPlan = {
-  id: BillingPlanId
+export type CreditPack = {
+  id: CreditPackId
   name: string
-  priceMonthlyUsd: number
-  creditsMonthly: number
-  priority: 'standard' | 'priority'
+  priceUsd: number
+  credits: number
   blurb: string
   highlights: string[]
+  featured?: boolean
 }
 
-export const billingPlans: BillingPlan[] = [
+export const creditPacks: CreditPack[] = [
   {
-    id: 'creator',
-    name: 'Creator',
-    priceMonthlyUsd: 10,
-    creditsMonthly: 15_000,
-    priority: 'standard',
-    blurb: 'Best for consistent personal use and small projects.',
-    highlights: ['Clone, design, generate', 'Exports: WAV + MP3'],
+    id: 'pack_150k',
+    name: 'Starter pack',
+    priceUsd: 10,
+    credits: 150_000,
+    blurb: 'Great for occasional generation and voice iteration.',
+    highlights: ['One-time purchase', 'Credits do not expire in this phase'],
   },
   {
-    id: 'pro',
-    name: 'Pro',
-    priceMonthlyUsd: 25,
-    creditsMonthly: 45_000,
-    priority: 'priority',
-    blurb: 'For creators shipping frequently and working in longer scripts.',
-    highlights: ['Faster turnaround under load', 'Commercial usage'],
+    id: 'pack_500k',
+    name: 'Studio pack',
+    priceUsd: 25,
+    credits: 500_000,
+    blurb: 'Best value for high-throughput production workloads.',
+    highlights: ['One-time purchase', 'Best credits per dollar'],
+    featured: true,
   },
 ]
 
@@ -45,12 +44,12 @@ export const creditRates: CreditRate[] = [
   },
   {
     action: 'Voice design preview',
-    cost: 'text chars + description chars',
-    note: 'Charged from preview text plus voice description.',
+    cost: 'First 2 free, then 5,000 credits',
+    note: 'Flat price after design trials are used.',
   },
   {
-    action: 'Voice clone',
-    cost: 'transcript chars',
-    note: 'Charged from submitted transcript length.',
+    action: 'Voice clone finalize',
+    cost: 'First 2 free, then 1,000 credits',
+    note: 'Flat price after clone trials are used.',
   },
 ]

@@ -5,6 +5,8 @@ import {
   applyCreditEvent,
   creditsForCloneTranscript,
   formatInsufficientCreditsDetail,
+  trialOrDebit,
+  trialRestore,
 } from "../../_shared/credits.ts";
 import { createAdminClient } from "../../_shared/supabase.ts";
 import { resolveStorageUrl } from "../../_shared/urls.ts";
@@ -133,16 +135,15 @@ cloneRoutes.post("/clone/finalize", async (c) => {
     return jsonDetail("Reference audio must be under 10MB.", 400);
   }
 
-  const creditsToDebit = creditsForCloneTranscript(transcript);
-
-  const debit = await applyCreditEvent(admin, {
+  const creditsToDebit = creditsForCloneTranscript();
+  const chargeIdempotencyKey = `clone:${voiceId}:charge`;
+  const charge = await trialOrDebit(admin, {
     userId,
-    eventKind: "debit",
     operation: "clone",
-    amount: creditsToDebit,
+    debitAmount: creditsToDebit,
     referenceType: "voice",
     referenceId: voiceId,
-    idempotencyKey: `clone:${voiceId}:debit`,
+    idempotencyKey: chargeIdempotencyKey,
     metadata: {
       reason: "clone_finalize",
       transcript_length: transcript.length,
@@ -150,19 +151,21 @@ cloneRoutes.post("/clone/finalize", async (c) => {
     },
   });
 
-  if (debit.error || !debit.row) {
+  if (charge.error || !charge.row) {
     return jsonDetail("Failed to debit credits.", 500);
   }
 
-  if (debit.row.insufficient) {
+  if (charge.row.insufficient) {
     return jsonDetail(
       formatInsufficientCreditsDetail(
         creditsToDebit,
-        debit.row.balance_remaining,
+        charge.row.balance_remaining,
       ),
       402,
     );
   }
+
+  const usedTrial = charge.row.used_trial;
 
   const { data, error } = await admin
     .from("voices")
@@ -180,18 +183,30 @@ cloneRoutes.post("/clone/finalize", async (c) => {
     .single();
 
   if (error || !data) {
-    await applyCreditEvent(admin, {
-      userId,
-      eventKind: "refund",
-      operation: "clone",
-      amount: creditsToDebit,
-      referenceType: "voice",
-      referenceId: voiceId,
-      idempotencyKey: `clone:${voiceId}:refund`,
-      metadata: {
-        reason: "voice_insert_failed",
-      },
-    });
+    if (usedTrial) {
+      await trialRestore(admin, {
+        userId,
+        operation: "clone",
+        idempotencyKey: chargeIdempotencyKey,
+        metadata: {
+          reason: "voice_insert_failed",
+          voice_id: voiceId,
+        },
+      });
+    } else {
+      await applyCreditEvent(admin, {
+        userId,
+        eventKind: "refund",
+        operation: "clone",
+        amount: creditsToDebit,
+        referenceType: "voice",
+        referenceId: voiceId,
+        idempotencyKey: `clone:${voiceId}:refund`,
+        metadata: {
+          reason: "voice_insert_failed",
+        },
+      });
+    }
     await admin.storage.from("references").remove([objectKey]).catch(() => {});
     return jsonDetail("Failed to create voice.", 500);
   }

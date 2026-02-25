@@ -31,8 +31,10 @@ Deno.test("GET /credits/usage returns usage summary payload", async () => {
   assertEquals(typeof body.window_days, "number");
   assertExists(body.plan);
   assertEquals(typeof body.plan.tier, "string");
-  assertEquals(typeof body.plan.monthly_credits, "number");
+  assertEquals(body.plan.monthly_credits, undefined);
   assertEquals(typeof body.balance, "number");
+  assertEquals(typeof body.trials.design_remaining, "number");
+  assertEquals(typeof body.trials.clone_remaining, "number");
   assertEquals(typeof body.usage.debited, "number");
   assertEquals(typeof body.usage.credited, "number");
   assertEquals(typeof body.usage.net, "number");

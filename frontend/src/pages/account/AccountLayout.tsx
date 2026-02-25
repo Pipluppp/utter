@@ -10,7 +10,11 @@ type AccountNavItem = {
 const navItems: AccountNavItem[] = [
   { to: '/account/profile', label: 'Profile', desc: 'Identity & preferences' },
   { to: '/account/usage', label: 'Credits', desc: 'Balance, rates, history' },
-  { to: '/account/billing', label: 'Billing', desc: 'Plans, invoices' },
+  {
+    to: '/account/billing',
+    label: 'Billing',
+    desc: 'Packs, checkout, purchases',
+  },
 ]
 
 function AccountNavLink({ item }: { item: AccountNavItem }) {
@@ -43,8 +47,8 @@ export function AccountLayoutPage() {
             Account
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Credits and profile data are live from Supabase. Billing portal
-            controls will be added when Stripe is connected.
+            Credits and trial counters are live from Supabase. Prepaid pack
+            checkout runs through Stripe.
           </p>
         </div>
       </div>

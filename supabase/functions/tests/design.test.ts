@@ -33,6 +33,8 @@ Deno.test({
         {
           id: userA.userId,
           credits_remaining: 250000,
+          design_trials_remaining: 2,
+          clone_trials_remaining: 2,
           subscription_tier: "pro",
         },
         { onConflict: "id" },
@@ -41,20 +43,107 @@ Deno.test({
 });
 
 // --- POST /voices/design/preview ---
-Deno.test("POST /voices/design/preview creates a pending task", async () => {
-  const res = await apiFetch("/voices/design/preview", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text: "Hello, this is a preview.",
-      language: "English",
-      instruct: "A warm friendly voice",
-    }),
-  });
-  assertEquals(res.status, 200);
-  const body = await res.json();
-  assertExists(body.task_id);
-  assertEquals(body.status, "pending");
+Deno.test({
+  name: "POST /voices/design/preview uses trial path before debit path",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdminClient();
+    await admin
+      .from("profiles")
+      .update({ credits_remaining: 250000, design_trials_remaining: 2 })
+      .eq("id", userA.userId);
+
+    const res = await apiFetch("/voices/design/preview", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: "Hello, this is a preview.",
+        language: "English",
+        instruct: "A warm friendly voice",
+      }),
+    });
+    assertEquals(res.status, 200);
+    const body = await res.json();
+    assertExists(body.task_id);
+    assertEquals(body.status, "pending");
+
+    const task = await admin
+      .from("tasks")
+      .select("metadata")
+      .eq("id", body.task_id as string)
+      .single();
+    assertEquals(task.error, null);
+    const metadata = (task.data?.metadata ?? {}) as Record<string, unknown>;
+    assertEquals(metadata.used_trial, true);
+    assertEquals(metadata.credits_debited, 0);
+    assertEquals(typeof metadata.trial_idempotency_key, "string");
+
+    const profile = await admin
+      .from("profiles")
+      .select("credits_remaining, design_trials_remaining")
+      .eq("id", userA.userId)
+      .single();
+    assertEquals(profile.error, null);
+    assertEquals(profile.data?.credits_remaining, 250000);
+    assertEquals(profile.data?.design_trials_remaining, 1);
+
+    await admin.from("tasks").delete().eq("id", body.task_id as string);
+  },
+});
+
+Deno.test({
+  name:
+    "POST /voices/design/preview debits 5000 credits after trials are exhausted",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdminClient();
+    await admin
+      .from("profiles")
+      .update({ credits_remaining: 6000, design_trials_remaining: 0 })
+      .eq("id", userA.userId);
+
+    let taskId = "";
+    try {
+      const res = await apiFetch("/voices/design/preview", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: "Debited preview attempt",
+          language: "English",
+          instruct: "A warm friendly voice",
+        }),
+      });
+      assertEquals(res.status, 200);
+      const body = await res.json();
+      taskId = body.task_id as string;
+
+      const task = await admin
+        .from("tasks")
+        .select("metadata")
+        .eq("id", taskId)
+        .single();
+      assertEquals(task.error, null);
+      const metadata = (task.data?.metadata ?? {}) as Record<string, unknown>;
+      assertEquals(metadata.used_trial, false);
+      assertEquals(metadata.credits_debited, 5000);
+
+      const profile = await admin
+        .from("profiles")
+        .select("credits_remaining")
+        .eq("id", userA.userId)
+        .single();
+      assertEquals(profile.error, null);
+      assertEquals(profile.data?.credits_remaining, 1000);
+    } finally {
+      if (taskId) {
+        await admin.from("tasks").delete().eq("id", taskId);
+      }
+      await admin
+        .from("profiles")
+        .update({ credits_remaining: 250000, design_trials_remaining: 2 })
+        .eq("id", userA.userId);
+    }
+  },
 });
 
 Deno.test("POST /voices/design/preview rejects missing text", async () => {
@@ -122,7 +211,7 @@ Deno.test({
     const admin = await getAdminClient();
     await admin
       .from("profiles")
-      .update({ credits_remaining: 1 })
+      .update({ credits_remaining: 1, design_trials_remaining: 0 })
       .eq("id", userA.userId);
 
     try {
@@ -141,7 +230,7 @@ Deno.test({
     } finally {
       await admin
         .from("profiles")
-        .update({ credits_remaining: 250000 })
+        .update({ credits_remaining: 250000, design_trials_remaining: 2 })
         .eq("id", userA.userId);
     }
   },

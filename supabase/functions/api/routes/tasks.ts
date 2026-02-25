@@ -1,7 +1,7 @@
 import { Hono } from "npm:hono@4";
 
 import { requireUser } from "../../_shared/auth.ts";
-import { applyCreditEvent } from "../../_shared/credits.ts";
+import { applyCreditEvent, trialRestore } from "../../_shared/credits.ts";
 import { createAdminClient, createUserClient } from "../../_shared/supabase.ts";
 import { resolveStorageUrl } from "../../_shared/urls.ts";
 import {
@@ -80,9 +80,10 @@ async function refundTaskCredits(params: {
   const { admin, userId, taskId, taskType, generationId, metadata, reason } =
     params;
   const amount = inferDebitedCredits(taskType, metadata);
-  if (!amount) return;
 
   if (taskType === "generate") {
+    if (!amount) return;
+
     const referenceId = generationId ?? taskId;
     const idempotencyKey = generationId
       ? `generate:${generationId}:refund`
@@ -105,6 +106,29 @@ async function refundTaskCredits(params: {
   }
 
   if (taskType === "design_preview") {
+    const record = metadata && typeof metadata === "object"
+      ? metadata as Record<string, unknown>
+      : {};
+    const usedTrial = record.used_trial === true;
+    const trialKey = typeof record.trial_idempotency_key === "string"
+      ? record.trial_idempotency_key.trim()
+      : "";
+
+    if (usedTrial && trialKey) {
+      await trialRestore(admin, {
+        userId,
+        operation: "design_preview",
+        idempotencyKey: trialKey,
+        metadata: {
+          reason,
+          task_id: taskId,
+        },
+      });
+      return;
+    }
+
+    if (!amount) return;
+
     await applyCreditEvent(admin, {
       userId,
       eventKind: "refund",

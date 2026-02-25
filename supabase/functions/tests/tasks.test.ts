@@ -42,6 +42,8 @@ Deno.test({
         {
           id: userA.userId,
           credits_remaining: 250000,
+          design_trials_remaining: 2,
+          clone_trials_remaining: 2,
           subscription_tier: "pro",
         },
         { onConflict: "id" },
@@ -52,6 +54,8 @@ Deno.test({
         {
           id: userB.userId,
           credits_remaining: 250000,
+          design_trials_remaining: 2,
+          clone_trials_remaining: 2,
           subscription_tier: "pro",
         },
         { onConflict: "id" },
@@ -310,7 +314,9 @@ Deno.test({
     // CI/local timing can vary under full-suite load, so use a deadline-based wait.
     const waitUntil = Date.now() + 45_000;
     while (Date.now() < waitUntil) {
-      if (pollBody.status === "completed" || pollBody.status === "failed") break;
+      if (pollBody.status === "completed" || pollBody.status === "failed") {
+        break;
+      }
       await new Promise((resolve) => setTimeout(resolve, 300));
       const nextPollRes = await apiFetch(
         `/tasks/${task_id}`,
@@ -332,6 +338,78 @@ Deno.test({
     // Clean up
     const admin = await getAdmin();
     await admin.from("tasks").delete().eq("id", task_id);
+  },
+});
+
+Deno.test({
+  name: "POST /tasks/:id/cancel restores consumed design trial exactly once",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdmin();
+    const taskId = crypto.randomUUID();
+    const trialKey = `design-preview:${taskId}:charge`;
+
+    await admin
+      .from("profiles")
+      .update({ design_trials_remaining: 1 })
+      .eq("id", userA.userId);
+
+    await admin.from("trial_consumption").insert({
+      user_id: userA.userId,
+      operation: "design_preview",
+      reference_type: "task",
+      reference_id: taskId,
+      idempotency_key: trialKey,
+      status: "consumed",
+      metadata: { reason: "test_consumed_trial" },
+    });
+
+    await admin.from("tasks").insert({
+      id: taskId,
+      user_id: userA.userId,
+      type: "design_preview",
+      status: "pending",
+      metadata: {
+        used_trial: true,
+        trial_idempotency_key: trialKey,
+        credits_debited: 0,
+      },
+    });
+
+    const cancelRes = await apiFetch(
+      `/tasks/${taskId}/cancel`,
+      userA.accessToken,
+      {
+        method: "POST",
+      },
+    );
+    assertEquals(cancelRes.status, 200);
+    await cancelRes.body?.cancel();
+
+    const profile = await admin
+      .from("profiles")
+      .select("design_trials_remaining")
+      .eq("id", userA.userId)
+      .single();
+    assertEquals(profile.error, null);
+    assertEquals(profile.data?.design_trials_remaining, 2);
+
+    const trial = await admin
+      .from("trial_consumption")
+      .select("status, restored_at")
+      .eq("user_id", userA.userId)
+      .eq("idempotency_key", trialKey)
+      .single();
+    assertEquals(trial.error, null);
+    assertEquals(trial.data?.status, "restored");
+    assertEquals(typeof trial.data?.restored_at, "string");
+
+    await admin.from("tasks").delete().eq("id", taskId);
+    await admin
+      .from("trial_consumption")
+      .delete()
+      .eq("user_id", userA.userId)
+      .eq("idempotency_key", trialKey);
   },
 });
 

@@ -73,6 +73,8 @@ Deno.test({
         {
           id: userA.userId,
           credits_remaining: 250000,
+          design_trials_remaining: 2,
+          clone_trials_remaining: 2,
           subscription_tier: "pro",
         },
         { onConflict: "id" },
@@ -170,13 +172,150 @@ Deno.test("POST /clone/finalize rejects missing voice_id", async () => {
 });
 
 Deno.test({
+  name: "POST /clone/finalize uses clone trial before debit path",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdminClient();
+    await admin
+      .from("profiles")
+      .update({ credits_remaining: 400, clone_trials_remaining: 2 })
+      .eq("id", userA.userId);
+
+    let voiceId = "";
+    let objectKey = "";
+    try {
+      const urlRes = await apiFetch("/clone/upload-url", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(VALID_VOICE_PAYLOAD),
+      });
+      assertEquals(urlRes.status, 200);
+      const uploadPayload = await urlRes.json();
+      voiceId = uploadPayload.voice_id as string;
+      objectKey = uploadPayload.object_key as string;
+
+      const uploadRes = await fetch(uploadPayload.upload_url as string, {
+        method: "PUT",
+        headers: { "Content-Type": "audio/wav" },
+        body: MINIMAL_WAV,
+      });
+      assertEquals(uploadRes.status, 200);
+      await uploadRes.body?.cancel();
+
+      const finalizeRes = await apiFetch("/clone/finalize", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          voice_id: voiceId,
+          ...VALID_VOICE_PAYLOAD,
+        }),
+      });
+      assertEquals(finalizeRes.status, 200);
+      await finalizeRes.body?.cancel();
+
+      const profile = await admin
+        .from("profiles")
+        .select("credits_remaining, clone_trials_remaining")
+        .eq("id", userA.userId)
+        .single();
+      assertEquals(profile.error, null);
+      assertEquals(profile.data?.credits_remaining, 400);
+      assertEquals(profile.data?.clone_trials_remaining, 1);
+    } finally {
+      if (voiceId) {
+        await admin.from("voices").delete().eq("id", voiceId).eq(
+          "user_id",
+          userA.userId,
+        );
+      }
+      if (objectKey) {
+        await admin.storage.from("references").remove([objectKey]);
+      }
+      await admin
+        .from("profiles")
+        .update({ credits_remaining: 250000, clone_trials_remaining: 2 })
+        .eq("id", userA.userId);
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "POST /clone/finalize debits 1000 credits when clone trials are exhausted",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdminClient();
+    await admin
+      .from("profiles")
+      .update({ credits_remaining: 1500, clone_trials_remaining: 0 })
+      .eq("id", userA.userId);
+
+    let voiceId = "";
+    let objectKey = "";
+    try {
+      const urlRes = await apiFetch("/clone/upload-url", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(VALID_VOICE_PAYLOAD),
+      });
+      assertEquals(urlRes.status, 200);
+      const uploadPayload = await urlRes.json();
+      voiceId = uploadPayload.voice_id as string;
+      objectKey = uploadPayload.object_key as string;
+
+      const uploadRes = await fetch(uploadPayload.upload_url as string, {
+        method: "PUT",
+        headers: { "Content-Type": "audio/wav" },
+        body: MINIMAL_WAV,
+      });
+      assertEquals(uploadRes.status, 200);
+      await uploadRes.body?.cancel();
+
+      const finalizeRes = await apiFetch("/clone/finalize", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          voice_id: voiceId,
+          ...VALID_VOICE_PAYLOAD,
+        }),
+      });
+      assertEquals(finalizeRes.status, 200);
+      await finalizeRes.body?.cancel();
+
+      const profile = await admin
+        .from("profiles")
+        .select("credits_remaining, clone_trials_remaining")
+        .eq("id", userA.userId)
+        .single();
+      assertEquals(profile.error, null);
+      assertEquals(profile.data?.credits_remaining, 500);
+      assertEquals(profile.data?.clone_trials_remaining, 0);
+    } finally {
+      if (voiceId) {
+        await admin.from("voices").delete().eq("id", voiceId).eq(
+          "user_id",
+          userA.userId,
+        );
+      }
+      if (objectKey) {
+        await admin.storage.from("references").remove([objectKey]);
+      }
+      await admin
+        .from("profiles")
+        .update({ credits_remaining: 250000, clone_trials_remaining: 2 })
+        .eq("id", userA.userId);
+    }
+  },
+});
+
+Deno.test({
   name: "POST /clone/finalize returns 402 when credits are insufficient",
   ...noLeaks,
   fn: async () => {
     const admin = await getAdminClient();
     await admin
       .from("profiles")
-      .update({ credits_remaining: 2 })
+      .update({ credits_remaining: 2, clone_trials_remaining: 0 })
       .eq("id", userA.userId);
 
     let voiceId = "";
@@ -215,7 +354,7 @@ Deno.test({
     } finally {
       await admin
         .from("profiles")
-        .update({ credits_remaining: 250000 })
+        .update({ credits_remaining: 250000, clone_trials_remaining: 2 })
         .eq("id", userA.userId);
       if (voiceId) {
         await admin.from("voices").delete().eq("id", voiceId).eq(

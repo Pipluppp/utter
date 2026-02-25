@@ -1,11 +1,7 @@
 import { Hono } from "npm:hono@4";
 
 import { requireUser } from "../../_shared/auth.ts";
-import {
-  CREDIT_RATE_CARD,
-  CREDIT_UNIT_LABEL,
-  monthlyCreditsForTier,
-} from "../../_shared/credits.ts";
+import { CREDIT_RATE_CARD, CREDIT_UNIT_LABEL } from "../../_shared/credits.ts";
 import { createAdminClient } from "../../_shared/supabase.ts";
 
 type UsageTotalsRow = {
@@ -56,7 +52,9 @@ creditsRoutes.get("/credits/usage", async (c) => {
   const [profileRes, totalsRes, eventsRes] = await Promise.all([
     admin
       .from("profiles")
-      .select("subscription_tier, credits_remaining")
+      .select(
+        "subscription_tier, credits_remaining, design_trials_remaining, clone_trials_remaining",
+      )
       .eq("id", userId)
       .single(),
     admin.rpc("credit_usage_window_totals", {
@@ -75,13 +73,20 @@ creditsRoutes.get("/credits/usage", async (c) => {
   ]);
 
   let profile = profileRes.data as
-    | { subscription_tier: string; credits_remaining: number }
+    | {
+      subscription_tier: string;
+      credits_remaining: number;
+      design_trials_remaining: number;
+      clone_trials_remaining: number;
+    }
     | null;
   if (profileRes.error || !profile) {
     const fallback = await admin
       .from("profiles")
       .upsert({ id: userId }, { onConflict: "id" })
-      .select("subscription_tier, credits_remaining")
+      .select(
+        "subscription_tier, credits_remaining, design_trials_remaining, clone_trials_remaining",
+      )
       .single();
     if (fallback.error || !fallback.data) {
       return jsonDetail("Failed to load profile credits.", 500);
@@ -89,6 +94,8 @@ creditsRoutes.get("/credits/usage", async (c) => {
     profile = fallback.data as {
       subscription_tier: string;
       credits_remaining: number;
+      design_trials_remaining: number;
+      clone_trials_remaining: number;
     };
   }
 
@@ -126,9 +133,12 @@ creditsRoutes.get("/credits/usage", async (c) => {
     window_days: windowDays,
     plan: {
       tier,
-      monthly_credits: monthlyCreditsForTier(tier),
     },
     balance: Number(profile.credits_remaining),
+    trials: {
+      design_remaining: Number(profile.design_trials_remaining ?? 0),
+      clone_remaining: Number(profile.clone_trials_remaining ?? 0),
+    },
     usage: {
       debited: Number(totals.total_debited ?? 0),
       credited: Number(totals.total_credited ?? 0),

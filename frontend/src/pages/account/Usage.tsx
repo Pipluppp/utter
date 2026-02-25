@@ -20,11 +20,6 @@ function Stat({
   )
 }
 
-function formatTier(value: string) {
-  if (!value) return '—'
-  return value.charAt(0).toUpperCase() + value.slice(1)
-}
-
 function formatSignedAmount(value: number) {
   if (value === 0) return '0'
   if (value > 0) return `+${value.toLocaleString()}`
@@ -35,27 +30,24 @@ function eventLabel(value: string) {
   if (value === 'generate') return 'Generate speech'
   if (value === 'design_preview') return 'Voice design preview'
   if (value === 'clone') return 'Voice clone'
-  if (value === 'monthly_allocation') return 'Monthly allocation'
+  if (value === 'monthly_allocation') return 'Initial allocation'
   if (value === 'manual_adjustment') return 'Manual adjustment'
+  if (value === 'paid_purchase') return 'Paid credit purchase'
+  if (value === 'paid_reversal') return 'Paid credit reversal'
   return value
 }
 
 export function AccountUsagePage() {
   const { data, loading, error } = useCreditsUsage(30)
 
-  const planTier = formatTier(data?.plan.tier ?? '')
-  const monthlyCredits = data?.plan.monthly_credits ?? 0
   const creditsRemaining = data?.balance ?? 0
   const creditsUsed = data?.usage.debited ?? 0
+  const designTrials = data?.trials.design_remaining ?? 0
+  const cloneTrials = data?.trials.clone_remaining ?? 0
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Stat
-          label="Plan"
-          value={planTier}
-          hint={`${monthlyCredits.toLocaleString()} credits / month`}
-        />
+      <div className="grid gap-4 md:grid-cols-4">
         <Stat
           label="Credits remaining"
           value={creditsRemaining.toLocaleString()}
@@ -65,6 +57,16 @@ export function AccountUsagePage() {
           label="Credits used"
           value={creditsUsed.toLocaleString()}
           hint={`Last ${data?.window_days ?? 30} days`}
+        />
+        <Stat
+          label="Design trials"
+          value={designTrials.toLocaleString()}
+          hint="Free previews remaining"
+        />
+        <Stat
+          label="Clone trials"
+          value={cloneTrials.toLocaleString()}
+          hint="Free finalizations remaining"
         />
       </div>
 

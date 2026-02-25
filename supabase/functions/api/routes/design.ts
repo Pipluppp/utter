@@ -5,6 +5,8 @@ import {
   applyCreditEvent,
   creditsForDesignPreview,
   formatInsufficientCreditsDetail,
+  trialOrDebit,
+  trialRestore,
 } from "../../_shared/credits.ts";
 import { createAdminClient } from "../../_shared/supabase.ts";
 import { resolveStorageUrl } from "../../_shared/urls.ts";
@@ -55,16 +57,15 @@ designRoutes.post("/voices/design/preview", async (c) => {
 
   const admin = createAdminClient();
   const taskId = crypto.randomUUID();
-  const creditsToDebit = creditsForDesignPreview(text, instruct);
-
-  const debit = await applyCreditEvent(admin, {
+  const creditsToDebit = creditsForDesignPreview();
+  const chargeIdempotencyKey = `design-preview:${taskId}:charge`;
+  const charge = await trialOrDebit(admin, {
     userId,
-    eventKind: "debit",
     operation: "design_preview",
-    amount: creditsToDebit,
+    debitAmount: creditsToDebit,
     referenceType: "task",
     referenceId: taskId,
-    idempotencyKey: `design-preview:${taskId}:debit`,
+    idempotencyKey: chargeIdempotencyKey,
     metadata: {
       reason: "design_preview_request",
       text_length: text.length,
@@ -72,19 +73,23 @@ designRoutes.post("/voices/design/preview", async (c) => {
     },
   });
 
-  if (debit.error || !debit.row) {
+  if (charge.error || !charge.row) {
     return jsonDetail("Failed to debit credits.", 500);
   }
 
-  if (debit.row.insufficient) {
+  if (charge.row.insufficient) {
     return jsonDetail(
       formatInsufficientCreditsDetail(
         creditsToDebit,
-        debit.row.balance_remaining,
+        charge.row.balance_remaining,
       ),
       402,
     );
   }
+
+  const usedTrial = charge.row.used_trial;
+  const trialIdempotencyKey = usedTrial ? chargeIdempotencyKey : null;
+  const creditsDebited = usedTrial ? 0 : creditsToDebit;
 
   const { data: task, error } = await admin
     .from("tasks")
@@ -97,26 +102,40 @@ designRoutes.post("/voices/design/preview", async (c) => {
         text,
         language,
         instruct,
-        credits_debited: creditsToDebit,
-        credits_remaining_after_debit: debit.row.balance_remaining,
+        used_trial: usedTrial,
+        trial_idempotency_key: trialIdempotencyKey,
+        credits_debited: creditsDebited,
+        credits_remaining_after_debit: charge.row.balance_remaining,
       },
     })
     .select("id")
     .single();
 
   if (error || !task) {
-    await applyCreditEvent(admin, {
-      userId,
-      eventKind: "refund",
-      operation: "design_preview",
-      amount: creditsToDebit,
-      referenceType: "task",
-      referenceId: taskId,
-      idempotencyKey: `design-preview:${taskId}:refund`,
-      metadata: {
-        reason: "task_insert_failed",
-      },
-    });
+    if (usedTrial && trialIdempotencyKey) {
+      await trialRestore(admin, {
+        userId,
+        operation: "design_preview",
+        idempotencyKey: trialIdempotencyKey,
+        metadata: {
+          reason: "task_insert_failed",
+          task_id: taskId,
+        },
+      });
+    } else {
+      await applyCreditEvent(admin, {
+        userId,
+        eventKind: "refund",
+        operation: "design_preview",
+        amount: creditsToDebit,
+        referenceType: "task",
+        referenceId: taskId,
+        idempotencyKey: `design-preview:${taskId}:refund`,
+        metadata: {
+          reason: "task_insert_failed",
+        },
+      });
+    }
     return jsonDetail("Failed to create task.", 500);
   }
 
