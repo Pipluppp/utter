@@ -32,7 +32,7 @@ npm run dev
 
 See **[tasks.md](./tasks.md)** for the current task queue.
 
-Latest: **[2026-02-22/README.md](./2026-02-22/README.md)** — cleanup, security hardening, docs alignment.
+Latest: **[2026-02-27/README.md](./2026-02-27/README.md)** — UI/UX polish sprint planning for frontend improvements.
 
 ---
 
