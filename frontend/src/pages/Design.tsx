@@ -172,13 +172,20 @@ export function DesignPage() {
     if (!task?.taskId) return
     if (task.status === 'pending' || task.status === 'processing') return
 
+    const scheduleClearTask = () => {
+      window.setTimeout(() => clearTask('design'), 50)
+    }
+
     const terminalKey = `${task.taskId}:${task.status}`
     if (handledTerminalRef.current === terminalKey) return
     handledTerminalRef.current = terminalKey
 
     if (task.status === 'completed') {
       const completedTaskId = task.taskId
-      if (!completedTaskId) return
+      if (!completedTaskId) {
+        scheduleClearTask()
+        return
+      }
       const taskState = task.formState as Partial<DesignFormState> | null
       const snapshot: DesignFormState = {
         name: typeof taskState?.name === 'string' ? taskState.name : name,
@@ -216,33 +223,46 @@ export function DesignPage() {
             await saveDesignedVoice(blob, snapshot, completedTaskId)
           } catch (e) {
             setError(e instanceof Error ? e.message : 'Failed to load preview.')
+          } finally {
+            scheduleClearTask()
           }
         })()
       } else {
         const audioBase64 = result?.audio_base64?.trim()
         if (audioBase64) {
-          const bin = atob(audioBase64)
-          const bytes = new Uint8Array(bin.length)
-          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-          const blob = new Blob([bytes], { type: 'audio/wav' })
-          previewBlobRef.current = blob
-          const url = URL.createObjectURL(blob)
-          objectUrlRef.current = url
-          setPreviewUrl(url)
-          setError(null)
-          setSuccess(null)
-          void saveDesignedVoice(blob, snapshot, completedTaskId)
+          void (async () => {
+            try {
+              const bin = atob(audioBase64)
+              const bytes = new Uint8Array(bin.length)
+              for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+              const blob = new Blob([bytes], { type: 'audio/wav' })
+              previewBlobRef.current = blob
+              const url = URL.createObjectURL(blob)
+              objectUrlRef.current = url
+              setPreviewUrl(url)
+              setError(null)
+              setSuccess(null)
+              await saveDesignedVoice(blob, snapshot, completedTaskId)
+            } catch (e) {
+              setError(
+                e instanceof Error ? e.message : 'Failed to load preview.',
+              )
+            } finally {
+              scheduleClearTask()
+            }
+          })()
         } else {
           setError('Failed to load preview audio.')
+          scheduleClearTask()
         }
       }
     } else if (task.status === 'failed') {
       setError(task.error ?? 'Failed to generate preview.')
+      scheduleClearTask()
     } else if (task.status === 'cancelled') {
       setError('Preview cancelled.')
+      scheduleClearTask()
     }
-
-    window.setTimeout(() => clearTask('design'), 50)
   }, [clearTask, instruct, language, name, saveDesignedVoice, task, text])
 
   async function onPreview() {
