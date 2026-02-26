@@ -17,6 +17,7 @@ export type StoredTask = {
   status: TaskStatus
   dismissed: boolean
   modalStatus?: string | null
+  providerStatus?: string | null
   result?: unknown
   error?: string | null
   completedAt?: number
@@ -28,6 +29,9 @@ export type BackendTask = {
   status: TaskStatus
   result?: unknown
   error?: string | null
+  provider?: 'modal' | 'qwen' | string
+  provider_status?: string | null
+  provider_poll_count?: number | null
   modal_status?: string | null
   modal_elapsed_seconds?: number | null
   modal_poll_count?: number | null
@@ -41,6 +45,10 @@ export type Voice = {
   source: 'uploaded' | 'designed'
   description: string | null
   created_at: string | null
+  tts_provider?: 'modal' | 'qwen' | string
+  provider_voice_id?: string | null
+  provider_target_model?: string | null
+  provider_voice_kind?: 'vc' | 'vd' | string | null
 }
 
 export type VoicesResponse = {
@@ -95,7 +103,14 @@ export type GenerationsResponse = {
 export type LanguagesResponse = {
   languages: string[]
   default: string
-  provider: string
+  provider: 'modal' | 'qwen' | string
+  capabilities?: {
+    supports_generate: boolean
+    supports_generate_stream: boolean
+    default_generate_mode: 'task'
+    allow_generate_mode_toggle: boolean
+    max_text_chars: number
+  }
   transcription?: {
     enabled: boolean
     provider: string

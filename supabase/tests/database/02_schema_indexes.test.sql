@@ -1,6 +1,6 @@
 -- Phase 08b: Index validation + FK index invariant
 BEGIN;
-SELECT plan(15);
+SELECT plan(19);
 
 -- Custom indexes
 SELECT has_index('public', 'voices', 'idx_voices_user_id_created', 'voices user_id+created_at index exists');
@@ -15,6 +15,10 @@ SELECT has_index('public', 'tasks', 'idx_tasks_voice_id', 'tasks voice_id FK ind
 -- Partial indexes
 SELECT has_index('public', 'tasks', 'idx_tasks_modal_job_id', 'tasks modal_job_id partial index exists');
 SELECT has_index('public', 'tasks', 'idx_tasks_active', 'tasks active partial index exists');
+SELECT has_index('public', 'voices', 'idx_voices_user_provider_created', 'voices provider index exists');
+SELECT has_index('public', 'voices', 'idx_voices_user_active_provider_created', 'voices active provider partial index exists');
+SELECT has_index('public', 'tasks', 'idx_tasks_provider_job_id', 'tasks provider_job_id partial index exists');
+SELECT has_index('public', 'generations', 'idx_generations_user_provider_created', 'generations provider index exists');
 SELECT has_index('public', 'rate_limit_counters', 'idx_rate_limit_counters_lookup', 'rate_limit_counters lookup index exists');
 SELECT has_index('public', 'rate_limit_counters', 'idx_rate_limit_counters_window_start', 'rate_limit_counters window_start index exists');
 SELECT has_index('public', 'credit_ledger', 'idx_credit_ledger_user_created', 'credit_ledger user_id+created_at index exists');

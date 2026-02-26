@@ -4,6 +4,12 @@ This package defines the migration plan from Modal-only orchestration to dual-pr
 
 It is decision-complete and implementation-ready for the current product direction.
 
+## Start here
+
+- Current runtime/deployment snapshot: [current-state.md](./current-state.md)
+- Implementation + runbook: [implementation-guide.md](./implementation-guide.md)
+- Recovery/rollback: [restoration.md](./restoration.md)
+
 ## Purpose and Scope
 
 Purpose:

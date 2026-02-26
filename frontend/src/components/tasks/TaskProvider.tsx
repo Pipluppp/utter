@@ -118,7 +118,11 @@ type TaskContextValue = {
   dismissTask: (taskType: TaskType) => void
   cancelTask: (taskType: TaskType) => Promise<boolean>
   clearTask: (taskType: TaskType) => void
-  getStatusText: (status: TaskStatus, modalStatus?: string | null) => string
+  getStatusText: (
+    status: TaskStatus,
+    modalStatus?: string | null,
+    providerStatus?: string | null,
+  ) => string
   formatTaskElapsed: (task: StoredTask) => string
 }
 
@@ -182,7 +186,23 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const getStatusText = useCallback(
-    (status: TaskStatus, modalStatus?: string | null) => {
+    (
+      status: TaskStatus,
+      modalStatus?: string | null,
+      providerStatus?: string | null,
+    ) => {
+      const effectiveStatus = (
+        providerStatus ??
+        modalStatus ??
+        ''
+      ).toLowerCase()
+      if (effectiveStatus === 'provider_submitting') return 'Submitting…'
+      if (effectiveStatus === 'provider_synthesizing') return 'Synthesizing…'
+      if (effectiveStatus === 'provider_downloading') return 'Downloading…'
+      if (effectiveStatus === 'provider_persisting') return 'Finalizing…'
+      if (effectiveStatus === 'queued') return 'Waiting for GPU…'
+      if (effectiveStatus === 'processing') return 'Generating…'
+      if (effectiveStatus === 'sending') return 'Starting generation…'
       if (modalStatus === 'queued' || status === 'pending')
         return 'Waiting for GPU…'
       if (modalStatus === 'processing' || status === 'processing')
@@ -295,6 +315,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
               result: taskData.result,
               error: taskData.error ?? null,
               modalStatus: taskData.modal_status ?? null,
+              providerStatus: taskData.provider_status ?? null,
             }
             if (isTerminal(updated.status)) updated.completedAt = Date.now()
             writeJson(taskStorageKey(taskType), updated)

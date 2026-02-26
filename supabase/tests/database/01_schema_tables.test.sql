@@ -1,6 +1,6 @@
 -- Phase 08b: Schema validation — tables, columns, types, constraints
 BEGIN;
-SELECT plan(78);
+SELECT plan(99);
 
 -- ============================================================
 -- PROFILES
@@ -39,6 +39,15 @@ SELECT col_default_is('public', 'voices', 'language', 'Auto', 'voices.language d
 SELECT has_column('public', 'voices', 'source', 'voices.source exists');
 SELECT col_not_null('public', 'voices', 'source', 'voices.source is NOT NULL');
 SELECT has_column('public', 'voices', 'description', 'voices.description exists');
+SELECT has_column('public', 'voices', 'tts_provider', 'voices.tts_provider exists');
+SELECT col_not_null('public', 'voices', 'tts_provider', 'voices.tts_provider is NOT NULL');
+SELECT col_default_is('public', 'voices', 'tts_provider', 'modal', 'voices.tts_provider defaults to modal');
+SELECT has_column('public', 'voices', 'provider_voice_id', 'voices.provider_voice_id exists');
+SELECT has_column('public', 'voices', 'provider_target_model', 'voices.provider_target_model exists');
+SELECT has_column('public', 'voices', 'provider_voice_kind', 'voices.provider_voice_kind exists');
+SELECT has_column('public', 'voices', 'provider_metadata', 'voices.provider_metadata exists');
+SELECT col_default_is('public', 'voices', 'provider_metadata', '{}', 'voices.provider_metadata defaults to {}');
+SELECT has_column('public', 'voices', 'deleted_at', 'voices.deleted_at exists');
 
 -- ============================================================
 -- GENERATIONS
@@ -53,6 +62,12 @@ SELECT has_column('public', 'generations', 'text', 'generations.text exists');
 SELECT col_not_null('public', 'generations', 'text', 'generations.text is NOT NULL');
 SELECT has_column('public', 'generations', 'status', 'generations.status exists');
 SELECT col_default_is('public', 'generations', 'status', 'pending', 'generations.status defaults to pending');
+SELECT has_column('public', 'generations', 'tts_provider', 'generations.tts_provider exists');
+SELECT col_not_null('public', 'generations', 'tts_provider', 'generations.tts_provider is NOT NULL');
+SELECT col_default_is('public', 'generations', 'tts_provider', 'modal', 'generations.tts_provider defaults to modal');
+SELECT has_column('public', 'generations', 'provider_model', 'generations.provider_model exists');
+SELECT has_column('public', 'generations', 'output_format', 'generations.output_format exists');
+SELECT has_column('public', 'generations', 'provider_metadata', 'generations.provider_metadata exists');
 
 -- ============================================================
 -- TASKS
@@ -68,6 +83,12 @@ SELECT has_column('public', 'tasks', 'status', 'tasks.status exists');
 SELECT col_default_is('public', 'tasks', 'status', 'pending', 'tasks.status defaults to pending');
 SELECT has_column('public', 'tasks', 'modal_poll_count', 'tasks.modal_poll_count exists');
 SELECT col_default_is('public', 'tasks', 'modal_poll_count', '0', 'modal_poll_count defaults to 0');
+SELECT has_column('public', 'tasks', 'provider', 'tasks.provider exists');
+SELECT col_not_null('public', 'tasks', 'provider', 'tasks.provider is NOT NULL');
+SELECT col_default_is('public', 'tasks', 'provider', 'modal', 'tasks.provider defaults to modal');
+SELECT has_column('public', 'tasks', 'provider_status', 'tasks.provider_status exists');
+SELECT has_column('public', 'tasks', 'provider_poll_count', 'tasks.provider_poll_count exists');
+SELECT col_default_is('public', 'tasks', 'provider_poll_count', '0', 'tasks.provider_poll_count defaults to 0');
 
 -- ============================================================
 -- CREDIT LEDGER

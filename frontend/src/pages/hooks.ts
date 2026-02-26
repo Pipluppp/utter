@@ -60,12 +60,14 @@ export function useLanguages() {
   const languages = useMemo(() => data?.languages ?? ['Auto'], [data])
   const defaultLanguage = data?.default ?? 'Auto'
   const provider = data?.provider ?? 'unknown'
+  const capabilities = data?.capabilities ?? null
   const transcription = data?.transcription ?? null
 
   return {
     languages,
     defaultLanguage,
     provider,
+    capabilities,
     transcription,
     loading,
     error,

@@ -2,14 +2,9 @@ import { Hono } from "npm:hono@4";
 
 import { requireUser } from "../../_shared/auth.ts";
 import { applyCreditEvent, trialRestore } from "../../_shared/credits.ts";
+import { modalProvider } from "../../_shared/tts/providers/modal.ts";
 import { createAdminClient, createUserClient } from "../../_shared/supabase.ts";
 import { resolveStorageUrl } from "../../_shared/urls.ts";
-import {
-  cancelJob,
-  checkJobStatus,
-  designVoicePreviewBytes,
-  getJobResultBytes,
-} from "../../_shared/modal.ts";
 
 declare const EdgeRuntime: {
   waitUntil: (promise: Promise<unknown>) => void;
@@ -160,7 +155,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
   const { data: task, error } = await supabase
     .from("tasks")
     .select(
-      "id, type, status, result, error, modal_poll_count, modal_job_id, generation_id, created_at, metadata",
+      "id, type, status, result, error, provider, provider_status, provider_poll_count, provider_job_id, modal_poll_count, modal_job_id, generation_id, created_at, metadata",
     )
     .eq("id", taskId)
     .maybeSingle();
@@ -168,22 +163,75 @@ tasksRoutes.get("/tasks/:id", async (c) => {
   if (error) return jsonDetail("Failed to load task.", 500);
   if (!task) return jsonDetail("Task not found.", 404);
 
+  const taskRow = task as {
+    id: string;
+    type: string;
+    status: string;
+    result: unknown;
+    error: string | null;
+    provider: string | null;
+    provider_status: string | null;
+    provider_poll_count: number | null;
+    provider_job_id: string | null;
+    modal_poll_count: number | null;
+    modal_job_id: string | null;
+    generation_id: string | null;
+    created_at: string | null;
+    metadata: unknown;
+  };
+
+  const provider = taskRow.provider ?? "modal";
+
   const base = {
-    id: (task as { id: string }).id,
-    type: (task as { type: string }).type,
-    status: (task as { status: string }).status,
-    result: (task as { result: unknown }).result ?? undefined,
-    error: (task as { error: string | null }).error ?? null,
+    id: taskRow.id,
+    type: taskRow.type,
+    status: taskRow.status,
+    result: taskRow.result ?? undefined,
+    error: taskRow.error ?? null,
+    provider,
+    provider_status: taskRow.provider_status ?? null,
+    provider_poll_count: taskRow.provider_poll_count ?? 0,
     modal_status: null as string | null,
     modal_elapsed_seconds: null as number | null,
-    modal_poll_count: (task as { modal_poll_count: number }).modal_poll_count ??
-      0,
+    modal_poll_count: taskRow.modal_poll_count ?? 0,
   };
 
   const status = base.status;
   const type = base.type;
-  const modalJobId = (task as { modal_job_id: string | null }).modal_job_id;
-  const generationId = (task as { generation_id: string | null }).generation_id;
+  const modalJobId = taskRow.modal_job_id ?? taskRow.provider_job_id;
+  const generationId = taskRow.generation_id;
+
+  if (provider === "qwen") {
+    if (status === "completed" && type === "design_preview") {
+      const currentResult = (typeof base.result === "object" && base.result)
+        ? base.result as Record<string, unknown>
+        : {};
+      const objectKey = typeof currentResult.object_key === "string"
+        ? currentResult.object_key
+        : null;
+      if (objectKey) {
+        const admin = createAdminClient();
+        const { data: signed, error: signedError } = await admin.storage
+          .from("references")
+          .createSignedUrl(objectKey, 3600);
+        if (!signedError && signed?.signedUrl) {
+          base.result = {
+            ...currentResult,
+            audio_url: resolveStorageUrl(c.req.raw, signed.signedUrl),
+          };
+        }
+      }
+    }
+
+    if (status === "completed" && generationId) {
+      base.result = {
+        ...(typeof base.result === "object" && base.result ? base.result : {}),
+        audio_url: `/api/generations/${generationId}/audio`,
+      };
+    }
+
+    return c.json(base);
+  }
 
   if (!isTerminal(status) && type === "design_preview" && !modalJobId) {
     const admin = createAdminClient();
@@ -194,15 +242,17 @@ tasksRoutes.get("/tasks/:id", async (c) => {
       );
       if (!pollError && typeof pollCount === "number") {
         base.modal_poll_count = pollCount;
+        base.provider_poll_count = pollCount;
       }
       base.status = "processing";
       base.modal_status = "processing";
+      base.provider_status = "processing";
       return c.json(base);
     }
 
     const claimed = await admin
       .from("tasks")
-      .update({ status: "processing" })
+      .update({ status: "processing", provider_status: "processing" })
       .eq("id", taskId)
       .eq("user_id", userId)
       .eq("status", "pending")
@@ -215,6 +265,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     if (!claimed.data) {
       base.status = "processing";
       base.modal_status = "processing";
+      base.provider_status = "processing";
       return c.json(base);
     }
 
@@ -224,9 +275,10 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     );
     if (!pollError && typeof pollCount === "number") {
       base.modal_poll_count = pollCount;
+      base.provider_poll_count = pollCount;
     }
 
-    const metadata = (task as { metadata: unknown }).metadata as
+    const metadata = taskRow.metadata as
       | { text?: string; language?: string; instruct?: string }
       | null;
 
@@ -243,6 +295,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
         .from("tasks")
         .update({
           status: "failed",
+          provider_status: "failed",
           error: "Invalid design preview task metadata.",
           completed_at: new Date().toISOString(),
         })
@@ -254,11 +307,12 @@ tasksRoutes.get("/tasks/:id", async (c) => {
         taskId,
         taskType: type,
         generationId,
-        metadata: (task as { metadata: unknown }).metadata,
+        metadata: taskRow.metadata,
         reason: "invalid_design_preview_metadata",
       });
 
       base.status = "failed";
+      base.provider_status = "failed";
       base.error = "Invalid design preview task metadata.";
       return c.json(base);
     }
@@ -266,7 +320,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     EdgeRuntime.waitUntil((async () => {
       const bgAdmin = createAdminClient();
       try {
-        const bytes = await designVoicePreviewBytes({
+        const bytes = await modalProvider.designVoicePreviewBytes({
           text,
           language,
           instruct,
@@ -285,6 +339,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
           .from("tasks")
           .update({
             status: "completed",
+            provider_status: "completed",
             completed_at: nowIso,
             result: { object_key: objectKey },
             error: null,
@@ -299,6 +354,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
           .from("tasks")
           .update({
             status: "failed",
+            provider_status: "failed",
             error: message,
             completed_at: new Date().toISOString(),
           })
@@ -310,7 +366,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
           taskId,
           taskType: "design_preview",
           generationId: null,
-          metadata: (task as { metadata: unknown }).metadata,
+          metadata: taskRow.metadata,
           reason: "design_preview_generation_failed",
         });
       }
@@ -318,6 +374,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
 
     base.status = "processing";
     base.modal_status = "processing";
+    base.provider_status = "processing";
     return c.json(base);
   }
 
@@ -359,18 +416,21 @@ tasksRoutes.get("/tasks/:id", async (c) => {
   );
   if (!pollError && typeof pollCount === "number") {
     base.modal_poll_count = pollCount;
+    base.provider_poll_count = pollCount;
   }
 
   let modal;
   try {
-    modal = await checkJobStatus(modalJobId);
+    modal = await modalProvider.checkJobStatus(modalJobId);
   } catch (e) {
     base.modal_status = "status_error";
+    base.provider_status = "status_error";
     base.error = e instanceof Error ? e.message : "Failed to check job status.";
     return c.json(base);
   }
 
   base.modal_status = modal.status ?? null;
+  base.provider_status = modal.status ?? base.provider_status;
   base.modal_elapsed_seconds = typeof modal.elapsed_seconds === "number"
     ? modal.elapsed_seconds
     : null;
@@ -382,7 +442,12 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     const nowIso = new Date().toISOString();
     await admin
       .from("tasks")
-      .update({ status: "failed", error: message, completed_at: nowIso })
+      .update({
+        status: "failed",
+        provider_status: "failed",
+        error: message,
+        completed_at: nowIso,
+      })
       .eq("id", taskId)
       .eq("user_id", userId);
 
@@ -404,11 +469,12 @@ tasksRoutes.get("/tasks/:id", async (c) => {
       taskId,
       taskType: type,
       generationId,
-      metadata: (task as { metadata: unknown }).metadata,
+      metadata: taskRow.metadata,
       reason: "modal_reported_failed",
     });
 
     base.status = "failed";
+    base.provider_status = "failed";
     base.error = message;
     return c.json(base);
   }
@@ -418,7 +484,10 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     if (status !== "processing") {
       await admin
         .from("tasks")
-        .update({ status: "processing" })
+        .update({
+          status: "processing",
+          provider_status: modalStatus || "processing",
+        })
         .eq("id", taskId)
         .eq("user_id", userId);
     }
@@ -445,10 +514,11 @@ tasksRoutes.get("/tasks/:id", async (c) => {
   if (!existingKey) {
     let bytes: ArrayBuffer;
     try {
-      bytes = await getJobResultBytes(modalJobId);
+      bytes = await modalProvider.getJobResultBytes(modalJobId);
     } catch (e) {
       base.status = "processing";
       base.modal_status = "finalizing";
+      base.provider_status = "finalizing";
       base.error = e instanceof Error ? e.message : null;
       return c.json(base);
     }
@@ -487,6 +557,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     .from("tasks")
     .update({
       status: "completed",
+      provider_status: "completed",
       completed_at: nowIso,
       result: { audio_url: `/api/generations/${generationId}/audio` },
       error: null,
@@ -495,6 +566,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     .eq("user_id", userId);
 
   base.status = "completed";
+  base.provider_status = "completed";
   base.result = { audio_url: `/api/generations/${generationId}/audio` };
   base.error = null;
   return c.json(base);
@@ -549,7 +621,7 @@ tasksRoutes.post("/tasks/:id/cancel", async (c) => {
   const { data: task, error } = await supabase
     .from("tasks")
     .select(
-      "id, type, status, modal_job_id, generation_id, created_at, metadata",
+      "id, type, status, provider, provider_job_id, modal_job_id, generation_id, created_at, metadata",
     )
     .eq("id", taskId)
     .maybeSingle();
@@ -557,34 +629,89 @@ tasksRoutes.post("/tasks/:id/cancel", async (c) => {
   if (error) return jsonDetail("Failed to load task.", 500);
   if (!task) return jsonDetail("Task not found.", 404);
 
-  const status = (task as { status: string }).status;
+  const taskRow = task as {
+    status: string;
+    provider: string | null;
+    provider_job_id: string | null;
+    modal_job_id: string | null;
+    generation_id: string | null;
+    type: string;
+    created_at: string | null;
+    metadata: unknown;
+  };
+
+  const status = taskRow.status;
   if (status !== "pending" && status !== "processing") {
     return jsonDetail(`Cannot cancel task with status: ${status}`, 400);
   }
 
-  const modalJobId = (task as { modal_job_id: string | null }).modal_job_id;
-  if (modalJobId) await cancelJob(modalJobId);
-
+  const provider = taskRow.provider ?? "modal";
   const admin = createAdminClient();
   const now = new Date();
   const nowIso = now.toISOString();
+  const generationId = taskRow.generation_id;
+
+  if (provider === "qwen") {
+    await admin
+      .from("tasks")
+      .update({
+        cancellation_requested: true,
+        status: "cancelled",
+        provider_status: "cancelled",
+        error: "Cancelled by user",
+        completed_at: nowIso,
+      })
+      .eq("id", taskId)
+      .eq("user_id", userId)
+      .in("status", ["pending", "processing"]);
+
+    if (generationId) {
+      const createdAt = parseIsoDate(taskRow.created_at);
+      const generationTimeSeconds = createdAt
+        ? secondsBetween(createdAt, now)
+        : null;
+      await admin
+        .from("generations")
+        .update({
+          status: "cancelled",
+          error_message: "Cancelled by user",
+          completed_at: nowIso,
+          generation_time_seconds: generationTimeSeconds,
+        })
+        .eq("id", generationId)
+        .eq("user_id", userId)
+        .not("status", "in", "(completed,failed,cancelled)");
+    }
+
+    await refundTaskCredits({
+      admin,
+      userId,
+      taskId,
+      taskType: taskRow.type,
+      generationId,
+      metadata: taskRow.metadata,
+      reason: "cancelled_by_user",
+    });
+
+    return c.json({ cancelled: true, task_id: taskId });
+  }
+
+  const modalJobId = taskRow.provider_job_id ?? taskRow.modal_job_id;
+  if (modalJobId) await modalProvider.cancelJob(modalJobId);
 
   await admin
     .from("tasks")
     .update({
       status: "cancelled",
+      provider_status: "cancelled",
       error: "Cancelled by user",
       completed_at: nowIso,
     })
     .eq("id", taskId)
     .eq("user_id", userId);
 
-  const generationId = (task as { generation_id: string | null }).generation_id;
-  const taskType = (task as { type: string }).type;
   if (generationId) {
-    const createdAt = parseIsoDate(
-      (task as { created_at: string | null }).created_at,
-    );
+    const createdAt = parseIsoDate(taskRow.created_at);
     const generationTimeSeconds = createdAt
       ? secondsBetween(createdAt, now)
       : null;
@@ -605,9 +732,9 @@ tasksRoutes.post("/tasks/:id/cancel", async (c) => {
     admin,
     userId,
     taskId,
-    taskType,
+    taskType: taskRow.type,
     generationId,
-    metadata: (task as { metadata: unknown }).metadata,
+    metadata: taskRow.metadata,
     reason: "cancelled_by_user",
   });
 
