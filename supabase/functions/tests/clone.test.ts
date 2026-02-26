@@ -241,6 +241,98 @@ Deno.test({
 
 Deno.test({
   name:
+    "POST /clone/finalize duplicate submit is idempotent and does not restore trial",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdminClient();
+    await admin
+      .from("profiles")
+      .update({ credits_remaining: 250000, clone_trials_remaining: 2 })
+      .eq("id", userA.userId);
+
+    let voiceId = "";
+    let objectKey = "";
+    try {
+      const urlRes = await apiFetch("/clone/upload-url", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(VALID_VOICE_PAYLOAD),
+      });
+      assertEquals(urlRes.status, 200);
+      const uploadPayload = await urlRes.json();
+      voiceId = uploadPayload.voice_id as string;
+      objectKey = uploadPayload.object_key as string;
+
+      const uploadRes = await fetch(uploadPayload.upload_url as string, {
+        method: "PUT",
+        headers: { "Content-Type": "audio/wav" },
+        body: MINIMAL_WAV,
+      });
+      assertEquals(uploadRes.status, 200);
+      await uploadRes.body?.cancel();
+
+      const finalizePayload = {
+        voice_id: voiceId,
+        ...VALID_VOICE_PAYLOAD,
+      };
+
+      const finalizeFirst = await apiFetch("/clone/finalize", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(finalizePayload),
+      });
+      assertEquals(finalizeFirst.status, 200);
+      const firstBody = await finalizeFirst.json();
+      assertEquals(firstBody.id, voiceId);
+
+      const firstProfile = await admin
+        .from("profiles")
+        .select("clone_trials_remaining")
+        .eq("id", userA.userId)
+        .single();
+      assertEquals(firstProfile.error, null);
+      assertEquals(firstProfile.data?.clone_trials_remaining, 1);
+
+      const finalizeSecond = await apiFetch(
+        "/clone/finalize",
+        userA.accessToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(finalizePayload),
+        },
+      );
+      assertEquals(finalizeSecond.status, 200);
+      const secondBody = await finalizeSecond.json();
+      assertEquals(secondBody.id, voiceId);
+
+      const secondProfile = await admin
+        .from("profiles")
+        .select("clone_trials_remaining")
+        .eq("id", userA.userId)
+        .single();
+      assertEquals(secondProfile.error, null);
+      assertEquals(secondProfile.data?.clone_trials_remaining, 1);
+    } finally {
+      if (voiceId) {
+        await admin.from("voices").delete().eq("id", voiceId).eq(
+          "user_id",
+          userA.userId,
+        );
+      }
+      if (objectKey) {
+        await admin.storage.from("references").remove([objectKey]);
+      }
+      await admin
+        .from("profiles")
+        .update({ credits_remaining: 250000, clone_trials_remaining: 2 })
+        .eq("id", userA.userId);
+    }
+  },
+});
+
+Deno.test({
+  name:
     "POST /clone/finalize debits 1000 credits when clone trials are exhausted",
   ...noLeaks,
   fn: async () => {

@@ -550,10 +550,11 @@ tasksRoutes.get("/tasks/:id", async (c) => {
       })
       .eq("id", generationId)
       .eq("user_id", userId)
+      .not("status", "in", "(completed,failed,cancelled)")
       .is("audio_object_key", null);
   }
 
-  await admin
+  const completeTaskUpdate = await admin
     .from("tasks")
     .update({
       status: "completed",
@@ -563,7 +564,36 @@ tasksRoutes.get("/tasks/:id", async (c) => {
       error: null,
     })
     .eq("id", taskId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .in("status", ["pending", "processing"])
+    .select("id")
+    .maybeSingle();
+
+  if (completeTaskUpdate.error) {
+    return jsonDetail("Failed to update task.", 500);
+  }
+  if (!completeTaskUpdate.data) {
+    const { data: currentTask } = await admin
+      .from("tasks")
+      .select("status, provider_status, result, error")
+      .eq("id", taskId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (currentTask) {
+      const row = currentTask as {
+        status?: string | null;
+        provider_status?: string | null;
+        result?: unknown;
+        error?: string | null;
+      };
+      base.status = row.status ?? base.status;
+      base.provider_status = row.provider_status ?? base.provider_status;
+      base.result = row.result ?? base.result;
+      base.error = row.error ?? base.error;
+    }
+    return c.json(base);
+  }
 
   base.status = "completed";
   base.provider_status = "completed";
@@ -652,7 +682,7 @@ tasksRoutes.post("/tasks/:id/cancel", async (c) => {
   const generationId = taskRow.generation_id;
 
   if (provider === "qwen") {
-    await admin
+    const cancelUpdate = await admin
       .from("tasks")
       .update({
         cancellation_requested: true,
@@ -663,7 +693,14 @@ tasksRoutes.post("/tasks/:id/cancel", async (c) => {
       })
       .eq("id", taskId)
       .eq("user_id", userId)
-      .in("status", ["pending", "processing"]);
+      .in("status", ["pending", "processing"])
+      .select("id")
+      .maybeSingle();
+
+    if (cancelUpdate.error) return jsonDetail("Failed to cancel task.", 500);
+    if (!cancelUpdate.data) {
+      return jsonDetail("Task is no longer cancellable.", 409);
+    }
 
     if (generationId) {
       const createdAt = parseIsoDate(taskRow.created_at);
@@ -696,10 +733,7 @@ tasksRoutes.post("/tasks/:id/cancel", async (c) => {
     return c.json({ cancelled: true, task_id: taskId });
   }
 
-  const modalJobId = taskRow.provider_job_id ?? taskRow.modal_job_id;
-  if (modalJobId) await modalProvider.cancelJob(modalJobId);
-
-  await admin
+  const cancelUpdate = await admin
     .from("tasks")
     .update({
       status: "cancelled",
@@ -708,7 +742,18 @@ tasksRoutes.post("/tasks/:id/cancel", async (c) => {
       completed_at: nowIso,
     })
     .eq("id", taskId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .in("status", ["pending", "processing"])
+    .select("id")
+    .maybeSingle();
+
+  if (cancelUpdate.error) return jsonDetail("Failed to cancel task.", 500);
+  if (!cancelUpdate.data) {
+    return jsonDetail("Task is no longer cancellable.", 409);
+  }
+
+  const modalJobId = taskRow.provider_job_id ?? taskRow.modal_job_id;
+  if (modalJobId) await modalProvider.cancelJob(modalJobId);
 
   if (generationId) {
     const createdAt = parseIsoDate(taskRow.created_at);

@@ -173,6 +173,29 @@ cloneRoutes.post("/clone/finalize", async (c) => {
     );
   }
 
+  if (charge.row.duplicate) {
+    const existingVoice = await admin
+      .from("voices")
+      .select("id, name")
+      .eq("id", voiceId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (existingVoice.error) {
+      return jsonDetail("Failed to load existing voice.", 500);
+    }
+
+    if (existingVoice.data) {
+      const row = existingVoice.data as { id: string; name: string };
+      return c.json({ id: row.id, name: row.name });
+    }
+
+    return jsonDetail(
+      "Duplicate finalize request detected. Please start a new clone upload.",
+      409,
+    );
+  }
+
   const usedTrial = charge.row.used_trial;
   let providerMode: "modal" | "qwen";
   try {

@@ -115,6 +115,9 @@ Purpose: implementation pack for security workstream. Not brainstorm. Each file 
   - `supashield-test.json`
   - `security-ci-summary.md`
 
+Latest gate artifact:
+- `docs/security/audits/2026-02-26/qwen-credits-gate.md`
+
 ## Quick command set
 
 ```bash
