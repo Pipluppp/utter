@@ -1,6 +1,6 @@
 # UI/UX Task Spec — 2026-02-27
 
-27 tasks. Frontend-only. Ordered by user impact.
+31 tasks. Frontend-only. Ordered by user impact.
 
 ---
 
@@ -1168,3 +1168,171 @@ A social proof section that builds trust with new visitors.
 
 - New: `frontend/src/pages/landing/SocialProof.tsx` (or inline in Landing.tsx)
 - `frontend/src/pages/Landing.tsx` — add section to render order
+
+---
+
+## Workflow Completion Clarity Addendum
+
+These four tasks came from a frontend workflow survey focused on the same UX issue:
+backend work can succeed, but the UI still looks idle or incomplete for several
+seconds.
+
+---
+
+### Task 28 — Generate/Design: post-success finalizing state before waveform is ready
+
+**The problem**
+
+`Generate.tsx:134-169` marks task completion and clears the task after 50ms, but
+the UI still needs extra time to resolve media URL + render the waveform. During
+that gap, the progress card disappears and the result card is not visible yet.
+
+`Design.tsx:171-266` has the same pattern: task exits running state before preview
+blob fetch/decode/object URL setup is fully done.
+
+`WaveformPlayer.tsx:62-199` also starts in a non-ready state with no explicit
+loading placeholder.
+
+**What exists today**
+
+- Progress UI depends on task status (`isBusy`/`isRunning`) in Generate/Design.
+- Result card renders only after `audioUrl`/`previewUrl` is set.
+- Waveform readiness is internal to `WaveformPlayer` and not exposed to parent pages.
+
+**Goal**
+
+No “silent gap” between backend completion and visible playable result. Users should
+always see a clear “finalizing” state until waveform UI is ready.
+
+**Approach**
+
+- Add a local client-side completion phase in Generate/Design:
+  `idle -> waiting_backend -> finalizing_result -> ready`.
+- Keep showing the progress container during `finalizing_result`, with explicit text:
+  “Finalizing audio…”
+- Render a result-shell skeleton immediately after terminal success, before waveform
+  is interactive.
+- Clear background task only after local finalization state has started (and task 1
+  persistence behavior is in place).
+- Add an `aria-live="polite"` status line for phase transitions.
+
+**Files to change**
+
+- `frontend/src/pages/Generate.tsx`
+- `frontend/src/pages/Design.tsx`
+- `frontend/src/components/audio/WaveformPlayer.tsx`
+
+---
+
+### Task 29 — WaveformPlayer: built-in loading skeleton and status callbacks
+
+**The problem**
+
+`WaveformPlayer.tsx:69-73` resets to not-ready, and `:193` renders an empty waveform
+container while loading. The only visible cue is a disabled Play button (`:172-175`),
+which is easy to miss.
+
+This affects all places using WaveformPlayer (Generate, Design, Clone record preview,
+landing demo cards).
+
+**What exists today**
+
+- Internal `isReady`/`loadError` state in `WaveformPlayer`.
+- No visual loading rail/skeleton while audio is being resolved/decoded.
+- No callback for parents to coordinate page-level progress states.
+
+**Goal**
+
+Waveform loading feels intentional and observable across all workflows.
+
+**Approach**
+
+- Add a waveform placeholder UI in component:
+  muted skeleton bars + “Preparing waveform…” label while `!isReady && !loadError`.
+- Add optional callbacks (e.g. `onLoadStateChange`) so parent pages can track
+  `loading/ready/error`.
+- Keep fallback `<audio controls>` behavior on error; add explicit copy near it.
+- Respect `prefers-reduced-motion` for skeleton animation.
+
+**Files to change**
+
+- `frontend/src/components/audio/WaveformPlayer.tsx`
+- `frontend/src/pages/Generate.tsx`
+- `frontend/src/pages/Design.tsx`
+- `frontend/src/pages/Clone.tsx`
+- `frontend/src/pages/landing/DemoClipCard.tsx`
+
+---
+
+### Task 30 — Clone workflow: stage-level progress (request URL -> upload -> finalize)
+
+**The problem**
+
+`Clone.tsx:463-495` performs three distinct async stages:
+
+1) create upload URL  
+2) upload file  
+3) finalize clone
+
+But UI progress stays generic (“Cloning...”) in `Clone.tsx:788-801`, so users cannot
+tell which stage is active or whether the request is stalled near completion.
+
+**What exists today**
+
+- One boolean `submitting` and elapsed timer.
+- Single text label “Cloning...”.
+- No stage markers and no linkage to upload percentage (task 12).
+
+**Goal**
+
+Clone flow communicates exactly where time is being spent.
+
+**Approach**
+
+- Add `cloneStage` state (`preparing`, `uploading`, `finalizing`, `done`, `error`).
+- Show a 3-step progress tracker with current step highlight + completed checks.
+- Integrate upload percentage from Task 12 into the `uploading` step.
+- Show precise copy per stage (“Uploading audio…”, “Creating voice profile…”).
+
+**Files to change**
+
+- `frontend/src/pages/Clone.tsx`
+
+**Depends on**: Task 12
+
+---
+
+### Task 31 — History/Voices preview loading + missing-audio terminal states
+
+**The problem**
+
+In History and Voices, preview/playback loading is represented mostly by button text.
+Waveform containers stay hidden until ready (`History.tsx:394`, `Voices.tsx:331`),
+which makes loading feel like no-op.
+
+History also has a completed-without-audio gap: if `g.status === 'completed'` but
+`audio_path` is missing, the action area can render no explanatory message
+(`History.tsx:363-367`).
+
+**What exists today**
+
+- `useWaveformListPlayer.ts` emits loading/playing/paused/stopped, but no error detail.
+- Loading state changes button labels only.
+- Hidden waveform mount point becomes visible only after resolved URL + WaveSurfer init.
+
+**Goal**
+
+Playback interactions always provide visible progress and clear terminal messaging.
+
+**Approach**
+
+- Reserve waveform space with a lightweight skeleton while preview is loading.
+- Add explicit “Preparing audio…” copy for completed rows without available audio URL.
+- Extend list player state to include `error` and surface inline row-level messages.
+- Add `aria-live="polite"` announcement for preview state changes.
+
+**Files to change**
+
+- `frontend/src/components/audio/useWaveformListPlayer.ts`
+- `frontend/src/pages/History.tsx`
+- `frontend/src/pages/Voices.tsx`
