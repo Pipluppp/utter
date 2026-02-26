@@ -121,7 +121,7 @@ export function DesignPage() {
   }, [startedAt])
 
   const saveDesignedVoice = useCallback(
-    async (blob: Blob, snapshot: DesignFormState) => {
+    async (blob: Blob, snapshot: DesignFormState, taskId: string) => {
       setIsSavingVoice(true)
       setSavedVoiceId(null)
       setSavedVoiceName(null)
@@ -133,6 +133,7 @@ export function DesignPage() {
         form.set('text', snapshot.text.trim())
         form.set('language', snapshot.language)
         form.set('instruct', snapshot.instruct.trim())
+        form.set('task_id', taskId)
         form.set(
           'audio',
           new File([blob], 'preview.wav', {
@@ -176,6 +177,8 @@ export function DesignPage() {
     handledTerminalRef.current = terminalKey
 
     if (task.status === 'completed') {
+      const completedTaskId = task.taskId
+      if (!completedTaskId) return
       const taskState = task.formState as Partial<DesignFormState> | null
       const snapshot: DesignFormState = {
         name: typeof taskState?.name === 'string' ? taskState.name : name,
@@ -210,7 +213,7 @@ export function DesignPage() {
             setPreviewUrl(url)
             setError(null)
             setSuccess(null)
-            await saveDesignedVoice(blob, snapshot)
+            await saveDesignedVoice(blob, snapshot, completedTaskId)
           } catch (e) {
             setError(e instanceof Error ? e.message : 'Failed to load preview.')
           }
@@ -228,7 +231,7 @@ export function DesignPage() {
           setPreviewUrl(url)
           setError(null)
           setSuccess(null)
-          void saveDesignedVoice(blob, snapshot)
+          void saveDesignedVoice(blob, snapshot, completedTaskId)
         } else {
           setError('Failed to load preview audio.')
         }
@@ -277,7 +280,7 @@ export function DesignPage() {
         '/api/voices/design/preview',
         {
           method: 'POST',
-          json: { text, language, instruct },
+          json: { text, language, instruct, name },
         },
       )
       startTask(res.task_id, 'design', '/design', 'Design preview', snapshot)

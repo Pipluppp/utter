@@ -9,6 +9,15 @@ import {
   trialRestore,
 } from "../../_shared/credits.ts";
 import { createAdminClient } from "../../_shared/supabase.ts";
+import {
+  getQwenConfig,
+  getTtsProviderMode,
+} from "../../_shared/tts/provider.ts";
+import {
+  normalizeProviderError,
+  providerDetailMessage,
+} from "../../_shared/tts/providers/errors.ts";
+import { qwenProvider } from "../../_shared/tts/providers/qwen.ts";
 import { resolveStorageUrl } from "../../_shared/urls.ts";
 
 function jsonDetail(detail: string, status: number) {
@@ -61,7 +70,6 @@ cloneRoutes.post("/clone/upload-url", async (c) => {
   const name = normalizeString(body.name);
   const language = normalizeString(body.language);
   const transcript = normalizeString(body.transcript);
-  const description = normalizeString(body.description);
 
   if (!name || name.length > 100) {
     return jsonDetail("Name must be 1-100 characters.", 400);
@@ -165,7 +173,104 @@ cloneRoutes.post("/clone/finalize", async (c) => {
     );
   }
 
+  if (charge.row.duplicate) {
+    const existingVoice = await admin
+      .from("voices")
+      .select("id, name")
+      .eq("id", voiceId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (existingVoice.error) {
+      return jsonDetail("Failed to load existing voice.", 500);
+    }
+
+    if (existingVoice.data) {
+      const row = existingVoice.data as { id: string; name: string };
+      return c.json({ id: row.id, name: row.name });
+    }
+
+    return jsonDetail(
+      "Duplicate finalize request detected. Please start a new clone upload.",
+      409,
+    );
+  }
+
   const usedTrial = charge.row.used_trial;
+  let providerMode: "modal" | "qwen";
+  try {
+    providerMode = getTtsProviderMode();
+  } catch (error) {
+    return jsonDetail(
+      error instanceof Error ? error.message : "Provider config error",
+      500,
+    );
+  }
+
+  let providerVoiceId: string | null = null;
+  let providerTargetModel: string | null = null;
+  let providerRequestId: string | null = null;
+  let providerRegion: string | null = null;
+  let providerMetadata: Record<string, unknown> = {};
+
+  if (providerMode === "qwen") {
+    try {
+      const { data: signed, error: signedError } = await admin.storage
+        .from("references")
+        .createSignedUrl(objectKey, 600);
+
+      if (signedError || !signed?.signedUrl) {
+        throw new Error(
+          "Failed to create signed URL for provider voice cloning.",
+        );
+      }
+
+      const signedUrl = resolveStorageUrl(c.req.raw, signed.signedUrl);
+      const created = await qwenProvider.createQwenCloneVoice({
+        preferredName: name,
+        referenceAudioUrl: signedUrl,
+        transcript,
+        language,
+      });
+
+      const config = getQwenConfig();
+      providerVoiceId = created.providerVoiceId;
+      providerTargetModel = created.targetModel;
+      providerRequestId = created.requestId;
+      providerRegion = config.region;
+      providerMetadata = {
+        usage: created.usage,
+      };
+    } catch (error) {
+      if (usedTrial) {
+        await trialRestore(admin, {
+          userId,
+          operation: "clone",
+          idempotencyKey: chargeIdempotencyKey,
+          metadata: {
+            reason: "qwen_clone_failed",
+            voice_id: voiceId,
+          },
+        });
+      } else {
+        await applyCreditEvent(admin, {
+          userId,
+          eventKind: "refund",
+          operation: "clone",
+          amount: creditsToDebit,
+          referenceType: "voice",
+          referenceId: voiceId,
+          idempotencyKey: `clone:${voiceId}:refund`,
+          metadata: {
+            reason: "qwen_clone_failed",
+          },
+        });
+      }
+
+      const providerError = normalizeProviderError(error);
+      return jsonDetail(providerDetailMessage(providerError), 502);
+    }
+  }
 
   const { data, error } = await admin
     .from("voices")
@@ -178,6 +283,13 @@ cloneRoutes.post("/clone/finalize", async (c) => {
       reference_object_key: objectKey,
       reference_transcript: transcript,
       description: description ?? null,
+      tts_provider: providerMode,
+      provider_voice_id: providerVoiceId,
+      provider_target_model: providerTargetModel,
+      provider_voice_kind: providerMode === "qwen" ? "vc" : null,
+      provider_region: providerRegion,
+      provider_request_id: providerRequestId,
+      provider_metadata: providerMetadata,
     })
     .select("id, name")
     .single();

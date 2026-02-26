@@ -1,4 +1,4 @@
-import { assertEquals, assertArrayIncludes } from "@std/assert";
+import { assertArrayIncludes, assertEquals } from "@std/assert";
 import { apiPublicFetch } from "./_helpers/setup.ts";
 
 Deno.test("GET /languages returns language list with defaults", async () => {
@@ -7,9 +7,14 @@ Deno.test("GET /languages returns language list with defaults", async () => {
 
   const body = await res.json();
   assertEquals(body.default, "Auto");
-  assertEquals(body.provider, "qwen");
+  assertEquals(body.provider, "modal");
   assertEquals(Array.isArray(body.languages), true);
   assertArrayIncludes(body.languages, ["Auto", "English", "Chinese"]);
+  assertEquals(body.capabilities.supports_generate, true);
+  assertEquals(body.capabilities.supports_generate_stream, false);
+  assertEquals(body.capabilities.default_generate_mode, "task");
+  assertEquals(body.capabilities.allow_generate_mode_toggle, false);
+  assertEquals(typeof body.capabilities.max_text_chars, "number");
 });
 
 Deno.test("GET /languages includes transcription config", async () => {

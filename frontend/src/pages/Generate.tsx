@@ -28,7 +28,7 @@ type GenerateFormState = {
 
 export function GeneratePage() {
   const [params] = useSearchParams()
-  const { languages, defaultLanguage } = useLanguages()
+  const { languages, defaultLanguage, provider, capabilities } = useLanguages()
   const { tasks, startTask, clearTask, getStatusText } = useTasks()
 
   const task = tasks.generate
@@ -179,17 +179,28 @@ export function GeneratePage() {
   }
 
   const charCount = text.length
+  const maxTextChars = capabilities?.max_text_chars ?? 10000
   const isRunning = task?.status === 'pending' || task?.status === 'processing'
   const isBusy = isSubmitting || isRunning
+  const selectedVoice = voices?.voices.find((v) => v.id === voiceId) ?? null
+  const selectedVoiceProvider = selectedVoice?.tts_provider ?? 'modal'
+  const selectedVoiceCompatible = !selectedVoice
+    ? true
+    : selectedVoiceProvider === provider
   const statusText = task
-    ? getStatusText(task.status, task.modalStatus ?? null)
+    ? getStatusText(
+        task.status,
+        task.modalStatus ?? null,
+        task.providerStatus ?? null,
+      )
     : null
 
   const canSubmit =
     !loadingVoices &&
     Boolean(voiceId) &&
+    selectedVoiceCompatible &&
     Boolean(text.trim()) &&
-    charCount <= 10000 &&
+    charCount <= maxTextChars &&
     !isBusy
 
   const formState: GenerateFormState = useMemo(
@@ -205,6 +216,12 @@ export function GeneratePage() {
     setDownloadUrl(null)
 
     if (!canSubmit) {
+      if (!selectedVoiceCompatible) {
+        setError(
+          `Selected voice uses ${selectedVoiceProvider}. Active provider is ${provider}.`,
+        )
+        return
+      }
       setError('Please select a voice and enter some text.')
       return
     }
@@ -239,7 +256,7 @@ export function GeneratePage() {
               Generation runs as a background task. Time varies by text length
               and server load.
             </div>
-            <div>Max input: 10,000 characters.</div>
+            <div>Max input: {maxTextChars.toLocaleString()} characters.</div>
           </div>
         </InfoTip>
       </div>
@@ -265,11 +282,16 @@ export function GeneratePage() {
             <option value="">
               {loadingVoices ? 'Loading…' : 'Select a voice'}
             </option>
-            {voices?.voices.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name}
-              </option>
-            ))}
+            {voices?.voices.map((v) => {
+              const voiceProvider = v.tts_provider ?? 'modal'
+              const incompatible = voiceProvider !== provider
+              return (
+                <option key={v.id} value={v.id} disabled={incompatible}>
+                  {v.name}
+                  {incompatible ? ` (${voiceProvider} only)` : ''}
+                </option>
+              )
+            })}
           </Select>
         </div>
 
@@ -302,12 +324,12 @@ export function GeneratePage() {
           <div className="mt-2 flex items-center justify-between text-xs text-faint">
             <span
               className={cn(
-                charCount > 10000 && 'text-red-700 dark:text-red-400',
+                charCount > maxTextChars && 'text-red-700 dark:text-red-400',
               )}
             >
-              {charCount}/10000
+              {charCount}/{maxTextChars}
             </span>
-            <span>Max 10,000 characters</span>
+            <span>Max {maxTextChars.toLocaleString()} characters</span>
           </div>
         </div>
 

@@ -50,6 +50,8 @@ Latest: **[2026-02-27/README.md](./2026-02-27/README.md)** — UI/UX polish spri
 | [vercel-frontend.md](./vercel-frontend.md) | Vercel frontend hosting + `/api/*` rewrites |
 | [deployment-architecture.md](./deployment-architecture.md) | Billing integration + cost projections |
 | **[qwen-integration/README.md](./qwen-integration/README.md)** | Official Qwen API integration (dual provider rollout) |
+| [qwen-integration/current-state.md](./qwen-integration/current-state.md) | Current deployed Qwen/Modal state and validated checks |
+| [qwen-integration/implementation-guide.md](./qwen-integration/implementation-guide.md) | Implementation summary + setup/deploy runbook |
 
 ## Supporting docs
 
