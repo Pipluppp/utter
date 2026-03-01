@@ -30,11 +30,13 @@ export function useWaveformListPlayer() {
       container,
       audioUrl,
       onState,
+      onError,
     }: {
       id: string
       container: HTMLElement
       audioUrl: string
       onState?: (state: 'loading' | 'playing' | 'paused' | 'stopped') => void
+      onError?: (message: string) => void
     }) => {
       if (activeRef.current?.id === id && wsRef.current) {
         if (wsRef.current.isPlaying()) {
@@ -54,7 +56,10 @@ export function useWaveformListPlayer() {
       let resolvedAudioUrl = audioUrl
       try {
         resolvedAudioUrl = await resolveProtectedMediaUrl(audioUrl)
-      } catch {
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : 'Failed to load protected audio.'
+        onError?.(message)
         stopAll()
         onState?.('stopped')
         return
@@ -96,6 +101,7 @@ export function useWaveformListPlayer() {
       ws.on('play', () => onState?.('playing'))
       ws.on('finish', () => onState?.('stopped'))
       ws.on('error', () => {
+        onError?.('Failed to load audio waveform.')
         stopAll()
       })
     },

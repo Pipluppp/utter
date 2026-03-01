@@ -20,10 +20,16 @@ git -C C:\Users\Duncan\Desktop\utter worktree list
 
 ## 2) Auth + CLI bootstrap
 
-Run:
+Run (Windows):
 
 ```bat
 C:\Users\Duncan\Desktop\utter\scripts\cloudflare-migration\bootstrap-auth.cmd
+```
+
+Run (WSL/Linux):
+
+```bash
+/mnt/c/Users/Duncan/Desktop/utter-cloudflare-impl/scripts/cloudflare-migration/bootstrap-auth.sh
 ```
 
 This will:
@@ -49,6 +55,7 @@ npx supabase link --project-ref jgmivviwockcwjkvpqra
 cd C:\Users\Duncan\Desktop\utter-cloudflare-impl
 npm install
 npm --prefix frontend install
+npm --prefix workers/api install
 supabase start
 ```
 

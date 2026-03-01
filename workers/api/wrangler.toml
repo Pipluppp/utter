@@ -1,0 +1,94 @@
+name = "utter-api"
+main = "src/index.ts"
+compatibility_date = "2026-03-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Phase 01/02 staging default. Set per environment before deploy.
+CORS_ALLOWED_ORIGIN = "*"
+TTS_PROVIDER_MODE = "qwen"
+STORAGE_PROVIDER = "supabase"
+QUEUE_GENERATE_ENABLED = "false"
+QUEUE_DESIGN_PREVIEW_ENABLED = "false"
+QUEUE_MODAL_RECHECK_ENABLED = "false"
+QUEUE_BILLING_ENABLED = "false"
+
+[env.staging.vars]
+CORS_ALLOWED_ORIGIN = "*"
+TTS_PROVIDER_MODE = "qwen"
+STORAGE_PROVIDER = "hybrid"
+DASHSCOPE_REGION = "intl"
+QWEN_VC_TARGET_MODEL = "qwen3-tts-vc-2026-01-22"
+QWEN_VD_TARGET_MODEL = "qwen3-tts-vd-2026-01-26"
+QWEN_MAX_TEXT_CHARS = "100"
+QUEUE_GENERATE_ENABLED = "true"
+QUEUE_DESIGN_PREVIEW_ENABLED = "true"
+QUEUE_MODAL_RECHECK_ENABLED = "false"
+QUEUE_BILLING_ENABLED = "false"
+
+[env.production.vars]
+# Set explicitly during production cutover.
+CORS_ALLOWED_ORIGIN = "https://utter-wheat.vercel.app"
+TTS_PROVIDER_MODE = "qwen"
+STORAGE_PROVIDER = "r2"
+DASHSCOPE_REGION = "intl"
+QWEN_VC_TARGET_MODEL = "qwen3-tts-vc-2026-01-22"
+QWEN_VD_TARGET_MODEL = "qwen3-tts-vd-2026-01-26"
+QWEN_MAX_TEXT_CHARS = "100"
+QUEUE_GENERATE_ENABLED = "false"
+QUEUE_DESIGN_PREVIEW_ENABLED = "false"
+QUEUE_MODAL_RECHECK_ENABLED = "false"
+QUEUE_BILLING_ENABLED = "false"
+
+# Phase 03 R2 staging bindings.
+[[env.staging.r2_buckets]]
+binding = "R2_REFERENCES"
+bucket_name = "utter-references-staging"
+
+[[env.staging.r2_buckets]]
+binding = "R2_GENERATIONS"
+bucket_name = "utter-generations-staging"
+
+# Phase 03 production bindings (set bucket names before prod deploy).
+# [[env.production.r2_buckets]]
+# binding = "R2_REFERENCES"
+# bucket_name = "utter-references"
+#
+# [[env.production.r2_buckets]]
+# binding = "R2_GENERATIONS"
+# bucket_name = "utter-generations"
+
+[[env.staging.queues.producers]]
+queue = "tts-jobs-staging"
+binding = "TTS_QUEUE"
+
+[[env.staging.queues.consumers]]
+queue = "tts-jobs-staging"
+max_batch_size = 1
+max_batch_timeout = 2
+max_retries = 3
+dead_letter_queue = "tts-jobs-dlq-staging"
+
+# Required Worker secrets (set via `wrangler secret put --env <name> ...`):
+# - SUPABASE_URL
+# - SUPABASE_ANON_KEY
+# - SUPABASE_SERVICE_ROLE_KEY
+# - STORAGE_SIGNING_SECRET
+# - STRIPE_SECRET_KEY
+# - STRIPE_WEBHOOK_SECRET
+# - MODAL_JOB_SUBMIT / MODAL_JOB_STATUS / MODAL_JOB_RESULT / MODAL_JOB_CANCEL
+# - MODAL_ENDPOINT_VOICE_DESIGN
+# - DASHSCOPE_API_KEY
+# - MISTRAL_API_KEY
+
+# Queue Q1 wiring should be added in the same rollout train as production API cutover on Workers Free.
+# [[queues.producers]]
+# queue = "tts-jobs"
+# binding = "TTS_QUEUE"
+#
+# [[queues.consumers]]
+# queue = "tts-jobs"
+# max_batch_size = 1
+# max_batch_timeout = 2
+# max_retries = 3
+# dead_letter_queue = "tts-jobs-dlq"

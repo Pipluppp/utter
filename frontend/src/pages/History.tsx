@@ -191,6 +191,7 @@ export function HistoryPage() {
   async function onPlay(gen: Generation, audioUrl: string) {
     const container = waveRefs.current[gen.id]
     if (!container) return
+    setError(null)
     await toggle({
       id: gen.id,
       container,
@@ -198,6 +199,9 @@ export function HistoryPage() {
       onState: (state) => {
         const next: PlayState = state
         setPlayState((prev) => ({ ...prev, [gen.id]: next }))
+      },
+      onError: (message) => {
+        setError(message)
       },
     })
   }

@@ -12,6 +12,7 @@ Voice cloning + TTS app powered by Qwen3-TTS on Modal. React 19 + Vite + Tailwin
 
 - `frontend/`: React 19 + Vite + TS + Tailwind v4 (hosted on Vercel)
 - `supabase/`: Edge Functions (Deno/Hono), Postgres migrations, Storage config, tests
+- `workers/`: Cloudflare Workers migration scaffold (Phase 02 API port)
 - `modal_app/`: Modal deploy code for Qwen3-TTS (serverless GPU)
 - `docs/`: docs (start with `docs/README.md`)
 

@@ -5,7 +5,7 @@ Status: Planning
 
 ## Target architecture
 
-- Frontend: Cloudflare Pages/Workers
+- Frontend: Cloudflare Workers
 - API runtime: Cloudflare Workers + Hono
 - Storage: Cloudflare R2
 - Database/Auth: Supabase Postgres + RLS + Auth + existing RPCs
@@ -46,10 +46,10 @@ Acceptance:
 
 ## Phase 1: Frontend hosting to Cloudflare
 
-1. Deploy existing Vite output to Pages.
+1. Deploy existing Vite output behind a frontend Worker.
 2. Preserve SPA fallback behavior for non-asset routes.
 3. Route `/api/*` to current Supabase Edge Function backend initially.
-4. Update API CORS allowlist + Supabase Auth redirect allowlist for Pages/custom domains.
+4. Update API CORS allowlist + Supabase Auth redirect allowlist for Worker/custom domains.
 
 Acceptance:
 - No frontend behavior regression.

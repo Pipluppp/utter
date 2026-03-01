@@ -10,7 +10,7 @@ This mapping tracks each user-facing/backend feature from current implementation
 
 | Feature | Current | Target | Migration notes |
 |---|---|---|---|
-| Frontend SPA hosting | Vercel | Cloudflare Pages/Workers | Keep same build output and route behavior |
+| Frontend SPA hosting | Vercel | Cloudflare Workers | Keep same build output and route behavior |
 | API routing (`/api/*`) | Vercel rewrite to Supabase Edge Function | Cloudflare Worker Hono API | Keep endpoint paths and payload shapes |
 | Auth (sign up/in/out, session) | Frontend Supabase Auth SDK | Same | No provider migration in this phase |
 | Voices list/delete/preview | Edge routes + PostgREST + Storage signed URL | Worker routes + Supabase PostgREST + R2 signing | Preserve preview URL contract |

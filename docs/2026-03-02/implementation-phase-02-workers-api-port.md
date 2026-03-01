@@ -1,7 +1,7 @@
 # Phase 02: API Port to Cloudflare Workers
 
 Date: 2026-03-02  
-Status: Ready for implementation
+Status: Implemented in `workers/api` and validated via parity test harness (see audit evidence)
 
 ## Goal
 
@@ -80,12 +80,12 @@ Run and compare for the following endpoints:
 
 ## Validation checklist
 
-- [ ] Response shapes match existing frontend expectations.
-- [ ] Unauthorized flows still return expected 401 details.
-- [ ] Credits debit/refund semantics unchanged.
-- [ ] Stripe webhook idempotency unchanged.
-- [ ] Task orchestration statuses unchanged (`pending/processing/completed/failed/cancelled`).
-- [ ] Qwen async paths are queue-backed (or paid-plan exception is documented and approved).
+- [x] Response shapes match existing frontend expectations.
+- [x] Unauthorized flows still return expected 401 details.
+- [x] Credits debit/refund semantics unchanged.
+- [x] Stripe webhook idempotency unchanged.
+- [x] Task orchestration statuses unchanged (`pending/processing/completed/failed/cancelled`).
+- [x] Qwen async paths are queue-backed (or paid-plan exception is documented and approved).
 
 ## Rollback
 
