@@ -32,7 +32,7 @@ npm run dev
 
 See **[tasks.md](./tasks.md)** for the current task queue.
 
-Latest: **[2026-02-27/README.md](./2026-02-27/README.md)** — UI/UX polish sprint planning for frontend improvements.
+Latest: **[2026-03-02/README.md](./2026-03-02/README.md)** — Cloudflare hybrid migration planning (frontend/API/storage migration while retaining Supabase DB/Auth).
 
 ---
 
@@ -72,6 +72,7 @@ Latest: **[2026-02-27/README.md](./2026-02-27/README.md)** — UI/UX polish spri
 
 Date-stamped folders contain planning notes, brain dumps, and progress tracking from various phases. These are kept for historical reference:
 
+- `2026-03-02/` — Cloudflare hybrid migration plans (Pages/Workers/R2 + Supabase DB/Auth)
 - `2026-02-19/` — Auth pages + Qwen cutover planning
 - `2026-02-16/` — Staging deploy + Vercel wiring (completed)
 - `2026-02-05/` — Migration planning
