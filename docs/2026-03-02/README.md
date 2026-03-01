@@ -41,6 +41,8 @@ This folder captures near-term planning for a hybrid Cloudflare + Supabase archi
    - feature-by-feature context on current behavior vs queue replacement
 16. [cloudflare-queues-qwen-compatibility.md](./cloudflare-queues-qwen-compatibility.md)
    - verified compatibility and guardrails for Qwen model flows on Queues
+17. [implementation-bootstrap-checklist.md](./implementation-bootstrap-checklist.md)
+   - worktree/auth/tooling bootstrap before phase execution
 
 ## Scope guardrails
 
