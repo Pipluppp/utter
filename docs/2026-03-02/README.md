@@ -2,7 +2,7 @@
 
 This folder captures near-term planning for a hybrid Cloudflare + Supabase architecture:
 
-- Frontend on Cloudflare Pages/Workers
+- Frontend on Cloudflare Workers
 - API on Cloudflare Workers (no direct frontend app-data queries)
 - Object storage on Cloudflare R2
 - Supabase retained for Postgres, RLS, Auth, and existing credits/billing RPC logic
@@ -41,6 +41,18 @@ This folder captures near-term planning for a hybrid Cloudflare + Supabase archi
    - feature-by-feature context on current behavior vs queue replacement
 16. [cloudflare-queues-qwen-compatibility.md](./cloudflare-queues-qwen-compatibility.md)
    - verified compatibility and guardrails for Qwen model flows on Queues
+17. [implementation-phase-01-02-scaffold-progress.md](./implementation-phase-01-02-scaffold-progress.md)
+   - current scaffold status for Phase 01 frontend hosting + Phase 02 worker runtime
+18. [implementation-bootstrap-checklist.md](./implementation-bootstrap-checklist.md)
+   - worktree/auth/tooling bootstrap before phase execution
+19. [cloudflare-hybrid-phase-01.md](../security/audits/2026-03-02/cloudflare-hybrid-phase-01.md)
+   - phase 01 frontend worker hosting deployment/smoke evidence artifact
+20. [cloudflare-hybrid-phase-02.md](../security/audits/2026-03-02/cloudflare-hybrid-phase-02.md)
+   - phase 02 deployment/smoke/parity evidence artifact
+21. [cloudflare-hybrid-phase-03.md](../security/audits/2026-03-02/cloudflare-hybrid-phase-03.md)
+   - phase 03 storage adapter implementation + validation status artifact
+22. [cloudflare-hybrid-phase-04.md](../security/audits/2026-03-02/cloudflare-hybrid-phase-04.md)
+   - phase 04 queue Q1 wiring + staging evidence artifact
 
 ## Scope guardrails
 
@@ -48,3 +60,25 @@ This folder captures near-term planning for a hybrid Cloudflare + Supabase archi
 - Do not rewrite credits ledger or billing invariants.
 - Keep `/api/*` as stable frontend contract.
 - Keep user session handling in Supabase Auth SDK.
+
+## Current Staging State (2026-03-02)
+
+1. Frontend is served from Cloudflare Worker `utter` at `https://utter.duncanb013.workers.dev`.
+2. API is served from Cloudflare Worker `utter-api-staging` at `https://utter-api-staging.duncanb013.workers.dev/api`.
+3. Supabase remains system-of-record for Postgres/Auth/RLS/credits/billing RPC flows.
+4. Queue Q1 is active in staging for qwen generate and qwen design-preview paths.
+5. Storage mode in staging is `hybrid` for parity:
+   - new writes go to R2
+   - reads fall back to Supabase Storage for legacy objects not yet in R2.
+
+## Remaining Migration Work
+
+1. Production environment sync:
+   - finalize production Worker secrets/vars
+   - wire production R2 bucket bindings
+   - wire production queue bindings/flags.
+2. Production hardening evidence:
+   - repeat smoke/parity suite on production-like config
+   - verify rollback drills for `/api/*` routing and storage mode toggles.
+3. Cleanup/de-scope:
+   - keep modal queue paths out of active rollout unless explicitly re-enabled.

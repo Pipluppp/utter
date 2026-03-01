@@ -164,6 +164,7 @@ export function VoicesPage() {
   async function onPreview(voice: Voice) {
     const container = waveRefs.current[voice.id]
     if (!container) return
+    setError(null)
     await toggle({
       id: voice.id,
       container,
@@ -171,6 +172,9 @@ export function VoicesPage() {
       onState: (state) => {
         const next: PlayState = state
         setPlayState((prev) => ({ ...prev, [voice.id]: next }))
+      },
+      onError: (message) => {
+        setError(message)
       },
     })
   }

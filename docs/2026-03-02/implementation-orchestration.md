@@ -21,10 +21,11 @@ Execute migration with minimal product risk:
 ## Locked decisions (2026-03-01)
 
 1. Phase 02 production cutover on Cloudflare Free must not ship with Qwen `waitUntil` long-running paths still active. Queue Q1 (`generate.qwen.start`, `design_preview.qwen.start`) is required in the same rollout train as API cutover (or immediately after, before production traffic).
-2. Frontend host cutover must include explicit CORS/origin and Supabase Auth redirect allowlist updates for Pages/custom domains.
-3. Storage migration uses full R2 cutover path for this pre-production stage:
-   - no long-term `hybrid` mode
-   - no mandatory legacy backfill requirement for production launch
+2. Frontend host cutover must include explicit CORS/origin and Supabase Auth redirect allowlist updates for Worker/custom domains.
+3. Storage migration currently uses `hybrid` in staging for legacy parity:
+   - writes -> R2
+   - reads -> R2 first, then Supabase Storage fallback
+   - production cutover must explicitly choose `r2` or `hybrid` based on launch risk tolerance.
 
 ## Branching and rollout model
 
@@ -64,3 +65,14 @@ Store evidence in:
 3. `references` + `generations` storage flows served via R2.
 4. Supabase auth/session flow unchanged for end users.
 5. Credits/billing regression suite passes.
+
+## Current Execution Status (2026-03-02)
+
+1. Phase 01: complete on staging (`utter` frontend Worker).
+2. Phase 02: complete on staging (`utter-api-staging` Worker API).
+3. Phase 03: complete on staging with `STORAGE_PROVIDER=hybrid` compatibility mode.
+4. Phase 04 (Q1): queue wiring complete for qwen generate + qwen design preview in staging.
+5. Remaining pre-production items:
+   - production env/binding rollout
+   - final production smoke/parity evidence
+   - explicit modal-path de-scope in rollout runbooks.

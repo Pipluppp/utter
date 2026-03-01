@@ -1,4 +1,4 @@
-import { getSession } from './supabase'
+import { getAccessToken, refreshAccessToken } from './supabase'
 
 export type ApiErrorShape = {
   detail?: string
@@ -27,13 +27,23 @@ async function parseErrorMessage(res: Response): Promise<string> {
 }
 
 async function getDefaultAuthHeaders(): Promise<Record<string, string>> {
-  const session = await getSession()
-  const accessToken = session?.access_token ?? null
+  const accessToken = await getAccessToken()
   const headers: Record<string, string> = {}
 
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`
 
   return headers
+}
+
+function withAuthorization(
+  headers: HeadersInit | undefined,
+  accessToken: string | null,
+): HeadersInit {
+  if (!accessToken) return headers ?? {}
+  return {
+    ...(headers ?? {}),
+    Authorization: `Bearer ${accessToken}`,
+  }
 }
 
 export async function apiJson<T>(
@@ -42,15 +52,27 @@ export async function apiJson<T>(
 ): Promise<T> {
   const { json, headers, ...rest } = init
   const authHeaders = await getDefaultAuthHeaders()
-  const res = await fetch(path, {
-    ...rest,
-    headers: {
-      ...authHeaders,
-      ...(json ? { 'content-type': 'application/json' } : {}),
-      ...headers,
-    },
-    body: json ? JSON.stringify(json) : rest.body,
-  })
+
+  const runRequest = async (requestHeaders: HeadersInit) =>
+    fetch(path, {
+      ...rest,
+      headers: requestHeaders,
+      body: json ? JSON.stringify(json) : rest.body,
+    })
+
+  const requestHeaders: HeadersInit = {
+    ...authHeaders,
+    ...(json ? { 'content-type': 'application/json' } : {}),
+    ...headers,
+  }
+
+  let res = await runRequest(requestHeaders)
+  if (res.status === 401) {
+    const refreshedToken = await refreshAccessToken()
+    if (refreshedToken) {
+      res = await runRequest(withAuthorization(requestHeaders, refreshedToken))
+    }
+  }
 
   if (!res.ok) {
     throw new ApiError(await parseErrorMessage(res), res.status)
@@ -70,15 +92,27 @@ export async function apiForm<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const authHeaders = await getDefaultAuthHeaders()
-  const res = await fetch(path, {
-    ...init,
-    method: init.method ?? 'POST',
-    headers: {
-      ...authHeaders,
-      ...(init.headers ?? {}),
-    },
-    body: form,
-  })
+
+  const runRequest = async (requestHeaders: HeadersInit) =>
+    fetch(path, {
+      ...init,
+      method: init.method ?? 'POST',
+      headers: requestHeaders,
+      body: form,
+    })
+
+  const requestHeaders: HeadersInit = {
+    ...authHeaders,
+    ...(init.headers ?? {}),
+  }
+
+  let res = await runRequest(requestHeaders)
+  if (res.status === 401) {
+    const refreshedToken = await refreshAccessToken()
+    if (refreshedToken) {
+      res = await runRequest(withAuthorization(requestHeaders, refreshedToken))
+    }
+  }
 
   if (!res.ok) {
     throw new ApiError(await parseErrorMessage(res), res.status)
@@ -94,13 +128,21 @@ export async function apiForm<T>(
 
 export async function apiRedirectUrl(path: string): Promise<string> {
   const authHeaders = await getDefaultAuthHeaders()
-  const res = await fetch(path, {
-    method: 'GET',
-    redirect: 'follow',
-    headers: {
-      ...authHeaders,
-    },
-  })
+
+  const runRequest = async (requestHeaders: HeadersInit) =>
+    fetch(path, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: requestHeaders,
+    })
+
+  let res = await runRequest(authHeaders)
+  if (res.status === 401) {
+    const refreshedToken = await refreshAccessToken()
+    if (refreshedToken) {
+      res = await runRequest(withAuthorization(authHeaders, refreshedToken))
+    }
+  }
 
   if (!res.ok) {
     throw new ApiError(await parseErrorMessage(res), res.status)
