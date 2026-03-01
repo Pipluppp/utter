@@ -32,7 +32,8 @@ npm run dev
 
 See **[tasks.md](./tasks.md)** for the current task queue.
 
-Latest: **[2026-03-02/README.md](./2026-03-02/README.md)** — Cloudflare hybrid migration planning (frontend/API/storage migration while retaining Supabase DB/Auth).
+Latest: **[2026-03-02/README.md](./2026-03-02/README.md)** — Cloudflare migration continuation plans (parity, security, runtime evaluation, docs realignment).
+Completed implementation snapshot: **[2026-03-01/README.md](./2026-03-01/README.md)**.
 
 ---
 
@@ -72,7 +73,8 @@ Latest: **[2026-03-02/README.md](./2026-03-02/README.md)** — Cloudflare hybrid
 
 Date-stamped folders contain planning notes, brain dumps, and progress tracking from various phases. These are kept for historical reference:
 
-- `2026-03-02/` — Cloudflare hybrid migration plans (Pages/Workers/R2 + Supabase DB/Auth)
+- `2026-03-02/` — Cloudflare continuation plans (parity/security/perf/docs alignment)
+- `2026-03-01/` — Completed Cloudflare hybrid migration implementation notes and phase artifacts
 - `2026-02-19/` — Auth pages + Qwen cutover planning
 - `2026-02-16/` — Staging deploy + Vercel wiring (completed)
 - `2026-02-05/` — Migration planning

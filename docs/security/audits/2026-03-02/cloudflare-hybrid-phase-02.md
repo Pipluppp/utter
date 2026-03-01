@@ -96,4 +96,4 @@ Operational rollback path remains low-risk because route contracts were kept unc
 
 ## 6) Production gate reminder
 
-Phase 02 production cutover remains blocked until Queue Q1 is shipped in the same rollout train (or approved paid-plan exception), per `docs/2026-03-02/implementation-phase-02-workers-api-port.md`.
+Phase 02 production cutover remains blocked until Queue Q1 is shipped in the same rollout train (or approved paid-plan exception), per `docs/2026-03-01/implementation-phase-02-workers-api-port.md`.

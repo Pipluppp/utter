@@ -88,4 +88,4 @@ Internal:
 3. `supabase/functions/_shared/tts/providers/qwen_synthesis.ts`
 4. `supabase/functions/api/routes/generate.ts`
 5. `supabase/functions/api/routes/design.ts`
-6. `docs/2026-03-02/cloudflare-queues-migration-plan.md`
+6. `docs/2026-03-01/cloudflare-queues-migration-plan.md`
