@@ -14,6 +14,16 @@ export interface TestUser {
   userId: string;
 }
 
+let syntheticIpCounter = 0;
+
+function nextSyntheticForwardedFor(): string {
+  // RFC 2544 benchmark range, safe for synthetic test traffic.
+  syntheticIpCounter = (syntheticIpCounter + 1) % 65535;
+  const octet3 = Math.floor(syntheticIpCounter / 255);
+  const octet4 = syntheticIpCounter % 255;
+  return `198.18.${octet3}.${octet4}`;
+}
+
 /**
  * Create or sign-in a test user. Returns access token + user ID.
  * Tries sign-in first (user may exist from previous runs), falls back to sign-up.
@@ -72,10 +82,15 @@ export function apiFetch(
   token: string | null,
   init?: RequestInit,
 ): Promise<Response> {
+  const initialHeaders = (init?.headers as Record<string, string> | undefined) ??
+    {};
   const headers: Record<string, string> = {
     apikey: ANON_KEY,
-    ...(init?.headers as Record<string, string> ?? {}),
+    ...initialHeaders,
   };
+  if (!headers["x-forwarded-for"]) {
+    headers["x-forwarded-for"] = nextSyntheticForwardedFor();
+  }
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }

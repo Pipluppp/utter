@@ -15,10 +15,17 @@ function randomEmail(prefix: string): string {
   return `${prefix}_${id}@test.local`;
 }
 
-async function postCloneUploadUrl(token: string, name: string): Promise<Response> {
+async function postCloneUploadUrl(
+  token: string,
+  name: string,
+  ipAddress: string,
+): Promise<Response> {
   return await apiFetch("/clone/upload-url", token, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-forwarded-for": ipAddress,
+    },
     body: JSON.stringify({
       name,
       language: "English",
@@ -45,8 +52,14 @@ Deno.test({
     let saw429 = false;
     let seenRetryAfter = 0;
 
-    for (let i = 1; i <= 30; i++) {
-      const res = await postCloneUploadUrl(userA.accessToken, `Rate Probe ${i}`);
+    // Current worker rate-limit identity resolves to IP hash in middleware.
+    // Tier1 default IP limit is 120 requests per window.
+    for (let i = 1; i <= 140; i++) {
+      const res = await postCloneUploadUrl(
+        userA.accessToken,
+        `Rate Probe ${i}`,
+        "198.51.100.10",
+      );
       if (res.status === 429) {
         const body = await res.json();
         saw429 = true;
@@ -70,7 +83,11 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
-    const res = await postCloneUploadUrl(userB.accessToken, "Independent Counter");
+    const res = await postCloneUploadUrl(
+      userB.accessToken,
+      "Independent Counter",
+      "198.51.100.11",
+    );
     assertEquals(res.status, 200);
     await res.body?.cancel();
   },

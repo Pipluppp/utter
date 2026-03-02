@@ -7,7 +7,7 @@ Deno.test("GET /languages returns language list with defaults", async () => {
 
   const body = await res.json();
   assertEquals(body.default, "Auto");
-  assertEquals(body.provider, "modal");
+  assertEquals(body.provider, "qwen");
   assertEquals(Array.isArray(body.languages), true);
   assertArrayIncludes(body.languages, ["Auto", "English", "Chinese"]);
   assertEquals(body.capabilities.supports_generate, true);

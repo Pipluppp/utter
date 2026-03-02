@@ -4,17 +4,9 @@ export interface WorkerEnv {
   SUPABASE_SERVICE_ROLE_KEY: string;
   SUPABASE_PUBLIC_URL?: string;
   CORS_ALLOWED_ORIGIN: string;
-  STORAGE_PROVIDER?: "supabase" | "hybrid" | "r2";
   STORAGE_SIGNING_SECRET?: string;
 
   // Provider/runtime envs
-  MODAL_JOB_SUBMIT?: string;
-  MODAL_JOB_STATUS?: string;
-  MODAL_JOB_RESULT?: string;
-  MODAL_JOB_CANCEL?: string;
-  MODAL_ENDPOINT_VOICE_DESIGN?: string;
-
-  TTS_PROVIDER_MODE?: "modal" | "qwen";
   DASHSCOPE_API_KEY?: string;
   DASHSCOPE_BASE_URL?: string;
   DASHSCOPE_REGION?: "intl" | "cn";
@@ -41,16 +33,13 @@ export interface WorkerEnv {
   RATE_LIMIT_TIER2_WINDOW_SECONDS?: string;
   RATE_LIMIT_TIER3_IP_LIMIT?: string;
   RATE_LIMIT_TIER3_WINDOW_SECONDS?: string;
-  QUEUE_GENERATE_ENABLED?: "true" | "false";
-  QUEUE_DESIGN_PREVIEW_ENABLED?: "true" | "false";
-  QUEUE_MODAL_RECHECK_ENABLED?: "true" | "false";
   QUEUE_BILLING_ENABLED?: "true" | "false";
 
-  // Phase 03 storage bindings.
+  // Storage bindings.
   R2_REFERENCES?: R2Bucket;
   R2_GENERATIONS?: R2Bucket;
 
-  // Queue Q1 binding (Phase 04+).
+  // Async queue binding.
   TTS_QUEUE?: Queue;
 }
 

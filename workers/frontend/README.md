@@ -16,7 +16,7 @@ npx wrangler deploy --env staging
 
 ```bash
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co \
-VITE_SUPABASE_ANON_KEY=<anon-key> \
+VITE_SUPABASE_ANON_KEY=<publishable-key> \
 npm --prefix frontend run build
 ```
 

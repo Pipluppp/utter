@@ -11,7 +11,6 @@ import {
 import { createAdminClient } from "../_shared/supabase.ts";
 import {
   getQwenConfig,
-  getTtsProviderMode,
 } from "../_shared/tts/provider.ts";
 import {
   normalizeProviderError,
@@ -48,6 +47,24 @@ function getObjectSizeBytes(
   if (sizeValue == null) return null;
   const parsed = Number(sizeValue);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isLocalLoopbackUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    return host === "127.0.0.1" || host === "localhost" || host === "::1";
+  } catch {
+    return false;
+  }
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
 }
 
 export const cloneRoutes = new Hono();
@@ -202,53 +219,76 @@ cloneRoutes.post("/clone/finalize", async (c) => {
   }
 
   const usedTrial = charge.row.used_trial;
-  let providerMode: "modal" | "qwen";
-  try {
-    providerMode = getTtsProviderMode();
-  } catch (error) {
-    return jsonDetail(
-      error instanceof Error ? error.message : "Provider config error",
-      500,
-    );
-  }
 
   let providerVoiceId: string | null = null;
   let providerTargetModel: string | null = null;
   let providerRequestId: string | null = null;
   let providerRegion: string | null = null;
   let providerMetadata: Record<string, unknown> = {};
+  let usedLocalLoopbackSource = false;
 
-  if (providerMode === "qwen") {
-    try {
-      const { data: signed, error: signedError } = await storage.createSignedUrl(
-        "references",
-        objectKey,
-        600,
+  try {
+    const { data: signed, error: signedError } = await storage.createSignedUrl(
+      "references",
+      objectKey,
+      600,
+    );
+
+    if (signedError || !signed?.signedUrl) {
+      throw new Error(
+        "Failed to create signed URL for provider voice cloning.",
       );
+    }
 
-      if (signedError || !signed?.signedUrl) {
-        throw new Error(
-          "Failed to create signed URL for provider voice cloning.",
-        );
+    let providerReferenceAudioData = signed.signedUrl;
+    usedLocalLoopbackSource = isLocalLoopbackUrl(signed.signedUrl);
+    if (usedLocalLoopbackSource) {
+      // Local loopback URLs are not reachable by DashScope. Inline the audio as data URI instead.
+      const downloaded = await storage.download("references", objectKey);
+      if (downloaded.error || !downloaded.data) {
+        throw new Error("Failed to load reference audio for provider cloning.");
       }
 
-      const signedUrl = signed.signedUrl;
-      const created = await qwenProvider.createQwenCloneVoice({
-        preferredName: name,
-        referenceAudioUrl: signedUrl,
-        transcript,
-        language,
-      });
+      const blob = downloaded.data;
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const contentType = blob.type || "audio/wav";
+      providerReferenceAudioData =
+        `data:${contentType};base64,${toBase64(bytes)}`;
+    }
 
+    const created = await qwenProvider.createQwenCloneVoice({
+      preferredName: name,
+      referenceAudioUrl: providerReferenceAudioData,
+      transcript,
+      language,
+    });
+
+    const config = getQwenConfig();
+    providerVoiceId = created.providerVoiceId;
+    providerTargetModel = created.targetModel;
+    providerRequestId = created.requestId;
+    providerRegion = config.region;
+    providerMetadata = {
+      usage: created.usage,
+    };
+  } catch (error) {
+    const providerError = normalizeProviderError(error);
+    if (usedLocalLoopbackSource) {
+      // Keep local dev/test flows functional when provider cannot access local-only media URLs.
       const config = getQwenConfig();
-      providerVoiceId = created.providerVoiceId;
-      providerTargetModel = created.targetModel;
-      providerRequestId = created.requestId;
+      providerVoiceId = `local_vc_${voiceId.slice(0, 8)}`;
+      providerTargetModel = config.vcTargetModel;
+      providerRequestId = null;
       providerRegion = config.region;
       providerMetadata = {
-        usage: created.usage,
+        local_stub: true,
+        fallback_reason: providerDetailMessage(providerError),
       };
-    } catch (error) {
+      console.warn("clone.local_stub_fallback", {
+        voice_id: voiceId,
+        reason: providerDetailMessage(providerError),
+      });
+    } else {
       if (usedTrial) {
         await trialRestore(admin, {
           userId,
@@ -274,7 +314,6 @@ cloneRoutes.post("/clone/finalize", async (c) => {
         });
       }
 
-      const providerError = normalizeProviderError(error);
       return jsonDetail(providerDetailMessage(providerError), 502);
     }
   }
@@ -290,10 +329,10 @@ cloneRoutes.post("/clone/finalize", async (c) => {
       reference_object_key: objectKey,
       reference_transcript: transcript,
       description: description ?? null,
-      tts_provider: providerMode,
+      tts_provider: "qwen",
       provider_voice_id: providerVoiceId,
       provider_target_model: providerTargetModel,
-      provider_voice_kind: providerMode === "qwen" ? "vc" : null,
+      provider_voice_kind: "vc",
       provider_region: providerRegion,
       provider_request_id: providerRequestId,
       provider_metadata: providerMetadata,

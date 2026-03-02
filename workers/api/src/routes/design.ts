@@ -9,10 +9,7 @@ import {
   trialRestore,
 } from "../_shared/credits.ts";
 import { createAdminClient } from "../_shared/supabase.ts";
-import {
-  getQwenConfig,
-  getTtsProviderMode,
-} from "../_shared/tts/provider.ts";
+import { getQwenConfig } from "../_shared/tts/provider.ts";
 import {
   normalizeProviderError,
   providerDetailMessage,
@@ -21,7 +18,6 @@ import { qwenProvider } from "../_shared/tts/providers/qwen.ts";
 import { createStorageProvider } from "../_shared/storage.ts";
 import { buildDesignPreviewQwenStartMessage } from "../queues/messages.ts";
 import { enqueueTtsJob } from "../queues/producer.ts";
-import { buildDesignPreviewModalStartMessage } from "../queues/messages.ts";
 
 function jsonDetail(detail: string, status: number) {
   return new Response(JSON.stringify({ detail }), {
@@ -90,6 +86,23 @@ async function refundDesignPreviewCredits(params: {
   });
 }
 
+async function shouldCancelQwenDesignTask(params: {
+  admin: ReturnType<typeof createAdminClient>;
+  userId: string;
+  taskId: string;
+}) {
+  const { data } = await params.admin
+    .from("tasks")
+    .select("status, cancellation_requested")
+    .eq("id", params.taskId)
+    .eq("user_id", params.userId)
+    .maybeSingle();
+
+  if (!data) return true;
+  const row = data as { status?: string; cancellation_requested?: boolean };
+  return row.cancellation_requested === true || row.status === "cancelled";
+}
+
 export async function runQwenDesignPreviewTask(params: {
   userId: string;
   taskId: string;
@@ -135,12 +148,20 @@ export async function runQwenDesignPreviewTask(params: {
   }
 
   try {
+    if (await shouldCancelQwenDesignTask({ admin, userId, taskId })) {
+      return;
+    }
+
     const created = await qwenProvider.createQwenDesignedVoice({
       preferredName: name,
       voicePrompt: instruct,
       previewText: text,
       language,
     });
+
+    if (await shouldCancelQwenDesignTask({ admin, userId, taskId })) {
+      return;
+    }
 
     const previewBytes = qwenProvider.decodeBase64Audio(
       created.previewAudioData,
@@ -155,6 +176,10 @@ export async function runQwenDesignPreviewTask(params: {
 
     if (upload.error) {
       throw new Error("Failed to upload preview audio.");
+    }
+
+    if (await shouldCancelQwenDesignTask({ admin, userId, taskId })) {
+      return;
     }
 
     const nowIso = new Date().toISOString();
@@ -176,7 +201,8 @@ export async function runQwenDesignPreviewTask(params: {
         error: null,
       })
       .eq("id", taskId)
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .in("status", ["pending", "processing"]);
   } catch (error) {
     const normalized = normalizeProviderError(error);
     const message = providerDetailMessage(normalized);
@@ -190,7 +216,8 @@ export async function runQwenDesignPreviewTask(params: {
         completed_at: new Date().toISOString(),
       })
       .eq("id", taskId)
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .not("status", "in", "(completed,failed,cancelled)");
 
     await refundDesignPreviewCredits({
       admin,
@@ -204,8 +231,48 @@ export async function runQwenDesignPreviewTask(params: {
   }
 }
 
-function queueFlagEnabled(value: unknown): boolean {
-  return typeof value === "string" && value.trim().toLowerCase() === "true";
+async function failQueuedDesignPreviewSubmission(params: {
+  admin: ReturnType<typeof createAdminClient>;
+  userId: string;
+  taskId: string;
+  usedTrial: boolean;
+  trialIdempotencyKey: string | null;
+  creditsToDebit: number;
+  reason: string;
+  message: string;
+}) {
+  const {
+    admin,
+    userId,
+    taskId,
+    usedTrial,
+    trialIdempotencyKey,
+    creditsToDebit,
+    reason,
+    message,
+  } = params;
+
+  await admin
+    .from("tasks")
+    .update({
+      status: "failed",
+      provider_status: "failed",
+      error: message,
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", taskId)
+    .eq("user_id", userId)
+    .not("status", "in", "(completed,failed,cancelled)");
+
+  await refundDesignPreviewCredits({
+    admin,
+    userId,
+    taskId,
+    usedTrial,
+    trialIdempotencyKey,
+    creditsToDebit,
+    reason,
+  });
 }
 
 export const designRoutes = new Hono();
@@ -242,7 +309,6 @@ designRoutes.post("/voices/design/preview", async (c) => {
   if (!language) return jsonDetail("Language is required.", 400);
 
   const admin = createAdminClient();
-  const storage = createStorageProvider({ admin, req: c.req.raw });
   const taskId = crypto.randomUUID();
   const creditsToDebit = creditsForDesignPreview();
   const chargeIdempotencyKey = `design-preview:${taskId}:charge`;
@@ -278,16 +344,6 @@ designRoutes.post("/voices/design/preview", async (c) => {
   const trialIdempotencyKey = usedTrial ? chargeIdempotencyKey : null;
   const creditsDebited = usedTrial ? 0 : creditsToDebit;
 
-  let providerMode: "modal" | "qwen";
-  try {
-    providerMode = getTtsProviderMode();
-  } catch (error) {
-    return jsonDetail(
-      error instanceof Error ? error.message : "Provider config error",
-      500,
-    );
-  }
-
   const { data: task, error } = await admin
     .from("tasks")
     .insert({
@@ -295,8 +351,8 @@ designRoutes.post("/voices/design/preview", async (c) => {
       user_id: userId,
       type: "design_preview",
       status: "pending",
-      provider: providerMode,
-      provider_status: providerMode === "qwen" ? "provider_queued" : null,
+      provider: "qwen",
+      provider_status: "provider_submitting",
       metadata: {
         text,
         language,
@@ -324,105 +380,62 @@ designRoutes.post("/voices/design/preview", async (c) => {
     return jsonDetail("Failed to create task.", 500);
   }
 
-  if (providerMode === "qwen") {
-    const workerEnv = c.env as {
-      QUEUE_DESIGN_PREVIEW_ENABLED?: "true" | "false";
-      TTS_QUEUE?: Queue;
-    };
-    const queueEnabled = queueFlagEnabled(
-      workerEnv.QUEUE_DESIGN_PREVIEW_ENABLED,
-    );
-    const queueMessage = buildDesignPreviewQwenStartMessage({
-      taskId,
+  const queue = (c.env as { TTS_QUEUE?: Queue }).TTS_QUEUE;
+  if (!queue) {
+    await failQueuedDesignPreviewSubmission({
+      admin,
       userId,
-      text,
-      language,
-      instruct,
-      name: preferredName,
+      taskId,
       usedTrial,
       trialIdempotencyKey,
       creditsToDebit,
+      reason: "queue_binding_missing",
+      message: "Queue is not configured. Please retry shortly.",
     });
-
-    if (queueEnabled && workerEnv.TTS_QUEUE) {
-      try {
-        await enqueueTtsJob(workerEnv.TTS_QUEUE, queueMessage);
-      } catch (error) {
-        console.error("queue.enqueue_failed", {
-          type: queueMessage.type,
-          task_id: taskId,
-          user_id: userId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        c.executionCtx.waitUntil(
-          runQwenDesignPreviewTask({
-            userId,
-            taskId,
-            text,
-            language,
-            instruct,
-            name: preferredName,
-            req: c.req.raw,
-            usedTrial,
-            trialIdempotencyKey,
-            creditsToDebit,
-          }),
-        );
-      }
-    } else {
-      c.executionCtx.waitUntil(
-        runQwenDesignPreviewTask({
-          userId,
-          taskId,
-          text,
-          language,
-          instruct,
-          name: preferredName,
-          req: c.req.raw,
-          usedTrial,
-          trialIdempotencyKey,
-          creditsToDebit,
-        }),
-      );
-    }
+    return jsonDetail("Queue is not configured for design preview processing.", 500);
   }
 
-  if (providerMode === "modal") {
-    const workerEnv = c.env as {
-      QUEUE_MODAL_RECHECK_ENABLED?: "true" | "false";
-      TTS_QUEUE?: Queue;
-    };
-    const queueModalEnabled = queueFlagEnabled(
-      workerEnv.QUEUE_MODAL_RECHECK_ENABLED,
-    );
-    if (queueModalEnabled && workerEnv.TTS_QUEUE) {
-      const queueMessage = buildDesignPreviewModalStartMessage({
-        taskId,
-        userId,
-        text,
-        language,
-        instruct,
-      });
-      try {
-        await enqueueTtsJob(workerEnv.TTS_QUEUE, queueMessage);
-        await admin
-          .from("tasks")
-          .update({
-            provider_status: "provider_queued",
-          })
-          .eq("id", taskId)
-          .eq("user_id", userId)
-          .eq("provider", "modal")
-          .in("status", ["pending", "processing"]);
-      } catch (error) {
-        console.error("queue.enqueue_failed", {
-          type: queueMessage.type,
-          task_id: taskId,
-          user_id: userId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
+  const queueMessage = buildDesignPreviewQwenStartMessage({
+    taskId,
+    userId,
+    text,
+    language,
+    instruct,
+    name: preferredName,
+    usedTrial,
+    trialIdempotencyKey,
+    creditsToDebit,
+  });
+
+  try {
+    await enqueueTtsJob(queue, queueMessage);
+    await admin
+      .from("tasks")
+      .update({ provider_status: "provider_queued" })
+      .eq("id", taskId)
+      .eq("user_id", userId)
+      .eq("provider", "qwen")
+      .in("status", ["pending", "processing"]);
+  } catch (error) {
+    console.error("queue.enqueue_failed", {
+      type: queueMessage.type,
+      task_id: taskId,
+      user_id: userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    await failQueuedDesignPreviewSubmission({
+      admin,
+      userId,
+      taskId,
+      usedTrial,
+      trialIdempotencyKey,
+      creditsToDebit,
+      reason: "queue_enqueue_failed",
+      message: "Failed to enqueue design preview task.",
+    });
+
+    return jsonDetail("Failed to queue design preview task.", 500);
   }
 
   return c.json({ task_id: (task as { id: string }).id, status: "pending" });
@@ -438,15 +451,6 @@ designRoutes.post("/voices/design", async (c) => {
     return jsonDetail("Unauthorized", 401);
   }
 
-  let providerMode: "modal" | "qwen";
-  try {
-    providerMode = getTtsProviderMode();
-  } catch (error) {
-    return jsonDetail(
-      error instanceof Error ? error.message : "Provider config error",
-      500,
-    );
-  }
   const formData = await c.req.formData().catch(() => null);
   if (!formData) return jsonDetail("Invalid form data.", 400);
 
@@ -462,178 +466,107 @@ designRoutes.post("/voices/design", async (c) => {
   if (!language) return jsonDetail("Language is required.", 400);
   if (!instruct) return jsonDetail("Voice description is required.", 400);
 
+  const taskId = normalizeString(formData.get("task_id"));
+  if (!taskId) {
+    return jsonDetail("task_id is required for qwen design save.", 400);
+  }
+
   const admin = createAdminClient();
   const storage = createStorageProvider({ admin, req: c.req.raw });
 
-  if (providerMode === "qwen") {
-    const taskId = normalizeString(formData.get("task_id"));
-    if (!taskId) {
-      return jsonDetail("task_id is required when provider mode is qwen.", 400);
-    }
+  const taskRes = await admin
+    .from("tasks")
+    .select("id, status, type, provider, result")
+    .eq("id", taskId)
+    .eq("user_id", userId)
+    .maybeSingle();
 
-    const taskRes = await admin
-      .from("tasks")
-      .select("id, status, type, provider, result")
-      .eq("id", taskId)
+  if (taskRes.error) return jsonDetail("Failed to load preview task.", 500);
+  if (!taskRes.data) return jsonDetail("Preview task not found.", 404);
+
+  const task = taskRes.data as {
+    id: string;
+    status: string;
+    type: string;
+    provider: string;
+    result: unknown;
+  };
+
+  if (task.type !== "design_preview" || task.provider !== "qwen") {
+    return jsonDetail("Invalid preview task for qwen design save.", 409);
+  }
+  if (task.status !== "completed") {
+    return jsonDetail("Preview task is not completed yet.", 409);
+  }
+
+  const taskResult = (task.result && typeof task.result === "object")
+    ? task.result as Record<string, unknown>
+    : {};
+
+  const existingVoiceId = typeof taskResult.saved_voice_id === "string"
+    ? taskResult.saved_voice_id
+    : null;
+
+  if (existingVoiceId) {
+    const existingVoiceRes = await admin
+      .from("voices")
+      .select("id, name, description, language, source, reference_object_key")
+      .eq("id", existingVoiceId)
       .eq("user_id", userId)
+      .is("deleted_at", null)
       .maybeSingle();
 
-    if (taskRes.error) return jsonDetail("Failed to load preview task.", 500);
-    if (!taskRes.data) return jsonDetail("Preview task not found.", 404);
-
-    const task = taskRes.data as {
-      id: string;
-      status: string;
-      type: string;
-      provider: string;
-      result: unknown;
-    };
-
-    if (task.type !== "design_preview" || task.provider !== "qwen") {
-      return jsonDetail("Invalid preview task for qwen design save.", 409);
-    }
-    if (task.status !== "completed") {
-      return jsonDetail("Preview task is not completed yet.", 409);
-    }
-
-    const taskResult = (task.result && typeof task.result === "object")
-      ? task.result as Record<string, unknown>
-      : {};
-
-    const existingVoiceId = typeof taskResult.saved_voice_id === "string"
-      ? taskResult.saved_voice_id
-      : null;
-
-    if (existingVoiceId) {
-      const existingVoiceRes = await admin
-        .from("voices")
-        .select("id, name, description, language, source, reference_object_key")
-        .eq("id", existingVoiceId)
-        .eq("user_id", userId)
-        .is("deleted_at", null)
-        .maybeSingle();
-
-      if (existingVoiceRes.data) {
-        const key =
-          (existingVoiceRes.data as { reference_object_key: string | null })
-            .reference_object_key;
-        if (!key) {
-          return jsonDetail("Saved voice is missing preview audio.", 500);
-        }
-
-        const signed = await storage.createSignedUrl("references", key, 3600);
-        if (signed.error || !signed.data?.signedUrl) {
-          return jsonDetail("Failed to create signed URL.", 500);
-        }
-
-        return c.json({
-          ...(existingVoiceRes.data as Record<string, unknown>),
-          preview_url: signed.data.signedUrl,
-        });
+    if (existingVoiceRes.data) {
+      const key =
+        (existingVoiceRes.data as { reference_object_key: string | null })
+          .reference_object_key;
+      if (!key) {
+        return jsonDetail("Saved voice is missing preview audio.", 500);
       }
+
+      const signed = await storage.createSignedUrl("references", key, 3600);
+      if (signed.error || !signed.data?.signedUrl) {
+        return jsonDetail("Failed to create signed URL.", 500);
+      }
+
+      return c.json({
+        ...(existingVoiceRes.data as Record<string, unknown>),
+        preview_url: signed.data.signedUrl,
+      });
     }
-
-    const objectKey = typeof taskResult.object_key === "string"
-      ? taskResult.object_key
-      : null;
-    const providerVoiceId = typeof taskResult.provider_voice_id === "string"
-      ? taskResult.provider_voice_id
-      : null;
-    const providerTargetModel =
-      typeof taskResult.provider_target_model === "string"
-        ? taskResult.provider_target_model
-        : null;
-    const providerRequestId = typeof taskResult.provider_request_id === "string"
-      ? taskResult.provider_request_id
-      : null;
-
-    if (!objectKey || !providerVoiceId || !providerTargetModel) {
-      return jsonDetail(
-        "Preview task is missing provider metadata. Generate preview again.",
-        409,
-      );
-    }
-
-    const voiceId = crypto.randomUUID();
-    let config: ReturnType<typeof getQwenConfig>;
-    try {
-      config = getQwenConfig();
-    } catch (error) {
-      return jsonDetail(
-        error instanceof Error ? error.message : "Provider config error",
-        500,
-      );
-    }
-
-    const { data: voice, error: insertError } = await admin
-      .from("voices")
-      .insert({
-        id: voiceId,
-        user_id: userId,
-        name,
-        language,
-        source: "designed",
-        description: instruct,
-        reference_object_key: objectKey,
-        reference_transcript: text,
-        tts_provider: "qwen",
-        provider_voice_id: providerVoiceId,
-        provider_target_model: providerTargetModel,
-        provider_voice_kind: "vd",
-        provider_region: config.region,
-        provider_request_id: providerRequestId,
-        provider_metadata: {
-          design_preview_task_id: taskId,
-        },
-      })
-      .select("id, name, description, language, source")
-      .single();
-
-    if (insertError || !voice) {
-      return jsonDetail("Failed to create voice.", 500);
-    }
-
-    await admin
-      .from("tasks")
-      .update({
-        result: {
-          ...taskResult,
-          saved_voice_id: voiceId,
-        },
-      })
-      .eq("id", taskId)
-      .eq("user_id", userId);
-
-    const signed = await storage.createSignedUrl("references", objectKey, 3600);
-
-    if (signed.error || !signed.data?.signedUrl) {
-      return jsonDetail("Failed to create signed URL.", 500);
-    }
-
-    return c.json({
-      ...(voice as Record<string, unknown>),
-      preview_url: signed.data.signedUrl,
-    });
   }
 
-  const audio = formData.get("audio");
+  const objectKey = typeof taskResult.object_key === "string"
+    ? taskResult.object_key
+    : null;
+  const providerVoiceId = typeof taskResult.provider_voice_id === "string"
+    ? taskResult.provider_voice_id
+    : null;
+  const providerTargetModel =
+    typeof taskResult.provider_target_model === "string"
+      ? taskResult.provider_target_model
+      : null;
+  const providerRequestId = typeof taskResult.provider_request_id === "string"
+    ? taskResult.provider_request_id
+    : null;
 
-  if (!(audio instanceof File)) {
-    return jsonDetail("Audio file is required.", 400);
-  }
-  if (audio.size <= 0) return jsonDetail("Audio file is empty.", 400);
-  if (audio.size > 1_000_000) {
-    return jsonDetail("Audio file must be under 1MB.", 400);
+  if (!objectKey || !providerVoiceId || !providerTargetModel) {
+    return jsonDetail(
+      "Preview task is missing provider metadata. Generate preview again.",
+      409,
+    );
   }
 
   const voiceId = crypto.randomUUID();
-  const objectKey = `${userId}/${voiceId}/reference.wav`;
-
-  const upload = await storage.upload("references", objectKey, audio, {
-    contentType: audio.type || "audio/wav",
-    upsert: false,
-  });
-  if (upload.error) return jsonDetail("Failed to upload reference audio.", 500);
+  let config: ReturnType<typeof getQwenConfig>;
+  try {
+    config = getQwenConfig();
+  } catch (error) {
+    return jsonDetail(
+      error instanceof Error ? error.message : "Provider config error",
+      500,
+    );
+  }
 
   const { data: voice, error: insertError } = await admin
     .from("voices")
@@ -646,28 +579,42 @@ designRoutes.post("/voices/design", async (c) => {
       description: instruct,
       reference_object_key: objectKey,
       reference_transcript: text,
-      tts_provider: "modal",
+      tts_provider: "qwen",
+      provider_voice_id: providerVoiceId,
+      provider_target_model: providerTargetModel,
+      provider_voice_kind: "vd",
+      provider_region: config.region,
+      provider_request_id: providerRequestId,
+      provider_metadata: {
+        design_preview_task_id: taskId,
+      },
     })
     .select("id, name, description, language, source")
     .single();
 
   if (insertError || !voice) {
-    await storage.remove("references", [objectKey]).catch(() => {});
     return jsonDetail("Failed to create voice.", 500);
   }
 
-  const { data: signed, error: signedError } = await storage.createSignedUrl(
-    "references",
-    objectKey,
-    3600,
-  );
+  await admin
+    .from("tasks")
+    .update({
+      result: {
+        ...taskResult,
+        saved_voice_id: voiceId,
+      },
+    })
+    .eq("id", taskId)
+    .eq("user_id", userId);
 
-  if (signedError || !signed?.signedUrl) {
+  const signed = await storage.createSignedUrl("references", objectKey, 3600);
+
+  if (signed.error || !signed.data?.signedUrl) {
     return jsonDetail("Failed to create signed URL.", 500);
   }
 
   return c.json({
     ...(voice as Record<string, unknown>),
-    preview_url: signed.signedUrl,
+    preview_url: signed.data.signedUrl,
   });
 });

@@ -2,14 +2,7 @@ import { setRuntimeEnv } from "../_shared/runtime_env.ts";
 import type { WorkerEnv } from "../env.ts";
 import { runQwenDesignPreviewTask } from "../routes/design.ts";
 import { processQwenGenerationTask } from "../routes/generate.ts";
-import {
-  processModalDesignPreviewTask,
-  processModalGenerateCheckTask,
-} from "../routes/tasks.ts";
-import {
-  buildGenerateModalCheckMessage,
-  isTtsJobMessage,
-} from "./messages.ts";
+import { isTtsJobMessage } from "./messages.ts";
 
 const INTERNAL_QUEUE_REQUEST = new Request("https://queue.internal/api/queue");
 const RETRYABLE_STATUS_CODES = new Set([408, 409, 425, 429]);
@@ -125,45 +118,6 @@ export async function handleTtsQueueBatch(
           trialIdempotencyKey: body.payload.trial_idempotency_key,
           creditsToDebit: body.payload.credits_to_debit,
         });
-        message.ack();
-        continue;
-      }
-
-      if (body.type === "design_preview.modal.start") {
-        await processModalDesignPreviewTask({
-          taskId: body.task_id,
-          userId: body.user_id,
-          req: INTERNAL_QUEUE_REQUEST,
-          text: body.payload.text,
-          language: body.payload.language,
-          instruct: body.payload.instruct,
-        });
-        message.ack();
-        continue;
-      }
-
-      if (body.type === "generate.modal.check") {
-        const result = await processModalGenerateCheckTask({
-          taskId: body.task_id,
-          userId: body.user_id,
-          generationId: body.generation_id,
-          providerJobId: body.payload.provider_job_id,
-          req: INTERNAL_QUEUE_REQUEST,
-        });
-
-        if (result.requeueDelaySeconds && env.TTS_QUEUE) {
-          const nextMessage = buildGenerateModalCheckMessage({
-            taskId: body.task_id,
-            userId: body.user_id,
-            generationId: body.generation_id,
-            providerJobId: body.payload.provider_job_id,
-            attempt: (body.attempt ?? 1) + 1,
-          });
-          await env.TTS_QUEUE.send(nextMessage, {
-            delaySeconds: Math.max(1, Math.min(300, result.requeueDelaySeconds)),
-          });
-        }
-
         message.ack();
         continue;
       }

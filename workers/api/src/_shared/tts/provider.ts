@@ -1,7 +1,6 @@
 import type { QwenConfig, TtsCapabilities, TtsProviderName } from "./types.ts";
 import { envGet } from "../runtime_env.ts";
 
-const DEFAULT_MODAL_MAX_TEXT_CHARS = 10000;
 const DEFAULT_QWEN_MAX_TEXT_CHARS = 100;
 const DEFAULT_QWEN_BASE_URL = "https://dashscope-intl.aliyuncs.com";
 const DEFAULT_QWEN_REGION = "intl";
@@ -27,38 +26,23 @@ function parsePositiveInt(value: string | null, fallback: number): number {
 }
 
 export function getTtsProviderMode(): TtsProviderName {
-  const raw = optionalEnv("TTS_PROVIDER_MODE");
-  if (!raw) return "modal";
+  return "qwen";
+}
 
-  const normalized = raw.toLowerCase();
-  if (normalized === "modal" || normalized === "qwen") {
-    return normalized;
-  }
-
-  throw new Error(
-    `Invalid TTS_PROVIDER_MODE: ${raw}. Expected one of: modal, qwen`,
+export function getGenerateTextCapForMode(_mode: TtsProviderName): number {
+  return parsePositiveInt(
+    optionalEnv("QWEN_MAX_TEXT_CHARS"),
+    DEFAULT_QWEN_MAX_TEXT_CHARS,
   );
 }
 
-export function getGenerateTextCapForMode(mode: TtsProviderName): number {
-  if (mode === "qwen") {
-    return parsePositiveInt(
-      optionalEnv("QWEN_MAX_TEXT_CHARS"),
-      DEFAULT_QWEN_MAX_TEXT_CHARS,
-    );
-  }
-  return DEFAULT_MODAL_MAX_TEXT_CHARS;
-}
-
-export function getTtsCapabilities(
-  mode = getTtsProviderMode(),
-): TtsCapabilities {
+export function getTtsCapabilities(): TtsCapabilities {
   return {
     supports_generate: true,
     supports_generate_stream: false,
     default_generate_mode: "task",
     allow_generate_mode_toggle: false,
-    max_text_chars: getGenerateTextCapForMode(mode),
+    max_text_chars: getGenerateTextCapForMode("qwen"),
   };
 }
 

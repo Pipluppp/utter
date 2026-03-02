@@ -12,7 +12,7 @@ languagesRoutes.get("/languages", (c) => {
 
   try {
     const provider = getTtsProviderMode();
-    const capabilities = getTtsCapabilities(provider);
+    const capabilities = getTtsCapabilities();
 
     return c.json({
       languages: [

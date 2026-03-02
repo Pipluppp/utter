@@ -237,88 +237,64 @@ Deno.test({
 });
 
 // --- POST /voices/design ---
-Deno.test("POST /voices/design creates voice with audio file", async () => {
+Deno.test({
+  name: "POST /voices/design creates voice from completed qwen preview task",
+  ...noLeaks,
+  fn: async () => {
+  const admin = await getAdminClient();
+  const taskId = crypto.randomUUID();
+  const objectKey = `${userA.userId}/preview_${taskId}.wav`;
+
+  const upload = await admin.storage.from("references").upload(objectKey, MINIMAL_WAV, {
+    contentType: "audio/wav",
+    upsert: true,
+  });
+  assertEquals(upload.error, null);
+
+  const taskInsert = await admin.from("tasks").insert({
+    id: taskId,
+    user_id: userA.userId,
+    type: "design_preview",
+    status: "completed",
+    provider: "qwen",
+    result: {
+      object_key: objectKey,
+      provider_voice_id: "voice_design_test",
+      provider_target_model: "qwen3-tts-vd-2026-01-26",
+      provider_voice_kind: "vd",
+    },
+  });
+  assertEquals(taskInsert.error, null);
+
   const formData = new FormData();
   formData.append("name", "Designed Voice");
   formData.append("text", "Hello preview text");
   formData.append("language", "English");
   formData.append("instruct", "A warm friendly voice");
-  formData.append(
-    "audio",
-    new File([MINIMAL_WAV], "preview.wav", { type: "audio/wav" }),
-  );
+  formData.append("task_id", taskId);
 
-  const res = await apiFetch("/voices/design", userA.accessToken, {
-    method: "POST",
-    body: formData,
-  });
-  assertEquals(res.status, 200);
-  const body = await res.json();
-  assertExists(body.id);
-  assertEquals(body.name, "Designed Voice");
-  assertEquals(body.source, "designed");
-  assertExists(body.preview_url);
-});
-
-Deno.test({
-  name: "POST /voices/design cleans orphaned upload when insert fails",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdminClient();
-    const listUserFolders = async (): Promise<string[]> => {
-      const listing = await admin.storage.from("references").list(
-        userA.userId,
-        { limit: 1000 },
-      );
-      if (listing.error) throw new Error(listing.error.message);
-      return (listing.data ?? []).map((obj) => obj.name).sort();
-    };
-
-    const beforeFolders = await listUserFolders();
-    let afterFolders: string[] = [];
-
-    try {
-      const formData = new FormData();
-      formData.append("name", "Broken\u0000Voice");
-      formData.append("text", "Hello preview text");
-      formData.append("language", "English");
-      formData.append("instruct", "Force insert failure");
-      formData.append(
-        "audio",
-        new File([MINIMAL_WAV], "preview.wav", { type: "audio/wav" }),
-      );
-
-      const res = await apiFetch("/voices/design", userA.accessToken, {
-        method: "POST",
-        body: formData,
-      });
-      assertEquals(res.status, 500);
-      await res.body?.cancel();
-
-      afterFolders = await listUserFolders();
-      assertEquals(afterFolders, beforeFolders);
-    } finally {
-      if (afterFolders.length === 0) {
-        afterFolders = await listUserFolders().catch(() => []);
-      }
-      const knownFolders = new Set(beforeFolders);
-      for (const folder of afterFolders) {
-        if (knownFolders.has(folder)) continue;
-        const objectKey = `${userA.userId}/${folder}/reference.wav`;
-        await admin.storage.from("references").remove([objectKey]);
-        await admin
-          .from("voices")
-          .delete()
-          .eq("user_id", userA.userId)
-          .eq("reference_object_key", objectKey);
-      }
-    }
+  try {
+    const res = await apiFetch("/voices/design", userA.accessToken, {
+      method: "POST",
+      body: formData,
+    });
+    assertEquals(res.status, 200);
+    const body = await res.json();
+    assertExists(body.id);
+    assertEquals(body.name, "Designed Voice");
+    assertEquals(body.source, "designed");
+    assertExists(body.preview_url);
+    await admin.from("voices").delete().eq("id", body.id as string);
+  } finally {
+    await admin.from("tasks").delete().eq("id", taskId);
+    await admin.storage.from("references").remove([objectKey]);
+  }
   },
 });
 
-Deno.test("POST /voices/design rejects missing audio", async () => {
+Deno.test("POST /voices/design rejects missing task_id", async () => {
   const formData = new FormData();
-  formData.append("name", "No Audio Voice");
+  formData.append("name", "No Task");
   formData.append("text", "Hello");
   formData.append("language", "English");
   formData.append("instruct", "warm");
@@ -331,15 +307,46 @@ Deno.test("POST /voices/design rejects missing audio", async () => {
   await res.body?.cancel();
 });
 
+Deno.test({
+  name: "POST /voices/design rejects preview task that is not completed",
+  ...noLeaks,
+  fn: async () => {
+  const admin = await getAdminClient();
+  const taskId = crypto.randomUUID();
+  const taskInsert = await admin.from("tasks").insert({
+    id: taskId,
+    user_id: userA.userId,
+    type: "design_preview",
+    status: "pending",
+    provider: "qwen",
+  });
+  assertEquals(taskInsert.error, null);
+
+  const formData = new FormData();
+  formData.append("name", "Pending Task Voice");
+  formData.append("text", "Hello");
+  formData.append("language", "English");
+  formData.append("instruct", "warm");
+  formData.append("task_id", taskId);
+
+  try {
+    const res = await apiFetch("/voices/design", userA.accessToken, {
+      method: "POST",
+      body: formData,
+    });
+    assertEquals(res.status, 409);
+    await res.body?.cancel();
+  } finally {
+    await admin.from("tasks").delete().eq("id", taskId);
+  }
+  },
+});
+
 Deno.test("POST /voices/design rejects missing name", async () => {
   const formData = new FormData();
   formData.append("text", "Hello");
   formData.append("language", "English");
   formData.append("instruct", "warm");
-  formData.append(
-    "audio",
-    new File([MINIMAL_WAV], "preview.wav", { type: "audio/wav" }),
-  );
 
   const res = await apiFetch("/voices/design", userA.accessToken, {
     method: "POST",

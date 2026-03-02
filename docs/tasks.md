@@ -1,52 +1,31 @@
 # Tasks Jump Point
 
-This is the quick launch page for the current task sequence.
-
 ## Current objective
 
-Security hardening + legacy backend cleanup. See `docs/2026-02-22/README.md`.
+Post-simplification validation and hardening for the qwen-only + R2-only + queue-first runtime.
+
+Primary source: `docs/2026-03-02/remove-modal-supastorage-queue-simplify/`.
 
 ## Active tasks
 
-None currently.
+1. Validation evidence capture
+- Build evidence logs for staging clone/design/generate/task lifecycle, credits, billing.
+- Source: `2026-03-02/remove-modal-supastorage-queue-simplify/04-integrated-validation-and-cutover-plan.md`
 
-## Queued
+2. Queue operations hardening
+- Validate retry and DLQ replay procedures; publish incident runbook.
+- Source: `2026-03-02/remove-modal-supastorage-queue-simplify/03-queue-first-orchestration-plan.md`
 
-- **Qwen official API wiring/cutover**
-  Path: `docs/qwen-integration/tasks/11-rollout-cutover.md`
-  What it achieves: transitions TTS runtime from Modal-first toward official Qwen API.
+3. Docs consistency sweep
+- Ensure base docs and runbooks stay aligned with simplified architecture.
+- Source: `2026-03-02/remove-modal-supastorage-queue-simplify/05-docs-realignment-for-simplified-stack-plan.md`
 
-## Completed
+## Recently completed
 
-1. ~~**Standalone auth pages**~~ — Done 2026-02-21
-   Path: `docs/2026-02-19/auth-pages/README.md`
-   Shipped in `cee4676`. Dedicated `/auth` page with magic link + password modes.
+1. Simplification implementation pass
+- Date: 2026-03-03
+- Scope: removed Modal runtime paths, removed Supabase/hybrid storage branches, enforced queue-first async execution.
 
-2. ~~**Documentation cleanup**~~ — Done 2026-02-22
-   Path: `docs/2026-02-22/docs-cleanup.md`
-   Shipped in `813fce5`. Guide docs now describe the deployed Supabase/Vercel architecture.
-
-3. ~~**Profile column guards**~~ — Done 2026-02-22
-   Path: `docs/2026-02-22/profile-column-guards.md`
-   Verified existing hardening (`20260212120000_profiles_voices_write_hardening.sql`) already revoked direct `profiles` UPDATE for `authenticated`.
-
-4. ~~**CORS lockdown**~~ — Done 2026-02-22
-   Path: `docs/2026-02-22/cors-lockdown.md`
-   `supabase/functions/_shared/cors.ts` now uses `CORS_ALLOWED_ORIGIN` and per-request origin resolution (with local `*` fallback).
-
-5. ~~**Remove legacy FastAPI backend**~~ — Done 2026-02-22
-   Path: `docs/2026-02-22/remove-fastapi-backend.md`
-   Removed tracked `backend/` application files from the repository.
-
-6. ~~**Deploy Supabase staging backend**~~ — Done 2026-02-17
-   Path: `docs/2026-02-16/deploy-supabase/README.md`
-   Project: `jgmivviwockcwjkvpqra`, 5 migrations pushed, edge function deployed, hardening verified.
-
-7. ~~**Wire Vercel frontend to staging Supabase**~~ — Done 2026-02-17
-   Path: `docs/2026-02-16/wire-vercel-supabase/README.md`
-   Live at `https://utter-wheat.vercel.app`. Auth, clone, and generation flows verified on production.
-
-## Source mapping
-
-- Deploy task source: `docs/supabase-migration/phases/09-staging-deploy.md`
-- Vercel task source: `docs/supabase-migration/phases/10-vercel.md`
+2. Cloudflare migration implementation (phase 01-04)
+- Date: 2026-03-01 to 2026-03-02
+- Evidence: `security/audits/2026-03-02/cloudflare-hybrid-phase-0*.md`

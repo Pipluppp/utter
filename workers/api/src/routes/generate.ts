@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { encodeBase64 } from "../_shared/base64.ts";
 
 import { requireUser } from "../_shared/auth.ts";
 import {
@@ -7,11 +6,9 @@ import {
   creditsForGenerateText,
   formatInsufficientCreditsDetail,
 } from "../_shared/credits.ts";
-import { modalProvider } from "../_shared/tts/providers/modal.ts";
 import {
   getGenerateTextCapForMode,
   getQwenConfig,
-  getTtsProviderMode,
 } from "../_shared/tts/provider.ts";
 import {
   normalizeProviderError,
@@ -21,7 +18,6 @@ import { qwenProvider } from "../_shared/tts/providers/qwen.ts";
 import { createStorageProvider } from "../_shared/storage.ts";
 import { createAdminClient, createUserClient } from "../_shared/supabase.ts";
 import { buildGenerateQwenStartMessage } from "../queues/messages.ts";
-import { buildGenerateModalCheckMessage } from "../queues/messages.ts";
 import { enqueueTtsJob } from "../queues/producer.ts";
 
 function jsonDetail(detail: string, status: number) {
@@ -61,23 +57,6 @@ function parseIsoDate(value: unknown): Date | null {
 
 function secondsBetween(start: Date, end: Date): number {
   return Math.max(0, (end.getTime() - start.getTime()) / 1000);
-}
-
-function getObjectSizeBytes(
-  object: {
-    size?: number | string | null;
-    metadata?: {
-      size?: number | string | null;
-      contentLength?: number | string | null;
-    };
-  } | null,
-): number | null {
-  if (!object) return null;
-  const sizeValue = object.size ?? object.metadata?.size ??
-    object.metadata?.contentLength;
-  if (sizeValue == null) return null;
-  const parsed = Number(sizeValue);
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 async function refundGenerateCredits(params: {
@@ -390,8 +369,49 @@ export async function processQwenGenerationTask(params: {
   }
 }
 
-function queueFlagEnabled(value: unknown): boolean {
-  return typeof value === "string" && value.trim().toLowerCase() === "true";
+async function failQueuedGenerationSubmission(params: {
+  admin: ReturnType<typeof createAdminClient>;
+  userId: string;
+  taskId: string;
+  generationId: string;
+  creditsToDebit: number;
+  reason: string;
+  message: string;
+}) {
+  const { admin, userId, taskId, generationId, creditsToDebit, reason, message } =
+    params;
+
+  const nowIso = new Date().toISOString();
+  await admin
+    .from("tasks")
+    .update({
+      status: "failed",
+      provider_status: "failed",
+      completed_at: nowIso,
+      error: message,
+    })
+    .eq("id", taskId)
+    .eq("user_id", userId)
+    .not("status", "in", "(completed,failed,cancelled)");
+
+  await admin
+    .from("generations")
+    .update({
+      status: "failed",
+      error_message: message,
+      completed_at: nowIso,
+    })
+    .eq("id", generationId)
+    .eq("user_id", userId)
+    .not("status", "in", "(completed,failed,cancelled)");
+
+  await refundGenerateCredits({
+    admin,
+    userId,
+    generationId,
+    amount: creditsToDebit,
+    reason,
+  });
 }
 
 export const generateRoutes = new Hono();
@@ -408,16 +428,6 @@ generateRoutes.post("/generate", async (c) => {
     return jsonDetail("Unauthorized", 401);
   }
 
-  let providerMode: "modal" | "qwen";
-  try {
-    providerMode = getTtsProviderMode();
-  } catch (error) {
-    return jsonDetail(
-      error instanceof Error ? error.message : "Provider config error",
-      500,
-    );
-  }
-
   const body = (await c.req.json().catch(() => null)) as
     | Record<string, unknown>
     | null;
@@ -431,7 +441,7 @@ generateRoutes.post("/generate", async (c) => {
   if (!isUuid(voiceId)) return jsonDetail("Invalid voice_id", 400);
   if (!text) return jsonDetail("Please enter text to speak", 400);
 
-  const maxTextChars = getGenerateTextCapForMode(providerMode);
+  const maxTextChars = getGenerateTextCapForMode("qwen");
   if (text.length > maxTextChars) {
     return jsonDetail(`Text cannot exceed ${maxTextChars} characters`, 400);
   }
@@ -440,7 +450,7 @@ generateRoutes.post("/generate", async (c) => {
   const { data: voice, error: voiceError } = await userClient
     .from("voices")
     .select(
-      "id, name, reference_object_key, reference_transcript, tts_provider, provider_voice_id, provider_target_model, provider_voice_kind, deleted_at",
+      "id, name, tts_provider, provider_voice_id, provider_target_model, provider_voice_kind, deleted_at",
     )
     .eq("id", voiceId)
     .maybeSingle();
@@ -450,8 +460,6 @@ generateRoutes.post("/generate", async (c) => {
 
   const selectedVoice = voice as {
     name: string;
-    reference_object_key: string | null;
-    reference_transcript: string | null;
     tts_provider?: string | null;
     provider_voice_id?: string | null;
     provider_target_model?: string | null;
@@ -463,97 +471,51 @@ generateRoutes.post("/generate", async (c) => {
     return jsonDetail("Voice not found", 404);
   }
 
-  const voiceProvider = selectedVoice.tts_provider ?? "modal";
-  if (voiceProvider !== providerMode) {
+  const voiceProvider = selectedVoice.tts_provider ?? "qwen";
+  if (voiceProvider !== "qwen") {
     return jsonDetail(
-      `Voice belongs to provider '${voiceProvider}'. Switch provider mode or create a ${providerMode} voice.`,
+      `Voice belongs to unsupported provider '${voiceProvider}'. Create a qwen voice to continue.`,
       409,
     );
   }
 
-  const admin = createAdminClient();
-  const storage = createStorageProvider({ admin, req: c.req.raw });
+  const providerVoiceId = selectedVoice.provider_voice_id;
+  const providerTargetModel = selectedVoice.provider_target_model;
 
-  let refText: string | null = null;
-  let refKey: string | null = null;
-
-  if (providerMode === "modal") {
-    refText = selectedVoice.reference_transcript;
-    refKey = selectedVoice.reference_object_key;
-
-    if (!refText) {
-      return jsonDetail(
-        "This voice has no reference transcript. Re-clone with a transcript to use Qwen3-TTS.",
-        400,
-      );
-    }
-    if (!refKey) return jsonDetail("Voice has no reference audio.", 400);
-
-    const refPathParts = refKey.split("/");
-    const refFileName = refPathParts.pop() ?? "";
-    const refFolder = refPathParts.join("/");
-
-    const { data: refMeta, error: refMetaError } = await storage.list(
-      "references",
-      refFolder,
-      { limit: 100 },
+  if (!providerVoiceId || !providerTargetModel) {
+    return jsonDetail(
+      "Voice is missing qwen provider metadata. Re-clone or redesign this voice.",
+      409,
     );
-    if (refMetaError) {
-      return jsonDetail("Failed to load reference audio metadata.", 500);
-    }
-
-    const refFile = (refMeta ?? []).find((obj) => obj.name === refFileName);
-    if (!refFile) return jsonDetail("Voice has no reference audio.", 400);
-
-    const MAX_REFERENCE_BYTES = 10 * 1024 * 1024;
-    const refSize = getObjectSizeBytes(refFile);
-    if (refSize !== null && refSize > MAX_REFERENCE_BYTES) {
-      return jsonDetail(
-        "Reference audio too large for generation. Re-clone with a shorter clip.",
-        400,
-      );
-    }
   }
 
-  if (providerMode === "qwen") {
-    const providerVoiceId = selectedVoice.provider_voice_id;
-    const providerTargetModel = selectedVoice.provider_target_model;
+  let qwenConfig: ReturnType<typeof getQwenConfig>;
+  try {
+    qwenConfig = getQwenConfig();
+  } catch (error) {
+    return jsonDetail(
+      error instanceof Error ? error.message : "Provider config error",
+      500,
+    );
+  }
+  const allowedTargets = new Set([
+    qwenConfig.vcTargetModel,
+    qwenConfig.vdTargetModel,
+  ]);
 
-    if (!providerVoiceId || !providerTargetModel) {
-      return jsonDetail(
-        "Voice is missing qwen provider metadata. Re-clone or redesign this voice.",
-        409,
-      );
-    }
+  if (!allowedTargets.has(providerTargetModel)) {
+    return jsonDetail(
+      "Voice target model is not supported by current qwen rollout configuration.",
+      409,
+    );
+  }
 
-    let qwenConfig: ReturnType<typeof getQwenConfig>;
-    try {
-      qwenConfig = getQwenConfig();
-    } catch (error) {
-      return jsonDetail(
-        error instanceof Error ? error.message : "Provider config error",
-        500,
-      );
-    }
-    const allowedTargets = new Set([
-      qwenConfig.vcTargetModel,
-      qwenConfig.vdTargetModel,
-    ]);
-
-    if (!allowedTargets.has(providerTargetModel)) {
-      return jsonDetail(
-        "Voice target model is not supported by current qwen rollout configuration.",
-        409,
-      );
-    }
-
-    const kind = selectedVoice.provider_voice_kind;
-    if (kind === "vc" && providerTargetModel !== qwenConfig.vcTargetModel) {
-      return jsonDetail("Voice/provider model mismatch (vc).", 409);
-    }
-    if (kind === "vd" && providerTargetModel !== qwenConfig.vdTargetModel) {
-      return jsonDetail("Voice/provider model mismatch (vd).", 409);
-    }
+  const kind = selectedVoice.provider_voice_kind;
+  if (kind === "vc" && providerTargetModel !== qwenConfig.vcTargetModel) {
+    return jsonDetail("Voice/provider model mismatch (vc).", 409);
+  }
+  if (kind === "vd" && providerTargetModel !== qwenConfig.vdTargetModel) {
+    return jsonDetail("Voice/provider model mismatch (vd).", 409);
   }
 
   const { data: activeTask, error: activeTaskError } = await userClient
@@ -575,6 +537,8 @@ generateRoutes.post("/generate", async (c) => {
   const estimatedMinutes = estimateGenerationMinutes(text);
   const creditsToDebit = creditsForGenerateText(text);
 
+  const admin = createAdminClient();
+
   const { data: generation, error: genError } = await admin
     .from("generations")
     .insert({
@@ -583,10 +547,8 @@ generateRoutes.post("/generate", async (c) => {
       text,
       language,
       status: "processing",
-      tts_provider: providerMode,
-      provider_model: providerMode === "qwen"
-        ? selectedVoice.provider_target_model
-        : null,
+      tts_provider: "qwen",
+      provider_model: selectedVoice.provider_target_model,
     })
     .select("id")
     .single();
@@ -643,8 +605,8 @@ generateRoutes.post("/generate", async (c) => {
       status: "pending",
       generation_id: generationId,
       voice_id: voiceId,
-      provider: providerMode,
-      provider_status: providerMode === "qwen" ? "provider_submitting" : null,
+      provider: "qwen",
+      provider_status: "provider_submitting",
       metadata: {
         voice_id: voiceId,
         voice_name: selectedVoice.name,
@@ -686,192 +648,66 @@ generateRoutes.post("/generate", async (c) => {
 
   const taskId = (task as { id: string }).id;
 
-  if (providerMode === "qwen") {
-    const workerEnv = c.env as {
-      QUEUE_GENERATE_ENABLED?: "true" | "false";
-      TTS_QUEUE?: Queue;
-    };
-    const queueMessage = buildGenerateQwenStartMessage({
-      taskId,
-      userId,
-      generationId,
-      text,
-      language,
-      providerVoiceId: selectedVoice.provider_voice_id ?? "",
-      providerTargetModel: selectedVoice.provider_target_model ?? "",
-      creditsToDebit,
-    });
-    const queueEnabled = queueFlagEnabled(workerEnv.QUEUE_GENERATE_ENABLED);
-
-    if (queueEnabled && workerEnv.TTS_QUEUE) {
-      try {
-        await enqueueTtsJob(workerEnv.TTS_QUEUE, queueMessage);
-        await admin
-          .from("tasks")
-          .update({ provider_status: "provider_queued" })
-          .eq("id", taskId)
-          .eq("user_id", userId)
-          .eq("provider", "qwen")
-          .in("status", ["pending", "processing"]);
-      } catch (error) {
-        console.error("queue.enqueue_failed", {
-          type: queueMessage.type,
-          task_id: taskId,
-          user_id: userId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        c.executionCtx.waitUntil(
-          processQwenGenerationTask({
-            userId,
-            taskId,
-            generationId,
-            text,
-            language,
-            providerVoiceId: selectedVoice.provider_voice_id ?? "",
-            providerTargetModel: selectedVoice.provider_target_model ?? "",
-            creditsToDebit,
-            req: c.req.raw,
-          }),
-        );
-      }
-    } else {
-      c.executionCtx.waitUntil(
-        processQwenGenerationTask({
-          userId,
-          taskId,
-          generationId,
-          text,
-          language,
-          providerVoiceId: selectedVoice.provider_voice_id ?? "",
-          providerTargetModel: selectedVoice.provider_target_model ?? "",
-          creditsToDebit,
-          req: c.req.raw,
-        }),
-      );
-    }
-
-    return c.json({
-      task_id: taskId,
-      status: "processing",
-      is_long_running: true,
-      estimated_duration_minutes: estimatedMinutes,
-      generation_id: generationId,
-    });
-  }
-
-  try {
-    const refKey = selectedVoice.reference_object_key;
-    const refText = selectedVoice.reference_transcript;
-    if (!refKey || !refText) {
-      throw new Error("Voice has no reference audio or transcript.");
-    }
-
-    const { data: audioBlob, error: downloadError } = await storage.download(
-      "references",
-      refKey,
-    );
-    if (downloadError || !audioBlob) {
-      throw new Error("Failed to download reference audio.");
-    }
-
-    const audioBytes = new Uint8Array(await audioBlob.arrayBuffer());
-    const audioB64 = encodeBase64(audioBytes);
-
-    const { job_id } = await modalProvider.submitJob({
-      text,
-      language,
-      ref_audio_base64: audioB64,
-      ref_text: refText,
-      max_new_tokens: 4096,
-    });
-
-    const { error: updateError } = await admin
-      .from("tasks")
-      .update({
-        modal_job_id: job_id,
-        provider_job_id: job_id,
-        status: "processing",
-      })
-      .eq("id", taskId)
-      .eq("user_id", userId);
-
-    if (updateError) return jsonDetail("Failed to update task.", 500);
-
-    const workerEnv = c.env as {
-      QUEUE_MODAL_RECHECK_ENABLED?: "true" | "false";
-      TTS_QUEUE?: Queue;
-    };
-    const queueModalEnabled = queueFlagEnabled(
-      workerEnv.QUEUE_MODAL_RECHECK_ENABLED,
-    );
-    if (queueModalEnabled && workerEnv.TTS_QUEUE) {
-      const queueMessage = buildGenerateModalCheckMessage({
-        taskId,
-        userId,
-        generationId,
-        providerJobId: job_id,
-        attempt: 1,
-      });
-      try {
-        await enqueueTtsJob(workerEnv.TTS_QUEUE, queueMessage);
-        await admin
-          .from("tasks")
-          .update({ provider_status: "provider_queued" })
-          .eq("id", taskId)
-          .eq("user_id", userId)
-          .eq("provider", "modal")
-          .in("status", ["pending", "processing"]);
-      } catch (error) {
-        console.error("queue.enqueue_failed", {
-          type: queueMessage.type,
-          task_id: taskId,
-          user_id: userId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-
-    return c.json({
-      task_id: taskId,
-      status: "processing",
-      is_long_running: true,
-      estimated_duration_minutes: estimatedMinutes,
-      generation_id: generationId,
-    });
-  } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Failed to submit generation job.";
-
-    await admin
-      .from("tasks")
-      .update({
-        status: "failed",
-        provider_status: "failed",
-        error: message,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", taskId)
-      .eq("user_id", userId);
-
-    await admin
-      .from("generations")
-      .update({
-        status: "failed",
-        error_message: "Failed to generate speech. Please try again.",
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", generationId)
-      .eq("user_id", userId);
-
-    await refundGenerateCredits({
+  const queue = (c.env as { TTS_QUEUE?: Queue }).TTS_QUEUE;
+  if (!queue) {
+    await failQueuedGenerationSubmission({
       admin,
       userId,
+      taskId,
       generationId,
-      amount: creditsToDebit,
-      reason: "modal_submit_failed",
+      creditsToDebit,
+      reason: "queue_binding_missing",
+      message: "Queue is not configured. Please retry shortly.",
+    });
+    return jsonDetail("Queue is not configured for generation processing.", 500);
+  }
+
+  const queueMessage = buildGenerateQwenStartMessage({
+    taskId,
+    userId,
+    generationId,
+    text,
+    language,
+    providerVoiceId,
+    providerTargetModel,
+    creditsToDebit,
+  });
+
+  try {
+    await enqueueTtsJob(queue, queueMessage);
+    await admin
+      .from("tasks")
+      .update({ provider_status: "provider_queued" })
+      .eq("id", taskId)
+      .eq("user_id", userId)
+      .eq("provider", "qwen")
+      .in("status", ["pending", "processing"]);
+  } catch (error) {
+    console.error("queue.enqueue_failed", {
+      type: queueMessage.type,
+      task_id: taskId,
+      user_id: userId,
+      error: error instanceof Error ? error.message : String(error),
     });
 
-    return jsonDetail("Failed to submit generation job.", 502);
+    await failQueuedGenerationSubmission({
+      admin,
+      userId,
+      taskId,
+      generationId,
+      creditsToDebit,
+      reason: "queue_enqueue_failed",
+      message: "Failed to enqueue generation task.",
+    });
+
+    return jsonDetail("Failed to queue generation task.", 500);
   }
+
+  return c.json({
+    task_id: taskId,
+    status: "processing",
+    is_long_running: true,
+    estimated_duration_minutes: estimatedMinutes,
+    generation_id: generationId,
+  });
 });

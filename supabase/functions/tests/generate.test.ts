@@ -1,8 +1,5 @@
 /**
  * /generate endpoint tests.
- *
- * REQUIRES: Mock Modal server running on port 9999
- * (or edge functions served with .env.test pointing MODAL_* to localhost:9999)
  */
 import { assertEquals, assertExists } from "@std/assert";
 import {
@@ -19,12 +16,10 @@ import {
   TEST_USER_B,
   VALID_GENERATE_PAYLOAD,
 } from "./_helpers/fixtures.ts";
-import { ModalMock } from "./_helpers/modal_mock.ts";
 
 let userA: TestUser;
 let userB: TestUser;
 let voiceId: string;
-const mock = new ModalMock();
 const noLeaks = { sanitizeResources: false, sanitizeOps: false };
 const MAX_REFERENCE_BYTES = 10 * 1024 * 1024;
 
@@ -124,7 +119,6 @@ Deno.test({
   fn: async () => {
     userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
     userB = await createTestUser(TEST_USER_B.email, TEST_USER_B.password);
-    await mock.start();
 
     // Seed a voice with reference audio so /generate can find it
     const admin = await import("npm:@supabase/supabase-js@2");
@@ -169,6 +163,10 @@ Deno.test({
       language: "English",
       reference_object_key: objectKey,
       reference_transcript: "This is a test reference.",
+      tts_provider: "qwen",
+      provider_voice_id: "voice_test_qwen_vc",
+      provider_target_model: "qwen3-tts-vc-2026-01-22",
+      provider_voice_kind: "vc",
     });
   },
 });
@@ -178,7 +176,6 @@ Deno.test({
   name: "POST /generate creates task + generation",
   ...noLeaks,
   fn: async () => {
-    mock.reset();
     try {
       const res = await apiFetch("/generate", userA.accessToken, {
         method: "POST",
@@ -188,16 +185,12 @@ Deno.test({
           voice_id: voiceId,
         }),
       });
-      // With .env.test: 200 (mock modal), without: may get 200 (real modal) or 502 (modal error)
       const body = await res.json();
-      if (res.status === 200) {
-        assertExists(body.task_id);
-        assertExists(body.generation_id);
-        assertEquals(body.status, "processing");
-        assertEquals(body.is_long_running, true);
-      }
-      // Only verify mock was hit if the mock actually received requests
-      // (edge functions need .env.test to route to localhost:9999)
+      assertEquals(res.status, 200);
+      assertExists(body.task_id);
+      assertExists(body.generation_id);
+      assertEquals(body.status, "processing");
+      assertEquals(body.is_long_running, true);
     } finally {
       await cleanupActiveGenerateRows(userA.userId);
     }
@@ -261,13 +254,13 @@ Deno.test("POST /generate denies cross-user voice access", async () => {
   await res.body?.cancel();
 });
 
-Deno.test("POST /generate rejects text > 10000 chars", async () => {
+Deno.test("POST /generate rejects text > 100 chars", async () => {
   const res = await apiFetch("/generate", userA.accessToken, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       voice_id: voiceId,
-      text: "x".repeat(10001),
+      text: "x".repeat(101),
     }),
   });
   assertEquals(res.status, 400);
@@ -349,6 +342,10 @@ Deno.test({
         language: "English",
         reference_object_key: objectKey,
         reference_transcript: "This is a valid transcript.",
+        tts_provider: "qwen",
+        provider_voice_id: "voice_test_qwen_vc_oversized",
+        provider_target_model: "qwen3-tts-vc-2026-01-22",
+        provider_voice_kind: "vc",
       });
       if (insertVoice.error) throw new Error(insertVoice.error.message);
 
@@ -421,31 +418,10 @@ Deno.test({
 });
 
 Deno.test({
-  name: "POST /generate handles Modal submit failure gracefully",
-  ...noLeaks,
-  fn: async () => {
-    await cleanupActiveGenerateRows(userA.userId);
-    mock.reset();
-    mock.shouldFailSubmit = true;
-
-    const res = await apiFetch("/generate", userA.accessToken, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...VALID_GENERATE_PAYLOAD,
-        voice_id: voiceId,
-      }),
-    });
-    assertEquals([200, 502, 409].includes(res.status), true);
-    await res.body?.cancel();
-  },
-});
-Deno.test({
   name: "generate: teardown",
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
-    await mock.stop();
     // Clean up via admin (cascade will handle tasks/generations)
     const admin = await import("npm:@supabase/supabase-js@2");
     const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);

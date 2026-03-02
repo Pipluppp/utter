@@ -146,7 +146,9 @@ export async function resolveRateLimitIdentity(req: Request): Promise<{
   userId: string | null
   ipHash: string
 }> {
-  const userId = extractJwtUserId(req.headers.get("authorization"))
+  // Do not trust unverified JWT payload claims for rate-limit identity.
+  // Until verified user context is available in middleware, use IP hashing only.
+  const userId = null
   const clientIp = readClientIp(req)
   const ipHash = await hashSha256(clientIp)
   return { userId, ipHash }

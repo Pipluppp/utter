@@ -1,10 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { envBinding, envGet } from "./runtime_env.ts";
-import { resolveStorageUrl } from "./urls.ts";
 
 export type StorageBucketName = "references" | "generations";
-export type StorageProviderMode = "supabase" | "hybrid" | "r2";
+export type StorageProviderMode = "r2";
 
 type StorageError = { message: string };
 
@@ -65,14 +64,6 @@ function toStorageError(error: unknown): StorageError {
   return { message: "Storage operation failed." };
 }
 
-function resolveStorageProviderMode(): StorageProviderMode {
-  const raw = (envGet("STORAGE_PROVIDER") ?? "supabase").trim().toLowerCase();
-  if (raw === "supabase" || raw === "hybrid" || raw === "r2") {
-    return raw;
-  }
-  return "supabase";
-}
-
 function getR2BucketBinding(bucket: StorageBucketName): R2Bucket | null {
   if (bucket === "references") {
     return envBinding<R2Bucket>("R2_REFERENCES") ?? null;
@@ -81,6 +72,16 @@ function getR2BucketBinding(bucket: StorageBucketName): R2Bucket | null {
     return envBinding<R2Bucket>("R2_GENERATIONS") ?? null;
   }
   return null;
+}
+
+function requireR2BucketBinding(bucket: StorageBucketName): R2Bucket {
+  const binding = getR2BucketBinding(bucket);
+  if (!binding) {
+    throw new Error(
+      `Missing R2 binding for ${bucket}. Configure R2_REFERENCES/R2_GENERATIONS.`,
+    );
+  }
+  return binding;
 }
 
 function normalizePrefix(prefix: string): string {
@@ -219,93 +220,7 @@ export async function verifySignedStorageToken(
 }
 
 export function createStorageProvider(params: CreateStorageProviderParams) {
-  const mode = resolveStorageProviderMode();
-  const { admin, req } = params;
-
-  async function supabaseCreateSignedUploadUrl(
-    bucket: StorageBucketName,
-    key: string,
-  ): Promise<SignedUrlResult> {
-    const { data, error } = await admin.storage.from(bucket).createSignedUploadUrl(key);
-    if (error || !data?.signedUrl) {
-      return {
-        data: null,
-        error: { message: error?.message ?? "Failed to create signed upload URL." },
-      };
-    }
-
-    return {
-      data: { signedUrl: resolveStorageUrl(req, data.signedUrl) },
-      error: null,
-    };
-  }
-
-  async function supabaseCreateSignedDownloadUrl(
-    bucket: StorageBucketName,
-    key: string,
-    expiresInSeconds: number,
-  ): Promise<SignedUrlResult> {
-    const { data, error } = await admin.storage
-      .from(bucket)
-      .createSignedUrl(key, expiresInSeconds);
-
-    if (error || !data?.signedUrl) {
-      return {
-        data: null,
-        error: { message: error?.message ?? "Failed to create signed URL." },
-      };
-    }
-
-    return {
-      data: { signedUrl: resolveStorageUrl(req, data.signedUrl) },
-      error: null,
-    };
-  }
-
-  async function supabaseUpload(
-    bucket: StorageBucketName,
-    key: string,
-    value: Uint8Array | Blob,
-    options?: { contentType?: string; upsert?: boolean },
-  ): Promise<StorageUploadResult> {
-    const { error } = await admin.storage.from(bucket).upload(key, value, {
-      contentType: options?.contentType,
-      upsert: options?.upsert,
-    });
-
-    return { error: error ? { message: error.message } : null };
-  }
-
-  async function supabaseDownload(
-    bucket: StorageBucketName,
-    key: string,
-  ): Promise<StorageDownloadResult> {
-    const { data, error } = await admin.storage.from(bucket).download(key);
-    return { data: data ?? null, error: error ? { message: error.message } : null };
-  }
-
-  async function supabaseList(
-    bucket: StorageBucketName,
-    prefix: string,
-    options?: { limit?: number },
-  ): Promise<StorageListResult> {
-    const { data, error } = await admin.storage
-      .from(bucket)
-      .list(prefix, { limit: options?.limit ?? 100 });
-
-    return {
-      data: data ?? [],
-      error: error ? { message: error.message } : null,
-    };
-  }
-
-  async function supabaseRemove(
-    bucket: StorageBucketName,
-    keys: string[],
-  ): Promise<StorageRemoveResult> {
-    const { error } = await admin.storage.from(bucket).remove(keys);
-    return { error: error ? { message: error.message } : null };
-  }
+  const { req } = params;
 
   async function r2CreateSignedUrl(
     action: SignedStorageAction,
@@ -338,13 +253,11 @@ export function createStorageProvider(params: CreateStorageProviderParams) {
     value: Uint8Array | Blob,
     options?: { contentType?: string; upsert?: boolean },
   ): Promise<StorageUploadResult> {
-    const target = getR2BucketBinding(bucket);
-    if (!target) {
-      return {
-        error: {
-          message: `Missing R2 binding for ${bucket}. Configure R2_REFERENCES/R2_GENERATIONS.`,
-        },
-      };
+    let target: R2Bucket;
+    try {
+      target = requireR2BucketBinding(bucket);
+    } catch (error) {
+      return { error: toStorageError(error) };
     }
 
     try {
@@ -370,14 +283,11 @@ export function createStorageProvider(params: CreateStorageProviderParams) {
     bucket: StorageBucketName,
     key: string,
   ): Promise<StorageDownloadResult> {
-    const target = getR2BucketBinding(bucket);
-    if (!target) {
-      return {
-        data: null,
-        error: {
-          message: `Missing R2 binding for ${bucket}. Configure R2_REFERENCES/R2_GENERATIONS.`,
-        },
-      };
+    let target: R2Bucket;
+    try {
+      target = requireR2BucketBinding(bucket);
+    } catch (error) {
+      return { data: null, error: toStorageError(error) };
     }
 
     try {
@@ -397,14 +307,11 @@ export function createStorageProvider(params: CreateStorageProviderParams) {
     prefix: string,
     options?: { limit?: number },
   ): Promise<StorageListResult> {
-    const target = getR2BucketBinding(bucket);
-    if (!target) {
-      return {
-        data: null,
-        error: {
-          message: `Missing R2 binding for ${bucket}. Configure R2_REFERENCES/R2_GENERATIONS.`,
-        },
-      };
+    let target: R2Bucket;
+    try {
+      target = requireR2BucketBinding(bucket);
+    } catch (error) {
+      return { data: null, error: toStorageError(error) };
     }
 
     try {
@@ -439,13 +346,11 @@ export function createStorageProvider(params: CreateStorageProviderParams) {
     bucket: StorageBucketName,
     keys: string[],
   ): Promise<StorageRemoveResult> {
-    const target = getR2BucketBinding(bucket);
-    if (!target) {
-      return {
-        error: {
-          message: `Missing R2 binding for ${bucket}. Configure R2_REFERENCES/R2_GENERATIONS.`,
-        },
-      };
+    let target: R2Bucket;
+    try {
+      target = requireR2BucketBinding(bucket);
+    } catch (error) {
+      return { error: toStorageError(error) };
     }
 
     try {
@@ -457,16 +362,11 @@ export function createStorageProvider(params: CreateStorageProviderParams) {
   }
 
   return {
-    mode,
+    mode: "r2" as StorageProviderMode,
     async createSignedUploadUrl(
       bucket: StorageBucketName,
       key: string,
     ): Promise<SignedUrlResult> {
-      if (mode === "supabase") {
-        return supabaseCreateSignedUploadUrl(bucket, key);
-      }
-
-      // hybrid + r2 use signed worker URL for uploads (writes to R2).
       return r2CreateSignedUrl("upload", bucket, key, 900);
     },
 
@@ -475,19 +375,6 @@ export function createStorageProvider(params: CreateStorageProviderParams) {
       key: string,
       expiresInSeconds: number,
     ): Promise<SignedUrlResult> {
-      if (mode === "supabase") {
-        return supabaseCreateSignedDownloadUrl(bucket, key, expiresInSeconds);
-      }
-
-      if (mode === "hybrid") {
-        const target = getR2BucketBinding(bucket);
-        if (target) {
-          const exists = await target.head(key).catch(() => null);
-          if (exists) return r2CreateSignedUrl("download", bucket, key, expiresInSeconds);
-        }
-        return supabaseCreateSignedDownloadUrl(bucket, key, expiresInSeconds);
-      }
-
       return r2CreateSignedUrl("download", bucket, key, expiresInSeconds);
     },
 
@@ -497,7 +384,6 @@ export function createStorageProvider(params: CreateStorageProviderParams) {
       value: Uint8Array | Blob,
       options?: { contentType?: string; upsert?: boolean },
     ): Promise<StorageUploadResult> {
-      if (mode === "supabase") return supabaseUpload(bucket, key, value, options);
       return r2Upload(bucket, key, value, options);
     },
 
@@ -505,15 +391,6 @@ export function createStorageProvider(params: CreateStorageProviderParams) {
       bucket: StorageBucketName,
       key: string,
     ): Promise<StorageDownloadResult> {
-      if (mode === "supabase") return supabaseDownload(bucket, key);
-
-      if (mode === "hybrid") {
-        const r2 = await r2Download(bucket, key);
-        if (r2.error) return r2;
-        if (r2.data) return r2;
-        return supabaseDownload(bucket, key);
-      }
-
       return r2Download(bucket, key);
     },
 
@@ -522,7 +399,6 @@ export function createStorageProvider(params: CreateStorageProviderParams) {
       prefix: string,
       options?: { limit?: number },
     ): Promise<StorageListResult> {
-      if (mode === "supabase") return supabaseList(bucket, prefix, options);
       return r2List(bucket, prefix, options);
     },
 
@@ -530,17 +406,6 @@ export function createStorageProvider(params: CreateStorageProviderParams) {
       bucket: StorageBucketName,
       keys: string[],
     ): Promise<StorageRemoveResult> {
-      if (mode === "supabase") return supabaseRemove(bucket, keys);
-
-      if (mode === "hybrid") {
-        const r2 = await r2Remove(bucket, keys);
-        if (r2.error) return r2;
-
-        // Best-effort cleanup for legacy objects in hybrid mode.
-        await supabaseRemove(bucket, keys).catch(() => null);
-        return { error: null };
-      }
-
       return r2Remove(bucket, keys);
     },
   };

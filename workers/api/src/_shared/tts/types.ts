@@ -1,4 +1,4 @@
-export type TtsProviderName = "modal" | "qwen";
+export type TtsProviderName = "qwen";
 
 export type ProviderErrorCategory =
   | "validation"

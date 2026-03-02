@@ -1,17 +1,14 @@
 # Core Supabase bindings
 SUPABASE_URL=
+# Set to Supabase publishable key (legacy name kept for runtime compatibility).
 SUPABASE_ANON_KEY=
+# Set to Supabase secret/service-role server key (never expose in frontend).
 SUPABASE_SERVICE_ROLE_KEY=
 SUPABASE_PUBLIC_URL=
 
 # CORS/origin policy
 CORS_ALLOWED_ORIGIN=http://localhost:5173
-TTS_PROVIDER_MODE=modal
-STORAGE_PROVIDER=supabase
 STORAGE_SIGNING_SECRET=dev-change-me
-QUEUE_GENERATE_ENABLED=false
-QUEUE_DESIGN_PREVIEW_ENABLED=false
-QUEUE_MODAL_RECHECK_ENABLED=false
 QUEUE_BILLING_ENABLED=false
 
 # Rate limit tuning (optional)
@@ -26,12 +23,6 @@ RATE_LIMIT_TIER3_IP_LIMIT=300
 RATE_LIMIT_TIER3_WINDOW_SECONDS=300
 
 # Provider credentials (set as Wrangler secrets for real environments)
-MODAL_JOB_SUBMIT=
-MODAL_JOB_STATUS=
-MODAL_JOB_RESULT=
-MODAL_JOB_CANCEL=
-MODAL_ENDPOINT_VOICE_DESIGN=
-
 DASHSCOPE_API_KEY=
 DASHSCOPE_BASE_URL=https://dashscope-intl.aliyuncs.com
 DASHSCOPE_REGION=intl

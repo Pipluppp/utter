@@ -522,19 +522,27 @@ Deno.test({
   ...noLeaks,
   fn: async () => {
     const admin = await getAdminClient();
-    const voiceId = crypto.randomUUID();
-    const objectKey = `${userA.userId}/${voiceId}/reference.wav`;
+    let voiceId = "";
+    let objectKey = "";
 
     try {
-      const upload = await admin.storage.from("references").upload(
-        objectKey,
-        MINIMAL_WAV,
-        {
-          contentType: "audio/wav",
-          upsert: true,
-        },
-      );
-      if (upload.error) throw new Error(upload.error.message);
+      const urlRes = await apiFetch("/clone/upload-url", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(VALID_VOICE_PAYLOAD),
+      });
+      assertEquals(urlRes.status, 200);
+      const uploadPayload = await urlRes.json();
+      voiceId = uploadPayload.voice_id as string;
+      objectKey = uploadPayload.object_key as string;
+
+      const uploadRes = await fetch(uploadPayload.upload_url as string, {
+        method: "PUT",
+        headers: { "Content-Type": "audio/wav" },
+        body: MINIMAL_WAV,
+      });
+      assertEquals(uploadRes.status, 200);
+      await uploadRes.body?.cancel();
 
       const seed = await admin.from("voices").insert({
         id: voiceId,
