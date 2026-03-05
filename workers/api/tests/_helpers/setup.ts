@@ -7,7 +7,7 @@ export const ANON_KEY =
 export const SERVICE_ROLE_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 export const API_URL = Deno.env.get("API_URL")?.trim() ||
-  `${SUPABASE_URL}/functions/v1/api`;
+  "http://127.0.0.1:8787/api";
 
 export interface TestUser {
   accessToken: string;
@@ -75,7 +75,7 @@ export async function deleteTestUser(userId: string): Promise<void> {
 }
 
 /**
- * Authenticated fetch helper — calls edge function API with auth headers.
+ * Authenticated fetch helper — calls API Worker with auth headers.
  */
 export function apiFetch(
   path: string,
@@ -101,7 +101,7 @@ export function apiFetch(
 }
 
 /**
- * Unauthenticated fetch — calls edge function API without auth.
+ * Unauthenticated fetch — calls API Worker without auth.
  */
 export function apiPublicFetch(
   path: string,

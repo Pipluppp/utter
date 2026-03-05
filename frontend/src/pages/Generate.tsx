@@ -183,7 +183,7 @@ export function GeneratePage() {
   const isRunning = task?.status === 'pending' || task?.status === 'processing'
   const isBusy = isSubmitting || isRunning
   const selectedVoice = voices?.voices.find((v) => v.id === voiceId) ?? null
-  const selectedVoiceProvider = selectedVoice?.tts_provider ?? 'modal'
+  const selectedVoiceProvider = selectedVoice?.tts_provider ?? 'qwen'
   const selectedVoiceCompatible = !selectedVoice
     ? true
     : selectedVoiceProvider === provider
@@ -283,7 +283,7 @@ export function GeneratePage() {
               {loadingVoices ? 'Loading…' : 'Select a voice'}
             </option>
             {voices?.voices.map((v) => {
-              const voiceProvider = v.tts_provider ?? 'modal'
+              const voiceProvider = v.tts_provider ?? 'qwen'
               const incompatible = voiceProvider !== provider
               return (
                 <option key={v.id} value={v.id} disabled={incompatible}>

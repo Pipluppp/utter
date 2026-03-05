@@ -14,7 +14,6 @@ Current runtime stack (as of 2026-03-03):
 - `frontend/`: React 19 + Vite + TypeScript + Tailwind v4 SPA
 - `workers/`: Cloudflare Workers (frontend and API)
 - `supabase/`: Postgres migrations and SQL tests (system-of-record schema/RLS)
-- `modal_app/`: historical archive (not part of active runtime)
 - `docs/`: project documentation (start at `docs/README.md`)
 
 ## Current deployed surfaces
@@ -51,7 +50,7 @@ Notes:
 cd frontend
 npm install
 test -f .env.local || cp .env.example .env.local
-BACKEND_ORIGIN=http://127.0.0.1:8787 npm run dev
+npm run dev
 ```
 
 Frontend URL: `http://localhost:5173`

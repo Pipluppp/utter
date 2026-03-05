@@ -34,7 +34,7 @@ npm --prefix workers/api run dev
 cd frontend
 npm install
 test -f .env.local || cp .env.example .env.local
-BACKEND_ORIGIN=http://127.0.0.1:8787 npm run dev
+npm run dev
 ```
 
 Local queue/R2 note:
@@ -46,14 +46,14 @@ Local queue/R2 note:
 - Current task hub: `tasks.md`
 - 2026-03-02 continuation artifacts: `2026-03-02/`
 - Simplification execution pack: `2026-03-02/remove-modal-supastorage-queue-simplify/`
+- Security sweep planning pack: `2026-03-03/`
 
 ## Core references
 
 - `features.md` - feature and API contract reference
 - `supabase-security.md` - Supabase-layer security controls
 - `security/audits/2026-03-02/` - migration audit artifacts
-- `qwen-integration/README.md` - Qwen provider integration docs
 
 ## Historical docs
 
-Legacy planning and prior runtime docs are retained for auditability under date-stamped folders.
+Legacy Modal/Supabase-Edge runtime docs are being removed as part of the Cloudflare-only cleanup.

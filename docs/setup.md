@@ -61,10 +61,14 @@ Important:
 ```bash
 cd frontend
 test -f .env.local || cp .env.example .env.local
-BACKEND_ORIGIN=http://127.0.0.1:8787 npm run dev
+npm run dev
 ```
 
 Frontend URL: `http://localhost:5173`
+
+Notes:
+- Vite defaults `BACKEND_ORIGIN` to `http://127.0.0.1:8787` (Cloudflare API Worker local dev).
+- Override `BACKEND_ORIGIN` only when intentionally targeting a different backend (for example legacy Supabase Edge Functions).
 
 ## Quick checks
 

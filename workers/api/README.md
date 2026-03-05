@@ -11,7 +11,7 @@ Scope:
 - Queue Q1 runtime wiring for qwen async jobs (producer + consumer)
 
 Current status:
-- routes are ported from `supabase/functions/api/routes/*`
+- routes are native Worker implementations (legacy Supabase Edge runtime removed)
 - qwen async routes enqueue to Cloudflare Queue when queue flags are enabled and `TTS_QUEUE` is bound
 - legacy `c.executionCtx.waitUntil(...)` fallback remains available behind queue flags
 - R2 staging validation is complete; production bucket/secret finalization is still pending
