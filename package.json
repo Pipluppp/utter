@@ -7,7 +7,11 @@
     "sb:reset": "supabase db reset",
     "sb:status": "supabase status",
     "cf:bootstrap:wsl": "bash ./scripts/cloudflare-migration/bootstrap-auth.sh",
-    "cf:pages:build": "npm --prefix frontend run build",
+    "cf:pages:build": "npm --prefix frontend run build:staging",
+    "cf:frontend:build:staging": "npm --prefix frontend run build:staging",
+    "cf:deploy:api:staging": "wrangler deploy --env staging --config workers/api/wrangler.toml",
+    "cf:deploy:frontend:staging": "wrangler deploy --env staging --config workers/frontend/wrangler.toml",
+    "cf:deploy:staging": "npm run cf:deploy:api:staging && npm run cf:frontend:build:staging && npm run cf:deploy:frontend:staging",
     "cf:worker:install": "npm --prefix workers/api install",
     "cf:worker:dev": "npm --prefix workers/api run dev",
     "cf:worker:check": "npm --prefix workers/api run check",
@@ -18,6 +22,7 @@
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
-    "supabase": "2.76.12"
+    "supabase": "^2.76.12",
+    "wrangler": "^4.70.0"
   }
 }

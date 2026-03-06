@@ -6,8 +6,7 @@ requests to the API Worker.
 ## Deploy
 
 ```bash
-cd workers/frontend
-npx wrangler deploy --env staging
+npm run cf:deploy:frontend:staging
 ```
 
 ## Required build step
@@ -15,9 +14,8 @@ npx wrangler deploy --env staging
 `frontend/dist` must exist before deploy, and Supabase public env vars must be baked at build time:
 
 ```bash
-VITE_SUPABASE_URL=https://<project-ref>.supabase.co \
-VITE_SUPABASE_ANON_KEY=<publishable-key> \
-npm --prefix frontend run build
+npm run cf:frontend:build:staging
 ```
 
-If these vars are missing at build time, `/auth` will show the unconfigured Supabase warning.
+Staging mode reads `frontend/.env.staging`, which avoids accidentally baking local `.env.local` values.
+If vars are missing at build time, `/auth` will show the unconfigured Supabase warning.

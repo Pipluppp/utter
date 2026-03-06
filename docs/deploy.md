@@ -1,6 +1,6 @@
 # Deploy Runbook
 
-Last updated: 2026-03-03
+Last updated: 2026-03-05
 
 Canonical deploy flow for the simplified Cloudflare + Supabase runtime.
 
@@ -20,28 +20,30 @@ Canonical deploy flow for the simplified Cloudflare + Supabase runtime.
 
 ## Staging deploy
 
-1) Build frontend assets
+1) Build frontend assets (staging mode)
 
 ```bash
-VITE_SUPABASE_URL=https://<project-ref>.supabase.co \
-VITE_SUPABASE_ANON_KEY=<publishable-key> \
-npm --prefix frontend run build
+npm run cf:frontend:build:staging
 ```
 
-Note: variable name remains `VITE_SUPABASE_ANON_KEY` for compatibility, but the value should be the current Supabase publishable key.
+This uses `frontend/.env.staging` so deploy builds cannot accidentally bake local `.env.local` values.
 
 2) Deploy API Worker
 
 ```bash
-cd workers/api
-npx wrangler deploy --env staging
+npm run cf:deploy:api:staging
 ```
 
 3) Deploy frontend Worker
 
 ```bash
-cd workers/frontend
-npx wrangler deploy --env staging
+npm run cf:deploy:frontend:staging
+```
+
+Optional one-shot command:
+
+```bash
+npm run cf:deploy:staging
 ```
 
 4) Smoke checks
