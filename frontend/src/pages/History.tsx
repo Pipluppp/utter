@@ -6,6 +6,7 @@ import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
 import { Message } from '../components/ui/Message'
 import { Select } from '../components/ui/Select'
+import { Skeleton } from '../components/ui/Skeleton'
 import { apiJson } from '../lib/api'
 import { cn } from '../lib/cn'
 import {
@@ -24,6 +25,12 @@ function tokenize(query: string) {
 }
 
 const PER_PAGE = 20
+const HISTORY_SKELETON_VARIANTS = [
+  { id: 'ready-a', showMeta: true },
+  { id: 'active-a', showMeta: false },
+  { id: 'ready-b', showMeta: true },
+  { id: 'ready-c', showMeta: true },
+] as const
 
 function Highlight({ text, tokens }: { text: string; tokens: string[] }) {
   if (tokens.length === 0) return <>{text}</>
@@ -76,6 +83,55 @@ function generationAudioUrl(gen: Generation) {
 }
 
 type PlayState = 'idle' | 'loading' | 'playing' | 'paused' | 'stopped'
+
+function HistoryCardSkeleton({ showMeta = true }: { showMeta?: boolean }) {
+  return (
+    <div className="border border-border bg-background p-4 shadow-elevated">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-5 max-w-48 flex-1" />
+          </div>
+
+          <div className="mt-3 space-y-2">
+            <Skeleton className="h-3 w-full max-w-3xl" />
+            <Skeleton className="h-3 w-5/6 max-w-2xl" />
+            <Skeleton className="h-3 w-2/3 max-w-xl" />
+          </div>
+
+          {showMeta ? (
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end">
+          <Skeleton className="h-8 w-18" />
+          <Skeleton className="h-8 w-22" />
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-8 w-18" />
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <Skeleton className="h-12 w-full" />
+      </div>
+    </div>
+  )
+}
+
+function HistorySkeleton() {
+  return (
+    <div className="grid gap-4" aria-hidden="true">
+      {HISTORY_SKELETON_VARIANTS.map(({ id, showMeta }) => (
+        <HistoryCardSkeleton key={id} showMeta={showMeta} />
+      ))}
+    </div>
+  )
+}
 
 export function HistoryPage() {
   const navigate = useNavigate()
@@ -216,7 +272,7 @@ export function HistoryPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" aria-busy={loading}>
       <h2 className="text-balance text-center text-xl font-pixel font-medium uppercase tracking-[2px]">
         History
       </h2>
@@ -233,7 +289,7 @@ export function HistoryPage() {
             autoComplete="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search history…"
+            placeholder="Search history..."
           />
         </div>
         <div>
@@ -254,9 +310,7 @@ export function HistoryPage() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
-      ) : null}
+      {loading && !data ? <HistorySkeleton /> : null}
 
       {!loading && data && data.generations.length === 0 ? (
         <div className="border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
@@ -264,146 +318,150 @@ export function HistoryPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4">
-        {data?.generations.map((g) => {
-          const audioUrl = generationAudioUrl(g)
-          const isReady = g.status === 'completed' && Boolean(audioUrl)
-          const state = playState[g.id] ?? 'idle'
-          const playLabel =
-            state === 'loading'
-              ? 'Loading…'
-              : state === 'playing'
-                ? 'Stop'
-                : 'Play'
-          const playDisabled = state === 'loading'
+      {!loading ? (
+        <div className="grid gap-4">
+          {data?.generations.map((g) => {
+            const audioUrl = generationAudioUrl(g)
+            const isReady = g.status === 'completed' && Boolean(audioUrl)
+            const state = playState[g.id] ?? 'idle'
+            const playLabel =
+              state === 'loading'
+                ? 'Loading...'
+                : state === 'playing'
+                  ? 'Stop'
+                  : 'Play'
+            const playDisabled = state === 'loading'
 
-          return (
-            <div
-              key={g.id}
-              className="border border-border bg-background p-4 shadow-elevated"
-            >
-              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        'border px-2 py-0.5 text-[10px] uppercase tracking-wide',
-                        g.status === 'completed' &&
-                          'border-border bg-subtle text-muted-foreground',
-                        (g.status === 'pending' || g.status === 'processing') &&
-                          'border-border bg-muted text-muted-foreground',
-                        g.status === 'failed' &&
-                          'border-red-500/40 bg-red-500/10 text-red-700 dark:border-red-400/40 dark:bg-red-400/10 dark:text-red-300',
-                        g.status === 'cancelled' &&
-                          'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200',
-                      )}
-                    >
-                      {g.status}
-                    </span>
-                    <div className="truncate text-sm font-semibold">
+            return (
+              <div
+                key={g.id}
+                className="border border-border bg-background p-4 shadow-elevated"
+              >
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          'border px-2 py-0.5 text-[10px] uppercase tracking-wide',
+                          g.status === 'completed' &&
+                            'border-border bg-subtle text-muted-foreground',
+                          (g.status === 'pending' ||
+                            g.status === 'processing') &&
+                            'border-border bg-muted text-muted-foreground',
+                          g.status === 'failed' &&
+                            'border-red-500/40 bg-red-500/10 text-red-700 dark:border-red-400/40 dark:bg-red-400/10 dark:text-red-300',
+                          g.status === 'cancelled' &&
+                            'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200',
+                        )}
+                      >
+                        {g.status}
+                      </span>
+                      <div className="truncate text-sm font-semibold">
+                        <Highlight
+                          text={g.voice_name ?? 'Unknown voice'}
+                          tokens={tokens}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-2 text-sm text-muted-foreground">
                       <Highlight
-                        text={g.voice_name ?? 'Unknown voice'}
+                        text={
+                          g.text.slice(0, 160) +
+                          (g.text.length > 160 ? '...' : '')
+                        }
                         tokens={tokens}
                       />
                     </div>
-                  </div>
 
-                  <div className="mt-2 text-sm text-muted-foreground">
-                    <Highlight
-                      text={
-                        g.text.slice(0, 160) + (g.text.length > 160 ? '…' : '')
-                      }
-                      tokens={tokens}
-                    />
-                  </div>
+                    {g.error_message ? (
+                      <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                        {g.error_message.slice(0, 160)}
+                        {g.error_message.length > 160 ? '...' : ''}
+                      </div>
+                    ) : null}
 
-                  {g.error_message ? (
-                    <div className="mt-2 text-sm text-red-700 dark:text-red-300">
-                      {g.error_message.slice(0, 160)}
-                      {g.error_message.length > 160 ? '…' : ''}
+                    <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-faint">
+                      {g.duration_seconds != null ? (
+                        <span>Duration: {g.duration_seconds.toFixed(1)}s</span>
+                      ) : null}
+                      {g.generation_time_seconds != null ? (
+                        <span>
+                          Gen time: {g.generation_time_seconds.toFixed(1)}s
+                        </span>
+                      ) : null}
                     </div>
-                  ) : null}
+                  </div>
 
-                  <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-faint">
-                    {g.duration_seconds != null ? (
-                      <span>Duration: {g.duration_seconds.toFixed(1)}s</span>
-                    ) : null}
-                    {g.generation_time_seconds != null ? (
-                      <span>
-                        Gen time: {g.generation_time_seconds.toFixed(1)}s
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end">
+                    {isReady && audioUrl ? (
+                      <>
+                        <button
+                          type="button"
+                          className={cn(
+                            buttonStyles({ variant: 'secondary', size: 'sm' }),
+                            'disabled:opacity-50',
+                          )}
+                          disabled={playDisabled}
+                          aria-pressed={state === 'playing'}
+                          aria-controls={`gen-wave-${g.id}`}
+                          onClick={() => void onPlay(g, audioUrl)}
+                        >
+                          {playLabel}
+                        </button>
+                        <button
+                          type="button"
+                          className={buttonStyles({
+                            variant: 'secondary',
+                            size: 'sm',
+                          })}
+                          onClick={() => void onDownload(audioUrl)}
+                        >
+                          Download
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-xs text-faint">
+                        {g.status === 'processing' || g.status === 'pending'
+                          ? 'Generating...'
+                          : ''}
                       </span>
-                    ) : null}
+                    )}
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => void onRegenerate(g)}
+                    >
+                      Regenerate
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => void onDelete(g)}
+                    >
+                      Delete
+                    </Button>
                   </div>
                 </div>
 
-                <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end">
-                  {isReady && audioUrl ? (
-                    <>
-                      <button
-                        type="button"
-                        className={cn(
-                          buttonStyles({ variant: 'secondary', size: 'sm' }),
-                          'disabled:opacity-50',
-                        )}
-                        disabled={playDisabled}
-                        aria-pressed={state === 'playing'}
-                        aria-controls={`gen-wave-${g.id}`}
-                        onClick={() => void onPlay(g, audioUrl)}
-                      >
-                        {playLabel}
-                      </button>
-                      <button
-                        type="button"
-                        className={buttonStyles({
-                          variant: 'secondary',
-                          size: 'sm',
-                        })}
-                        onClick={() => void onDownload(audioUrl)}
-                      >
-                        Download
-                      </button>
-                    </>
-                  ) : (
-                    <span className="text-xs text-faint">
-                      {g.status === 'processing' || g.status === 'pending'
-                        ? 'Generating…'
-                        : ''}
-                    </span>
-                  )}
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void onRegenerate(g)}
-                  >
-                    Regenerate
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void onDelete(g)}
-                  >
-                    Delete
-                  </Button>
+                <div className="mt-4">
+                  <div
+                    ref={(el) => {
+                      waveRefs.current[g.id] = el
+                    }}
+                    id={`gen-wave-${g.id}`}
+                    className="hidden"
+                  />
                 </div>
               </div>
+            )
+          })}
+        </div>
+      ) : null}
 
-              <div className="mt-4">
-                <div
-                  ref={(el) => {
-                    waveRefs.current[g.id] = el
-                  }}
-                  id={`gen-wave-${g.id}`}
-                  className="hidden"
-                />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {data ? (
+      {!loading && data ? (
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
