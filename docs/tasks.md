@@ -2,23 +2,29 @@
 
 ## Current objective
 
-Post-simplification validation and hardening for the qwen-only + R2-only + queue-first runtime.
+Security penetration and architecture sweep for frontend, workers/API, Supabase auth/db/RLS, Cloudflare infra, and abuse handling.
 
-Primary source: `docs/2026-03-02/remove-modal-supastorage-queue-simplify/`.
+Primary source: `docs/2026-03-07/security-sweep-plan-bundle/`.
 
 ## Active tasks
 
-1. Validation evidence capture
-- Build evidence logs for staging clone/design/generate/task lifecycle, credits, billing.
-- Source: `2026-03-02/remove-modal-supastorage-queue-simplify/04-integrated-validation-and-cutover-plan.md`
+1. Security maturity + threat model baseline
+- Establish ownership, severity/SLA, and attack-surface register.
+- Source: `2026-03-07/security-sweep-plan-bundle/01-security-maturity-first-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/02-system-threat-model-and-attack-surface-plan.md`
 
-2. Queue operations hardening
-- Validate retry and DLQ replay procedures; publish incident runbook.
-- Source: `2026-03-02/remove-modal-supastorage-queue-simplify/03-queue-first-orchestration-plan.md`
+2. Component security sweeps
+- Execute targeted security tests for frontend, API/queue, Supabase auth/RLS/db, and Cloudflare infra.
+- Source: `2026-03-07/security-sweep-plan-bundle/03-frontend-security-and-session-testing-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/04-api-worker-and-queue-security-testing-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/05-supabase-auth-rls-and-postgres-security-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/06-cloudflare-infra-secrets-r2-queues-plan.md`
 
-3. Docs consistency sweep
-- Ensure base docs and runbooks stay aligned with simplified architecture.
-- Source: `2026-03-02/remove-modal-supastorage-queue-simplify/05-docs-realignment-for-simplified-stack-plan.md`
+3. Abuse, pen test, and remediation closure
+- Run abuse scenarios, active pen tests, and fix/retest governance cycle.
+- Source: `2026-03-07/security-sweep-plan-bundle/07-abuse-fraud-and-platform-misuse-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/08-penetration-testing-execution-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/09-remediation-verification-and-governance-plan.md`
 
 ## Recently completed
 
@@ -29,3 +35,8 @@ Primary source: `docs/2026-03-02/remove-modal-supastorage-queue-simplify/`.
 2. Cloudflare migration implementation (phase 01-04)
 - Date: 2026-03-01 to 2026-03-02
 - Evidence: `security/audits/2026-03-02/cloudflare-hybrid-phase-0*.md`
+
+3. Multi-job + Job Center planning pack
+- Date: 2026-03-03
+- Scope: implementation plans for multi-job execution and robust job tracking UX beyond History.
+- Source: `2026-03-07/multi-job-tracking-ui-ux/README.md`

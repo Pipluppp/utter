@@ -46,7 +46,7 @@ Local queue/R2 note:
 - Current task hub: `tasks.md`
 - 2026-03-02 continuation artifacts: `2026-03-02/`
 - Simplification execution pack: `2026-03-02/remove-modal-supastorage-queue-simplify/`
-- Security sweep planning pack: `2026-03-03/`
+- Security sweep planning pack: `2026-03-07/security-sweep-plan-bundle/`
 
 ## Core references
 
