@@ -30,6 +30,14 @@ export const creditPacks: CreditPack[] = [
   },
 ]
 
+export function getCreditPackById(packId: string): CreditPack | null {
+  if (packId === 'pack_150k' || packId === 'pack_500k') {
+    return creditPacks.find((pack) => pack.id === packId) ?? null
+  }
+
+  return null
+}
+
 export type CreditRate = {
   action: string
   cost: string

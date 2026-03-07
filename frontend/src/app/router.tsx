@@ -1,5 +1,5 @@
 import { lazy } from 'react'
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useLocation } from 'react-router-dom'
 import { Layout } from './Layout'
 import { RequireAuth } from './RequireAuth'
 
@@ -48,18 +48,32 @@ const AccountLayoutPage = lazy(async () => {
   const m = await import('../pages/account/AccountLayout')
   return { default: m.AccountLayoutPage }
 })
+const AccountOverviewPage = lazy(async () => {
+  const m = await import('../pages/account/Overview')
+  return { default: m.AccountOverviewPage }
+})
 const AccountProfilePage = lazy(async () => {
   const m = await import('../pages/account/Profile')
   return { default: m.AccountProfilePage }
 })
-const AccountUsagePage = lazy(async () => {
-  const m = await import('../pages/account/Usage')
-  return { default: m.AccountUsagePage }
+const AccountCreditsPage = lazy(async () => {
+  const m = await import('../pages/account/Credits')
+  return { default: m.AccountCreditsPage }
 })
-const AccountBillingPage = lazy(async () => {
-  const m = await import('../pages/account/Billing')
-  return { default: m.AccountBillingPage }
-})
+
+function AccountLegacyRedirect() {
+  const location = useLocation()
+  return (
+    <Navigate
+      to={{
+        pathname: '/account/credits',
+        search: location.search,
+        hash: location.hash,
+      }}
+      replace
+    />
+  )
+}
 
 export const router = createBrowserRouter([
   {
@@ -118,11 +132,12 @@ export const router = createBrowserRouter([
           </RequireAuth>
         ),
         children: [
-          { index: true, element: <Navigate to="/account/profile" replace /> },
+          { index: true, element: <AccountOverviewPage /> },
           { path: 'auth', element: <Navigate to="/auth" replace /> },
           { path: 'profile', element: <AccountProfilePage /> },
-          { path: 'usage', element: <AccountUsagePage /> },
-          { path: 'billing', element: <AccountBillingPage /> },
+          { path: 'credits', element: <AccountCreditsPage /> },
+          { path: 'usage', element: <AccountLegacyRedirect /> },
+          { path: 'billing', element: <AccountLegacyRedirect /> },
         ],
       },
       { path: '/about', element: <AboutPage /> },

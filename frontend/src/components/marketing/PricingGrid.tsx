@@ -45,7 +45,7 @@ export function PricingGrid({
               </div>
             </div>
             <NavLink
-              to="/account/billing"
+              to="/account/credits"
               className={buttonStyles({
                 variant: pack.featured ? 'primary' : 'secondary',
                 size: 'sm',

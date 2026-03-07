@@ -157,6 +157,23 @@ export type CreditLedgerEvent = {
   created_at: string
 }
 
+export type ProfileRecord = {
+  id: string
+  handle: string | null
+  display_name: string | null
+  avatar_url: string | null
+  subscription_tier: string
+  credits_remaining: number
+  created_at: string
+  updated_at: string
+}
+
+export type MeResponse = {
+  signed_in: boolean
+  user: { id: string } | null
+  profile: ProfileRecord | null
+}
+
 export type CreditsUsageResponse = {
   credit_unit: string
   window_days: number
