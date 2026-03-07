@@ -11,3 +11,4 @@ This folder groups unimplemented plan documents into separate workstreams for ea
 ## Additional Plans
 
 1. `account-ui-ux-maturity-plan.md`
+2. `landing-app-navigation-state-plan.md`
