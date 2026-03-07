@@ -1,0 +1,20 @@
+name = "utter-frontend-staging"
+main = "src/index.ts"
+compatibility_date = "2026-03-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "../../frontend/dist"
+binding = "ASSETS"
+
+[vars]
+API_ORIGIN = "https://utter-api-staging.duncanb013.workers.dev"
+
+[env.staging]
+name = "utter"
+[[env.staging.services]]
+binding = "API"
+service = "utter-api-staging"
+
+[env.staging.vars]
+API_ORIGIN = "https://utter-api-staging.duncanb013.workers.dev"

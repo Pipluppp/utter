@@ -32,6 +32,13 @@ export async function getAccessToken(): Promise<string | null> {
   return session?.access_token ?? null
 }
 
+export async function refreshAccessToken(): Promise<string | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase.auth.refreshSession()
+  if (error) return null
+  return data.session?.access_token ?? null
+}
+
 export async function getUserId(): Promise<string | null> {
   const session = await getSession()
   return session?.user?.id ?? null

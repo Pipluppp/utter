@@ -5,14 +5,24 @@
     "sb:start": "supabase start",
     "sb:stop": "supabase stop",
     "sb:reset": "supabase db reset",
-    "sb:serve": "supabase functions serve api --env-file ./supabase/.env.local --no-verify-jwt",
-    "sb:serve:test": "supabase functions serve api --env-file ./supabase/.env.test --no-verify-jwt",
     "sb:status": "supabase status",
+    "cf:bootstrap:wsl": "bash ./scripts/cloudflare-migration/bootstrap-auth.sh",
+    "cf:pages:build": "npm --prefix frontend run build:staging",
+    "cf:frontend:build:staging": "npm --prefix frontend run build:staging",
+    "cf:deploy:api:staging": "wrangler deploy --env staging --config workers/api/wrangler.toml",
+    "cf:deploy:frontend:staging": "wrangler deploy --env staging --config workers/frontend/wrangler.toml",
+    "cf:deploy:staging": "npm run cf:deploy:api:staging && npm run cf:frontend:build:staging && npm run cf:deploy:frontend:staging",
+    "cf:worker:install": "npm --prefix workers/api install",
+    "cf:worker:dev": "npm --prefix workers/api run dev",
+    "cf:worker:check": "npm --prefix workers/api run check",
+    "cf:worker:types": "npm --prefix workers/api run types",
+    "test:worker:local": "cd workers/api/tests && cross-env API_URL=http://127.0.0.1:8787/api deno test --allow-net --allow-env --allow-read .",
     "test:db": "supabase test db",
-    "test:edge": "cd supabase/functions/tests && deno test --allow-net --allow-env --allow-read .",
-    "test:all": "npm run test:db && npm run test:edge"
+    "test:all": "npm run test:db && npm run test:worker:local"
   },
   "devDependencies": {
-    "supabase": "2.76.12"
+    "cross-env": "^10.1.0",
+    "supabase": "^2.76.12",
+    "wrangler": "^4.70.0"
   }
 }

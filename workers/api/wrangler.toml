@@ -1,0 +1,102 @@
+name = "utter-api"
+main = "src/index.ts"
+compatibility_date = "2026-03-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Default local-safe origin. Override per deployment environment.
+CORS_ALLOWED_ORIGIN = "http://localhost:5173"
+DASHSCOPE_REGION = "intl"
+QWEN_VC_TARGET_MODEL = "qwen3-tts-vc-2026-01-22"
+QWEN_VD_TARGET_MODEL = "qwen3-tts-vd-2026-01-26"
+QWEN_MAX_TEXT_CHARS = "100"
+QUEUE_BILLING_ENABLED = "false"
+
+# Local dev bindings. Use `wrangler dev` (no --remote) for queue-backed flows.
+[[r2_buckets]]
+binding = "R2_REFERENCES"
+bucket_name = "utter-references-local"
+
+[[r2_buckets]]
+binding = "R2_GENERATIONS"
+bucket_name = "utter-generations-local"
+
+[[queues.producers]]
+queue = "tts-jobs-local"
+binding = "TTS_QUEUE"
+
+[[queues.consumers]]
+queue = "tts-jobs-local"
+max_batch_size = 1
+max_batch_timeout = 2
+max_retries = 3
+dead_letter_queue = "tts-jobs-dlq-local"
+
+[env.staging.vars]
+# Explicit allowlist for local + deployed staging frontend.
+CORS_ALLOWED_ORIGIN = "http://localhost:5173,https://utter.duncanb013.workers.dev"
+DASHSCOPE_REGION = "intl"
+QWEN_VC_TARGET_MODEL = "qwen3-tts-vc-2026-01-22"
+QWEN_VD_TARGET_MODEL = "qwen3-tts-vd-2026-01-26"
+QWEN_MAX_TEXT_CHARS = "100"
+QUEUE_BILLING_ENABLED = "false"
+
+[env.production.vars]
+# Keep explicit and narrow. Replace with custom domain at production cutover.
+CORS_ALLOWED_ORIGIN = "https://utter.duncanb013.workers.dev,https://utter-wheat.vercel.app"
+DASHSCOPE_REGION = "intl"
+QWEN_VC_TARGET_MODEL = "qwen3-tts-vc-2026-01-22"
+QWEN_VD_TARGET_MODEL = "qwen3-tts-vd-2026-01-26"
+QWEN_MAX_TEXT_CHARS = "100"
+QUEUE_BILLING_ENABLED = "false"
+
+# Wrangler env keys like vars/r2_buckets/queues are non-inheritable;
+# repeat every required binding per environment.
+[[env.staging.r2_buckets]]
+binding = "R2_REFERENCES"
+bucket_name = "utter-references-staging"
+
+[[env.staging.r2_buckets]]
+binding = "R2_GENERATIONS"
+bucket_name = "utter-generations-staging"
+
+[[env.staging.queues.producers]]
+queue = "tts-jobs-staging"
+binding = "TTS_QUEUE"
+
+[[env.staging.queues.consumers]]
+queue = "tts-jobs-staging"
+max_batch_size = 1
+max_batch_timeout = 2
+max_retries = 3
+dead_letter_queue = "tts-jobs-dlq-staging"
+
+# Production bindings (set bucket/queue names before prod deploy).
+# [[env.production.r2_buckets]]
+# binding = "R2_REFERENCES"
+# bucket_name = "utter-references"
+#
+# [[env.production.r2_buckets]]
+# binding = "R2_GENERATIONS"
+# bucket_name = "utter-generations"
+#
+# [[env.production.queues.producers]]
+# queue = "tts-jobs"
+# binding = "TTS_QUEUE"
+#
+# [[env.production.queues.consumers]]
+# queue = "tts-jobs"
+# max_batch_size = 1
+# max_batch_timeout = 2
+# max_retries = 3
+# dead_letter_queue = "tts-jobs-dlq"
+
+# Required Worker secrets (set via `wrangler secret put --env <name> ...`):
+# - SUPABASE_URL
+# - SUPABASE_ANON_KEY
+# - SUPABASE_SERVICE_ROLE_KEY
+# - STORAGE_SIGNING_SECRET
+# - STRIPE_SECRET_KEY
+# - STRIPE_WEBHOOK_SECRET
+# - DASHSCOPE_API_KEY
+# - MISTRAL_API_KEY

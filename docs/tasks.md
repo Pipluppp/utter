@@ -1,52 +1,42 @@
 # Tasks Jump Point
 
-This is the quick launch page for the current task sequence.
-
 ## Current objective
 
-Security hardening + legacy backend cleanup. See `docs/2026-02-22/README.md`.
+Security penetration and architecture sweep for frontend, workers/API, Supabase auth/db/RLS, Cloudflare infra, and abuse handling.
+
+Primary source: `docs/2026-03-07/security-sweep-plan-bundle/`.
 
 ## Active tasks
 
-None currently.
+1. Security maturity + threat model baseline
+- Establish ownership, severity/SLA, and attack-surface register.
+- Source: `2026-03-07/security-sweep-plan-bundle/01-security-maturity-first-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/02-system-threat-model-and-attack-surface-plan.md`
 
-## Queued
+2. Component security sweeps
+- Execute targeted security tests for frontend, API/queue, Supabase auth/RLS/db, and Cloudflare infra.
+- Source: `2026-03-07/security-sweep-plan-bundle/03-frontend-security-and-session-testing-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/04-api-worker-and-queue-security-testing-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/05-supabase-auth-rls-and-postgres-security-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/06-cloudflare-infra-secrets-r2-queues-plan.md`
 
-- **Qwen official API wiring/cutover**
-  Path: `docs/qwen-integration/tasks/11-rollout-cutover.md`
-  What it achieves: transitions TTS runtime from Modal-first toward official Qwen API.
+3. Abuse, pen test, and remediation closure
+- Run abuse scenarios, active pen tests, and fix/retest governance cycle.
+- Source: `2026-03-07/security-sweep-plan-bundle/07-abuse-fraud-and-platform-misuse-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/08-penetration-testing-execution-plan.md`
+- Source: `2026-03-07/security-sweep-plan-bundle/09-remediation-verification-and-governance-plan.md`
 
-## Completed
+## Recently completed
 
-1. ~~**Standalone auth pages**~~ — Done 2026-02-21
-   Path: `docs/2026-02-19/auth-pages/README.md`
-   Shipped in `cee4676`. Dedicated `/auth` page with magic link + password modes.
+1. Simplification implementation pass
+- Date: 2026-03-03
+- Scope: removed Modal runtime paths, removed Supabase/hybrid storage branches, enforced queue-first async execution.
 
-2. ~~**Documentation cleanup**~~ — Done 2026-02-22
-   Path: `docs/2026-02-22/docs-cleanup.md`
-   Shipped in `813fce5`. Guide docs now describe the deployed Supabase/Vercel architecture.
+2. Cloudflare migration implementation (phase 01-04)
+- Date: 2026-03-01 to 2026-03-02
+- Evidence: `security/audits/2026-03-02/cloudflare-hybrid-phase-0*.md`
 
-3. ~~**Profile column guards**~~ — Done 2026-02-22
-   Path: `docs/2026-02-22/profile-column-guards.md`
-   Verified existing hardening (`20260212120000_profiles_voices_write_hardening.sql`) already revoked direct `profiles` UPDATE for `authenticated`.
-
-4. ~~**CORS lockdown**~~ — Done 2026-02-22
-   Path: `docs/2026-02-22/cors-lockdown.md`
-   `supabase/functions/_shared/cors.ts` now uses `CORS_ALLOWED_ORIGIN` and per-request origin resolution (with local `*` fallback).
-
-5. ~~**Remove legacy FastAPI backend**~~ — Done 2026-02-22
-   Path: `docs/2026-02-22/remove-fastapi-backend.md`
-   Removed tracked `backend/` application files from the repository.
-
-6. ~~**Deploy Supabase staging backend**~~ — Done 2026-02-17
-   Path: `docs/2026-02-16/deploy-supabase/README.md`
-   Project: `jgmivviwockcwjkvpqra`, 5 migrations pushed, edge function deployed, hardening verified.
-
-7. ~~**Wire Vercel frontend to staging Supabase**~~ — Done 2026-02-17
-   Path: `docs/2026-02-16/wire-vercel-supabase/README.md`
-   Live at `https://utter-wheat.vercel.app`. Auth, clone, and generation flows verified on production.
-
-## Source mapping
-
-- Deploy task source: `docs/supabase-migration/phases/09-staging-deploy.md`
-- Vercel task source: `docs/supabase-migration/phases/10-vercel.md`
+3. Multi-job + Job Center planning pack
+- Date: 2026-03-03
+- Scope: implementation plans for multi-job execution and robust job tracking UX beyond History.
+- Source: `2026-03-07/multi-job-tracking-ui-ux/README.md`

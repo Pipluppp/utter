@@ -45,7 +45,7 @@ export function AppFooter() {
         </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-2 text-xs text-faint">
-          <div>Powered by Qwen3-TTS on Modal.</div>
+          <div>Powered by Qwen3-TTS.</div>
           <div>© {new Date().getFullYear()} Utter</div>
         </div>
       </div>

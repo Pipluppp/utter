@@ -75,3 +75,9 @@ htmlcov/
 
 node_modules/
 .vercel
+.wrangler/
+**/.wrangler/
+**/.dev.vars
+workers/api/.wrangler/
+workers/frontend/.wrangler/
+workers/api/.dev.vars

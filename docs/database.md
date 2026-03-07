@@ -12,10 +12,8 @@ This doc describes the Postgres schema for Utter's Supabase backend:
 
 Related docs:
 - Architecture (comprehensive reference): [`architecture.md`](./architecture.md)
-- Milestones: [`milestone.md`](./milestone.md)
-- Supabase grounding + workflows: [`supabase.md`](./supabase.md)
 - Backend endpoint mapping: [`backend.md`](./backend.md)
-- Orchestration model: [`edge-orchestration.md`](./edge-orchestration.md)
+- Setup runbook: [`setup.md`](./setup.md)
 
 ## Design principles
 
@@ -174,7 +172,7 @@ create policy voices_delete_own on public.voices
   for delete to authenticated
   using ((select auth.uid()) = user_id);
 
--- generations: users read/delete their own (insert/update via service role in edge functions)
+-- generations: users read/delete their own (insert/update via API Worker service role)
 create policy generations_select_own on public.generations
   for select to authenticated
   using ((select auth.uid()) = user_id);
@@ -182,14 +180,14 @@ create policy generations_delete_own on public.generations
   for delete to authenticated
   using ((select auth.uid()) = user_id);
 
--- tasks: users read their own (insert/update via service role in edge functions)
+-- tasks: users read their own (insert/update via API Worker service role)
 create policy tasks_select_own on public.tasks
   for select to authenticated
   using ((select auth.uid()) = user_id);
 ```
 
 Notes:
-- INSERT/UPDATE on `generations` and `tasks` is done by edge functions using the service role key (bypasses RLS). Users don't directly insert these — edge functions do it on their behalf after validation.
+- INSERT/UPDATE on `generations` and `tasks` is done by the API Worker using the service role key (bypasses RLS). Users don't directly insert these.
 - The service role key bypasses RLS entirely; only use it for explicitly server-owned flows.
 - PostgREST uses the `anon` and `authenticated` roles; policies target `authenticated`.
 
@@ -231,11 +229,11 @@ create policy generations_read_own on storage.objects
   );
 ```
 
-Note: generation file uploads are done by edge functions using the service role key, so no INSERT policy is needed for the `generations` bucket on the `authenticated` role.
+Note: generation file uploads are done by the API Worker using the service role key, so no INSERT policy is needed for the `generations` bucket on the `authenticated` role.
 
 ## Hardening the data API surface (recommended)
 
-Even if we route all frontend calls through Edge Functions, PostgREST still exists.
+Even if we route all frontend calls through the API Worker, PostgREST still exists.
 
 We should follow Supabase's "hardening data API" guidance:
 - expose only the schema(s) we want exposed
