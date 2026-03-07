@@ -1,5 +1,7 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { cn } from '../lib/cn'
+import { useAuthState } from './auth/AuthStateProvider'
+import { buildAuthHref, buildReturnTo } from './navigation'
 
 function FooterLink({
   to,
@@ -22,6 +24,13 @@ function FooterLink({
 }
 
 export function AppFooter() {
+  const location = useLocation()
+  const authState = useAuthState()
+  const accountHref =
+    authState.status === 'signed_in'
+      ? '/account'
+      : buildAuthHref(buildReturnTo(location))
+
   return (
     <footer className="border-t border-border bg-background">
       <div className="mx-auto w-full max-w-5xl px-4 py-10 md:px-6">
@@ -37,7 +46,9 @@ export function AppFooter() {
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <FooterLink to="/#pricing">Pricing</FooterLink>
-            <FooterLink to="/account">Account</FooterLink>
+            <FooterLink to={accountHref}>
+              {authState.status === 'signed_in' ? 'Account' : 'Sign in'}
+            </FooterLink>
             <FooterLink to="/privacy">Privacy</FooterLink>
             <FooterLink to="/terms">Terms</FooterLink>
             <FooterLink to="/about">About</FooterLink>
@@ -46,7 +57,7 @@ export function AppFooter() {
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-2 text-xs text-faint">
           <div>Powered by Qwen3-TTS.</div>
-          <div>© {new Date().getFullYear()} Utter</div>
+          <div>(c) {new Date().getFullYear()} Utter</div>
         </div>
       </div>
     </footer>

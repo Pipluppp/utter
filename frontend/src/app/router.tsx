@@ -1,6 +1,7 @@
 import { lazy } from 'react'
 import { createBrowserRouter, Navigate, useLocation } from 'react-router-dom'
 import { Layout } from './Layout'
+import type { RouteFamily } from './navigation'
 import { RequireAuth } from './RequireAuth'
 
 const LandingPage = lazy(async () => {
@@ -39,7 +40,6 @@ const TermsPage = lazy(async () => {
   const m = await import('../pages/Terms')
   return { default: m.TermsPage }
 })
-
 const AuthPage = lazy(async () => {
   const m = await import('../pages/Auth')
   return { default: m.AuthPage }
@@ -75,72 +75,89 @@ function AccountLegacyRedirect() {
   )
 }
 
+function familyHandle(routeFamily: RouteFamily) {
+  return { routeFamily }
+}
+
 export const router = createBrowserRouter([
   {
     element: <Layout />,
     children: [
-      { path: '/', element: <LandingPage /> },
       {
-        path: '/clone',
-        element: (
-          <RequireAuth>
-            <ClonePage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: '/generate',
-        element: (
-          <RequireAuth>
-            <GeneratePage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: '/design',
-        element: (
-          <RequireAuth>
-            <DesignPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: '/voices',
-        element: (
-          <RequireAuth>
-            <VoicesPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: '/history',
-        element: (
-          <RequireAuth>
-            <HistoryPage />
-          </RequireAuth>
-        ),
-      },
-      { path: '/auth', element: <AuthPage /> },
-      { path: '/pricing', element: <Navigate to="/#pricing" replace /> },
-      { path: '/privacy', element: <PrivacyPage /> },
-      { path: '/terms', element: <TermsPage /> },
-      {
-        path: '/account',
-        element: (
-          <RequireAuth>
-            <AccountLayoutPage />
-          </RequireAuth>
-        ),
+        handle: familyHandle('marketing'),
         children: [
-          { index: true, element: <AccountOverviewPage /> },
-          { path: 'auth', element: <Navigate to="/auth" replace /> },
-          { path: 'profile', element: <AccountProfilePage /> },
-          { path: 'credits', element: <AccountCreditsPage /> },
-          { path: 'usage', element: <AccountLegacyRedirect /> },
-          { path: 'billing', element: <AccountLegacyRedirect /> },
+          { path: '/', element: <LandingPage /> },
+          { path: '/pricing', element: <Navigate to="/#pricing" replace /> },
+          { path: '/privacy', element: <PrivacyPage /> },
+          { path: '/terms', element: <TermsPage /> },
+          { path: '/about', element: <AboutPage /> },
         ],
       },
-      { path: '/about', element: <AboutPage /> },
+      {
+        handle: familyHandle('auth'),
+        children: [{ path: '/auth', element: <AuthPage /> }],
+      },
+      {
+        handle: familyHandle('app'),
+        children: [
+          {
+            path: '/clone',
+            element: (
+              <RequireAuth>
+                <ClonePage />
+              </RequireAuth>
+            ),
+          },
+          {
+            path: '/generate',
+            element: (
+              <RequireAuth>
+                <GeneratePage />
+              </RequireAuth>
+            ),
+          },
+          {
+            path: '/design',
+            element: (
+              <RequireAuth>
+                <DesignPage />
+              </RequireAuth>
+            ),
+          },
+          {
+            path: '/voices',
+            element: (
+              <RequireAuth>
+                <VoicesPage />
+              </RequireAuth>
+            ),
+          },
+          {
+            path: '/history',
+            element: (
+              <RequireAuth>
+                <HistoryPage />
+              </RequireAuth>
+            ),
+          },
+          {
+            path: '/account',
+            element: (
+              <RequireAuth>
+                <AccountLayoutPage />
+              </RequireAuth>
+            ),
+            children: [
+              { index: true, element: <AccountOverviewPage /> },
+              { path: 'auth', element: <Navigate to="/auth" replace /> },
+              { path: 'profile', element: <AccountProfilePage /> },
+              { path: 'credits', element: <AccountCreditsPage /> },
+              { path: 'usage', element: <AccountLegacyRedirect /> },
+              { path: 'billing', element: <AccountLegacyRedirect /> },
+            ],
+          },
+        ],
+      },
     ],
   },
 ])

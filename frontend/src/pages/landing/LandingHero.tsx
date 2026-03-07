@@ -1,4 +1,5 @@
-import { Link, NavLink } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { FeatureEntryLink } from '../../app/FeatureEntryLink'
 import { TextReveal } from '../../components/animation/TextReveal'
 import { buttonStyles } from '../../components/ui/Button'
 import { useLanguages } from '../hooks'
@@ -23,14 +24,14 @@ export function LandingHero() {
             to={{ pathname: '/', hash: '#demos' }}
             className={buttonStyles({ variant: 'primary', size: 'md' })}
           >
-            Hear the demos →
+            {'Hear the demos ->'}
           </Link>
-          <NavLink
+          <FeatureEntryLink
             to="/clone"
             className={buttonStyles({ variant: 'secondary', size: 'md' })}
           >
-            Clone a voice →
-          </NavLink>
+            {'Clone a voice ->'}
+          </FeatureEntryLink>
         </div>
       </div>
     </section>
