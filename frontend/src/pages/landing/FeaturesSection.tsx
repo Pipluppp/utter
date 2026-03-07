@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { FeatureEntryLink } from '../../app/FeatureEntryLink'
 import { buttonStyles } from '../../components/ui/Button'
 import { cn } from '../../lib/cn'
 
@@ -75,18 +75,18 @@ function FeatureBlock({
           <p className="mt-2 text-base text-muted-foreground">{pitch}</p>
         </div>
         <ul className="space-y-2 text-base text-muted-foreground">
-          {bullets.map((b) => (
-            <Bullet key={b}>{b}</Bullet>
+          {bullets.map((bullet) => (
+            <Bullet key={bullet}>{bullet}</Bullet>
           ))}
         </ul>
         {ctaLabel && to ? (
           <div className="pt-1">
-            <NavLink
+            <FeatureEntryLink
               to={to}
               className={buttonStyles({ variant: 'secondary', size: 'sm' })}
             >
-              {ctaLabel} →
-            </NavLink>
+              {`${ctaLabel} ->`}
+            </FeatureEntryLink>
           </div>
         ) : null}
       </div>

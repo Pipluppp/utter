@@ -8,18 +8,22 @@ function isTypingTarget(target: EventTarget | null) {
   return target.isContentEditable
 }
 
-export function useGlobalShortcuts() {
+export function useGlobalShortcuts(enabled: boolean) {
   const navigate = useNavigate()
   const location = useLocation()
 
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.defaultPrevented) return
-      if (e.repeat) return
-      if (e.metaKey || e.ctrlKey || e.altKey) return
-      if (isTypingTarget(e.target)) return
+    if (!enabled) {
+      return
+    }
 
-      const key = e.key.toLowerCase()
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return
+      if (event.repeat) return
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (isTypingTarget(event.target)) return
+
+      const key = event.key.toLowerCase()
       const to =
         key === 'c'
           ? '/clone'
@@ -31,11 +35,11 @@ export function useGlobalShortcuts() {
       if (!to) return
       if (location.pathname === to) return
 
-      e.preventDefault()
+      event.preventDefault()
       navigate(to)
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [location.pathname, navigate])
+  }, [enabled, location.pathname, navigate])
 }
