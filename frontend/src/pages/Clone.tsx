@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, useSearchParams } from 'react-router-dom'
 import { WaveformPlayer } from '../components/audio/WaveformPlayer'
 import { Button } from '../components/ui/Button'
+import { GridArtSurface } from '../components/ui/GridArt'
 import { InfoTip } from '../components/ui/InfoTip'
 import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
@@ -78,6 +79,7 @@ export function ClonePage() {
   const [submitting, setSubmitting] = useState(false)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [elapsedLabel, setElapsedLabel] = useState('0:00')
+  const [sweepNonce, setSweepNonce] = useState(0)
 
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<CloneResponse | null>(null)
@@ -456,6 +458,7 @@ export function ClonePage() {
     }
 
     setSubmitting(true)
+    setSweepNonce((value) => value + 1)
     const t0 = Date.now()
     setStartedAt(t0)
     setElapsedLabel('0:00')
@@ -525,7 +528,7 @@ export function ClonePage() {
   }, [created, reset])
 
   return (
-    <div className="space-y-8">
+    <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
       <div className="flex items-center justify-center gap-2">
         <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Clone
@@ -833,6 +836,6 @@ export function ClonePage() {
           </div>
         </div>
       ) : null}
-    </div>
+    </GridArtSurface>
   )
 }

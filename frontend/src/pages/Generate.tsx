@@ -4,6 +4,7 @@ import { WaveformPlayer } from '../components/audio/WaveformPlayer'
 import { useTasks } from '../components/tasks/TaskProvider'
 import { taskLabel } from '../components/tasks/taskKeys'
 import { Button } from '../components/ui/Button'
+import { GridArtSurface } from '../components/ui/GridArt'
 import { InfoTip } from '../components/ui/InfoTip'
 import { Label } from '../components/ui/Label'
 import { Message } from '../components/ui/Message'
@@ -110,6 +111,7 @@ export function GeneratePage() {
   const [language, setLanguage] = useState(defaultLanguage)
   const [text, setText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [sweepNonce, setSweepNonce] = useState(0)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
   const [error, setError] = useState<string | null>(null)
@@ -309,6 +311,7 @@ export function GeneratePage() {
 
     submitInFlightRef.current = true
     setIsSubmitting(true)
+    setSweepNonce((value) => value + 1)
 
     try {
       const res = await apiJson<GenerateResponse>('/api/generate', {
@@ -327,7 +330,7 @@ export function GeneratePage() {
   }
 
   return (
-    <div className="space-y-8">
+    <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
       <div className="flex items-center justify-center gap-2">
         <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Generate
@@ -494,6 +497,6 @@ export function GeneratePage() {
           <WaveformPlayer audioUrl={audioUrl} />
         </div>
       ) : null}
-    </div>
+    </GridArtSurface>
   )
 }
