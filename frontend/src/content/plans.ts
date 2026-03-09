@@ -1,4 +1,4 @@
-export type CreditPackId = 'pack_150k' | 'pack_500k'
+export type CreditPackId = 'pack_30k' | 'pack_120k'
 
 export type CreditPack = {
   id: CreditPackId
@@ -12,26 +12,26 @@ export type CreditPack = {
 
 export const creditPacks: CreditPack[] = [
   {
-    id: 'pack_150k',
+    id: 'pack_30k',
     name: 'Starter pack',
-    priceUsd: 10,
-    credits: 150_000,
-    blurb: 'Great for occasional generation and voice iteration.',
-    highlights: ['One-time purchase', 'Credits do not expire in this phase'],
+    priceUsd: 2.99,
+    credits: 30_000,
+    blurb: 'Great for trying workflows and light production use.',
+    highlights: ['One-time purchase', 'About 80 minutes of generated audio'],
   },
   {
-    id: 'pack_500k',
+    id: 'pack_120k',
     name: 'Studio pack',
-    priceUsd: 25,
-    credits: 500_000,
-    blurb: 'Best value for high-throughput production workloads.',
-    highlights: ['One-time purchase', 'Best credits per dollar'],
+    priceUsd: 9.99,
+    credits: 120_000,
+    blurb: 'Best value for frequent generation and iteration loops.',
+    highlights: ['One-time purchase', 'About 320 minutes of generated audio'],
     featured: true,
   },
 ]
 
 export function getCreditPackById(packId: string): CreditPack | null {
-  if (packId === 'pack_150k' || packId === 'pack_500k') {
+  if (packId === 'pack_30k' || packId === 'pack_120k') {
     return creditPacks.find((pack) => pack.id === packId) ?? null
   }
 
@@ -52,12 +52,12 @@ export const creditRates: CreditRate[] = [
   },
   {
     action: 'Voice design preview',
-    cost: 'First 2 free, then 5,000 credits',
+    cost: 'First 2 free, then 2,400 credits',
     note: 'Flat price after design trials are used.',
   },
   {
     action: 'Voice clone finalize',
-    cost: 'First 2 free, then 1,000 credits',
+    cost: 'First 2 free, then 200 credits',
     note: 'Flat price after clone trials are used.',
   },
 ]

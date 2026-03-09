@@ -81,31 +81,31 @@ These packs are much richer in margin than needed for the current product goal.
 
 Recommended baseline:
 
-- starter: `$5` for `250,000` credits
-- studio: `$18` for `1,000,000` credits
+- starter: `$2.99` for `30,000` credits
+- studio: `$9.99` for `120,000` credits
 
 Why this shape:
 
-- it matches the user's preferred dollar range better than the current packs
+- it matches the new target dollar points (`$2.99` and `$9.99`)
+- it intentionally reduces included characters versus the previous `$10` tier
 - it keeps `1 credit = 1 character`
-- it lowers markup meaningfully without collapsing margin
-- it makes the larger pack materially better value without becoming extreme
+- it keeps a simple 4x credit step-up between packs while the larger pack still gets better value per dollar
 
 ### Proposed starter economics
 
-- `250,000` characters
-- estimated audio: `666.7` minutes ~= `11.1` hours
-- provider cost: `$2.875`
-- gross margin dollars: `$2.125`
-- gross margin rate: `42.5%`
+- `30,000` characters
+- estimated audio: `80` minutes ~= `1.3` hours
+- provider cost: `30,000 / 10,000 * 0.115 = $0.345`
+- gross margin dollars: `$2.645`
+- gross margin rate: `88.5%`
 
 ### Proposed studio economics
 
-- `1,000,000` characters
-- estimated audio: `2,666.7` minutes ~= `44.4` hours
-- provider cost: `$11.50`
-- gross margin dollars: `$6.50`
-- gross margin rate: `36.1%`
+- `120,000` characters
+- estimated audio: `320` minutes ~= `5.3` hours
+- provider cost: `120,000 / 10,000 * 0.115 = $1.38`
+- gross margin dollars: `$8.61`
+- gross margin rate: `86.2%`
 
 ## Flat-credit operations
 
@@ -121,13 +121,20 @@ Current setting:
 
 Assessment:
 
-- this is already broadly reasonable if pack pricing is lowered
-- at the proposed `$5 / 250k` pack, `1,000` credits is worth `$0.02`
-- at the proposed `$18 / 1M` pack, `1,000` credits is worth `$0.018`
+- with lower character allowances, `1,000` credits becomes expensive relative to provider cost
+- at the proposed `$2.99 / 30k` pack, `1,000` credits is worth about `$0.10`
+- at the proposed `$9.99 / 120k` pack, `1,000` credits is worth about `$0.083`
 
 Recommendation:
 
-- keep clone finalize at `1,000` credits for now
+- lower clone finalize to `200` credits
+
+At the proposed pack values this yields:
+
+- starter-pack retail value: about `$0.02`
+- studio-pack retail value: about `$0.017`
+
+This keeps clone finalize above the `$0.01` provider cost while staying user-friendly.
 
 ### Design preview
 
@@ -141,36 +148,58 @@ Current setting:
 
 Assessment:
 
-- current design pricing is under-aligned with provider cost
-- at the proposed `$5 / 250k` pack, `5,000` credits is only `$0.10` of retail value
-- at the proposed `$18 / 1M` pack, `5,000` credits is only `$0.09` of retail value
+- with lower pack credit density, current `5,000` credits becomes relatively expensive for users
+- at the proposed `$2.99 / 30k` pack, `5,000` credits is about `$0.50` of retail value
+- at the proposed `$9.99 / 120k` pack, `5,000` credits is about `$0.42` of retail value
 
 Recommendation:
 
-- raise design preview to `18,000` credits after the free trials
+- lower design preview to `2,400` credits after the free trials
 
 At the proposed pack values this yields:
 
-- starter-pack retail value: about `$0.36`
-- studio-pack retail value: about `$0.324`
+- starter-pack retail value: about `$0.239`
+- studio-pack retail value: about `$0.20`
 
-That keeps design preview profitable while still inexpensive for users.
+That keeps design preview close to the `$0.20` provider cost while still leaving a modest margin.
 
 ## Implementation plan
 
 1. Update `PREPAID_PACKS` in `workers/api/src/_shared/credits.ts`.
 2. Update `creditPacks` in `frontend/src/content/plans.ts`.
 3. Keep `creditsForGenerateText(text)` as `text.length`.
-4. Keep `creditsForCloneTranscript()` at `1,000`.
-5. Raise `DESIGN_PREVIEW_FLAT_CREDITS` to `18,000`.
+4. Lower `creditsForCloneTranscript()` to `200`.
+5. Lower `DESIGN_PREVIEW_FLAT_CREDITS` to `2,400`.
 6. Update the frontend rate-card copy and pack blurbs to match the new economics.
 7. Recheck Stripe price IDs and product records before shipping.
 
 ## Open product questions
 
-1. Do we want the starter pack to be `$4` instead of `$5`? If yes, reduce credits proportionally to keep margins sane.
-2. Do we want a larger volume-discount pack later for power users, or keep only two packs for now?
-3. Do we want design preview to remain intentionally subsidized, or should it hold the same margin profile as generation?
+1. Do we want to keep the studio pack at `120,000` credits, or round to `100,000` for cleaner messaging?
+2. Do we want clone finalize to stay near provider cost (`200` credits), or intentionally keep it higher?
+3. Do we want a third volume pack later for power users, or keep only two packs for now?
+
+## Final decisions for this implementation session (2026-03-10)
+
+Chosen values implemented in code:
+
+- starter pack: `pack_30k` -> `$2.99` for `30,000` credits
+- studio pack: `pack_120k` -> `$9.99` for `120,000` credits
+- generate: keep character-based metering (`creditsForGenerateText(text) = text.length`)
+- clone finalize: `200` credits after free trials
+- design preview: `2,400` credits after free trials
+
+Stripe env mapping keys were renamed to match the new packs:
+
+- `STRIPE_PRICE_PACK_30K`
+- `STRIPE_PRICE_PACK_120K`
+
+Manual follow-through required before shipping:
+
+1. Create/confirm two Stripe Prices that match `$2.99` and `$9.99` one-time credit packs.
+2. Set `STRIPE_PRICE_PACK_30K` and `STRIPE_PRICE_PACK_120K` in each Worker environment.
+3. Remove or ignore old `STRIPE_PRICE_PACK_150K` / `STRIPE_PRICE_PACK_500K` secrets so operators do not accidentally rely on stale config.
+4. Verify webhook events resolve to the new price IDs and grant `30,000` or `120,000` credits respectively.
 
 ## Acceptance criteria
 
@@ -185,7 +214,7 @@ That keeps design preview profitable while still inexpensive for users.
 - [ ] Update frontend pack definitions and pricing copy
 - [ ] Keep `1 credit = 1 character` for generation unless a deliberate change is made
 - [ ] Keep or update clone finalize credits according to the plan decision
-- [ ] Raise design preview credits to the chosen new value
+- [ ] Lower design preview credits to the chosen new value
 - [ ] Update rate-card text and pack blurbs to match the new economics
 - [ ] Recheck Stripe product/price mapping assumptions before calling the task done
 
