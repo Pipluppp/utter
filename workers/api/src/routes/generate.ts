@@ -15,6 +15,10 @@ import {
   providerDetailMessage,
 } from "../_shared/tts/providers/errors.ts";
 import { qwenProvider } from "../_shared/tts/providers/qwen.ts";
+import {
+  buildActiveTaskCapDetail,
+  getQueueBackedTaskCapacity,
+} from "../_shared/tasks.ts";
 import { createStorageProvider } from "../_shared/storage.ts";
 import { createAdminClient, createUserClient } from "../_shared/supabase.ts";
 import { buildGenerateQwenStartMessage } from "../queues/messages.ts";
@@ -518,26 +522,22 @@ generateRoutes.post("/generate", async (c) => {
     return jsonDetail("Voice/provider model mismatch (vd).", 409);
   }
 
-  const { data: activeTask, error: activeTaskError } = await userClient
-    .from("tasks")
-    .select("id")
-    .eq("type", "generate")
-    .in("status", ["pending", "processing"])
-    .limit(1)
-    .maybeSingle();
-
-  if (activeTaskError) return jsonDetail("Failed to check active tasks.", 500);
-  if (activeTask) {
-    return jsonDetail(
-      "A generation is already in progress. Please wait for it to finish before starting another.",
-      409,
-    );
-  }
-
   const estimatedMinutes = estimateGenerationMinutes(text);
   const creditsToDebit = creditsForGenerateText(text);
 
   const admin = createAdminClient();
+  const taskCapacity = await getQueueBackedTaskCapacity({ admin, userId });
+  if (taskCapacity.error) return jsonDetail(taskCapacity.error, 500);
+  if (taskCapacity.totalActive >= taskCapacity.limit) {
+    return jsonDetail(
+      buildActiveTaskCapDetail({
+        limit: taskCapacity.limit,
+        totalActive: taskCapacity.totalActive,
+        activeByType: taskCapacity.activeByType,
+      }),
+      409,
+    );
+  }
 
   const { data: generation, error: genError } = await admin
     .from("generations")
@@ -637,10 +637,7 @@ generateRoutes.post("/generate", async (c) => {
       .eq("user_id", userId);
 
     if (isUniqueViolation(taskError)) {
-      return jsonDetail(
-        "A generation is already in progress. Please wait for it to finish before starting another.",
-        409,
-      );
+      return jsonDetail("A generation task with the same id already exists.", 409);
     }
 
     return jsonDetail("Failed to create task.", 500);

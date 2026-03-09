@@ -3,7 +3,6 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { cn } from '../../lib/cn'
 import type { StoredTask, TaskType } from '../../lib/types'
 import { useTasks } from './TaskProvider'
-import { TASK_TYPES } from './taskKeys'
 
 function Icon({ type }: { type: TaskType }) {
   if (type === 'clone') {
@@ -20,7 +19,8 @@ function Icon({ type }: { type: TaskType }) {
       </svg>
     )
   }
-  if (type === 'design') {
+
+  if (type === 'design_preview') {
     return (
       <svg
         viewBox="0 0 24 24"
@@ -34,6 +34,7 @@ function Icon({ type }: { type: TaskType }) {
       </svg>
     )
   }
+
   return (
     <svg
       viewBox="0 0 24 24"
@@ -47,7 +48,7 @@ function Icon({ type }: { type: TaskType }) {
 }
 
 function truncate(text: string, maxLen: number) {
-  return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text
+  return text.length > maxLen ? `${text.slice(0, maxLen)}...` : text
 }
 
 function TaskRow({
@@ -61,10 +62,9 @@ function TaskRow({
   onCancel: () => void
   elapsed: string
 }) {
-  const raw = (task.description || 'Processing…').replaceAll('...', '…')
-  const short = truncate(raw, 32)
+  const raw = (task.description || 'Processing...').replaceAll('â€¦', '...')
+  const short = truncate(raw, 40)
   const showCancel =
-    task.type === 'generate' &&
     task.status !== 'completed' &&
     task.status !== 'failed' &&
     task.status !== 'cancelled'
@@ -104,19 +104,19 @@ function TaskRow({
         >
           Cancel
         </button>
-      ) : null}
-
-      <button
-        type="button"
-        aria-label="Dismiss task"
-        className="px-2 py-1 text-lg leading-none text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        onClick={(e) => {
-          e.stopPropagation()
-          onDismiss()
-        }}
-      >
-        ×
-      </button>
+      ) : (
+        <button
+          type="button"
+          aria-label="Dismiss task"
+          className="px-2 py-1 text-[11px] uppercase tracking-wide text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDismiss()
+          }}
+        >
+          Dismiss
+        </button>
+      )}
     </div>
   )
 }
@@ -126,9 +126,8 @@ export function TaskDock() {
   const { tasks, dismissTask, cancelTask, formatTaskElapsed } = useTasks()
 
   const visible = useMemo(() => {
-    return TASK_TYPES.map((t) => tasks[t])
-      .filter((t): t is StoredTask => Boolean(t))
-      .filter((t) => !t.dismissed && t.originPage !== location.pathname)
+    if (location.pathname === '/tasks') return []
+    return tasks
   }, [location.pathname, tasks])
 
   if (visible.length === 0) return null
@@ -137,11 +136,11 @@ export function TaskDock() {
     <div className="fixed bottom-4 right-4 z-50 w-[min(420px,calc(100vw-2rem))] space-y-2">
       {visible.map((task) => (
         <TaskRow
-          key={task.type}
+          key={task.taskId}
           task={task}
           elapsed={formatTaskElapsed(task)}
-          onDismiss={() => dismissTask(task.type)}
-          onCancel={() => void cancelTask(task.type)}
+          onDismiss={() => void dismissTask(task.taskId)}
+          onCancel={() => void cancelTask(task.taskId)}
         />
       ))}
     </div>

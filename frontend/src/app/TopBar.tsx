@@ -78,7 +78,8 @@ function getSections(variant: NavVariant, signInHref: string) {
       ],
       [
         routeItem('Voices', '/voices'),
-        routeItem('History', '/history', { showTaskBadge: true }),
+        routeItem('Tasks', '/tasks', { showTaskBadge: true }),
+        routeItem('History', '/history'),
       ],
       [routeItem('Account', '/account', { showProfileIcon: true })],
     ]
@@ -93,7 +94,8 @@ function getSections(variant: NavVariant, signInHref: string) {
       ],
       [
         routeItem('Voices', '/voices'),
-        routeItem('History', '/history', { showTaskBadge: true }),
+        routeItem('Tasks', '/tasks', { showTaskBadge: true }),
+        routeItem('History', '/history'),
       ],
       [routeItem('Account', '/account', { showProfileIcon: true })],
     ]

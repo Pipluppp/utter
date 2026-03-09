@@ -4,6 +4,12 @@ import { requireUser } from "../_shared/auth.ts";
 import { applyCreditEvent, trialRestore } from "../_shared/credits.ts";
 import { createStorageProvider } from "../_shared/storage.ts";
 import { createAdminClient, createUserClient } from "../_shared/supabase.ts";
+import {
+  ACTIVE_TASK_STATUSES,
+  describeTaskDisplay,
+  originPageForTaskType,
+  QUEUE_BACKED_TASK_TYPES,
+} from "../_shared/tasks.ts";
 
 function jsonDetail(detail: string, status: number) {
   return new Response(JSON.stringify({ detail }), {
@@ -26,6 +32,75 @@ function asPositiveInt(value: unknown): number | null {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
   const normalized = Math.floor(value);
   return normalized > 0 ? normalized : null;
+}
+
+function parseLimit(value: string | null | undefined): number {
+  if (!value) return 20;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 20;
+  const normalized = Math.floor(parsed);
+  if (normalized < 1) return 20;
+  return Math.min(normalized, 50);
+}
+
+function parseTaskListStatus(
+  value: string | null | undefined,
+): "active" | "terminal" | "all" {
+  if (value === "terminal" || value === "all") return value;
+  return "active";
+}
+
+function parseTaskListType(
+  value: string | null | undefined,
+): "all" | typeof QUEUE_BACKED_TASK_TYPES[number] {
+  if (value === "generate" || value === "design_preview") return value;
+  return "all";
+}
+
+function parseBeforeTimestamp(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+type TaskListRow = {
+  id: string;
+  type: string;
+  status: string;
+  created_at: string | null;
+  completed_at: string | null;
+  provider: string | null;
+  provider_status: string | null;
+  generation_id: string | null;
+  metadata: unknown;
+  error: string | null;
+};
+
+function serializeTaskListItem(task: TaskListRow) {
+  const display = describeTaskDisplay(task.type, task.metadata);
+  const supportsCancel =
+    task.status === "pending" || task.status === "processing";
+
+  return {
+    id: task.id,
+    type: task.type,
+    status: task.status,
+    created_at: task.created_at,
+    completed_at: task.completed_at,
+    provider: task.provider ?? "qwen",
+    provider_status: task.provider_status ?? null,
+    generation_id: task.generation_id,
+    title: display.title,
+    subtitle: display.subtitle,
+    language: display.language,
+    voice_name: display.voiceName,
+    text_preview: display.textPreview,
+    estimated_duration_minutes: display.estimatedDurationMinutes,
+    origin_page: originPageForTaskType(task.type),
+    supports_cancel: supportsCancel,
+    error: task.error ?? null,
+  };
 }
 
 function inferDebitedCredits(type: string, metadata: unknown): number | null {
@@ -129,6 +204,62 @@ async function refundTaskCredits(params: {
 
 export const tasksRoutes = new Hono();
 
+tasksRoutes.get("/tasks", async (c) => {
+  let supabase: ReturnType<typeof createUserClient>;
+  try {
+    const { supabase: userClient } = await requireUser(c.req.raw);
+    supabase = userClient;
+  } catch (e) {
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
+  }
+
+  const statusFilter = parseTaskListStatus(c.req.query("status"));
+  const typeFilter = parseTaskListType(c.req.query("type"));
+  const limit = parseLimit(c.req.query("limit"));
+  const before = parseBeforeTimestamp(c.req.query("before"));
+
+  let query = supabase
+    .from("tasks")
+    .select(
+      "id, type, status, created_at, completed_at, provider, provider_status, generation_id, metadata, error",
+    )
+    .in("type", [...QUEUE_BACKED_TASK_TYPES])
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit + 1);
+
+  if (statusFilter === "active") {
+    query = query.in("status", [...ACTIVE_TASK_STATUSES]);
+  } else if (statusFilter === "terminal") {
+    query = query.not("status", "in", `(${ACTIVE_TASK_STATUSES.join(",")})`);
+  }
+
+  if (typeFilter !== "all") {
+    query = query.eq("type", typeFilter);
+  }
+
+  if (before) {
+    query = query.lt("created_at", before);
+  }
+
+  const { data, error } = await query;
+  if (error) return jsonDetail("Failed to load tasks.", 500);
+
+  const rows = (data ?? []) as TaskListRow[];
+  const hasMore = rows.length > limit;
+  const sliced = hasMore ? rows.slice(0, limit) : rows;
+  const nextBefore = hasMore ? sliced[sliced.length - 1]?.created_at ?? null : null;
+
+  return c.json({
+    tasks: sliced.map(serializeTaskListItem),
+    status: statusFilter,
+    type: typeFilter,
+    limit,
+    next_before: nextBefore,
+  });
+});
+
 tasksRoutes.get("/tasks/:id", async (c) => {
   let userId: string;
   let supabase: ReturnType<typeof createUserClient>;
@@ -145,7 +276,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
   const { data: task, error } = await supabase
     .from("tasks")
     .select(
-      "id, type, status, result, error, provider, provider_status, provider_poll_count, modal_poll_count, generation_id",
+      "id, type, status, result, error, provider, provider_status, provider_poll_count, modal_poll_count, generation_id, created_at, completed_at, metadata",
     )
     .eq("id", taskId)
     .maybeSingle();
@@ -164,7 +295,12 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     provider_poll_count: number | null;
     modal_poll_count: number | null;
     generation_id: string | null;
+    created_at: string | null;
+    completed_at: string | null;
+    metadata: unknown;
   };
+
+  const display = describeTaskDisplay(taskRow.type, taskRow.metadata);
 
   const base = {
     id: taskRow.id,
@@ -178,6 +314,17 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     modal_status: null as string | null,
     modal_elapsed_seconds: null as number | null,
     modal_poll_count: taskRow.modal_poll_count ?? 0,
+    created_at: taskRow.created_at,
+    completed_at: taskRow.completed_at,
+    title: display.title,
+    subtitle: display.subtitle,
+    language: display.language,
+    voice_name: display.voiceName,
+    text_preview: display.textPreview,
+    estimated_duration_minutes: display.estimatedDurationMinutes,
+    origin_page: originPageForTaskType(taskRow.type),
+    supports_cancel:
+      taskRow.status === "pending" || taskRow.status === "processing",
   };
 
   if (base.status === "completed" && base.type === "design_preview") {

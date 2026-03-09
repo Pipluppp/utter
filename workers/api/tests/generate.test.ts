@@ -28,18 +28,18 @@ async function getAdminClient() {
   return admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 }
 
-async function cleanupActiveGenerateRows(userId: string): Promise<void> {
+async function cleanupActiveQueueTaskRows(userId: string): Promise<void> {
   const client = await getAdminClient();
   const { data: activeTasks, error: activeTasksError } = await client
     .from("tasks")
     .select("id, generation_id")
     .eq("user_id", userId)
-    .eq("type", "generate")
+    .in("type", ["generate", "design_preview"])
     .in("status", ["pending", "processing"]);
 
   if (activeTasksError) {
     throw new Error(
-      `Failed to load active generate tasks: ${activeTasksError.message}`,
+      `Failed to load active queue tasks: ${activeTasksError.message}`,
     );
   }
 
@@ -70,7 +70,7 @@ async function cleanupActiveGenerateRows(userId: string): Promise<void> {
       .in("id", generationIds);
     if (deleteGenerationsError) {
       throw new Error(
-        `Failed to delete active generations: ${deleteGenerationsError.message}`,
+        `Failed to delete queued generations: ${deleteGenerationsError.message}`,
       );
     }
   }
@@ -192,7 +192,7 @@ Deno.test({
       assertEquals(body.status, "processing");
       assertEquals(body.is_long_running, true);
     } finally {
-      await cleanupActiveGenerateRows(userA.userId);
+      await cleanupActiveQueueTaskRows(userA.userId);
     }
   },
 });
@@ -295,7 +295,7 @@ Deno.test({
         .from("profiles")
         .update({ credits_remaining: 250000 })
         .eq("id", userA.userId);
-      await cleanupActiveGenerateRows(userA.userId);
+      await cleanupActiveQueueTaskRows(userA.userId);
     }
   },
 });
@@ -372,48 +372,152 @@ Deno.test({
 });
 
 Deno.test({
-  name: "POST /generate rejects when another generation is already active",
+  name: "POST /generate succeeds while total active queue-backed jobs stay under the cap",
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
     const admin = await import("npm:@supabase/supabase-js@2");
     const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    const existingGenerationId = crypto.randomUUID();
-    const existingTaskId = crypto.randomUUID();
+    const seededGenerationIds: string[] = [];
+    const seededTaskIds: string[] = [];
 
-    await client.from("generations").insert({
-      id: existingGenerationId,
-      user_id: userA.userId,
-      voice_id: voiceId,
-      text: "existing in-flight generation",
-      language: "English",
-      status: "processing",
-    });
+    try {
+      await cleanupActiveQueueTaskRows(userA.userId);
 
-    await client.from("tasks").insert({
-      id: existingTaskId,
-      user_id: userA.userId,
-      type: "generate",
-      status: "processing",
-      generation_id: existingGenerationId,
-      voice_id: voiceId,
-    });
+      for (let i = 0; i < 1; i++) {
+        const generationId = crypto.randomUUID();
+        const taskId = crypto.randomUUID();
+        seededGenerationIds.push(generationId);
+        seededTaskIds.push(taskId);
 
-    const res = await apiFetch("/generate", userA.accessToken, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...VALID_GENERATE_PAYLOAD,
-        voice_id: voiceId,
-      }),
-    });
-    assertEquals(res.status, 409);
-    const body = await res.json();
-    assertEquals(typeof body.detail, "string");
+        await client.from("generations").insert({
+          id: generationId,
+          user_id: userA.userId,
+          voice_id: voiceId,
+          text: `existing in-flight generation ${i}`,
+          language: "English",
+          status: "processing",
+        });
 
-    await client.from("tasks").delete().eq("id", existingTaskId);
-    await client.from("generations").delete().eq("id", existingGenerationId);
+        await client.from("tasks").insert({
+          id: taskId,
+          user_id: userA.userId,
+          type: "generate",
+          status: "processing",
+          generation_id: generationId,
+          voice_id: voiceId,
+        });
+      }
+
+      for (let i = 0; i < 1; i++) {
+        const taskId = crypto.randomUUID();
+        seededTaskIds.push(taskId);
+        await client.from("tasks").insert({
+          id: taskId,
+          user_id: userA.userId,
+          type: "design_preview",
+          status: "processing",
+          provider: "qwen",
+        });
+      }
+
+      const res = await apiFetch("/generate", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...VALID_GENERATE_PAYLOAD,
+          voice_id: voiceId,
+        }),
+      });
+
+      assertEquals(res.status, 200);
+      const body = await res.json();
+      assertEquals(typeof body.task_id, "string");
+      assertEquals(typeof body.generation_id, "string");
+    } finally {
+      await cleanupActiveQueueTaskRows(userA.userId);
+      if (seededTaskIds.length > 0) {
+        await client.from("tasks").delete().in("id", seededTaskIds);
+      }
+      if (seededGenerationIds.length > 0) {
+        await client.from("generations").delete().in("id", seededGenerationIds);
+      }
+    }
+  },
+});
+
+Deno.test({
+  name: "POST /generate rejects once the active queue-backed cap is exceeded",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    const admin = await import("npm:@supabase/supabase-js@2");
+    const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    const seededGenerationIds: string[] = [];
+    const seededTaskIds: string[] = [];
+
+    try {
+      await cleanupActiveQueueTaskRows(userA.userId);
+
+      for (let i = 0; i < 2; i++) {
+        const generationId = crypto.randomUUID();
+        const taskId = crypto.randomUUID();
+        seededGenerationIds.push(generationId);
+        seededTaskIds.push(taskId);
+
+        await client.from("generations").insert({
+          id: generationId,
+          user_id: userA.userId,
+          voice_id: voiceId,
+          text: `cap generation ${i}`,
+          language: "English",
+          status: "processing",
+        });
+
+        await client.from("tasks").insert({
+          id: taskId,
+          user_id: userA.userId,
+          type: "generate",
+          status: "processing",
+          generation_id: generationId,
+          voice_id: voiceId,
+        });
+      }
+
+      for (let i = 0; i < 2; i++) {
+        const taskId = crypto.randomUUID();
+        seededTaskIds.push(taskId);
+        await client.from("tasks").insert({
+          id: taskId,
+          user_id: userA.userId,
+          type: "design_preview",
+          status: "processing",
+          provider: "qwen",
+        });
+      }
+
+      const res = await apiFetch("/generate", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...VALID_GENERATE_PAYLOAD,
+          voice_id: voiceId,
+        }),
+      });
+      assertEquals(res.status, 409);
+      const body = await res.json();
+      assertEquals(typeof body.detail, "string");
+    } finally {
+      await cleanupActiveQueueTaskRows(userA.userId);
+      if (seededTaskIds.length > 0) {
+        await client.from("tasks").delete().in("id", seededTaskIds);
+      }
+      if (seededGenerationIds.length > 0) {
+        await client.from("generations").delete().in("id", seededGenerationIds);
+      }
+    }
   },
 });
 

@@ -181,6 +181,13 @@ Do not silently drop in-flight tasks during migration.
 - refresh and cross-tab sync preserve the collection
 - terminal completion does not overwrite another task
 
+## Implementation notes from 2026-03-09
+
+- A schema follow-up was required for the existing partial unique index `idx_tasks_generate_one_active_per_user`. Phase A could not actually ship without dropping that index, so this session includes a new migration to remove it.
+- `GET /api/tasks` ships with `status`, `type`, `limit`, and `before`. The `before` value is currently a `created_at` timestamp, not a compound cursor.
+- The Design page now uses explicit save-on-selected-preview behavior instead of auto-saving the first preview that finishes. This was necessary so multiple previews can complete out of order without saving the wrong result.
+- The first job center ships as a dedicated `/tasks` route in the app nav. History remains unchanged as the output archive.
+
 ## Acceptance criteria
 
 1. A user can run more than one generation at the same time.
@@ -191,22 +198,24 @@ Do not silently drop in-flight tasks during migration.
 
 ## Session checklist
 
-- [ ] Remove the single-active generate restriction in `workers/api/src/routes/generate.ts`
-- [ ] Define and implement the active-task cap policy for queue-backed jobs
-- [ ] Add `GET /api/tasks` with stable filtering for active and recent jobs
-- [ ] Refactor `frontend/src/components/tasks/TaskProvider.tsx` to an id-keyed collection model
-- [ ] Migrate legacy per-type local task storage to the new collection format
-- [ ] Update `TaskDock`, `Generate`, and `Design` to support multiple tracked tasks
-- [ ] Add a first-pass job center surface or route for cross-page tracking
-- [ ] Run relevant tests and leave the doc updated with anything deferred
+- [x] Remove the single-active generate restriction in `workers/api/src/routes/generate.ts`
+- [x] Define and implement the active-task cap policy for queue-backed jobs
+- [x] Add `GET /api/tasks` with stable filtering for active and recent jobs
+- [x] Refactor `frontend/src/components/tasks/TaskProvider.tsx` to an id-keyed collection model
+- [x] Migrate legacy per-type local task storage to the new collection format
+- [x] Update `TaskDock`, `Generate`, and `Design` to support multiple tracked tasks
+- [x] Add a first-pass job center surface or route for cross-page tracking
+- [x] Run relevant tests and leave the doc updated with anything deferred
 
 ## Manual verification checklist
 
-- [ ] Start two generation jobs back to back and confirm both remain visible
-- [ ] Start a generation and a design preview together and confirm both are tracked
-- [ ] Refresh the page and confirm active tasks rehydrate correctly
-- [ ] Cancel one active task and confirm only that task is affected
-- [ ] Confirm completed and failed tasks show the correct final state
+- [ ] Start two generation jobs back to back and confirm both remain visible in `/generate`, the dock, and `/tasks`
+- [ ] Start a generation and a design preview together and confirm both are tracked independently in `/tasks`
+- [ ] On `/design`, run two previews, wait for both to finish, select each one, and confirm `Save This Preview` applies to the selected preview only
+- [ ] Refresh the page and confirm active tasks rehydrate correctly without collapsing to one task per type
+- [ ] Cancel one active task from `/tasks` and confirm only that task changes to cancelled
+- [ ] Dismiss one completed task and confirm it disappears without affecting other task rows
+- [ ] Confirm completed generate jobs still expose playable audio on `/generate` and completed design previews still expose playable preview audio on `/design`
 
 ## Repo workflow note
 

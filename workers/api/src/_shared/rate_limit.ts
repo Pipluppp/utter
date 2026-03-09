@@ -26,6 +26,7 @@ const endpointRules: EndpointRule[] = [
   { method: "POST", pattern: /^\/api\/voices\/design$/, tier: "tier1" },
   { method: "POST", pattern: /^\/api\/billing\/checkout$/, tier: "tier1" },
   { method: "POST", pattern: /^\/api\/transcriptions$/, tier: "tier1" },
+  { method: "GET", pattern: /^\/api\/tasks$/, tier: "tier2" },
   { method: "GET", pattern: /^\/api\/tasks\/[^/]+$/, tier: "tier2" },
   { method: "POST", pattern: /^\/api\/tasks\/[^/]+\/cancel$/, tier: "tier2" },
   { method: "DELETE", pattern: /^\/api\/tasks\/[^/]+$/, tier: "tier2" },

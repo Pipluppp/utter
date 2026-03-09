@@ -16,6 +16,10 @@ import {
 } from "../_shared/tts/providers/errors.ts";
 import { qwenProvider } from "../_shared/tts/providers/qwen.ts";
 import { createStorageProvider } from "../_shared/storage.ts";
+import {
+  buildActiveTaskCapDetail,
+  getQueueBackedTaskCapacity,
+} from "../_shared/tasks.ts";
 import { buildDesignPreviewQwenStartMessage } from "../queues/messages.ts";
 import { enqueueTtsJob } from "../queues/producer.ts";
 
@@ -309,6 +313,19 @@ designRoutes.post("/voices/design/preview", async (c) => {
   if (!language) return jsonDetail("Language is required.", 400);
 
   const admin = createAdminClient();
+  const taskCapacity = await getQueueBackedTaskCapacity({ admin, userId });
+  if (taskCapacity.error) return jsonDetail(taskCapacity.error, 500);
+  if (taskCapacity.totalActive >= taskCapacity.limit) {
+    return jsonDetail(
+      buildActiveTaskCapDetail({
+        limit: taskCapacity.limit,
+        totalActive: taskCapacity.totalActive,
+        activeByType: taskCapacity.activeByType,
+      }),
+      409,
+    );
+  }
+
   const taskId = crypto.randomUUID();
   const creditsToDebit = creditsForDesignPreview();
   const chargeIdempotencyKey = `design-preview:${taskId}:charge`;

@@ -292,6 +292,85 @@ Deno.test({
   },
 });
 
+Deno.test({
+  name: "POST /voices/design/preview rejects once the shared active-job cap is exceeded",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdminClient();
+    const taskIds: string[] = [];
+    const generationIds: string[] = [];
+
+    try {
+      await admin
+        .from("tasks")
+        .delete()
+        .eq("user_id", userA.userId)
+        .in("type", ["generate", "design_preview"])
+        .in("status", ["pending", "processing"]);
+
+      for (let i = 0; i < 2; i++) {
+        const generationId = crypto.randomUUID();
+        const taskId = crypto.randomUUID();
+        generationIds.push(generationId);
+        taskIds.push(taskId);
+
+        const generationInsert = await admin.from("generations").insert({
+          id: generationId,
+          user_id: userA.userId,
+          voice_id: null,
+          text: `cap check generation ${i}`,
+          language: "English",
+          status: "processing",
+        });
+        assertEquals(generationInsert.error, null);
+
+        const taskInsert = await admin.from("tasks").insert({
+          id: taskId,
+          user_id: userA.userId,
+          type: "generate",
+          status: "processing",
+          provider: "qwen",
+          generation_id: generationId,
+        });
+        assertEquals(taskInsert.error, null);
+      }
+
+      for (let i = 0; i < 2; i++) {
+        const taskId = crypto.randomUUID();
+        taskIds.push(taskId);
+        await admin.from("tasks").insert({
+          id: taskId,
+          user_id: userA.userId,
+          type: "design_preview",
+          status: "processing",
+          provider: "qwen",
+        });
+      }
+
+      const res = await apiFetch("/voices/design/preview", userA.accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: "Cap check preview",
+          language: "English",
+          instruct: "A warm friendly voice",
+        }),
+      });
+
+      assertEquals(res.status, 409);
+      const body = await res.json();
+      assertEquals(typeof body.detail, "string");
+    } finally {
+      if (taskIds.length > 0) {
+        await admin.from("tasks").delete().in("id", taskIds);
+      }
+      if (generationIds.length > 0) {
+        await admin.from("generations").delete().in("id", generationIds);
+      }
+    }
+  },
+});
+
 Deno.test("POST /voices/design rejects missing task_id", async () => {
   const formData = new FormData();
   formData.append("name", "No Task");

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { WaveformPlayer } from '../components/audio/WaveformPlayer'
 import { useTasks } from '../components/tasks/TaskProvider'
+import { taskLabel } from '../components/tasks/taskKeys'
 import { Button } from '../components/ui/Button'
 import { InfoTip } from '../components/ui/InfoTip'
 import { Label } from '../components/ui/Label'
@@ -26,12 +27,53 @@ type GenerateFormState = {
   text: string
 }
 
+function TaskSummaryRow({
+  task,
+  selected,
+  onSelect,
+  statusText,
+}: {
+  task: StoredTask
+  selected: boolean
+  onSelect: () => void
+  statusText: string
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left hover:bg-muted',
+        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        selected && 'bg-subtle',
+      )}
+      onClick={onSelect}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium uppercase tracking-wide">
+          {task.description}
+        </div>
+        <div className="mt-1 text-xs text-muted-foreground">{statusText}</div>
+      </div>
+      <div className="shrink-0 text-xs text-faint">
+        {task.status === 'pending' || task.status === 'processing'
+          ? formatElapsed(task.startedAt)
+          : task.status === 'completed'
+            ? 'Ready'
+            : task.status === 'cancelled'
+              ? 'Cancelled'
+              : 'Failed'}
+      </div>
+    </button>
+  )
+}
+
 export function GeneratePage() {
   const [params] = useSearchParams()
   const { languages, defaultLanguage, provider, capabilities } = useLanguages()
-  const { tasks, startTask, clearTask, getStatusText } = useTasks()
+  const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks()
 
-  const task = tasks.generate
+  const generateTasks = getTasksByType('generate')
+  const latestTask = getLatestTask('generate')
 
   const [voices, setVoices] = useState<VoicesResponse | null>(null)
   const [loadingVoices, setLoadingVoices] = useState(true)
@@ -40,16 +82,14 @@ export function GeneratePage() {
   const [language, setLanguage] = useState(defaultLanguage)
   const [text, setText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const [startedAt, setStartedAt] = useState<number | null>(null)
-  const [elapsedLabel, setElapsedLabel] = useState('0:00')
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
   const [error, setError] = useState<string | null>(null)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
 
   const restoredRef = useRef(false)
-  const handledTerminalRef = useRef<string | null>(null)
+  const handledTaskKeyRef = useRef<string | null>(null)
   const loadedDemoRef = useRef<string | null>(null)
   const submitInFlightRef = useRef(false)
 
@@ -75,10 +115,20 @@ export function GeneratePage() {
   }, [])
 
   useEffect(() => {
+    if (
+      selectedTaskId &&
+      generateTasks.some((task) => task.taskId === selectedTaskId)
+    ) {
+      return
+    }
+    setSelectedTaskId(generateTasks[0]?.taskId ?? null)
+  }, [generateTasks, selectedTaskId])
+
+  useEffect(() => {
     if (restoredRef.current) return
     restoredRef.current = true
 
-    const storedTask = task as StoredTask | undefined
+    const storedTask = latestTask as StoredTask | null
     if (storedTask?.formState && typeof storedTask.formState === 'object') {
       const fs = storedTask.formState as Partial<GenerateFormState>
       if (typeof fs.voiceId === 'string') setVoiceId(fs.voiceId)
@@ -103,70 +153,74 @@ export function GeneratePage() {
             const demoText = await fetchTextUtf8(demo.transcriptUrl as string)
             setText(demoText.trim())
           } catch {
-            // ignore
+            return
           }
         })()
       }
     }
-  }, [params, task])
+  }, [latestTask, params])
+
+  const selectedTask = useMemo(
+    () => generateTasks.find((task) => task.taskId === selectedTaskId) ?? null,
+    [generateTasks, selectedTaskId],
+  )
 
   useEffect(() => {
-    if (!task) {
-      setStartedAt(null)
+    if (!selectedTask) {
+      handledTaskKeyRef.current = null
+      setAudioUrl(null)
+      setDownloadUrl(null)
       return
     }
-    if (task.status === 'pending' || task.status === 'processing') {
-      setStartedAt(task.startedAt)
+
+    if (
+      selectedTask.status === 'pending' ||
+      selectedTask.status === 'processing'
+    ) {
+      handledTaskKeyRef.current = null
+      setAudioUrl(null)
+      setDownloadUrl(null)
       return
     }
-    setStartedAt(null)
-  }, [task])
 
-  useEffect(() => {
-    if (!startedAt) return
-    const t = window.setInterval(
-      () => setElapsedLabel(formatElapsed(startedAt)),
-      1000,
-    )
-    return () => window.clearInterval(t)
-  }, [startedAt])
+    const terminalKey = `${selectedTask.taskId}:${selectedTask.status}`
+    if (handledTaskKeyRef.current === terminalKey) return
+    handledTaskKeyRef.current = terminalKey
 
-  useEffect(() => {
-    if (!task?.taskId) return
-    if (task.status === 'pending' || task.status === 'processing') return
-
-    const terminalKey = `${task.taskId}:${task.status}`
-    if (handledTerminalRef.current === terminalKey) return
-    handledTerminalRef.current = terminalKey
-
-    if (task.status === 'completed') {
-      const result = task.result as { audio_url?: string } | undefined
+    if (selectedTask.status === 'completed') {
+      const result = selectedTask.result as { audio_url?: string } | undefined
       const generatedAudioUrl = result?.audio_url
-      if (generatedAudioUrl) {
-        void (async () => {
-          try {
-            const resolvedUrl =
-              await resolveProtectedMediaUrl(generatedAudioUrl)
-            setAudioUrl(resolvedUrl)
-            setDownloadUrl(resolvedUrl)
-            setError(null)
-          } catch (e) {
-            setError(
-              e instanceof Error
-                ? e.message
-                : 'Failed to load generation audio.',
-            )
-          }
-        })()
+      if (!generatedAudioUrl) {
+        setError('Failed to load generation audio.')
+        return
       }
-    } else if (task.status === 'failed') {
-      setError(task.error ?? 'Generation failed. Please try again.')
-    } else if (task.status === 'cancelled') {
-      setError('Generation was cancelled.')
+
+      void (async () => {
+        try {
+          const resolvedUrl = await resolveProtectedMediaUrl(generatedAudioUrl)
+          setAudioUrl(resolvedUrl)
+          setDownloadUrl(resolvedUrl)
+          setError(null)
+        } catch (e) {
+          setError(
+            e instanceof Error ? e.message : 'Failed to load generation audio.',
+          )
+        }
+      })()
+      return
     }
 
-    window.setTimeout(() => clearTask('generate'), 50)
-  }, [clearTask, task])
+    if (selectedTask.status === 'failed') {
+      setAudioUrl(null)
+      setDownloadUrl(null)
+      setError(selectedTask.error ?? 'Generation failed. Please try again.')
+      return
+    }
+
+    setAudioUrl(null)
+    setDownloadUrl(null)
+    setError('Generation was cancelled.')
+  }, [selectedTask])
 
   async function onDownload() {
     if (!downloadUrl) return
@@ -180,18 +234,19 @@ export function GeneratePage() {
 
   const charCount = text.length
   const maxTextChars = capabilities?.max_text_chars ?? 10000
-  const isRunning = task?.status === 'pending' || task?.status === 'processing'
-  const isBusy = isSubmitting || isRunning
   const selectedVoice = voices?.voices.find((v) => v.id === voiceId) ?? null
   const selectedVoiceProvider = selectedVoice?.tts_provider ?? 'qwen'
   const selectedVoiceCompatible = !selectedVoice
     ? true
     : selectedVoiceProvider === provider
-  const statusText = task
+  const activeGenerateCount = generateTasks.filter(
+    (task) => task.status === 'pending' || task.status === 'processing',
+  ).length
+  const statusText = selectedTask
     ? getStatusText(
-        task.status,
-        task.modalStatus ?? null,
-        task.providerStatus ?? null,
+        selectedTask.status,
+        selectedTask.modalStatus ?? null,
+        selectedTask.providerStatus ?? null,
       )
     : null
 
@@ -201,7 +256,7 @@ export function GeneratePage() {
     selectedVoiceCompatible &&
     Boolean(text.trim()) &&
     charCount <= maxTextChars &&
-    !isBusy
+    !isSubmitting
 
   const formState: GenerateFormState = useMemo(
     () => ({ voiceId, language, text }),
@@ -236,6 +291,7 @@ export function GeneratePage() {
       })
       const description = `Generate: ${text.slice(0, 50)}${text.length > 50 ? '...' : ''}`
       startTask(res.task_id, 'generate', '/generate', description, formState)
+      setSelectedTaskId(res.task_id)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start generation.')
     } finally {
@@ -243,6 +299,7 @@ export function GeneratePage() {
       submitInFlightRef.current = false
     }
   }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-center gap-2">
@@ -253,8 +310,8 @@ export function GeneratePage() {
           <div className="space-y-2">
             <div>Pick a voice, enter text, then start generation.</div>
             <div>
-              Generation runs as a background task. Time varies by text length
-              and server load.
+              Generate jobs stay in the background, so you can queue another one
+              without losing the previous result.
             </div>
             <div>Max input: {maxTextChars.toLocaleString()} characters.</div>
           </div>
@@ -280,7 +337,7 @@ export function GeneratePage() {
             name="voice_id"
           >
             <option value="">
-              {loadingVoices ? 'Loading…' : 'Select a voice'}
+              {loadingVoices ? 'Loading...' : 'Select a voice'}
             </option>
             {voices?.voices.map((v) => {
               const voiceProvider = v.tts_provider ?? 'qwen'
@@ -318,7 +375,7 @@ export function GeneratePage() {
             name="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Type what you want the voice to say…"
+            placeholder="Type what you want the voice to say..."
             className="min-h-44"
           />
           <div className="mt-2 flex items-center justify-between text-xs text-faint">
@@ -334,27 +391,58 @@ export function GeneratePage() {
         </div>
 
         <Button type="submit" block disabled={!canSubmit}>
-          {isRunning
-            ? `Generating... ${elapsedLabel}`
-            : isSubmitting
-              ? 'Starting generation...'
-              : 'Generate Speech'}
+          {isSubmitting ? 'Starting generation...' : 'Generate Speech'}
         </Button>
       </form>
 
-      {isBusy ? (
-        <div className="border border-border bg-subtle p-4 shadow-elevated">
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <div className="font-medium uppercase tracking-wide">
-                Progress
+      {selectedTask ? (
+        <div className="space-y-4 border border-border bg-subtle p-4 shadow-elevated">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium uppercase tracking-wide">
+                Selected Job
               </div>
               <div className="mt-1 text-sm text-muted-foreground">
-                {statusText ??
-                  (isSubmitting ? 'Starting generation...' : 'Processing...')}
+                {statusText ?? 'Processing...'}
               </div>
             </div>
-            <div className="text-xs text-faint">{elapsedLabel}</div>
+            <div className="text-xs text-faint">
+              {selectedTask.status === 'pending' ||
+              selectedTask.status === 'processing'
+                ? formatElapsed(selectedTask.startedAt)
+                : taskLabel(selectedTask.type)}
+            </div>
+          </div>
+          {selectedTask.subtitle ? (
+            <div className="text-xs text-faint">{selectedTask.subtitle}</div>
+          ) : null}
+          {activeGenerateCount > 1 ? (
+            <div className="text-xs text-faint">
+              {activeGenerateCount} generate jobs currently running.
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {generateTasks.length > 0 ? (
+        <div className="space-y-3">
+          <div className="text-sm font-medium uppercase tracking-wide">
+            Tracked Jobs
+          </div>
+          <div className="space-y-2">
+            {generateTasks.map((task) => (
+              <TaskSummaryRow
+                key={task.taskId}
+                task={task}
+                selected={task.taskId === selectedTaskId}
+                onSelect={() => setSelectedTaskId(task.taskId)}
+                statusText={getStatusText(
+                  task.status,
+                  task.modalStatus ?? null,
+                  task.providerStatus ?? null,
+                )}
+              />
+            ))}
           </div>
         </div>
       ) : null}
@@ -365,17 +453,15 @@ export function GeneratePage() {
             <div className="text-sm font-medium uppercase tracking-wide">
               Result
             </div>
-            <div className="flex items-center gap-2">
-              {downloadUrl ? (
-                <button
-                  type="button"
-                  className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  onClick={() => void onDownload()}
-                >
-                  Download
-                </button>
-              ) : null}
-            </div>
+            {downloadUrl ? (
+              <button
+                type="button"
+                className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                onClick={() => void onDownload()}
+              >
+                Download
+              </button>
+            ) : null}
           </div>
           <WaveformPlayer audioUrl={audioUrl} />
         </div>

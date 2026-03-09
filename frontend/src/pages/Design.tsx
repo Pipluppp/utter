@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { WaveformPlayer } from '../components/audio/WaveformPlayer'
 import { useTasks } from '../components/tasks/TaskProvider'
@@ -10,6 +10,7 @@ import { Message } from '../components/ui/Message'
 import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
 import { apiForm, apiJson } from '../lib/api'
+import { cn } from '../lib/cn'
 import { formatElapsed } from '../lib/time'
 import type {
   DesignPreviewResponse,
@@ -46,33 +47,72 @@ const EXAMPLES: Array<{ title: string; name: string; instruct: string }> = [
   },
 ]
 
+function TaskSummaryRow({
+  task,
+  selected,
+  statusText,
+  onSelect,
+}: {
+  task: StoredTask
+  selected: boolean
+  statusText: string
+  onSelect: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left hover:bg-muted',
+        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        selected && 'bg-subtle',
+      )}
+      onClick={onSelect}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium uppercase tracking-wide">
+          {task.description}
+        </div>
+        <div className="mt-1 text-xs text-muted-foreground">{statusText}</div>
+      </div>
+      <div className="shrink-0 text-xs text-faint">
+        {task.status === 'pending' || task.status === 'processing'
+          ? formatElapsed(task.startedAt)
+          : task.status === 'completed'
+            ? 'Ready'
+            : task.status === 'cancelled'
+              ? 'Cancelled'
+              : 'Failed'}
+      </div>
+    </button>
+  )
+}
+
 export function DesignPage() {
   const navigate = useNavigate()
   const { languages } = useLanguages()
-  const { tasks, startTask, clearTask } = useTasks()
+  const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks()
 
-  const task = tasks.design
+  const designTasks = getTasksByType('design_preview')
+  const latestTask = getLatestTask('design_preview')
 
   const [name, setName] = useState('')
   const [language, setLanguage] = useState('English')
   const [text, setText] = useState('')
   const [instruct, setInstruct] = useState('')
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [isSubmittingPreview, setIsSubmittingPreview] = useState(false)
   const [isSavingVoice, setIsSavingVoice] = useState(false)
   const [savedVoiceId, setSavedVoiceId] = useState<string | null>(null)
   const [savedVoiceName, setSavedVoiceName] = useState<string | null>(null)
 
-  const [startedAt, setStartedAt] = useState<number | null>(null)
-  const [elapsedLabel, setElapsedLabel] = useState('0:00')
-
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const previewBlobRef = useRef<Blob | null>(null)
   const objectUrlRef = useRef<string | null>(null)
-
   const restoredRef = useRef(false)
-  const handledTerminalRef = useRef<string | null>(null)
+  const handledTaskKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (languages.length > 0 && !languages.includes(language)) {
@@ -87,9 +127,20 @@ export function DesignPage() {
   }, [])
 
   useEffect(() => {
+    if (
+      selectedTaskId &&
+      designTasks.some((task) => task.taskId === selectedTaskId)
+    ) {
+      return
+    }
+    setSelectedTaskId(designTasks[0]?.taskId ?? null)
+  }, [designTasks, selectedTaskId])
+
+  useEffect(() => {
     if (restoredRef.current) return
     restoredRef.current = true
-    const storedTask = task as StoredTask | undefined
+
+    const storedTask = latestTask as StoredTask | null
     if (storedTask?.formState && typeof storedTask.formState === 'object') {
       const fs = storedTask.formState as Partial<DesignFormState>
       if (typeof fs.name === 'string') setName(fs.name)
@@ -97,28 +148,84 @@ export function DesignPage() {
       if (typeof fs.text === 'string') setText(fs.text)
       if (typeof fs.instruct === 'string') setInstruct(fs.instruct)
     }
-  }, [task])
+  }, [latestTask])
+
+  const selectedTask = useMemo(
+    () => designTasks.find((task) => task.taskId === selectedTaskId) ?? null,
+    [designTasks, selectedTaskId],
+  )
 
   useEffect(() => {
-    if (!task) {
-      setStartedAt(null)
+    if (!selectedTask) {
+      handledTaskKeyRef.current = null
+      setPreviewUrl(null)
+      previewBlobRef.current = null
+      setSavedVoiceId(null)
+      setSavedVoiceName(null)
+      setSuccess(null)
       return
     }
-    if (task.status === 'pending' || task.status === 'processing') {
-      setStartedAt(task.startedAt)
-      return
-    }
-    setStartedAt(null)
-  }, [task])
 
-  useEffect(() => {
-    if (!startedAt) return
-    const t = window.setInterval(
-      () => setElapsedLabel(formatElapsed(startedAt)),
-      1000,
-    )
-    return () => window.clearInterval(t)
-  }, [startedAt])
+    setSavedVoiceId(null)
+    setSavedVoiceName(null)
+    setSuccess(null)
+
+    if (
+      selectedTask.status === 'pending' ||
+      selectedTask.status === 'processing'
+    ) {
+      handledTaskKeyRef.current = null
+      setPreviewUrl(null)
+      previewBlobRef.current = null
+      return
+    }
+
+    const terminalKey = `${selectedTask.taskId}:${selectedTask.status}`
+    if (handledTaskKeyRef.current === terminalKey) return
+    handledTaskKeyRef.current = terminalKey
+
+    if (selectedTask.status === 'completed') {
+      const result = selectedTask.result as { audio_url?: string } | undefined
+      const audioUrl = result?.audio_url?.trim()
+
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
+      objectUrlRef.current = null
+      previewBlobRef.current = null
+
+      if (!audioUrl) {
+        setPreviewUrl(null)
+        setError('Failed to load preview audio.')
+        return
+      }
+
+      void (async () => {
+        try {
+          const res = await fetch(audioUrl)
+          if (!res.ok) throw new Error('Failed to load preview audio.')
+          const blob = await res.blob()
+          previewBlobRef.current = blob
+          const objectUrl = URL.createObjectURL(blob)
+          objectUrlRef.current = objectUrl
+          setPreviewUrl(objectUrl)
+          setError(null)
+        } catch (e) {
+          setPreviewUrl(null)
+          setError(e instanceof Error ? e.message : 'Failed to load preview.')
+        }
+      })()
+      return
+    }
+
+    setPreviewUrl(null)
+    previewBlobRef.current = null
+
+    if (selectedTask.status === 'failed') {
+      setError(selectedTask.error ?? 'Failed to generate preview.')
+      return
+    }
+
+    setError('Preview cancelled.')
+  }, [selectedTask])
 
   const saveDesignedVoice = useCallback(
     async (blob: Blob, snapshot: DesignFormState, taskId: string) => {
@@ -157,10 +264,8 @@ export function DesignPage() {
         setSavedVoiceName(null)
         setSuccess(null)
         const detail =
-          e instanceof Error ? e.message : 'Failed to save voice automatically.'
-        setError(
-          `Preview generated, but automatic save failed. ${detail} You can try Generate Preview again.`,
-        )
+          e instanceof Error ? e.message : 'Failed to save this preview.'
+        setError(`Preview ready, but save failed. ${detail}`)
       } finally {
         setIsSavingVoice(false)
       }
@@ -168,110 +273,11 @@ export function DesignPage() {
     [],
   )
 
-  useEffect(() => {
-    if (!task?.taskId) return
-    if (task.status === 'pending' || task.status === 'processing') return
-
-    const scheduleClearTask = () => {
-      window.setTimeout(() => clearTask('design'), 50)
-    }
-
-    const terminalKey = `${task.taskId}:${task.status}`
-    if (handledTerminalRef.current === terminalKey) return
-    handledTerminalRef.current = terminalKey
-
-    if (task.status === 'completed') {
-      const completedTaskId = task.taskId
-      if (!completedTaskId) {
-        scheduleClearTask()
-        return
-      }
-      const taskState = task.formState as Partial<DesignFormState> | null
-      const snapshot: DesignFormState = {
-        name: typeof taskState?.name === 'string' ? taskState.name : name,
-        language:
-          typeof taskState?.language === 'string'
-            ? taskState.language
-            : language,
-        text: typeof taskState?.text === 'string' ? taskState.text : text,
-        instruct:
-          typeof taskState?.instruct === 'string'
-            ? taskState.instruct
-            : instruct,
-      }
-      const result = task.result as
-        | { audio_base64?: string; audio_url?: string }
-        | undefined
-
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
-      objectUrlRef.current = null
-      previewBlobRef.current = null
-
-      const audioUrl = result?.audio_url?.trim()
-      if (audioUrl) {
-        void (async () => {
-          try {
-            const res = await fetch(audioUrl)
-            if (!res.ok) throw new Error('Failed to load preview audio.')
-            const blob = await res.blob()
-            previewBlobRef.current = blob
-            const url = URL.createObjectURL(blob)
-            objectUrlRef.current = url
-            setPreviewUrl(url)
-            setError(null)
-            setSuccess(null)
-            await saveDesignedVoice(blob, snapshot, completedTaskId)
-          } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to load preview.')
-          } finally {
-            scheduleClearTask()
-          }
-        })()
-      } else {
-        const audioBase64 = result?.audio_base64?.trim()
-        if (audioBase64) {
-          void (async () => {
-            try {
-              const bin = atob(audioBase64)
-              const bytes = new Uint8Array(bin.length)
-              for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-              const blob = new Blob([bytes], { type: 'audio/wav' })
-              previewBlobRef.current = blob
-              const url = URL.createObjectURL(blob)
-              objectUrlRef.current = url
-              setPreviewUrl(url)
-              setError(null)
-              setSuccess(null)
-              await saveDesignedVoice(blob, snapshot, completedTaskId)
-            } catch (e) {
-              setError(
-                e instanceof Error ? e.message : 'Failed to load preview.',
-              )
-            } finally {
-              scheduleClearTask()
-            }
-          })()
-        } else {
-          setError('Failed to load preview audio.')
-          scheduleClearTask()
-        }
-      }
-    } else if (task.status === 'failed') {
-      setError(task.error ?? 'Failed to generate preview.')
-      scheduleClearTask()
-    } else if (task.status === 'cancelled') {
-      setError('Preview cancelled.')
-      scheduleClearTask()
-    }
-  }, [clearTask, instruct, language, name, saveDesignedVoice, task, text])
-
   async function onPreview() {
     setError(null)
     setSuccess(null)
     setSavedVoiceId(null)
     setSavedVoiceName(null)
-    setPreviewUrl(null)
-    previewBlobRef.current = null
 
     if (!name.trim()) {
       setError('Voice name is required.')
@@ -294,6 +300,8 @@ export function DesignPage() {
       return
     }
 
+    setIsSubmittingPreview(true)
+
     try {
       const snapshot: DesignFormState = { name, language, text, instruct }
       const res = await apiJson<DesignPreviewResponse>(
@@ -303,13 +311,61 @@ export function DesignPage() {
           json: { text, language, instruct, name },
         },
       )
-      startTask(res.task_id, 'design', '/design', 'Design preview', snapshot)
+      startTask(
+        res.task_id,
+        'design_preview',
+        '/design',
+        `Design preview: ${name.trim()}`,
+        snapshot,
+      )
+      setSelectedTaskId(res.task_id)
+      setPreviewUrl(null)
+      previewBlobRef.current = null
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start preview.')
+    } finally {
+      setIsSubmittingPreview(false)
     }
   }
 
-  const isRunning = task?.status === 'pending' || task?.status === 'processing'
+  async function onSaveSelectedPreview() {
+    if (!selectedTask?.taskId || selectedTask.status !== 'completed') return
+    if (!previewBlobRef.current) {
+      setError('Preview audio is not ready yet.')
+      return
+    }
+
+    const taskState =
+      selectedTask.formState && typeof selectedTask.formState === 'object'
+        ? (selectedTask.formState as Partial<DesignFormState>)
+        : null
+
+    const snapshot: DesignFormState = {
+      name: typeof taskState?.name === 'string' ? taskState.name : name,
+      language:
+        typeof taskState?.language === 'string' ? taskState.language : language,
+      text: typeof taskState?.text === 'string' ? taskState.text : text,
+      instruct:
+        typeof taskState?.instruct === 'string' ? taskState.instruct : instruct,
+    }
+
+    await saveDesignedVoice(
+      previewBlobRef.current,
+      snapshot,
+      selectedTask.taskId,
+    )
+  }
+
+  const selectedStatusText = selectedTask
+    ? getStatusText(
+        selectedTask.status,
+        selectedTask.modalStatus ?? null,
+        selectedTask.providerStatus ?? null,
+      )
+    : null
+  const activeDesignCount = designTasks.filter(
+    (task) => task.status === 'pending' || task.status === 'processing',
+  ).length
 
   return (
     <div className="space-y-8">
@@ -321,8 +377,8 @@ export function DesignPage() {
           <div className="space-y-2">
             <div>No reference audio needed. Describe the voice you want.</div>
             <div>
-              Generate a short preview first; it is automatically saved as a
-              reusable voice.
+              You can run multiple previews. Pick a completed preview, then save
+              that exact one into your voice library.
             </div>
             <div>Preview text and description are limited to 500 chars.</div>
           </div>
@@ -408,12 +464,8 @@ export function DesignPage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Button type="submit" block disabled={isRunning || isSavingVoice}>
-            {isRunning
-              ? `Generating... ${elapsedLabel}`
-              : isSavingVoice
-                ? 'Saving voice...'
-                : 'Generate Preview'}
+          <Button type="submit" block disabled={isSubmittingPreview}>
+            {isSubmittingPreview ? 'Starting preview...' : 'Generate Preview'}
           </Button>
           <Button
             type="button"
@@ -425,38 +477,91 @@ export function DesignPage() {
                 `/generate?voice=${encodeURIComponent(savedVoiceId)}`,
               )
             }}
-            disabled={!savedVoiceId || isRunning || isSavingVoice}
+            disabled={!savedVoiceId || isSavingVoice}
           >
             Use Voice
           </Button>
         </div>
       </form>
 
-      {isRunning ? (
-        <div className="border border-border bg-subtle p-4 shadow-elevated">
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <div className="font-medium uppercase tracking-wide">
-                Progress
+      {selectedTask ? (
+        <div className="space-y-4 border border-border bg-subtle p-4 shadow-elevated">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium uppercase tracking-wide">
+                Selected Preview
               </div>
               <div className="mt-1 text-sm text-muted-foreground">
-                Generating...
+                {selectedStatusText ?? 'Processing...'}
               </div>
             </div>
-            <div className="text-xs text-faint">{elapsedLabel}</div>
+            <div className="text-xs text-faint">
+              {selectedTask.status === 'pending' ||
+              selectedTask.status === 'processing'
+                ? formatElapsed(selectedTask.startedAt)
+                : selectedTask.status === 'completed'
+                  ? 'Ready to save'
+                  : 'Not usable'}
+            </div>
+          </div>
+          {selectedTask.subtitle ? (
+            <div className="text-xs text-faint">{selectedTask.subtitle}</div>
+          ) : null}
+          {activeDesignCount > 1 ? (
+            <div className="text-xs text-faint">
+              {activeDesignCount} design previews currently running.
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {designTasks.length > 0 ? (
+        <div className="space-y-3">
+          <div className="text-sm font-medium uppercase tracking-wide">
+            Tracked Previews
+          </div>
+          <div className="space-y-2">
+            {designTasks.map((task) => (
+              <TaskSummaryRow
+                key={task.taskId}
+                task={task}
+                selected={task.taskId === selectedTaskId}
+                statusText={getStatusText(
+                  task.status,
+                  task.modalStatus ?? null,
+                  task.providerStatus ?? null,
+                )}
+                onSelect={() => setSelectedTaskId(task.taskId)}
+              />
+            ))}
           </div>
         </div>
       ) : null}
 
       {previewUrl ? (
         <div className="space-y-4 border border-border bg-background p-4 shadow-elevated">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-medium uppercase tracking-wide">
-              Preview
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium uppercase tracking-wide">
+                Preview
+              </div>
+              {savedVoiceName ? (
+                <div className="mt-1 text-xs text-faint">{savedVoiceName}</div>
+              ) : null}
             </div>
-            {savedVoiceName ? (
-              <div className="text-xs text-faint">{savedVoiceName}</div>
-            ) : null}
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => void onSaveSelectedPreview()}
+              disabled={
+                !selectedTask ||
+                selectedTask.status !== 'completed' ||
+                !previewBlobRef.current ||
+                isSavingVoice
+              }
+            >
+              {isSavingVoice ? 'Saving voice...' : 'Save This Preview'}
+            </Button>
           </div>
           <WaveformPlayer
             audioUrl={previewUrl}

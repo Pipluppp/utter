@@ -156,6 +156,69 @@ Deno.test({
   },
 });
 
+Deno.test({
+  name: "GET /tasks returns active and recent queue-backed jobs with display metadata",
+  ...noLeaks,
+  fn: async () => {
+    const admin = await getAdmin();
+    const generateTaskId = crypto.randomUUID();
+    const designTaskId = crypto.randomUUID();
+
+    await admin.from("tasks").insert([
+      {
+        id: generateTaskId,
+        user_id: userA.userId,
+        type: "generate",
+        status: "processing",
+        provider: "qwen",
+        provider_status: "provider_queued",
+        metadata: {
+          voice_name: "Test Voice",
+          text_preview: "hello from task feed",
+          language: "English",
+          estimated_duration_minutes: 0.4,
+        },
+      },
+      {
+        id: designTaskId,
+        user_id: userA.userId,
+        type: "design_preview",
+        status: "completed",
+        provider: "qwen",
+        completed_at: new Date().toISOString(),
+        metadata: {
+          name: "Neon Host",
+          instruct: "bright, clipped, energetic",
+          text: "preview line",
+          language: "English",
+        },
+      },
+    ]);
+
+    try {
+      const activeRes = await apiFetch("/tasks?status=active&type=all&limit=10", userA.accessToken);
+      assertEquals(activeRes.status, 200);
+      const activeBody = await activeRes.json();
+      assertEquals(Array.isArray(activeBody.tasks), true);
+      assertEquals(activeBody.tasks.length, 1);
+      assertEquals(activeBody.tasks[0].id, generateTaskId);
+      assertEquals(activeBody.tasks[0].title, "Generate with Test Voice");
+      assertEquals(activeBody.tasks[0].origin_page, "/generate");
+
+      const recentRes = await apiFetch("/tasks?status=terminal&type=design_preview&limit=10", userA.accessToken);
+      assertEquals(recentRes.status, 200);
+      const recentBody = await recentRes.json();
+      assertEquals(Array.isArray(recentBody.tasks), true);
+      assertEquals(recentBody.tasks.length, 1);
+      assertEquals(recentBody.tasks[0].id, designTaskId);
+      assertEquals(recentBody.tasks[0].title, "Design preview: Neon Host");
+      assertEquals(recentBody.tasks[0].origin_page, "/design");
+    } finally {
+      await admin.from("tasks").delete().in("id", [generateTaskId, designTaskId]);
+    }
+  },
+});
+
 // --- DELETE /tasks/:id ---
 Deno.test({
   name: "DELETE /tasks/:id deletes own task",

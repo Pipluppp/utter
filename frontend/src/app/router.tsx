@@ -28,6 +28,10 @@ const HistoryPage = lazy(async () => {
   const m = await import('../pages/History')
   return { default: m.HistoryPage }
 })
+const TasksPage = lazy(async () => {
+  const m = await import('../pages/Tasks')
+  return { default: m.TasksPage }
+})
 const AboutPage = lazy(async () => {
   const m = await import('../pages/About')
   return { default: m.AboutPage }
@@ -137,6 +141,14 @@ export const router = createBrowserRouter([
             element: (
               <RequireAuth>
                 <HistoryPage />
+              </RequireAuth>
+            ),
+          },
+          {
+            path: '/tasks',
+            element: (
+              <RequireAuth>
+                <TasksPage />
               </RequireAuth>
             ),
           },
