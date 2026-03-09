@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Label } from '../../components/ui/Label'
 import { useAccountPageData } from './accountData'
+import { AccountProfileSkeleton } from './accountSkeletons'
 import { AccountNotice, AccountPanel } from './accountUi'
 
 type FormState = {
@@ -31,8 +32,7 @@ function previewInitials(value: string) {
 }
 
 export function AccountProfilePage() {
-  const { authEmail, loading, profile, saveProfile, signOut } =
-    useAccountPageData()
+  const { authEmail, profile, saveProfile, signOut } = useAccountPageData()
   const [form, setForm] = useState<FormState>(() => buildFormState(profile))
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
@@ -110,73 +110,79 @@ export function AccountProfilePage() {
         <AccountNotice tone="success">{saveSuccess}</AccountNotice>
       ) : null}
 
-      <AccountPanel kicker="Profile" title="Account identity">
-        <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 lg:flex-col lg:items-start">
-              <div className="grid size-20 place-items-center overflow-hidden rounded-full border border-border bg-subtle text-lg font-medium uppercase shadow-elevated">
-                {previewInitials(displayName)}
+      {!profile && !authEmail ? <AccountProfileSkeleton /> : null}
+
+      {profile || authEmail ? (
+        <>
+          <AccountPanel kicker="Profile" title="Account identity">
+            <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 lg:flex-col lg:items-start">
+                  <div className="grid size-20 place-items-center overflow-hidden rounded-full border border-border bg-subtle text-lg font-medium uppercase shadow-elevated">
+                    {previewInitials(displayName)}
+                  </div>
+                  <div>
+                    <div className="text-base font-medium text-foreground md:text-lg">
+                      {displayName}
+                    </div>
+                    <div className="mt-2 text-[15px] leading-6 text-foreground/68">
+                      {authEmail || 'Unavailable'}
+                    </div>
+                    <div className="mt-2 break-all text-[13px] leading-6 text-foreground/56">
+                      {profile?.id ?? 'Unavailable'}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="text-base font-medium text-foreground md:text-lg">
-                  {displayName}
-                </div>
-                <div className="mt-2 text-[15px] leading-6 text-foreground/68">
-                  {loading ? 'Loading...' : authEmail || 'Unavailable'}
-                </div>
-                <div className="mt-2 break-all text-[13px] leading-6 text-foreground/56">
-                  {profile?.id ?? 'Unavailable'}
+
+              <div className="grid gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="display_name">Display name</Label>
+                  <Input
+                    id="display_name"
+                    autoComplete="name"
+                    value={form.displayName}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        displayName: event.target.value,
+                      }))
+                    }
+                    placeholder="Your name"
+                    disabled={saving}
+                  />
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="display_name">Display name</Label>
-              <Input
-                id="display_name"
-                autoComplete="name"
-                value={form.displayName}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    displayName: event.target.value,
-                  }))
-                }
-                placeholder="Your name"
-                disabled={saving}
-              />
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => void onSave()} loading={saving}>
+                Save changes
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setForm(original)}
+                disabled={!hasChanges || saving}
+              >
+                Reset
+              </Button>
             </div>
-          </div>
-        </div>
+          </AccountPanel>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => void onSave()} loading={saving}>
-            Save changes
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setForm(original)}
-            disabled={!hasChanges || saving}
-          >
-            Reset
-          </Button>
-        </div>
-      </AccountPanel>
-
-      <AccountPanel title="Sign out">
-        <div className="flex flex-wrap gap-3">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => void onSignOut()}
-          >
-            Sign out
-          </Button>
-        </div>
-      </AccountPanel>
+          <AccountPanel title="Sign out">
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void onSignOut()}
+              >
+                Sign out
+              </Button>
+            </div>
+          </AccountPanel>
+        </>
+      ) : null}
     </div>
   )
 }

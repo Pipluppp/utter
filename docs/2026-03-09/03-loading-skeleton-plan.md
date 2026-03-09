@@ -117,14 +117,18 @@ Required rule:
 
 ## Session checklist
 
-- [ ] Add shared route-family skeleton components for marketing, app, and account shells
-- [ ] Replace the generic `Layout` Suspense fallback
-- [ ] Replace `RequireAuth` pending-auth text with a skeleton state
-- [ ] Replace `TopBar` pending-auth text with a skeleton state
-- [ ] Add account-specific skeletons for Overview, Credits, and Profile
-- [ ] Add the Generate form loading skeleton
-- [ ] Add the About languages skeleton
-- [ ] Prevent false empty states and fake zeros during initial fetch
+- [x] Add shared route-family skeleton components for marketing, app, and account shells
+- [x] Replace the generic `Layout` Suspense fallback
+- [x] Replace `RequireAuth` pending-auth text with a skeleton state
+- [x] Replace `TopBar` pending-auth text with a skeleton state
+- [x] Add account-specific skeletons for Overview, Credits, and Profile
+- [x] Add the Generate form loading skeleton
+- [x] Add the About languages skeleton
+- [x] Prevent false empty states and fake zeros during initial fetch
+
+## Deferred items
+
+None from this loading-skeleton pass.
 
 ## Manual verification checklist
 

@@ -8,6 +8,7 @@ import { InfoTip } from '../components/ui/InfoTip'
 import { Label } from '../components/ui/Label'
 import { Message } from '../components/ui/Message'
 import { Select } from '../components/ui/Select'
+import { Skeleton } from '../components/ui/Skeleton'
 import { Textarea } from '../components/ui/Textarea'
 import { getUtterDemo } from '../content/utterDemo'
 import { apiJson } from '../lib/api'
@@ -25,6 +26,33 @@ type GenerateFormState = {
   voiceId: string
   language: string
   text: string
+}
+
+function GenerateFormSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <div>
+        <Skeleton className="h-4 w-14" />
+        <Skeleton className="mt-3 h-10 w-full" />
+      </div>
+
+      <div>
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="mt-3 h-10 w-full" />
+      </div>
+
+      <div>
+        <Skeleton className="h-4 w-12" />
+        <Skeleton className="mt-3 h-44 w-full" />
+        <div className="mt-2 flex items-center justify-between">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-32" />
+        </div>
+      </div>
+
+      <Skeleton className="h-11 w-full" />
+    </div>
+  )
 }
 
 function TaskSummaryRow({
@@ -320,80 +348,82 @@ export function GeneratePage() {
 
       {error ? <Message variant="error">{error}</Message> : null}
 
-      <form
-        className="space-y-6"
-        onSubmit={(e) => {
-          e.preventDefault()
-          void onGenerate()
-        }}
-      >
-        <div>
-          <Label htmlFor="generate-voice">Voice</Label>
-          <Select
-            id="generate-voice"
-            value={voiceId}
-            onChange={(e) => setVoiceId(e.target.value)}
-            disabled={loadingVoices}
-            name="voice_id"
-          >
-            <option value="">
-              {loadingVoices ? 'Loading...' : 'Select a voice'}
-            </option>
-            {voices?.voices.map((v) => {
-              const voiceProvider = v.tts_provider ?? 'qwen'
-              const incompatible = voiceProvider !== provider
-              return (
-                <option key={v.id} value={v.id} disabled={incompatible}>
-                  {v.name}
-                  {incompatible ? ` (${voiceProvider} only)` : ''}
-                </option>
-              )
-            })}
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="generate-language">Language</Label>
-          <Select
-            id="generate-language"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            name="language"
-          >
-            {languages.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="generate-text">Text</Label>
-          <Textarea
-            id="generate-text"
-            name="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Type what you want the voice to say..."
-            className="min-h-44"
-          />
-          <div className="mt-2 flex items-center justify-between text-xs text-faint">
-            <span
-              className={cn(
-                charCount > maxTextChars && 'text-red-700 dark:text-red-400',
-              )}
+      {loadingVoices ? (
+        <GenerateFormSkeleton />
+      ) : (
+        <form
+          className="space-y-6"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void onGenerate()
+          }}
+        >
+          <div>
+            <Label htmlFor="generate-voice">Voice</Label>
+            <Select
+              id="generate-voice"
+              value={voiceId}
+              onChange={(e) => setVoiceId(e.target.value)}
+              disabled={loadingVoices}
+              name="voice_id"
             >
-              {charCount}/{maxTextChars}
-            </span>
-            <span>Max {maxTextChars.toLocaleString()} characters</span>
+              <option value="">Select a voice</option>
+              {voices?.voices.map((v) => {
+                const voiceProvider = v.tts_provider ?? 'qwen'
+                const incompatible = voiceProvider !== provider
+                return (
+                  <option key={v.id} value={v.id} disabled={incompatible}>
+                    {v.name}
+                    {incompatible ? ` (${voiceProvider} only)` : ''}
+                  </option>
+                )
+              })}
+            </Select>
           </div>
-        </div>
 
-        <Button type="submit" block disabled={!canSubmit}>
-          {isSubmitting ? 'Starting generation...' : 'Generate Speech'}
-        </Button>
-      </form>
+          <div>
+            <Label htmlFor="generate-language">Language</Label>
+            <Select
+              id="generate-language"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              name="language"
+            >
+              {languages.map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="generate-text">Text</Label>
+            <Textarea
+              id="generate-text"
+              name="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Type what you want the voice to say..."
+              className="min-h-44"
+            />
+            <div className="mt-2 flex items-center justify-between text-xs text-faint">
+              <span
+                className={cn(
+                  charCount > maxTextChars && 'text-red-700 dark:text-red-400',
+                )}
+              >
+                {charCount}/{maxTextChars}
+              </span>
+              <span>Max {maxTextChars.toLocaleString()} characters</span>
+            </div>
+          </div>
+
+          <Button type="submit" block disabled={!canSubmit}>
+            {isSubmitting ? 'Starting generation...' : 'Generate Speech'}
+          </Button>
+        </form>
+      )}
 
       {selectedTask ? (
         <div className="space-y-4 border border-border bg-subtle p-4 shadow-elevated">
