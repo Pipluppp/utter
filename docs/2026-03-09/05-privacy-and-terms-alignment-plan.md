@@ -139,6 +139,20 @@ State clearly:
 - [ ] Terms page reflects prepaid packs rather than subscriptions
 - [ ] Terms page clearly covers rights, misuse, and service availability
 
+## Wording caveats captured during implementation
+
+- Keep provider claims tied to Alibaba Cloud Model Studio's published language only.
+- The linked plan reference `billing-of-model-studio` currently returns a 404 on the public help site; use current Qwen TTS docs and in-product billing behavior until a replacement canonical billing URL is confirmed.
+- Model Studio privacy notice language distinguishes direct API calls vs Assistant API retention behavior. Utter TTS wording should stay scoped to direct API usage.
+- Avoid claiming hard deletion for voice references unless backend deletion behavior is expanded. Current voice deletion is soft-delete at the app DB layer.
+
+## Unresolved product/legal questions
+
+1. Should deleting a voice also hard-delete the associated `references` bucket object immediately?
+2. Should there be an explicit retention window for soft-deleted voice rows and reference artifacts?
+3. Should Privacy/Terms link to a specific Utter support contact path once finalized?
+4. Should we add a dedicated note on cross-region provider processing beyond current high-level wording, based on chosen deployment lane and future region configuration?
+
 ## Repo workflow note
 
 Implement this task in the main `utter/` repo directory on a dedicated branch from `main`.
