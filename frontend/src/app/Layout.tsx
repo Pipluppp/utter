@@ -1,6 +1,12 @@
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation, useMatches } from 'react-router-dom'
 import { TaskDock } from '../components/tasks/TaskDock'
+import {
+  RouteAccountSkeleton,
+  RouteAppSkeleton,
+  RouteAuthSkeleton,
+  RouteMarketingSkeleton,
+} from '../components/ui/RouteSkeletons'
 import { cn } from '../lib/cn'
 import { useAuthState } from './auth/AuthStateProvider'
 import { AppFooter } from './Footer'
@@ -31,6 +37,16 @@ export function Layout() {
   }, [matches])
   const navVariant = getNavVariant(routeFamily, authState.status)
   const isAuthSurface = routeFamily === 'auth'
+  const suspenseFallback =
+    routeFamily === 'marketing' ? (
+      <RouteMarketingSkeleton />
+    ) : routeFamily === 'auth' ? (
+      <RouteAuthSkeleton />
+    ) : location.pathname.startsWith('/account') ? (
+      <RouteAccountSkeleton />
+    ) : (
+      <RouteAppSkeleton />
+    )
 
   useGlobalShortcuts(routeFamily === 'app' && authState.status === 'signed_in')
 
@@ -123,13 +139,7 @@ export function Layout() {
           isAuthSurface ? 'flex' : 'mx-auto max-w-5xl px-4 py-12 md:px-6',
         )}
       >
-        <Suspense
-          fallback={
-            <div className="py-10 text-center text-sm text-muted-foreground">
-              Loading...
-            </div>
-          }
-        >
+        <Suspense fallback={suspenseFallback}>
           <Outlet />
         </Suspense>
       </main>

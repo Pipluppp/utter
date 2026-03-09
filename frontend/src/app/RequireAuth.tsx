@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { AuthGateSkeleton } from '../components/ui/RouteSkeletons'
 import { useAuthState } from './auth/AuthStateProvider'
 import { buildAuthHref, buildReturnTo } from './navigation'
 
@@ -9,11 +10,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const returnTo = buildReturnTo(location)
 
   if (authState.status === 'loading') {
-    return (
-      <div className="py-10 text-center text-sm text-muted-foreground">
-        Checking session...
-      </div>
-    )
+    return <AuthGateSkeleton />
   }
 
   if (authState.status !== 'signed_in') {

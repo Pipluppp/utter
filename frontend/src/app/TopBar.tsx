@@ -1,6 +1,7 @@
 import { Link, NavLink, type To } from 'react-router-dom'
 import { TaskBadge } from '../components/tasks/TaskBadge'
 import { Kbd } from '../components/ui/Kbd'
+import { HeaderPendingAuthSkeleton } from '../components/ui/RouteSkeletons'
 import { cn } from '../lib/cn'
 import type { NavSectionItem, NavVariant } from './navigation'
 
@@ -262,9 +263,7 @@ export function TopBar({
             </NavLink>
           </nav>
         ) : variant === 'app_pending_auth' ? (
-          <div className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Checking session...
-          </div>
+          <HeaderPendingAuthSkeleton />
         ) : (
           <nav className="hidden items-center gap-1 md:flex">
             {sections.map((section, index) => (

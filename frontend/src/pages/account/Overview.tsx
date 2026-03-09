@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { buttonStyles } from '../../components/ui/Button'
 import { cn } from '../../lib/cn'
 import { formatCredits, useAccountPageData } from './accountData'
+import { AccountOverviewSkeleton } from './accountSkeletons'
 import { AccountEmptyState, AccountPanel } from './accountUi'
 
 function TrialSummary({
@@ -49,12 +50,16 @@ function TrialSummary({
 }
 
 export function AccountOverviewPage() {
-  const { activity, credits, loading } = useAccountPageData()
+  const { activity, credits } = useAccountPageData()
+
+  if (!credits) {
+    return <AccountOverviewSkeleton />
+  }
 
   const recentActivity = activity.slice(0, 4)
-  const balance = credits?.balance ?? 0
-  const designTrials = credits?.trials.design_remaining ?? 0
-  const cloneTrials = credits?.trials.clone_remaining ?? 0
+  const balance = credits.balance
+  const designTrials = credits.trials.design_remaining
+  const cloneTrials = credits.trials.clone_remaining
 
   return (
     <div className="space-y-5">
@@ -69,11 +74,11 @@ export function AccountOverviewPage() {
               Credits available
             </div>
             <div className="mt-4 text-5xl font-pixel font-medium leading-none text-foreground sm:text-6xl">
-              {loading ? '...' : formatCredits(balance)}
+              {formatCredits(balance)}
             </div>
             <div className="mt-4 max-w-md text-[15px] leading-7 text-foreground/72">
-              {credits?.credit_unit ?? '1 credit = 1 character'}. Credits update
-              automatically after purchases and usage.
+              {credits.credit_unit}. Credits update automatically after
+              purchases and usage.
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link

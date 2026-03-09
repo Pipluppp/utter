@@ -1,7 +1,20 @@
+import { Skeleton } from '../components/ui/Skeleton'
 import { useLanguages } from './hooks'
 
+function AboutLanguagesSkeleton() {
+  return (
+    <div className="flex flex-wrap gap-2" aria-hidden="true">
+      <Skeleton className="h-6 w-16" />
+      <Skeleton className="h-6 w-20" />
+      <Skeleton className="h-6 w-24" />
+      <Skeleton className="h-6 w-24" />
+      <Skeleton className="h-6 w-16" />
+    </div>
+  )
+}
+
 export function AboutPage() {
-  const { provider, languages } = useLanguages()
+  const { provider, languages, loading } = useLanguages()
 
   return (
     <div className="space-y-8">
@@ -71,7 +84,7 @@ export function AboutPage() {
           Languages
         </div>
         <div className="leading-relaxed">
-          {languages.length > 0 ? languages.join(', ') : 'Loading…'}
+          {loading ? <AboutLanguagesSkeleton /> : languages.join(', ')}
         </div>
       </div>
     </div>
