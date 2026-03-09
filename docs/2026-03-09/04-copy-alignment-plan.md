@@ -126,6 +126,14 @@ Recommended shape:
 - [ ] Generate, Clone, and Design copy all match actual workflow behavior
 - [ ] `/api/languages` output matches the copy shown in the UI
 
+## Session notes
+
+- Decision: `/api/languages` should return the 10 named Qwen languages only and default to `English`.
+- Decision: `Auto` was removed from the UI payload so the app and landing copy can make the same 10-language claim without extra qualification.
+- Decision: landing copy should not derive marketing claims from the language payload count; use explicit Qwen wording instead.
+- Decision: app copy should describe Generate and Design as background jobs and Clone as transcript-guided, without implying a multi-provider runtime.
+- Open question: if `Auto` routing is later validated as a supported product behavior worth exposing again, reintroduce it as a clearly labeled convenience selector instead of counting it as an extra supported language.
+
 ## Repo workflow note
 
 Implement this task in the main `utter/` repo directory on a dedicated branch from `main`.

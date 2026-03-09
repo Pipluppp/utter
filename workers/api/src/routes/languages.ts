@@ -7,6 +7,19 @@ import {
 
 export const languagesRoutes = new Hono();
 
+const QWEN_SUPPORTED_LANGUAGES = [
+  "English",
+  "Chinese",
+  "Japanese",
+  "Korean",
+  "French",
+  "German",
+  "Spanish",
+  "Italian",
+  "Portuguese",
+  "Russian",
+] as const;
+
 languagesRoutes.get("/languages", (c) => {
   const transcription = getTranscriptionConfig();
 
@@ -15,24 +28,8 @@ languagesRoutes.get("/languages", (c) => {
     const capabilities = getTtsCapabilities();
 
     return c.json({
-      languages: [
-        "Auto",
-        "English",
-        "Chinese",
-        "Japanese",
-        "Korean",
-        "French",
-        "German",
-        "Spanish",
-        "Italian",
-        "Portuguese",
-        "Russian",
-        "Arabic",
-        "Hindi",
-        "Dutch",
-        "Turkish",
-      ],
-      default: "Auto",
+      languages: [...QWEN_SUPPORTED_LANGUAGES],
+      default: "English",
       provider,
       capabilities,
       transcription: {

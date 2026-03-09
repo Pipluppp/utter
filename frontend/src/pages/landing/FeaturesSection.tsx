@@ -119,11 +119,11 @@ export function FeaturesSection() {
         <div className="space-y-10">
           <FeatureBlock
             title="Voice Clone"
-            pitch="Upload a short clip and get a reusable voice you can generate with any time."
+            pitch="Upload a short clip with its transcript and save a reusable voice for later generation."
             bullets={[
-              'Name your voice, upload a reference clip, and submit.',
-              'Keep clones organized in a single voice library.',
-              'Use the same voice for short prompts or long-form text.',
+              'Name your voice, upload reference audio, and add the matching transcript.',
+              'Keep cloned voices organized in one library.',
+              'Reuse the same saved voice across future generations.',
             ]}
             ctaLabel="Open Clone"
             to="/clone"
@@ -133,11 +133,11 @@ export function FeaturesSection() {
 
           <FeatureBlock
             title="Generate"
-            pitch="Pick a voice, paste text, and generate speech with fast iteration."
+            pitch="Pick a saved voice, paste text, and queue speech generation."
             bullets={[
-              'Up to 10k characters per request.',
-              'Preview audio quickly and download when it sounds right.',
-              'Reuse voices across projects without re-uploading.',
+              'The text cap follows the active Qwen runtime settings.',
+              'Queued jobs keep running in the background until audio is ready.',
+              'Download finished audio when it sounds right.',
             ]}
             ctaLabel="Open Generate"
             to="/generate"
@@ -148,11 +148,11 @@ export function FeaturesSection() {
 
           <FeatureBlock
             title="Design"
-            pitch="Describe a voice in text, generate candidates, then save the best one to your library."
+            pitch="Describe a voice in text, queue a preview, then save the one you want to keep."
             bullets={[
               'No audio upload required.',
-              'Iterate on tone, age, style, accent, and texture.',
-              'Promote a designed voice directly into generation.',
+              'Shape tone, age, style, accent, and texture in plain language.',
+              'Save a completed preview before using it in Generate.',
             ]}
             mediaSrc="/feature-media/design.png"
             mediaAlt="Design UI screenshot"

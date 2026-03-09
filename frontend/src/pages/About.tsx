@@ -14,7 +14,7 @@ function AboutLanguagesSkeleton() {
 }
 
 export function AboutPage() {
-  const { provider, languages, loading } = useLanguages()
+  const { languages, loading } = useLanguages()
 
   return (
     <div className="space-y-8">
@@ -23,7 +23,8 @@ export function AboutPage() {
       </h2>
 
       <p className="text-sm text-muted-foreground">
-        Utter is a voice cloning and speech generation app powered by Qwen3-TTS.
+        Utter is a Qwen-powered app for voice cloning, voice design, and speech
+        generation.
       </p>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -32,8 +33,8 @@ export function AboutPage() {
             Clone
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Upload reference audio (and a matching transcript when required) to
-            create a reusable voice.
+            Upload reference audio with a matching transcript to create a
+            reusable voice.
           </p>
         </div>
         <div className="border border-border bg-background p-4 shadow-elevated">
@@ -41,8 +42,8 @@ export function AboutPage() {
             Design
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Describe a voice in plain language and generate a preview that is
-            saved automatically for later use.
+            Describe a voice in plain language, queue a preview, then save the
+            version you want to keep.
           </p>
         </div>
         <div className="border border-border bg-background p-4 shadow-elevated">
@@ -50,8 +51,8 @@ export function AboutPage() {
             Generate
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Type text and generate speech in any of your saved voices. Results
-            are stored in History.
+            Type text and queue speech in any of your saved voices. Finished
+            audio is stored in History.
           </p>
         </div>
       </div>
@@ -65,23 +66,23 @@ export function AboutPage() {
             Reference audio: WAV/MP3/M4A, max 50MB, 3 seconds to ~5 minutes.
           </li>
           <li>
-            Transcript: paste the words spoken in the reference audio as closely
-            as possible.
+            Transcript: voice cloning requires text that matches the reference
+            audio as closely as possible.
           </li>
           <li>
-            Some providers require a transcript (current provider:{' '}
-            <span className="text-foreground">{provider}</span>).
+            Generation and design preview run as async jobs and can take longer
+            under load.
           </li>
           <li>
-            Generation time scales with text length and server load; long inputs
-            can take minutes.
+            Long text is limited by the current Qwen character cap shown in
+            Generate.
           </li>
         </ul>
       </div>
 
       <div className="space-y-2 text-sm text-muted-foreground">
         <div className="text-[12px] font-semibold uppercase tracking-wide text-foreground">
-          Languages
+          Supported languages
         </div>
         <div className="leading-relaxed">
           {loading ? <AboutLanguagesSkeleton /> : languages.join(', ')}

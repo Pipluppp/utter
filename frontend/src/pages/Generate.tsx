@@ -300,9 +300,7 @@ export function GeneratePage() {
 
     if (!canSubmit) {
       if (!selectedVoiceCompatible) {
-        setError(
-          `Selected voice uses ${selectedVoiceProvider}. Active provider is ${provider}.`,
-        )
+        setError('Selected voice is not compatible with the current runtime.')
         return
       }
       setError('Please select a voice and enter some text.')
@@ -338,8 +336,8 @@ export function GeneratePage() {
           <div className="space-y-2">
             <div>Pick a voice, enter text, then start generation.</div>
             <div>
-              Generate jobs stay in the background, so you can queue another one
-              without losing the previous result.
+              Generate runs as a background job, so queued or processing work
+              keeps moving even if you leave the page.
             </div>
             <div>Max input: {maxTextChars.toLocaleString()} characters.</div>
           </div>
@@ -374,7 +372,7 @@ export function GeneratePage() {
                 return (
                   <option key={v.id} value={v.id} disabled={incompatible}>
                     {v.name}
-                    {incompatible ? ` (${voiceProvider} only)` : ''}
+                    {incompatible ? ' (not available in this runtime)' : ''}
                   </option>
                 )
               })}

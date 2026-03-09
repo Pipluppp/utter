@@ -43,7 +43,7 @@ function contentTypeForFile(file: File): string {
 
 export function ClonePage() {
   const [params] = useSearchParams()
-  const { languages, defaultLanguage, provider, transcription } = useLanguages()
+  const { languages, defaultLanguage, transcription } = useLanguages()
 
   const inputRef = useRef<HTMLInputElement | null>(null)
   const firstModalActionRef = useRef<HTMLAnchorElement | null>(null)
@@ -98,7 +98,7 @@ export function ClonePage() {
     return () => window.clearInterval(t)
   }, [startedAt, submitting])
 
-  const transcriptRequired = provider === 'qwen'
+  const transcriptRequired = true
 
   const fileInfo = useMemo(() => {
     if (!file) return null
@@ -553,8 +553,8 @@ export function ClonePage() {
             </div>
             <div>
               {transcriptRequired
-                ? 'Transcript is required.'
-                : 'Transcript may be optional for your current provider.'}
+                ? 'Transcript is required for Qwen voice cloning.'
+                : 'Transcript is required.'}
             </div>
           </div>
         </InfoTip>

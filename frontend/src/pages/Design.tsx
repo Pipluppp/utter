@@ -377,8 +377,8 @@ export function DesignPage() {
           <div className="space-y-2">
             <div>No reference audio needed. Describe the voice you want.</div>
             <div>
-              You can run multiple previews. Pick a completed preview, then save
-              that exact one into your voice library.
+              Preview runs as a background job. Save the completed preview you
+              want to keep in your voice library.
             </div>
             <div>Preview text and description are limited to 500 chars.</div>
           </div>
