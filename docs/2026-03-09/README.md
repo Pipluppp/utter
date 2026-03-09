@@ -14,11 +14,10 @@ This folder captures the March 9 triage and the next implementation plans for th
 
 1. `00-triage-and-branching.md`
 2. `01-multi-job-workflows-plan.md`
-3. `02-design-language-graphics-plan.md`
-4. `03-loading-skeleton-plan.md`
-5. `04-copy-alignment-plan.md`
-6. `05-privacy-and-terms-alignment-plan.md`
-7. `06-pricing-and-credit-rebalance-plan.md`
+3. `03-loading-skeleton-plan.md`
+4. `04-copy-alignment-plan.md`
+5. `05-privacy-and-terms-alignment-plan.md`
+6. `06-pricing-and-credit-rebalance-plan.md`
 
 ## Selected branch
 

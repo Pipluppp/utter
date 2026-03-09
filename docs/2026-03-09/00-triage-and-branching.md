@@ -8,10 +8,6 @@ The unfinished March 7 work that still matters for the current product pass is:
 2. frontend loading skeletons
 3. copy alignment on landing and product surfaces
 
-An additional March 9 workstream has now been added:
-
-4. visual language integration for landing and app surfaces, based on custom blob/dot graphics and stronger pixel-display typography
-
 The security bundle under `docs/2026-03-07/security-sweep-plan-bundle/` exists but is intentionally out of scope for this pass.
 
 ## What was checked
@@ -92,17 +88,6 @@ Landing and product copy no longer matches the actual runtime:
 - `frontend/src/pages/Terms.tsx` still mentions subscriptions renewing monthly, but the app is using prepaid packs
 - `frontend/src/content/plans.ts` and `workers/api/src/_shared/credits.ts` still use the old `$10` and `$25` packs and the old flat-credit constants
 
-### Visual language integration is now a defined task
-
-The current landing and app pages already use a dark mono/pixel base, but the visual system is still mostly layout + screenshots. It does not yet have a reusable decorative identity for the three core workflows.
-
-Confirmed gaps:
-
-- no reusable blob/dot graphic component family exists
-- `Clone`, `Design`, and `Generate` do not have distinct branded graphics
-- `Geist Pixel Circle` is not currently wired into the frontend font tokens
-- the landing page is still relatively short and does not fully capitalize on the existing dark atmospheric direction
-
 ## Current branch state
 
 - current worktree branch: `docs/frontend-loading-skeleton-plan`
@@ -131,10 +116,9 @@ The extra worktree that was used during planning was only to avoid disturbing an
 ## Recommended execution order after planning
 
 1. Implement multi-job backend and frontend tracking first.
-2. Build the visual language integration pass for landing and core app pages.
-3. Land the loading skeleton pass once the visual direction and task-state model are stable.
-4. Update landing/product copy and `/api/languages` together.
-5. Update privacy, terms, pricing, and credit constants together after product decisions are agreed.
+2. Land the loading skeleton pass next.
+3. Update landing/product copy and `/api/languages` together.
+4. Update privacy, terms, pricing, and credit constants together after product decisions are agreed.
 
 ## One-task-per-session workflow
 
@@ -182,21 +166,7 @@ Exit gate:
 - concurrent jobs work
 - task tracking no longer overwrites by type
 
-### Session 2: visual language integration
-
-Doc:
-
-- `docs/2026-03-09/02-design-language-graphics-plan.md`
-
-Suggested branch:
-
-- `feature/visual-language-integration`
-
-Exit gate:
-
-- landing and core workflow pages share the new graphic system
-
-### Session 3: loading skeletons
+### Session 2: loading skeletons
 
 Doc:
 
@@ -210,7 +180,7 @@ Exit gate:
 
 - raw loading placeholders are replaced with skeleton states
 
-### Session 4: copy alignment
+### Session 3: copy alignment
 
 Doc:
 
@@ -224,7 +194,7 @@ Exit gate:
 
 - landing/app copy and `/api/languages` agree
 
-### Session 5: privacy and terms
+### Session 4: privacy and terms
 
 Doc:
 
@@ -238,7 +208,7 @@ Exit gate:
 
 - legal pages match actual product behavior
 
-### Session 6: pricing and credits
+### Session 5: pricing and credits
 
 Doc:
 
