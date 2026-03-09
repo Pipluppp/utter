@@ -11,7 +11,7 @@ import {
 } from "./_helpers/setup.ts";
 
 const STRIPE_WEBHOOK_SECRET = "whsec_test_utter_local";
-const STRIPE_TEST_PRICE_PACK_150K = "price_test_pack_150k";
+const STRIPE_TEST_PRICE_PACK_30K = "price_test_pack_30k";
 
 let userA: TestUser;
 const noLeaks = { sanitizeResources: false, sanitizeOps: false };
@@ -73,7 +73,7 @@ Deno.test("POST /billing/checkout requires auth", async () => {
   const res = await apiPublicFetch("/billing/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pack_id: "pack_150k" }),
+    body: JSON.stringify({ pack_id: "pack_30k" }),
   });
 
   assertEquals(res.status, 401);
@@ -123,13 +123,13 @@ Deno.test({
           id: `cs_${crypto.randomUUID().replaceAll("-", "")}`,
           metadata: {
             user_id: userA.userId,
-            pack_id: "pack_150k",
+            pack_id: "pack_30k",
           },
           line_items: {
             data: [
               {
                 price: {
-                  id: STRIPE_TEST_PRICE_PACK_150K,
+                  id: STRIPE_TEST_PRICE_PACK_30K,
                 },
               },
             ],
@@ -170,7 +170,7 @@ Deno.test({
       .single();
 
     assertEquals(profile.error, null);
-    assertEquals(profile.data?.credits_remaining, 150000);
+    assertEquals(profile.data?.credits_remaining, 30000);
 
     const ledger = await admin
       .from("credit_ledger")

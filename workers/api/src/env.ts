@@ -21,8 +21,8 @@ export interface WorkerEnv {
 
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
-  STRIPE_PRICE_PACK_150K?: string;
-  STRIPE_PRICE_PACK_500K?: string;
+  STRIPE_PRICE_PACK_30K?: string;
+  STRIPE_PRICE_PACK_120K?: string;
 
   RATE_LIMIT_WINDOW_SECONDS?: string;
   RATE_LIMIT_TIER1_USER_LIMIT?: string;

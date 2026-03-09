@@ -5,38 +5,38 @@ export const CREDIT_UNIT_LABEL = "1 credit = 1 character";
 
 export const DESIGN_TRIAL_LIMIT = 2;
 export const CLONE_TRIAL_LIMIT = 2;
-export const DESIGN_PREVIEW_FLAT_CREDITS = 5000;
-export const CLONE_FINALIZE_FLAT_CREDITS = 1000;
+export const DESIGN_PREVIEW_FLAT_CREDITS = 2400;
+export const CLONE_FINALIZE_FLAT_CREDITS = 200;
 
-export type PrepaidPackId = "pack_150k" | "pack_500k";
+export type PrepaidPackId = "pack_30k" | "pack_120k";
 
 export type PrepaidPack = {
   id: PrepaidPackId;
   name: string;
   priceUsd: number;
   credits: number;
-  stripePriceEnv: "STRIPE_PRICE_PACK_150K" | "STRIPE_PRICE_PACK_500K";
+  stripePriceEnv: "STRIPE_PRICE_PACK_30K" | "STRIPE_PRICE_PACK_120K";
 };
 
 export const PREPAID_PACKS: Record<PrepaidPackId, PrepaidPack> = {
-  pack_150k: {
-    id: "pack_150k",
-    name: "150k credits",
-    priceUsd: 10,
-    credits: 150000,
-    stripePriceEnv: "STRIPE_PRICE_PACK_150K",
+  pack_30k: {
+    id: "pack_30k",
+    name: "Starter pack",
+    priceUsd: 2.99,
+    credits: 30000,
+    stripePriceEnv: "STRIPE_PRICE_PACK_30K",
   },
-  pack_500k: {
-    id: "pack_500k",
-    name: "500k credits",
-    priceUsd: 25,
-    credits: 500000,
-    stripePriceEnv: "STRIPE_PRICE_PACK_500K",
+  pack_120k: {
+    id: "pack_120k",
+    name: "Studio pack",
+    priceUsd: 9.99,
+    credits: 120000,
+    stripePriceEnv: "STRIPE_PRICE_PACK_120K",
   },
 };
 
 export function prepaidPackFromId(packId: string): PrepaidPack | null {
-  if (packId === "pack_150k" || packId === "pack_500k") {
+  if (packId === "pack_30k" || packId === "pack_120k") {
     return PREPAID_PACKS[packId];
   }
   return null;
@@ -115,12 +115,12 @@ export const CREDIT_RATE_CARD: CreditRateCardRow[] = [
   },
   {
     action: "Voice design preview",
-    cost: "First 2 attempts free, then 5,000 credits",
+    cost: "First 2 attempts free, then 2,400 credits",
     note: "Flat price after free design trials are used.",
   },
   {
     action: "Voice clone",
-    cost: "First 2 attempts free, then 1,000 credits",
+    cost: "First 2 attempts free, then 200 credits",
     note: "Flat price after free clone trials are used.",
   },
 ];
@@ -168,7 +168,7 @@ export function formatInsufficientCreditsDetail(
 }
 
 export function creditsForGenerateText(text: string): number {
-  return Math.max(1, text.length);
+  return text.length;
 }
 
 export function creditsForDesignPreview(): number {
