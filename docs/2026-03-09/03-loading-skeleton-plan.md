@@ -134,6 +134,20 @@ Required rule:
 - [ ] Generate shows a real loading layout while voices load
 - [ ] Voices and History pages still keep their existing skeleton behavior
 
+## Repo workflow note
+
+Implement this task in the main `utter/` repo directory on a dedicated branch from `main`.
+
+Recommended branch:
+
+- `feature/loading-skeletons`
+
+After local verification:
+
+- merge the branch into `main`
+- delete the branch
+- start the next task from a fresh branch off updated `main`
+
 ## Session prompt
 
 ```md
@@ -151,6 +165,7 @@ Task:
 
 Constraints:
 - Keep this session scoped to loading skeletons only.
+- Assume implementation happens in the main `utter/` repo directory, on a dedicated branch off `main`.
 - Do not start multi-job, pricing, legal, copy, or visual-language work in this session unless a tiny supporting change is unavoidable.
 - Reuse the existing `Skeleton` component and preserve established page layouts.
 

@@ -208,6 +208,20 @@ Do not silently drop in-flight tasks during migration.
 - [ ] Cancel one active task and confirm only that task is affected
 - [ ] Confirm completed and failed tasks show the correct final state
 
+## Repo workflow note
+
+Implement this task in the main `utter/` repo directory on a dedicated branch from `main`.
+
+Recommended branch:
+
+- `feature/multi-job-workflows`
+
+After local verification:
+
+- merge the branch into `main`
+- delete the branch
+- start the next task from a fresh branch off updated `main`
+
 ## Session prompt
 
 ```md
@@ -226,6 +240,7 @@ Task:
 
 Constraints:
 - Keep this session scoped to this task only.
+- Assume implementation happens in the main `utter/` repo directory, on a dedicated branch off `main`.
 - Do not start the loading skeleton, pricing, legal, copy, or visual-language tasks in this session unless strictly required for this task to function.
 - Preserve queue-first behavior and explicit error handling.
 

@@ -196,6 +196,20 @@ That keeps design preview profitable while still inexpensive for users.
 - [ ] Generate, clone, and design pricing displays are internally consistent
 - [ ] Checkout configuration still maps to the intended pack ids and prices
 
+## Repo workflow note
+
+Implement this task in the main `utter/` repo directory on a dedicated branch from `main`.
+
+Recommended branch:
+
+- `feature/pricing-credit-rebalance`
+
+After local verification:
+
+- merge the branch into `main`
+- delete the branch
+- start the next task from a fresh branch off updated `main`
+
 ## Session prompt
 
 ```md
@@ -213,6 +227,7 @@ Task:
 
 Constraints:
 - Keep this session scoped to pricing and credits only.
+- Assume implementation happens in the main `utter/` repo directory, on a dedicated branch off `main`.
 - Do not start legal, copy, multi-job, skeleton, or visual-language implementation in this session unless a tiny supporting text change is unavoidable.
 - Preserve explicit calculations and avoid hidden fallback behavior.
 

@@ -111,14 +111,16 @@ Confirmed gaps:
 
 ## Chosen approach
 
-Do not disturb the current worktree.
+Use a single implementation working directory for execution:
 
-Create a clean worktree from `main` and branch there:
+- repo directory: `utter/`
+- base branch: `main`
+- one task branch at a time
+- merge each completed task back into `main` after local verification
 
-- worktree path: `C:\Users\Duncan\Desktop\utter-2026-03-09-multi-job`
-- branch: `feature/multi-job-workflows`
+The extra worktree that was used during planning was only to avoid disturbing an existing dirty tree while preparing the docs. It is not the intended workflow for implementing these tasks.
 
-## Why this branch first
+## Why this task first
 
 `multi-job-workflows` is the best next implementation branch because it unlocks the largest product gap:
 
@@ -140,13 +142,28 @@ Use one fresh Codex chat per task.
 
 Recommended loop:
 
-1. Open this triage doc and the next task doc in the sequence.
-2. Start a new chat with the task doc's `Session prompt`.
-3. Let Codex implement only that task.
-4. Manually test the task locally.
-5. If the task is good, move to the next task in a brand-new chat instead of continuing the old one.
+1. In the main `utter/` repo, make sure you are on updated `main`.
+2. Create a new branch for the next task only.
+3. Open this triage doc and the next task doc in the sequence.
+4. Start a new chat with the task doc's `Session prompt`.
+5. Let Codex implement only that task.
+6. Manually test the task locally.
+7. If the task is good, merge that branch back into `main`.
+8. Start the next task from a brand-new branch and a brand-new chat.
 
 This keeps context focused and avoids packing the whole March 9 scope into one session.
+
+## Branching rule for every task
+
+Use this same branch pattern for all numbered tasks:
+
+1. checkout `main`
+2. pull or otherwise confirm `main` is the latest local base you want
+3. create a task branch from `main`
+4. implement and verify only that task
+5. merge back into `main`
+6. delete the completed task branch
+7. repeat for the next numbered task
 
 ## Session queue
 
@@ -155,6 +172,10 @@ This keeps context focused and avoids packing the whole March 9 scope into one s
 Doc:
 
 - `docs/2026-03-09/01-multi-job-workflows-plan.md`
+
+Suggested branch:
+
+- `feature/multi-job-workflows`
 
 Exit gate:
 
@@ -167,6 +188,10 @@ Doc:
 
 - `docs/2026-03-09/02-design-language-graphics-plan.md`
 
+Suggested branch:
+
+- `feature/visual-language-integration`
+
 Exit gate:
 
 - landing and core workflow pages share the new graphic system
@@ -176,6 +201,10 @@ Exit gate:
 Doc:
 
 - `docs/2026-03-09/03-loading-skeleton-plan.md`
+
+Suggested branch:
+
+- `feature/loading-skeletons`
 
 Exit gate:
 
@@ -187,6 +216,10 @@ Doc:
 
 - `docs/2026-03-09/04-copy-alignment-plan.md`
 
+Suggested branch:
+
+- `chore/copy-alignment`
+
 Exit gate:
 
 - landing/app copy and `/api/languages` agree
@@ -197,6 +230,10 @@ Doc:
 
 - `docs/2026-03-09/05-privacy-and-terms-alignment-plan.md`
 
+Suggested branch:
+
+- `chore/privacy-terms-alignment`
+
 Exit gate:
 
 - legal pages match actual product behavior
@@ -206,6 +243,10 @@ Exit gate:
 Doc:
 
 - `docs/2026-03-09/06-pricing-and-credit-rebalance-plan.md`
+
+Suggested branch:
+
+- `feature/pricing-credit-rebalance`
 
 Exit gate:
 

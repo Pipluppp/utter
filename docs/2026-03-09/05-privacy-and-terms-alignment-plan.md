@@ -139,6 +139,20 @@ State clearly:
 - [ ] Terms page reflects prepaid packs rather than subscriptions
 - [ ] Terms page clearly covers rights, misuse, and service availability
 
+## Repo workflow note
+
+Implement this task in the main `utter/` repo directory on a dedicated branch from `main`.
+
+Recommended branch:
+
+- `chore/privacy-terms-alignment`
+
+After local verification:
+
+- merge the branch into `main`
+- delete the branch
+- start the next task from a fresh branch off updated `main`
+
 ## Session prompt
 
 ```md
@@ -156,6 +170,7 @@ Task:
 
 Constraints:
 - Keep this session scoped to privacy and terms only.
+- Assume implementation happens in the main `utter/` repo directory, on a dedicated branch off `main`.
 - Do not start pricing, copy, multi-job, skeleton, or visual-language implementation in this session unless a tiny supporting text change is unavoidable.
 - This is product/legal alignment, not legal invention. Stay anchored to the cited product behavior and provider docs.
 

@@ -464,6 +464,20 @@ If this task is done well, someone should be able to look at the landing page an
 - [ ] Mobile layouts still feel clean and the decorative graphics do not crowd the forms
 - [ ] The new visuals work with the existing dark theme and screenshot content
 
+## Repo workflow note
+
+Implement this task in the main `utter/` repo directory on a dedicated branch from `main`.
+
+Recommended branch:
+
+- `feature/visual-language-integration`
+
+After local verification:
+
+- merge the branch into `main`
+- delete the branch
+- start the next task from a fresh branch off updated `main`
+
 ## Session prompt
 
 ```md
@@ -482,6 +496,7 @@ Task:
 Constraints:
 - Be inspired by the `air.dev` reference, but do not copy its exact shapes or icon compositions.
 - Keep this session scoped to the visual-language task only.
+- Assume implementation happens in the main `utter/` repo directory, on a dedicated branch off `main`.
 - Do not start multi-job, skeleton, pricing, or legal work in this session unless a tiny supporting change is unavoidable.
 - Preserve usability on the app pages; decorative elements must not interfere with task completion.
 

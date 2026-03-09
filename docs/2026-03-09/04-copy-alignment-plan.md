@@ -126,6 +126,20 @@ Recommended shape:
 - [ ] Generate, Clone, and Design copy all match actual workflow behavior
 - [ ] `/api/languages` output matches the copy shown in the UI
 
+## Repo workflow note
+
+Implement this task in the main `utter/` repo directory on a dedicated branch from `main`.
+
+Recommended branch:
+
+- `chore/copy-alignment`
+
+After local verification:
+
+- merge the branch into `main`
+- delete the branch
+- start the next task from a fresh branch off updated `main`
+
 ## Session prompt
 
 ```md
@@ -143,6 +157,7 @@ Task:
 
 Constraints:
 - Keep this session scoped to copy and related payload alignment only.
+- Assume implementation happens in the main `utter/` repo directory, on a dedicated branch off `main`.
 - Do not start pricing, legal, multi-job, skeleton, or visual-language implementation in this session unless a tiny supporting text change is unavoidable.
 - Preserve the existing product voice while making claims accurate.
 

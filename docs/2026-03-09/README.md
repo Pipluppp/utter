@@ -24,3 +24,16 @@ This folder captures the March 9 triage and the next implementation plans for th
 
 - Branch: `feature/multi-job-workflows`
 - Reason: the highest product gap is still task orchestration and task visibility. Current code still blocks concurrent `generate` jobs, tracks only one task per type on the frontend, and has no `GET /api/tasks` feed for a real job center.
+
+## Working style
+
+Use a single repo working directory for implementation:
+
+- main repo directory: `utter/`
+- branch from `main` for one task
+- implement only that task on that branch
+- manually verify locally
+- merge back into `main`
+- then create the next task branch from updated `main`
+
+Do not rely on multiple long-lived worktrees for the execution phase unless there is a specific reason to do so later.
