@@ -2,10 +2,17 @@ import { Link } from 'react-router-dom'
 import { FeatureEntryLink } from '../../app/FeatureEntryLink'
 import { TextReveal } from '../../components/animation/TextReveal'
 import { buttonStyles } from '../../components/ui/Button'
+import { SVGBlobs } from '../../components/ui/SVGBlobs'
 
 export function LandingHero() {
   return (
-    <section className="py-6 md:py-14">
+    <section className="relative isolate py-6 md:py-14">
+      <div className="pointer-events-none absolute -left-[18%] top-0 -z-10 w-[56%] overflow-hidden opacity-32 [mask-image:linear-gradient(to_right,#000_0%,#000_50%,transparent_100%)] select-none">
+        <SVGBlobs density="sparse" className="w-full" />
+      </div>
+      <div className="pointer-events-none absolute -right-[18%] top-0 -z-10 w-[56%] overflow-hidden opacity-32 [mask-image:linear-gradient(to_left,#000_0%,#000_50%,transparent_100%)] select-none">
+        <SVGBlobs density="sparse" className="w-full" />
+      </div>
       <div className="mx-auto max-w-4xl text-center">
         <TextReveal
           lines={['Clone voices.', 'Design new ones.', 'Generate speech.']}

@@ -1,5 +1,6 @@
 import { FeatureEntryLink } from '../../app/FeatureEntryLink'
 import { buttonStyles } from '../../components/ui/Button'
+import { SVGBlobs } from '../../components/ui/SVGBlobs'
 import { cn } from '../../lib/cn'
 
 function Bullet({ children }: { children: React.ReactNode }) {
@@ -103,10 +104,16 @@ export function FeaturesSection() {
     <section
       id="features"
       className={cn(
-        'relative left-1/2 right-1/2 -mx-[50vw] w-screen',
+        'relative isolate left-1/2 right-1/2 -mx-[50vw] w-screen',
         'scroll-mt-24 -mt-px border-t border-border/60',
       )}
     >
+      <div className="pointer-events-none absolute -left-[16%] top-8 -z-10 w-[52%] overflow-hidden opacity-28 [mask-image:linear-gradient(to_right,#000_0%,#000_48%,transparent_100%)] select-none">
+        <SVGBlobs density="sparse" className="w-full" />
+      </div>
+      <div className="pointer-events-none absolute -right-[16%] top-8 -z-10 w-[52%] overflow-hidden opacity-28 [mask-image:linear-gradient(to_left,#000_0%,#000_48%,transparent_100%)] select-none">
+        <SVGBlobs density="sparse" className="w-full" />
+      </div>
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-12 md:px-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>

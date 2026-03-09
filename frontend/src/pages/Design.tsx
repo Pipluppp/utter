@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { WaveformPlayer } from '../components/audio/WaveformPlayer'
 import { useTasks } from '../components/tasks/TaskProvider'
 import { Button } from '../components/ui/Button'
+import { GridArtSurface } from '../components/ui/GridArt'
 import { InfoTip } from '../components/ui/InfoTip'
 import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
@@ -104,6 +105,7 @@ export function DesignPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [isSubmittingPreview, setIsSubmittingPreview] = useState(false)
+  const [sweepNonce, setSweepNonce] = useState(0)
   const [isSavingVoice, setIsSavingVoice] = useState(false)
   const [savedVoiceId, setSavedVoiceId] = useState<string | null>(null)
   const [savedVoiceName, setSavedVoiceName] = useState<string | null>(null)
@@ -301,6 +303,7 @@ export function DesignPage() {
     }
 
     setIsSubmittingPreview(true)
+    setSweepNonce((value) => value + 1)
 
     try {
       const snapshot: DesignFormState = { name, language, text, instruct }
@@ -368,7 +371,7 @@ export function DesignPage() {
   ).length
 
   return (
-    <div className="space-y-8">
+    <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
       <div className="flex items-center justify-center gap-2">
         <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Design
@@ -569,6 +572,6 @@ export function DesignPage() {
           />
         </div>
       ) : null}
-    </div>
+    </GridArtSurface>
   )
 }
