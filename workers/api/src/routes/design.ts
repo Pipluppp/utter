@@ -344,6 +344,13 @@ designRoutes.post("/voices/design/preview", async (c) => {
   });
 
   if (charge.error || !charge.row) {
+    console.error("design_preview.debit_failed", {
+      user_id: userId,
+      task_id: taskId,
+      operation: "design_preview",
+      debit_amount: creditsToDebit,
+      error: charge.error?.message ?? "missing trial_or_debit row",
+    });
     return jsonDetail("Failed to debit credits.", 500);
   }
 

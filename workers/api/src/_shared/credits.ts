@@ -5,8 +5,8 @@ export const CREDIT_UNIT_LABEL = "1 credit = 1 character";
 
 export const DESIGN_TRIAL_LIMIT = 2;
 export const CLONE_TRIAL_LIMIT = 2;
-export const DESIGN_PREVIEW_FLAT_CREDITS = 2400;
-export const CLONE_FINALIZE_FLAT_CREDITS = 200;
+export const DESIGN_PREVIEW_FLAT_CREDITS = 5000;
+export const CLONE_FINALIZE_FLAT_CREDITS = 1000;
 
 export type PrepaidPackId = "pack_30k" | "pack_120k";
 
@@ -115,12 +115,12 @@ export const CREDIT_RATE_CARD: CreditRateCardRow[] = [
   },
   {
     action: "Voice design preview",
-    cost: "First 2 attempts free, then 2,400 credits",
+    cost: "First 2 attempts free, then 5,000 credits",
     note: "Flat price after free design trials are used.",
   },
   {
     action: "Voice clone",
-    cost: "First 2 attempts free, then 200 credits",
+    cost: "First 2 attempts free, then 1,000 credits",
     note: "Flat price after free clone trials are used.",
   },
 ];

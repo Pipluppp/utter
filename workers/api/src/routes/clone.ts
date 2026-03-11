@@ -182,6 +182,13 @@ cloneRoutes.post("/clone/finalize", async (c) => {
   });
 
   if (charge.error || !charge.row) {
+    console.error("clone.debit_failed", {
+      user_id: userId,
+      voice_id: voiceId,
+      operation: "clone",
+      debit_amount: creditsToDebit,
+      error: charge.error?.message ?? "missing trial_or_debit row",
+    });
     return jsonDetail("Failed to debit credits.", 500);
   }
 

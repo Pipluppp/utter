@@ -574,6 +574,14 @@ generateRoutes.post("/generate", async (c) => {
   });
 
   if (debit.error || !debit.row) {
+    console.error("generate.debit_failed", {
+      user_id: userId,
+      generation_id: generationId,
+      voice_id: voiceId,
+      operation: "generate",
+      debit_amount: creditsToDebit,
+      error: debit.error?.message ?? "missing credit_apply_event row",
+    });
     await admin
       .from("generations")
       .delete()
