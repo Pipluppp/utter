@@ -1,7 +1,7 @@
-# Qwen TTS Non-Realtime Integration Guide (Custom Voices: VC/VD)
+# Qwen Voice Integration Guide (TTS + ASR)
 
-> Last verified against Alibaba Cloud docs: February 11, 2026
-> Scope: Non-realtime only (no live chunk playback, no WebSocket implementation)
+> Last verified against Alibaba Cloud docs: March 12, 2026
+> Scope: Non-realtime Qwen TTS plus short-form ASR guidance for voice-clone reference text generation
 > Target synthesis models: `qwen3-tts-vc-2026-01-22`, `qwen3-tts-vd-2026-01-26`
 
 ## 1. Purpose
@@ -14,6 +14,7 @@ It is designed to be self-contained for developers implementing:
 2. Voice design management (create/list/query/delete).
 3. Non-streaming speech synthesis using custom voices.
 4. Durable storage handoff from temporary vendor audio URL.
+5. Short-form ASR model selection for voice-clone upload/record flows.
 
 ## 2. Scope decisions (fixed)
 
@@ -23,12 +24,14 @@ In scope:
 - HTTP non-streaming synthesis API (`/services/aigc/multimodal-generation/generation`).
 - Custom voice model compatibility enforcement.
 - Backend job-style flow: submit -> process -> store -> complete.
+- Short-form ASR model selection and implementation guidance for reference-text generation.
 
 Out of scope:
 
 - Realtime synthesis protocol details.
 - Live chunk playback UX.
 - SSE/WebSocket frontend integration.
+- Full realtime ASR implementation details for live captions.
 
 ## 3. Non-streaming means
 
@@ -727,3 +730,143 @@ Inference: for cost tracking, store provider `usage` payload per request and use
 - Speech synthesis API reference: https://www.alibabacloud.com/help/en/model-studio/qwen-tts-api
 - Voice cloning API reference: https://www.alibabacloud.com/help/en/model-studio/qwen-tts-voice-cloning
 - Voice design API reference: https://www.alibabacloud.com/help/en/model-studio/qwen-tts-voice-design
+
+## 17. Qwen ASR for voice-clone reference text
+
+This section covers only the speech-recognition part of the voice-cloning flow:
+
+1. User uploads or records reference audio.
+2. The app transcribes that audio.
+3. The transcript is stored as the reference text passed to Qwen voice enrollment.
+
+### 17.1 Available ASR model families
+
+Alibaba currently exposes three relevant Qwen ASR lanes:
+
+| Model family | Best use | Transport | Core limits | Notes |
+|---|---|---|---|---|
+| `qwen3-asr-flash`, `qwen3-asr-flash-2026-02-10` | Short synchronous transcription | HTTP / OpenAI-compatible HTTP | <= 5 minutes, <= 10 MB | Best fit for voice-clone record/upload flows |
+| `qwen3-asr-flash-filetrans`, `qwen3-asr-flash-filetrans-2025-11-17` | Long asynchronous transcription | HTTP async task API | <= 12 hours, <= 2 GB | Useful for meetings/interviews, not needed for clone reference audio |
+| `qwen3-asr-flash-realtime`, `qwen3-asr-flash-realtime-2026-02-10` | Live incremental transcription | WebSocket / SDK | realtime PCM or opus stream, mono, 8/16 kHz | Phase-2 option only if we want live transcript while recording |
+
+### 17.2 Region decision for this repo
+
+Utter should stay on the international deployment lane already used by Qwen TTS.
+
+For ASR that means:
+
+- Region: International
+- Endpoint and data storage region: Singapore
+- Compute: globally scheduled outside Chinese mainland
+- Credential requirement: use a Singapore-region DashScope / Model Studio API key
+
+Relevant endpoints:
+
+| Purpose | International endpoint |
+|---|---|
+| DashScope native API root | `https://dashscope-intl.aliyuncs.com/api/v1` |
+| OpenAI-compatible API root | `https://dashscope-intl.aliyuncs.com/compatible-mode/v1` |
+| Realtime ASR WebSocket | `wss://dashscope-intl.aliyuncs.com/api-ws/v1/realtime` |
+
+### 17.3 Final model decisions for the clone record flow
+
+Use these decisions unless product requirements change:
+
+1. Phase 1 batch ASR model: `qwen3-asr-flash-2026-02-10`
+2. Stable-alias fallback: `qwen3-asr-flash`
+3. Do not use `qwen3-asr-flash-filetrans` for clone reference audio
+4. Do not use realtime ASR in the initial migration
+
+Reasoning:
+
+- The current clone UX only needs a final transcript before `/api/clone/finalize`.
+- `qwen3-asr-flash` is designed for short audio and returns results synchronously.
+- `filetrans` adds async task orchestration we do not need for a short reference clip.
+- `realtime` adds WebSocket/session complexity, costs more per second, and still would not remove the need for a final transcript check.
+
+### 17.4 Product constraints that should follow from those model choices
+
+The ASR choice cannot be made in isolation from Qwen voice cloning itself.
+
+Recommended product constraints for the clone flow:
+
+- Target reference length: 10-20 seconds
+- Hard product cap: 60 seconds
+- Max file size: 10 MB
+- Format: mono WAV/MP3/M4A
+- Recording should preserve clone-quality sample rate (`>= 24 kHz`) for the saved reference file
+
+Important implementation consequence:
+
+- The current frontend recorder writes `16 kHz` mono WAV to satisfy the old Mistral path.
+- That is acceptable for ASR, but it is below the sample-rate guidance already documented for Qwen voice cloning.
+- The recorder should therefore save higher-rate mono audio for cloning quality, then reuse that same file for batch ASR.
+
+Because the clone product should stay under 60 seconds anyway, short-form batch ASR remains sufficient even after this correction.
+
+### 17.5 API calling mode recommendation for Workers
+
+For the API Worker, prefer a simple HTTP `fetch` call rather than a heavyweight SDK.
+
+Recommended Phase 1 approach:
+
+- Keep Qwen TTS on the existing DashScope native endpoints.
+- Call Qwen ASR through the OpenAI-compatible HTTP API for the transcription route.
+- Send the recorded/uploaded clip as a Data URL (`data:audio/...;base64,...`) when it is within the product limits above.
+
+Why this is the preferred implementation:
+
+- It is explicitly documented for `qwen3-asr-flash`.
+- It works well in Cloudflare Workers using plain `fetch`.
+- It avoids introducing temporary public media URLs purely for transcription.
+- Once the clone flow is capped to 60 seconds, the encoded payload still fits the ASR request limits comfortably.
+
+Representative request shape:
+
+```json
+{
+  "model": "qwen3-asr-flash-2026-02-10",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_audio",
+          "input_audio": {
+            "data": "data:audio/wav;base64,<base64_audio>"
+          }
+        }
+      ]
+    }
+  ],
+  "stream": false,
+  "asr_options": {
+    "enable_itn": false
+  }
+}
+```
+
+### 17.6 Realtime ASR decision
+
+`qwen3-asr-flash-realtime-2026-02-10` is appropriate only if the product explicitly needs a live draft transcript while the user is still speaking.
+
+Reasons it is not the initial migration target:
+
+- Input must be a realtime PCM/opus stream, mono, 8 or 16 kHz.
+- That means the browser would need a dual-path recorder:
+  - a clone-quality audio file for final upload
+  - a separate downsampled 16 kHz stream for live captions
+- ITN is not supported.
+- The user still needs an editable final transcript before voice enrollment.
+
+Conclusion:
+
+- Phase 1: batch-only migration to `qwen3-asr-flash-2026-02-10`
+- Phase 2, only if needed: add live draft transcription with `qwen3-asr-flash-realtime-2026-02-10`, but keep batch `qwen3-asr-flash` as the source of truth for the final transcript
+
+### 17.7 ASR-specific official references
+
+- Audio file recognition: https://www.alibabacloud.com/help/en/model-studio/qwen-asr-api-reference
+- Realtime speech recognition: https://www.alibabacloud.com/help/en/model-studio/qwen-asr-realtime-api
+- Model list and versions: https://www.alibabacloud.com/help/en/model-studio/models
+- Model pricing: https://www.alibabacloud.com/help/en/model-studio/model-pricing
