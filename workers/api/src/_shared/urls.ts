@@ -17,7 +17,7 @@ function resolveLocalPublicOrigin(): string {
   const candidates = [
     envGet("SUPABASE_PUBLIC_URL"),
     envGet("SUPABASE_URL"),
-    "http://127.0.0.1:54321",
+    "http://127.0.0.1:55421",
   ]
 
   for (const candidate of candidates) {
@@ -28,7 +28,7 @@ function resolveLocalPublicOrigin(): string {
     return parsed.origin
   }
 
-  return "http://127.0.0.1:54321"
+  return "http://127.0.0.1:55421"
 }
 
 export function resolveStorageUrl(req: Request, signedUrl: string): string {

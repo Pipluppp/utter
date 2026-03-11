@@ -17,11 +17,12 @@ Deno.test("GET /languages returns language list with defaults", async () => {
   assertEquals(typeof body.capabilities.max_text_chars, "number");
 });
 
-Deno.test("GET /languages includes transcription config", async () => {
+Deno.test("GET /languages includes Qwen transcription config", async () => {
   const res = await apiPublicFetch("/languages");
-  const body = await res.json();
+  assertEquals(res.status, 200);
 
-  assertEquals(body.transcription.provider, "mistral");
+  const body = await res.json();
+  assertEquals(body.transcription.provider, "qwen");
   assertEquals(typeof body.transcription.enabled, "boolean");
   assertEquals(typeof body.transcription.model, "string");
 });

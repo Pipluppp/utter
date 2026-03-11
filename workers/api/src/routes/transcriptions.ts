@@ -1,15 +1,15 @@
-import { Hono } from "hono"
+import { Hono } from "hono";
 
-import { requireUser } from "../_shared/auth.ts"
+import { requireUser } from "../_shared/auth.ts";
 import {
-  MistralUpstreamError,
-  TranscriptionUnavailableError,
   getTranscriptionConfig,
+  TranscriptionUnavailableError,
+  TranscriptionUpstreamError,
   transcribeAudioFile,
-} from "../_shared/mistral.ts"
+} from "../_shared/transcription/provider.ts";
 
-const ALLOWED_AUDIO_EXTENSIONS = new Set([".wav", ".mp3", ".m4a"])
-const MAX_AUDIO_BYTES = 50 * 1024 * 1024
+const ALLOWED_AUDIO_EXTENSIONS = new Set([".wav", ".mp3", ".m4a"]);
+const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 
 function jsonDetail(detail: string, status: number) {
   return new Response(JSON.stringify({ detail }), {
@@ -45,16 +45,18 @@ transcriptionsRoutes.post("/transcriptions", async (c) => {
   }
 
   if (!getTranscriptionConfig().enabled) {
-    return jsonDetail("Transcription is not configured on this server.", 503)
+    return jsonDetail("Transcription is not configured on this server.", 503);
   }
 
-  const form = await c.req.formData().catch(() => null)
-  if (!form) return jsonDetail("Invalid form data.", 400)
+  const form = await c.req.formData().catch(() => null);
+  if (!form) return jsonDetail("Invalid form data.", 400);
 
-  const audio = form.get("audio")
-  if (!(audio instanceof File)) return jsonDetail("Audio file is required", 400)
-  if (!audio.size) return jsonDetail("Audio file is required", 400)
-  if (audio.size > MAX_AUDIO_BYTES) return jsonDetail("File too large (max 50MB)", 400)
+  const audio = form.get("audio");
+  if (!(audio instanceof File)) return jsonDetail("Audio file is required", 400);
+  if (!audio.size) return jsonDetail("Audio file is required", 400);
+  if (audio.size > MAX_AUDIO_BYTES) {
+    return jsonDetail("File too large (max 10MB)", 400);
+  }
 
   const ext = extOf(audio.name || "audio.wav")
   if (!ALLOWED_AUDIO_EXTENSIONS.has(ext)) {
@@ -74,7 +76,7 @@ transcriptionsRoutes.post("/transcriptions", async (c) => {
     if (e instanceof TranscriptionUnavailableError) {
       return jsonDetail(e.message, 503)
     }
-    if (e instanceof MistralUpstreamError) {
+    if (e instanceof TranscriptionUpstreamError) {
       return jsonDetail(`Transcription request failed: ${e.message}`, 502)
     }
     return jsonDetail(

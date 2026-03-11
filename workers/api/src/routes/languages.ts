@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getTranscriptionConfig } from "../_shared/mistral.ts";
+import { getTranscriptionConfig } from "../_shared/transcription/provider.ts";
 import {
   getTtsCapabilities,
   getTtsProviderMode,
@@ -8,6 +8,7 @@ import {
 export const languagesRoutes = new Hono();
 
 const QWEN_SUPPORTED_LANGUAGES = [
+  "Auto",
   "English",
   "Chinese",
   "Japanese",
@@ -29,7 +30,7 @@ languagesRoutes.get("/languages", (c) => {
 
     return c.json({
       languages: [...QWEN_SUPPORTED_LANGUAGES],
-      default: "English",
+      default: "Auto",
       provider,
       capabilities,
       transcription: {

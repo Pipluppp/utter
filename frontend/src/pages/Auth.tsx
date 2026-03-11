@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthState } from '../app/auth/AuthStateProvider'
 import { getSafeReturnTo } from '../app/navigation'
-import { GridArt } from '../components/ui/GridArt'
 import { Button } from '../components/ui/Button'
+import { GridArt } from '../components/ui/GridArt'
 import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
 import { Message } from '../components/ui/Message'
@@ -211,7 +211,7 @@ export function AuthPage() {
                 Magic link sent - check your{' '}
                 {isLocalHost ? (
                   <a
-                    href="http://localhost:54324"
+                    href="http://localhost:55424"
                     target="_blank"
                     rel="noreferrer"
                     className="underline underline-offset-4 hover:text-foreground"

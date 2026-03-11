@@ -230,14 +230,6 @@ Recommended payload shape:
   "model": "qwen3-asr-flash-2026-02-10",
   "messages": [
     {
-      "role": "system",
-      "content": [
-        {
-          "text": ""
-        }
-      ]
-    },
-    {
       "role": "user",
       "content": [
         {

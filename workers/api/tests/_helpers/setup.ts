@@ -1,7 +1,7 @@
 /** Test utilities: user creation, auth, API fetch helpers */
 
 // Local Supabase development keys (standard across all local installs)
-export const SUPABASE_URL = "http://127.0.0.1:54321";
+export const SUPABASE_URL = "http://127.0.0.1:55421";
 export const ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
 export const SERVICE_ROLE_KEY =
@@ -108,4 +108,21 @@ export function apiPublicFetch(
   init?: RequestInit,
 ): Promise<Response> {
   return apiFetch(path, null, init);
+}
+
+export async function isLocalSupabaseAvailable(): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2_000);
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/health`, {
+      signal: controller.signal,
+    });
+    await res.body?.cancel();
+    return res.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
 }

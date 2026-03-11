@@ -12,9 +12,12 @@ import { Textarea } from '../components/ui/Textarea'
 import { getUtterDemo } from '../content/utterDemo'
 import { apiForm, apiJson } from '../lib/api'
 import {
+  concatFloat32Chunks,
   createWavHeaderPcm16Mono,
-  downsampleFloat32,
   float32ToPcm16leBytes,
+  getAudioDurationSeconds,
+  getTargetRecordingSampleRate,
+  resampleFloat32Linear,
   rmsLevel,
 } from '../lib/audio'
 import { cn } from '../lib/cn'
@@ -23,7 +26,9 @@ import { formatElapsed } from '../lib/time'
 import type { CloneResponse } from '../lib/types'
 import { useLanguages } from './hooks'
 
-const MAX_FILE_BYTES = 50 * 1024 * 1024
+const MAX_FILE_BYTES = 10 * 1024 * 1024
+const MAX_REFERENCE_SECONDS = 60
+const RECOMMENDED_REFERENCE_SECONDS = '10-20'
 const ALLOWED_EXTS = new Set(['.wav', '.mp3', '.m4a'])
 
 function extOf(name: string) {
@@ -49,6 +54,7 @@ export function ClonePage() {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const firstModalActionRef = useRef<HTMLAnchorElement | null>(null)
   const loadedDemoRef = useRef<string | null>(null)
+  const recordingActiveRef = useRef(false)
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const [audioMode, setAudioMode] = useState<'upload' | 'record'>('upload')
@@ -65,8 +71,9 @@ export function ClonePage() {
   const audioCtxRef = useRef<AudioContext | null>(null)
   const processorRef = useRef<ScriptProcessorNode | null>(null)
   const workletRef = useRef<AudioWorkletNode | null>(null)
-  const pcmChunksRef = useRef<ArrayBuffer[]>([])
-  const pcmBytesRef = useRef(0)
+  const pcmChunksRef = useRef<Float32Array[]>([])
+  const pcmSamplesRef = useRef(0)
+  const captureSampleRateRef = useRef(24000)
   const recordTimerRef = useRef<number | null>(null)
   const [recordedPreviewUrl, setRecordedPreviewUrl] = useState<string | null>(
     null,
@@ -104,7 +111,7 @@ export function ClonePage() {
 
   const fileInfo = useMemo(() => {
     if (!file) return null
-    return `${file.name} • ${(file.size / (1024 * 1024)).toFixed(1)} MB`
+    return `${file.name} - ${(file.size / (1024 * 1024)).toFixed(1)} MB`
   }, [file])
 
   const recordTimeLabel = useMemo(() => {
@@ -148,26 +155,34 @@ export function ClonePage() {
       const stream = streamRef.current
       streamRef.current = null
       if (stream) {
-        for (const t of stream.getTracks()) t.stop()
+        for (const track of stream.getTracks()) track.stop()
       }
     }
   }, [])
 
-  const validateAndSetFile = useCallback((next: File | null) => {
+  const validateAndSetFile = useCallback(async (next: File | null) => {
     setFileError(null)
     setFile(null)
-    if (!next) return
+    if (!next) return false
 
     const ext = extOf(next.name)
     if (!ALLOWED_EXTS.has(ext)) {
       setFileError('File must be WAV, MP3, or M4A.')
-      return
+      return false
     }
     if (next.size > MAX_FILE_BYTES) {
-      setFileError('File too large (max 50MB).')
-      return
+      setFileError('Reference audio must be 10MB or smaller.')
+      return false
     }
+
+    const duration = await getAudioDurationSeconds(next).catch(() => null)
+    if (duration !== null && duration > MAX_REFERENCE_SECONDS + 0.25) {
+      setFileError('Reference audio must be 60 seconds or shorter.')
+      return false
+    }
+
     setFile(next)
+    return true
   }, [])
 
   async function onTranscribeAudio(
@@ -257,7 +272,7 @@ export function ClonePage() {
     const stream = streamRef.current
     streamRef.current = null
     if (stream) {
-      for (const t of stream.getTracks()) t.stop()
+      for (const track of stream.getTracks()) track.stop()
     }
   }
 
@@ -266,11 +281,11 @@ export function ClonePage() {
     setRecordingError(null)
     setFileError(null)
 
-    if (recording) return
+    if (recordingActiveRef.current) return
 
     setRecordSeconds(0)
     pcmChunksRef.current = []
-    pcmBytesRef.current = 0
+    pcmSamplesRef.current = 0
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -278,6 +293,7 @@ export function ClonePage() {
 
       const audioCtx = new AudioContext()
       audioCtxRef.current = audioCtx
+      captureSampleRateRef.current = audioCtx.sampleRate
       try {
         await audioCtx.resume()
       } catch {}
@@ -291,11 +307,10 @@ export function ClonePage() {
 
         setMicLevel(rmsLevel(input))
 
-        const down = downsampleFloat32(input, audioCtx.sampleRate, 16000)
-        const pcmBytes = float32ToPcm16leBytes(down)
-
-        pcmChunksRef.current.push(pcmBytes.buffer)
-        pcmBytesRef.current += pcmBytes.byteLength
+        const copy = new Float32Array(input.length)
+        copy.set(input)
+        pcmChunksRef.current.push(copy)
+        pcmSamplesRef.current += copy.length
       }
 
       let captureNode: AudioNode | null = null
@@ -339,42 +354,74 @@ export function ClonePage() {
       captureNode.connect(zeroGain)
       zeroGain.connect(audioCtx.destination)
 
+      recordingActiveRef.current = true
       setRecording(true)
       stopRecordingTimer()
       recordTimerRef.current = window.setInterval(() => {
-        setRecordSeconds((s) => s + 1)
+        setRecordSeconds((seconds) => {
+          const next = Math.min(MAX_REFERENCE_SECONDS, seconds + 1)
+          if (next >= MAX_REFERENCE_SECONDS && recordingActiveRef.current) {
+            window.setTimeout(() => {
+              void stopRecording()
+            }, 0)
+          }
+          return next
+        })
       }, 1000)
     } catch (e) {
       await cleanupRecording()
       setRecordingError(
         e instanceof Error ? e.message : 'Failed to access microphone.',
       )
+      recordingActiveRef.current = false
       setRecording(false)
     }
   }
 
   async function stopRecording() {
-    if (!recording) return
+    if (!recordingActiveRef.current) return
 
+    recordingActiveRef.current = false
     setRecording(false)
     stopRecordingTimer()
     await cleanupRecording()
 
-    const pcmByteLength = pcmBytesRef.current
-    if (pcmByteLength <= 0) {
+    const pcmSampleLength = pcmSamplesRef.current
+    if (pcmSampleLength <= 0) {
       setRecordingError('No audio captured.')
       return
     }
 
-    const header = createWavHeaderPcm16Mono(pcmByteLength, 16000)
-    const blob = new Blob([header, ...pcmChunksRef.current], {
+    const mergedPcm = concatFloat32Chunks(pcmChunksRef.current, pcmSampleLength)
+    const targetSampleRate = getTargetRecordingSampleRate(
+      captureSampleRateRef.current,
+    )
+    const normalizedPcm = resampleFloat32Linear(
+      mergedPcm,
+      captureSampleRateRef.current,
+      targetSampleRate,
+    )
+    const pcmBytes = float32ToPcm16leBytes(normalizedPcm)
+    const header = createWavHeaderPcm16Mono(
+      pcmBytes.byteLength,
+      targetSampleRate,
+    )
+    const blob = new Blob([header, pcmBytes], {
       type: 'audio/wav',
     })
     const nextFile = new File([blob], `recording-${Date.now()}.wav`, {
       type: 'audio/wav',
     })
 
-    validateAndSetFile(nextFile)
+    if (nextFile.size > MAX_FILE_BYTES) {
+      setRecordingError(
+        'Recorded audio exceeded the 10MB limit. Try a shorter clip.',
+      )
+      return
+    }
+
+    const accepted = await validateAndSetFile(nextFile)
+    if (!accepted) return
     await onTranscribeAudio(nextFile, { errorTarget: 'record' })
   }
 
@@ -386,8 +433,9 @@ export function ClonePage() {
         fetch('/static/examples/audio_text.txt'),
         fetch('/static/examples/audio.wav'),
       ])
-      if (!textRes.ok || !audioRes.ok)
+      if (!textRes.ok || !audioRes.ok) {
         throw new Error('Failed to load example.')
+      }
       const exampleText = await textRes.text()
       const audioBlob = await audioRes.blob()
       const exampleFile = new File([audioBlob], 'audio.wav', {
@@ -395,7 +443,7 @@ export function ClonePage() {
       })
       setName('ASMR')
       setTranscript(exampleText.trim())
-      validateAndSetFile(exampleFile)
+      await validateAndSetFile(exampleFile)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load example.')
     }
@@ -416,7 +464,7 @@ export function ClonePage() {
 
     void (async () => {
       try {
-        const [audioRes, transcript] = await Promise.all([
+        const [audioRes, transcriptText] = await Promise.all([
           fetch(audioUrl),
           demo.transcriptUrl
             ? fetchTextUtf8(demo.transcriptUrl)
@@ -431,8 +479,8 @@ export function ClonePage() {
         })
 
         setName(demo.suggestedCloneName ?? `${demo.title} (demo)`)
-        setTranscript(transcript.trim())
-        validateAndSetFile(nextFile)
+        setTranscript(transcriptText.trim())
+        await validateAndSetFile(nextFile)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load demo.')
       }
@@ -450,6 +498,10 @@ export function ClonePage() {
     }
     if (!file) {
       setError('Please select an audio file.')
+      return
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      setError('Reference audio must be 10MB or smaller.')
       return
     }
     if (transcriptRequired && transcript.trim().length < 10) {
@@ -536,13 +588,17 @@ export function ClonePage() {
         <InfoTip align="end" label="Clone tips">
           <div className="space-y-2">
             <div>
-              Upload WAV/MP3/M4A (max 50MB) or record 3+ seconds of clean
-              speech.
+              Upload WAV/MP3/M4A or record a short, clean, single-speaker
+              sample.
+            </div>
+            <div>
+              Best results come from about {RECOMMENDED_REFERENCE_SECONDS}{' '}
+              seconds. The hard cap is {MAX_REFERENCE_SECONDS} seconds and 10MB.
             </div>
             {transcriptionEnabled ? (
               <div>
-                Record mode: stopping capture auto-runs transcription and fills
-                the transcript box.
+                Record mode saves a clone-quality WAV and auto-transcribes after
+                you stop.
               </div>
             ) : (
               <div>
@@ -551,8 +607,8 @@ export function ClonePage() {
             )}
             <div>
               {transcriptionEnabled
-                ? 'Upload mode: use "Transcribe" to create a draft transcript, then edit it to match the audio.'
-                : 'Upload mode: type/paste the transcript manually.'}
+                ? 'Upload mode: use "Transcribe" to create a draft transcript, then edit it until it matches the speech exactly.'
+                : 'Upload mode: type or paste the transcript manually.'}
             </div>
             <div>
               {transcriptRequired
@@ -612,6 +668,11 @@ export function ClonePage() {
             <div className="text-xs text-faint">{recordTimeLabel}</div>
           </div>
 
+          <div className="text-xs text-faint">
+            Aim for {RECOMMENDED_REFERENCE_SECONDS} seconds. Recording stops
+            automatically at {MAX_REFERENCE_SECONDS} seconds.
+          </div>
+
           <div className="h-2 w-full overflow-hidden border border-border bg-muted">
             <div
               className="h-full bg-foreground transition-[width]"
@@ -643,6 +704,8 @@ export function ClonePage() {
               variant="secondary"
               onClick={() => {
                 void cleanupRecording()
+                recordingActiveRef.current = false
+                setRecording(false)
                 setRecordingError(null)
                 setTranscript('')
                 setRecordSeconds(0)
@@ -680,7 +743,7 @@ export function ClonePage() {
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault()
-              validateAndSetFile(e.dataTransfer.files?.[0] ?? null)
+              void validateAndSetFile(e.dataTransfer.files?.[0] ?? null)
             }}
             onClick={() => inputRef.current?.click()}
             aria-label="Select audio file"
@@ -690,13 +753,15 @@ export function ClonePage() {
               type="file"
               className="hidden"
               accept=".wav,.mp3,.m4a"
-              onChange={(e) => validateAndSetFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                void validateAndSetFile(e.target.files?.[0] ?? null)
+              }}
             />
             <div className="text-sm text-muted-foreground">
               Drag &amp; drop audio here, or click to browse.
             </div>
             <div className="mt-2 text-xs text-faint">
-              WAV / MP3 / M4A • max 50MB
+              WAV / MP3 / M4A - max 10MB - 60s max
             </div>
             {fileInfo ? (
               <div className="mt-3 text-xs text-foreground">{fileInfo}</div>
@@ -739,7 +804,7 @@ export function ClonePage() {
             autoComplete="off"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Duncan (calm, close-mic)…"
+            placeholder="e.g. Duncan (calm, close-mic)..."
           />
         </div>
 
@@ -750,7 +815,7 @@ export function ClonePage() {
             name="transcript"
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
-            placeholder="Paste the transcript of the reference audio…"
+            placeholder="Paste the transcript of the reference audio..."
           />
           <div className="mt-2 flex items-center justify-between text-xs text-faint">
             <span>{transcript.length} chars</span>
@@ -783,7 +848,7 @@ export function ClonePage() {
             Try Example Voice
           </Button>
           <Button type="submit" block disabled={submitting}>
-            {submitting ? `Cloning… ${elapsedLabel}` : 'Clone Voice'}
+            {submitting ? `Cloning... ${elapsedLabel}` : 'Clone Voice'}
           </Button>
         </div>
       </form>
@@ -827,7 +892,7 @@ export function ClonePage() {
                 to={`/generate?voice=${created.id}`}
                 className="inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
-                Go to Generate →
+                Go to Generate -&gt;
               </NavLink>
               <Button variant="secondary" type="button" onClick={reset}>
                 Clone Another Voice

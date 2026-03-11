@@ -308,12 +308,12 @@ export function AccountAuthPage() {
                 <div className="border border-border bg-subtle p-3 text-sm text-muted-foreground shadow-elevated">
                   {isLocalHost ? (
                     <a
-                      href="http://localhost:54324"
+                      href="http://localhost:55424"
                       target="_blank"
                       rel="noreferrer"
                       className="underline underline-offset-4 hover:text-foreground"
                     >
-                      Open Inbucket → http://localhost:54324
+                      Open Inbucket → http://localhost:55424
                     </a>
                   ) : (
                     'Open your email to continue.'

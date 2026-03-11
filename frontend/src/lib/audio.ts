@@ -1,33 +1,43 @@
-export function downsampleFloat32(
+export function resampleFloat32Linear(
   buffer: Float32Array,
   inputSampleRate: number,
   outputSampleRate: number,
 ) {
   if (outputSampleRate === inputSampleRate) return buffer
-  if (outputSampleRate > inputSampleRate) {
-    throw new Error(
-      'downsampleFloat32: outputSampleRate must be <= inputSampleRate',
-    )
+  if (inputSampleRate <= 0 || outputSampleRate <= 0) {
+    throw new Error('resampleFloat32Linear: sample rates must be positive')
   }
 
   const ratio = inputSampleRate / outputSampleRate
-  const newLength = Math.round(buffer.length / ratio)
+  const newLength = Math.max(1, Math.round(buffer.length / ratio))
   const result = new Float32Array(newLength)
 
-  let offsetBuffer = 0
-  for (let i = 0; i < result.length; i++) {
-    const nextOffsetBuffer = Math.round((i + 1) * ratio)
-    let sum = 0
-    let count = 0
-    for (let j = offsetBuffer; j < nextOffsetBuffer && j < buffer.length; j++) {
-      sum += buffer[j]
-      count++
-    }
-    result[i] = count > 0 ? sum / count : 0
-    offsetBuffer = nextOffsetBuffer
+  for (let i = 0; i < newLength; i++) {
+    const sourceIndex = i * ratio
+    const leftIndex = Math.floor(sourceIndex)
+    const rightIndex = Math.min(buffer.length - 1, leftIndex + 1)
+    const mix = sourceIndex - leftIndex
+    const left = buffer[leftIndex] ?? 0
+    const right = buffer[rightIndex] ?? left
+    result[i] = left + (right - left) * mix
   }
 
   return result
+}
+
+export function concatFloat32Chunks(
+  chunks: Float32Array[],
+  totalLength: number,
+) {
+  const merged = new Float32Array(totalLength)
+  let offset = 0
+
+  for (const chunk of chunks) {
+    merged.set(chunk, offset)
+    offset += chunk.length
+  }
+
+  return merged
 }
 
 export function float32ToPcm16leBytes(buffer: Float32Array) {
@@ -84,4 +94,34 @@ export function rmsLevel(buffer: Float32Array) {
     sumSq += v * v
   }
   return Math.sqrt(sumSq / Math.max(1, buffer.length))
+}
+
+export function getTargetRecordingSampleRate(sampleRate: number) {
+  if (!Number.isFinite(sampleRate) || sampleRate <= 0) return 24000
+  return Math.max(24000, Math.min(48000, Math.round(sampleRate)))
+}
+
+export function getAudioDurationSeconds(file: File) {
+  return new Promise<number | null>((resolve) => {
+    const url = URL.createObjectURL(file)
+    const audio = new Audio()
+
+    const cleanup = () => {
+      audio.removeAttribute('src')
+      audio.load()
+      URL.revokeObjectURL(url)
+    }
+
+    audio.preload = 'metadata'
+    audio.onloadedmetadata = () => {
+      const duration = Number.isFinite(audio.duration) ? audio.duration : null
+      cleanup()
+      resolve(duration)
+    }
+    audio.onerror = () => {
+      cleanup()
+      resolve(null)
+    }
+    audio.src = url
+  })
 }

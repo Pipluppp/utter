@@ -41,7 +41,6 @@ function toQwenLanguageTag(language: string | null): string | undefined {
   if (!language) return undefined;
   const normalized = language.trim().toLowerCase();
   const map: Record<string, string> = {
-    auto: "en",
     english: "en",
     chinese: "zh",
     german: "de",

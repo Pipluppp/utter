@@ -13,10 +13,9 @@ export interface WorkerEnv {
   QWEN_VC_TARGET_MODEL?: string;
   QWEN_VD_TARGET_MODEL?: string;
   QWEN_MAX_TEXT_CHARS?: string;
+  QWEN_ASR_MODEL?: string;
+  QWEN_ASR_BASE_URL?: string;
 
-  MISTRAL_API_KEY?: string;
-  MISTRAL_SERVER_URL?: string;
-  MISTRAL_TRANSCRIBE_MODEL?: string;
   TRANSCRIPTION_ENABLED?: "true" | "false";
 
   STRIPE_SECRET_KEY?: string;

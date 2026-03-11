@@ -48,8 +48,7 @@ export function Layout() {
       <RouteAppSkeleton />
     )
 
-  useGlobalShortcuts(routeFamily === 'app' && authState.status === 'signed_in')
-
+  useGlobalShortcuts(routeFamily !== 'auth')
   // biome-ignore lint/correctness/useExhaustiveDependencies: close the mobile menu on route changes
   useEffect(() => {
     setMenuOpen(false)
