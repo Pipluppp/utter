@@ -25,8 +25,7 @@ export function SVGBlobs({
     if (density === 'sparse') return 4
     return 2
   }, [density])
-  const baseRadius =
-    dotScale === 'tiny' ? 7 : dotScale === 'small' ? 18 : 34
+  const baseRadius = dotScale === 'tiny' ? 7 : dotScale === 'small' ? 18 : 34
 
   useEffect(() => {
     const svg = containerRef.current
@@ -169,7 +168,11 @@ export function SVGBlobs({
             operator="in"
             result="glow"
           ></feComposite>
-          <feComposite in="glow" in2="SourceGraphic" operator="over"></feComposite>
+          <feComposite
+            in="glow"
+            in2="SourceGraphic"
+            operator="over"
+          ></feComposite>
         </filter>
       </defs>
       <g
@@ -181,133 +184,1632 @@ export function SVGBlobs({
         style={isGenerating ? { animationDuration: '4s' } : undefined}
         fill={`url(#${gradientId})`}
       >
-                <circle cx="189.951" cy="83.7442" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="242.963" cy="83.7442" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="506.729" cy="83.7442" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="612.752" cy="137.119" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="928.238" cy="137.119" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="453.717" cy="137.119" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="559.74" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="981.25" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="928.238" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="85.2207" cy="137.119" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="453.717" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="506.729" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="189.951" cy="137.119" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1087.27" cy="242.029" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1034.37" cy="242.029" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="296.881" cy="242.029" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="348.777" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1087.27" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1140.29" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1034.26" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="243.867" cy="242.029" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="453.717" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="296.881" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="349.893" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="243.867" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="85.2207" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="138.232" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="85.2207" cy="242.029" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="32.209" cy="242.029" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="32.209" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="138.232" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1614.8" cy="32.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1666.53" cy="83.7442" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1614.8" cy="83.7442" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1561.79" cy="83.7442" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1666.53" cy="137.119" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1402.76" cy="137.119" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1561.79" cy="137.119" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1508.78" cy="137.119" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1614.8" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1455.77" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1402.76" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1561.79" cy="188.65" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1455.77" cy="242.029" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1561.79" cy="242.029" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1455.77" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1561.79" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1508.78" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1351.04" cy="293.561" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1245.25" cy="347.857" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1404.28" cy="347.857" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1298.26" cy="399.389" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1404.28" cy="399.389" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1351.27" cy="399.389" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1298.26" cy="452.764" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1668.05" cy="347.857" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1298.26" cy="504.303" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1404.28" cy="504.303" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1351.27" cy="504.303" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1245.25" cy="557.678" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1087.5" cy="557.678" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1140.52" cy="557.678" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1034.49" cy="557.678" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1193.53" cy="557.678" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1298.26" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1087.5" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1456" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1404.28" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1351.27" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1193.53" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1668.05" cy="557.678" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1615.04" cy="557.678" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="822.168" cy="201.537" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="664.426" cy="201.537" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="875.18" cy="253.072" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="769.156" cy="253.072" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="1562.02" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="822.168" cy="305.525" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="769.156" cy="305.525" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="664.426" cy="305.525" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="85.4511" cy="347.857" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="138.463" cy="347.857" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="85.4511" cy="399.389" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="32.4394" cy="399.389" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="138.463" cy="399.389" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="32.4394" cy="452.764" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="32.4394" cy="504.303" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="85.4511" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="191.414" cy="556.756" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="243.867" cy="398.471" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="243.867" cy="503.381" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="243.867" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="297.242" cy="398.471" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="297.242" cy="503.381" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="297.242" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="349.697" cy="398.471" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="349.697" cy="503.381" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="349.697" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="403.072" cy="450.928" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="403.072" cy="503.381" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="403.072" cy="556.756" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="403.072" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="455.527" cy="398.471" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="455.527" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="507.982" cy="398.471" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="507.982" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="561.357" cy="319.326" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="561.357" cy="398.471" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="561.357" cy="450.928" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="561.357" cy="503.381" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="561.357" cy="556.756" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="561.357" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="613.813" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="667.186" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="719.641" cy="398.471" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="719.641" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="772.096" cy="450.928" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="772.096" cy="503.381" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="772.096" cy="556.756" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="772.096" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="825.471" cy="398.471" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="825.471" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="877.926" cy="398.471" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="877.926" cy="609.209" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
-        <circle cx="931.301" cy="450.928" r="0"><animate values="0;34" attributeName="r" keyTimes="0;1" dur="4s" repeatCount="1" calcMode="spline" keySplines="0.2 0 0.2 1;" fill="freeze" begin="indefinite"></animate></circle>
+        <circle cx="189.951" cy="83.7442" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="242.963" cy="83.7442" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="506.729" cy="83.7442" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="612.752" cy="137.119" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="928.238" cy="137.119" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="453.717" cy="137.119" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="559.74" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="981.25" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="928.238" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="85.2207" cy="137.119" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="453.717" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="506.729" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="189.951" cy="137.119" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1087.27" cy="242.029" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1034.37" cy="242.029" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="296.881" cy="242.029" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="348.777" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1087.27" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1140.29" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1034.26" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="243.867" cy="242.029" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="453.717" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="296.881" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="349.893" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="243.867" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="85.2207" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="138.232" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="85.2207" cy="242.029" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="32.209" cy="242.029" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="32.209" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="138.232" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1614.8" cy="32.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1666.53" cy="83.7442" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1614.8" cy="83.7442" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1561.79" cy="83.7442" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1666.53" cy="137.119" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1402.76" cy="137.119" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1561.79" cy="137.119" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1508.78" cy="137.119" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1614.8" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1455.77" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1402.76" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1561.79" cy="188.65" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1455.77" cy="242.029" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1561.79" cy="242.029" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1455.77" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1561.79" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1508.78" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1351.04" cy="293.561" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1245.25" cy="347.857" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1404.28" cy="347.857" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1298.26" cy="399.389" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1404.28" cy="399.389" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1351.27" cy="399.389" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1298.26" cy="452.764" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1668.05" cy="347.857" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1298.26" cy="504.303" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1404.28" cy="504.303" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1351.27" cy="504.303" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1245.25" cy="557.678" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1087.5" cy="557.678" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1140.52" cy="557.678" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1034.49" cy="557.678" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1193.53" cy="557.678" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1298.26" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1087.5" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1456" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1404.28" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1351.27" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1193.53" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1668.05" cy="557.678" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1615.04" cy="557.678" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="822.168" cy="201.537" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="664.426" cy="201.537" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="875.18" cy="253.072" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="769.156" cy="253.072" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="1562.02" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="822.168" cy="305.525" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="769.156" cy="305.525" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="664.426" cy="305.525" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="85.4511" cy="347.857" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="138.463" cy="347.857" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="85.4511" cy="399.389" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="32.4394" cy="399.389" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="138.463" cy="399.389" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="32.4394" cy="452.764" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="32.4394" cy="504.303" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="85.4511" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="191.414" cy="556.756" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="243.867" cy="398.471" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="243.867" cy="503.381" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="243.867" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="297.242" cy="398.471" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="297.242" cy="503.381" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="297.242" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="349.697" cy="398.471" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="349.697" cy="503.381" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="349.697" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="403.072" cy="450.928" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="403.072" cy="503.381" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="403.072" cy="556.756" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="403.072" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="455.527" cy="398.471" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="455.527" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="507.982" cy="398.471" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="507.982" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="561.357" cy="319.326" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="561.357" cy="398.471" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="561.357" cy="450.928" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="561.357" cy="503.381" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="561.357" cy="556.756" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="561.357" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="613.813" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="667.186" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="719.641" cy="398.471" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="719.641" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="772.096" cy="450.928" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="772.096" cy="503.381" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="772.096" cy="556.756" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="772.096" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="825.471" cy="398.471" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="825.471" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="877.926" cy="398.471" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="877.926" cy="609.209" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
+        <circle cx="931.301" cy="450.928" r="0">
+          <animate
+            values="0;34"
+            attributeName="r"
+            keyTimes="0;1"
+            dur="4s"
+            repeatCount="1"
+            calcMode="spline"
+            keySplines="0.2 0 0.2 1;"
+            fill="freeze"
+            begin="indefinite"
+          ></animate>
+        </circle>
       </g>
     </svg>
   )
 }
-

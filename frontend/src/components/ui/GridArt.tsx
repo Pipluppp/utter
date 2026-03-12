@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { cn } from '../../lib/cn'
 
 type GridArtProps = {
