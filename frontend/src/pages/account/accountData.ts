@@ -14,7 +14,8 @@ const creditsFormat = new Intl.NumberFormat()
 const usdFormat = new Intl.NumberFormat(undefined, {
   style: 'currency',
   currency: 'USD',
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 })
 const dateFormat = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
