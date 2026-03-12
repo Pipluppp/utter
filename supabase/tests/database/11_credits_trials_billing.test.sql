@@ -1,6 +1,6 @@
 -- Credits trials + prepaid billing hardening
 BEGIN;
-SELECT plan(27);
+SELECT plan(30);
 
 INSERT INTO auth.users (
   id,
@@ -53,7 +53,7 @@ SELECT results_eq(
     FROM public.trial_or_debit(
       'dddddddd-dddd-dddd-dddd-dddddddddddd',
       'design_preview',
-      5000,
+      2400,
       'task',
       '11111111-1111-1111-1111-111111111111',
       'design-trial-1',
@@ -76,7 +76,7 @@ SELECT results_eq(
     FROM public.trial_or_debit(
       'dddddddd-dddd-dddd-dddd-dddddddddddd',
       'design_preview',
-      5000,
+      2400,
       'task',
       '22222222-2222-2222-2222-222222222222',
       'design-trial-2',
@@ -91,13 +91,13 @@ SELECT results_eq(
     FROM public.trial_or_debit(
       'dddddddd-dddd-dddd-dddd-dddddddddddd',
       'design_preview',
-      5000,
+      2400,
       'task',
       '33333333-3333-3333-3333-333333333333',
       'design-trial-3',
       '{}'::jsonb
     )$$,
-  $$VALUES (false, false, false, 5000)$$,
+  $$VALUES (false, false, false, 7600)$$,
   'third design attempt debits credits after trials are exhausted'
 );
 
@@ -106,7 +106,7 @@ SELECT results_eq(
     FROM public.trial_or_debit(
       'dddddddd-dddd-dddd-dddd-dddddddddddd',
       'clone',
-      1000,
+      200,
       'voice',
       '44444444-4444-4444-4444-444444444444',
       'clone-trial-1',
@@ -121,7 +121,7 @@ SELECT results_eq(
     FROM public.trial_or_debit(
       'dddddddd-dddd-dddd-dddd-dddddddddddd',
       'clone',
-      1000,
+      200,
       'voice',
       '44444444-4444-4444-4444-444444444444',
       'clone-trial-1',
@@ -161,6 +161,51 @@ SELECT results_eq(
     )$$,
   $$VALUES (false, true)$$,
   'trial_restore is idempotent on duplicate restore'
+);
+
+SELECT results_eq(
+  $$SELECT used_trial, duplicate, insufficient
+    FROM public.trial_or_debit(
+      'dddddddd-dddd-dddd-dddd-dddddddddddd',
+      'clone',
+      200,
+      'voice',
+      '55555555-5555-5555-5555-555555555555',
+      'clone-paid-1',
+      '{}'::jsonb
+    )$$,
+  $$VALUES (true, false, false)$$,
+  'clone trial is consumed again after restore'
+);
+
+SELECT results_eq(
+  $$SELECT used_trial, duplicate, insufficient
+    FROM public.trial_or_debit(
+      'dddddddd-dddd-dddd-dddd-dddddddddddd',
+      'clone',
+      200,
+      'voice',
+      '66666666-6666-6666-6666-666666666666',
+      'clone-paid-2',
+      '{}'::jsonb
+    )$$,
+  $$VALUES (true, false, false)$$,
+  'second clone trial is consumed before credit debit path'
+);
+
+SELECT results_eq(
+  $$SELECT used_trial, duplicate, insufficient, balance_remaining
+    FROM public.trial_or_debit(
+      'dddddddd-dddd-dddd-dddd-dddddddddddd',
+      'clone',
+      200,
+      'voice',
+      '77777777-7777-7777-7777-777777777777',
+      'clone-paid-3',
+      '{}'::jsonb
+    )$$,
+  $$VALUES (false, false, false, 7400)$$,
+  'third clone attempt after restore debits 200 credits'
 );
 
 SELECT results_eq(
