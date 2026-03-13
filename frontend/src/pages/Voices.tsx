@@ -78,7 +78,7 @@ const VOICE_SKELETON_VARIANTS = [
 
 function VoiceCardSkeleton({ showPrompt = true }: { showPrompt?: boolean }) {
   return (
-    <div className="border border-border bg-background p-4 shadow-elevated">
+    <div className="bg-background p-4 shadow-elevated">
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
