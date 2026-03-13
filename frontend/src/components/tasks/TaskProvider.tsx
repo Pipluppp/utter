@@ -11,12 +11,7 @@ import {
 import { ApiError, apiJson } from '../../lib/api'
 import { readJson, writeJson } from '../../lib/storage'
 import { formatElapsed } from '../../lib/time'
-import type {
-  BackendTask,
-  StoredTask,
-  TaskStatus,
-  TaskType,
-} from '../../lib/types'
+import type { BackendTask, StoredTask, TaskStatus, TaskType } from '../../lib/types'
 import {
   coerceTaskType,
   LEGACY_TASK_KEY,
@@ -82,13 +77,13 @@ function buildTaskDescription(task: {
 }
 
 function sortTaskIds(byId: Record<string, StoredTask>) {
-  return [...Object.values(byId)]
+  return Object.values(byId)
     .sort((a: StoredTask, b: StoredTask) => {
       const timeDelta = taskSortTimestamp(b) - taskSortTimestamp(a)
       if (timeDelta !== 0) return timeDelta
       return b.taskId.localeCompare(a.taskId)
     })
-    .map((task) => task.taskId)
+    .map((task: StoredTask) => task.taskId)
 }
 
 function pruneExpired(store: TaskStore): TaskStore {
@@ -145,10 +140,7 @@ function coerceStoredTask(
   },
 ): StoredTask | null {
   const type = coerceTaskType(input.type)
-  const taskId =
-    typeof input.taskId === 'string' && input.taskId.trim()
-      ? input.taskId
-      : null
+  const taskId = typeof input.taskId === 'string' && input.taskId.trim() ? input.taskId : null
 
   if (!type || !taskId) return null
   if (input.dismissed === true) return null
@@ -177,10 +169,8 @@ function coerceStoredTask(
     startedAt,
     status: normalizeStatus(input.status),
     dismissed: false,
-    modalStatus:
-      typeof input.modalStatus === 'string' ? input.modalStatus : null,
-    providerStatus:
-      typeof input.providerStatus === 'string' ? input.providerStatus : null,
+    modalStatus: typeof input.modalStatus === 'string' ? input.modalStatus : null,
+    providerStatus: typeof input.providerStatus === 'string' ? input.providerStatus : null,
     result: input.result,
     error: typeof input.error === 'string' ? input.error : null,
     completedAt,
@@ -189,12 +179,9 @@ function coerceStoredTask(
     subtitle: typeof input.subtitle === 'string' ? input.subtitle : null,
     language: typeof input.language === 'string' ? input.language : null,
     voiceName: typeof input.voiceName === 'string' ? input.voiceName : null,
-    textPreview:
-      typeof input.textPreview === 'string' ? input.textPreview : null,
+    textPreview: typeof input.textPreview === 'string' ? input.textPreview : null,
     estimatedDurationMinutes:
-      typeof input.estimatedDurationMinutes === 'number'
-        ? input.estimatedDurationMinutes
-        : null,
+      typeof input.estimatedDurationMinutes === 'number' ? input.estimatedDurationMinutes : null,
   }
 }
 
@@ -202,8 +189,7 @@ function readTaskStore(): TaskStore {
   const stored = readJson<TaskStore>(TASK_STORAGE_KEY)
   if (!stored || typeof stored !== 'object') return EMPTY_STORE
 
-  const inputById =
-    stored.byId && typeof stored.byId === 'object' ? stored.byId : {}
+  const inputById = stored.byId && typeof stored.byId === 'object' ? stored.byId : {}
   const nextById: Record<string, StoredTask> = {}
 
   for (const value of Object.values(inputById)) {
@@ -237,9 +223,7 @@ function migrateLegacyTasks() {
   ) => {
     if (!raw) return
     try {
-      const parsed = JSON.parse(raw) as Partial<
-        Omit<StoredTask, 'type' | 'taskId'>
-      > & {
+      const parsed = JSON.parse(raw) as Partial<Omit<StoredTask, 'type' | 'taskId'>> & {
         type?: unknown
         taskId?: unknown
         dismissed?: boolean
@@ -274,20 +258,13 @@ function taskFromBackend(
   const type = coerceTaskType(backendTask.type)
   if (!type) return null
 
-  const startedAt =
-    parseTimestamp(backendTask.created_at) ??
-    existingTask?.startedAt ??
-    Date.now()
-  const completedAt =
-    parseTimestamp(backendTask.completed_at) ?? existingTask?.completedAt
+  const startedAt = parseTimestamp(backendTask.created_at) ?? existingTask?.startedAt ?? Date.now()
+  const completedAt = parseTimestamp(backendTask.completed_at) ?? existingTask?.completedAt
 
   return {
     taskId: backendTask.id,
     type,
-    originPage:
-      backendTask.origin_page ??
-      existingTask?.originPage ??
-      taskOriginPage(type),
+    originPage: backendTask.origin_page ?? existingTask?.originPage ?? taskOriginPage(type),
     description: buildTaskDescription({
       type,
       title: backendTask.title ?? existingTask?.title ?? undefined,
@@ -298,8 +275,7 @@ function taskFromBackend(
     status: backendTask.status,
     dismissed: false,
     modalStatus: backendTask.modal_status ?? existingTask?.modalStatus ?? null,
-    providerStatus:
-      backendTask.provider_status ?? existingTask?.providerStatus ?? null,
+    providerStatus: backendTask.provider_status ?? existingTask?.providerStatus ?? null,
     result: backendTask.result ?? existingTask?.result,
     error: backendTask.error ?? existingTask?.error ?? null,
     completedAt,
@@ -310,9 +286,7 @@ function taskFromBackend(
     voiceName: backendTask.voice_name ?? existingTask?.voiceName ?? null,
     textPreview: backendTask.text_preview ?? existingTask?.textPreview ?? null,
     estimatedDurationMinutes:
-      backendTask.estimated_duration_minutes ??
-      existingTask?.estimatedDurationMinutes ??
-      null,
+      backendTask.estimated_duration_minutes ?? existingTask?.estimatedDurationMinutes ?? null,
   }
 }
 
@@ -440,16 +414,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   }, [replaceStore])
 
   const getStatusText = useCallback(
-    (
-      status: TaskStatus,
-      modalStatus?: string | null,
-      providerStatus?: string | null,
-    ) => {
-      const effectiveStatus = (
-        providerStatus ??
-        modalStatus ??
-        ''
-      ).toLowerCase()
+    (status: TaskStatus, modalStatus?: string | null, providerStatus?: string | null) => {
+      const effectiveStatus = (providerStatus ?? modalStatus ?? '').toLowerCase()
       if (effectiveStatus === 'provider_submitting') return 'Submitting...'
       if (effectiveStatus === 'provider_queued' || effectiveStatus === 'queued')
         return 'Waiting for GPU...'
@@ -458,10 +424,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (effectiveStatus === 'provider_persisting') return 'Finalizing...'
       if (effectiveStatus === 'processing') return 'Generating...'
       if (effectiveStatus === 'sending') return 'Starting generation...'
-      if (modalStatus === 'queued' || status === 'pending')
-        return 'Waiting for GPU...'
-      if (modalStatus === 'processing' || status === 'processing')
-        return 'Generating...'
+      if (modalStatus === 'queued' || status === 'pending') return 'Waiting for GPU...'
+      if (modalStatus === 'processing' || status === 'processing') return 'Generating...'
       if (modalStatus === 'sending') return 'Starting generation...'
       return 'Processing...'
     },
@@ -610,10 +574,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       dismissTask,
       cancelTask,
       clearTask,
-      getLatestTask: (taskType) =>
-        tasks.find((task) => task.type === taskType) ?? null,
-      getTasksByType: (taskType) =>
-        tasks.filter((task) => task.type === taskType),
+      getLatestTask: (taskType) => tasks.find((task) => task.type === taskType) ?? null,
+      getTasksByType: (taskType) => tasks.filter((task) => task.type === taskType),
       getStatusText,
       formatTaskElapsed,
     }

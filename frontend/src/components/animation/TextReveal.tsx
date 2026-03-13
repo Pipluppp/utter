@@ -42,8 +42,7 @@ export function TextReveal({ lines, className }: Props) {
   // 2 steps per word: burst → reveal. +1 final step for period settle.
   const totalSteps = words.length * 2 + 1
   const prefersReduced = useRef(
-    typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
   const [step, setStep] = useState(prefersReduced.current ? totalSteps : 0)
 
@@ -100,7 +99,7 @@ export function TextReveal({ lines, className }: Props) {
           } else if (step === burstStep) {
             // Symbol burst phase
             content = (
-              <span style={{ color: burst.color }} className="font-mono">
+              <span style={{ color: burst.color }} className='font-mono'>
                 {burst.symbol}
               </span>
             )
@@ -109,11 +108,10 @@ export function TextReveal({ lines, className }: Props) {
             content = <span style={{ color: burst.color }}>{word}</span>
           } else {
             // Settled — inherit foreground color, period gets special color on settle step
-            const isPeriodSettle =
-              step === totalSteps && isLast && /[.!?]$/.test(word)
+            const isPeriodSettle = step === totalSteps && isLast && /[.!?]$/.test(word)
             content = (
               <span
-                className="transition-colors duration-300"
+                className='transition-colors duration-300'
                 style={isPeriodSettle ? { color: PERIOD_COLOR } : undefined}
               >
                 {word}

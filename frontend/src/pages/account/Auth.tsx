@@ -9,11 +9,9 @@ import { isSupabaseConfigured, supabase } from '../../lib/supabase'
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="border border-border bg-background p-5 shadow-elevated">
-      <div className="text-[12px] font-semibold uppercase tracking-wide">
-        {title}
-      </div>
-      <div className="mt-4">{children}</div>
+    <section className='border border-border bg-background p-5 shadow-elevated'>
+      <div className='text-[12px] font-semibold uppercase tracking-wide'>{title}</div>
+      <div className='mt-4'>{children}</div>
     </section>
   )
 }
@@ -143,8 +141,7 @@ export function AccountAuthPage() {
 
     setStatus({
       type: 'ok',
-      message:
-        'Account created. If email confirmation is enabled, check Inbucket.',
+      message: 'Account created. If email confirmation is enabled, check Inbucket.',
     })
     navigate(safeReturnTo, { replace: true })
   }
@@ -164,37 +161,33 @@ export function AccountAuthPage() {
   const busy = status.type === 'loading'
 
   return (
-    <div className="space-y-4">
+    <div className='space-y-4'>
       {!configured ? (
-        <Message variant="info">
-          Supabase Auth isn’t configured yet. Set `VITE_SUPABASE_URL` and
-          `VITE_SUPABASE_ANON_KEY` (see `frontend/.env.example`).
+        <Message variant='info'>
+          Supabase Auth isn’t configured yet. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+          (see `frontend/.env.example`).
         </Message>
       ) : null}
 
-      <Card title="Session">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <Card title='Session'>
+        <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
           <div>
-            <div className="text-sm font-semibold uppercase tracking-wide">
+            <div className='text-sm font-semibold uppercase tracking-wide'>
               {isSignedIn ? 'Signed in' : 'Signed out'}
             </div>
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className='mt-1 text-sm text-muted-foreground'>
               {isSignedIn ? authEmail : 'Sign in to use Clone, Generate, etc.'}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-2'>
             {isSignedIn ? (
               <>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => navigate('/account/profile')}
-                >
+                <Button size='sm' variant='secondary' onClick={() => navigate('/account/profile')}>
                   Profile
                 </Button>
                 <Button
-                  size="sm"
-                  variant="secondary"
+                  size='sm'
+                  variant='secondary'
                   onClick={onSignOut}
                   disabled={!configured || busy}
                 >
@@ -202,11 +195,7 @@ export function AccountAuthPage() {
                 </Button>
               </>
             ) : (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => navigate('/')}
-              >
+              <Button size='sm' variant='secondary' onClick={() => navigate('/')}>
                 Back to landing
               </Button>
             )}
@@ -214,32 +203,24 @@ export function AccountAuthPage() {
         </div>
 
         {!isSignedIn ? (
-          <div className="mt-4 text-xs text-faint">
+          <div className='mt-4 text-xs text-faint'>
             Return after sign-in:{' '}
-            <span className="text-foreground">
-              {returnTo || location.pathname}
-            </span>
+            <span className='text-foreground'>{returnTo || location.pathname}</span>
           </div>
         ) : null}
       </Card>
 
       {!isSignedIn ? (
-        <Card title="Sign in">
-          {status.type === 'error' ? (
-            <Message variant="error">{status.message}</Message>
-          ) : null}
-          {status.type === 'ok' ? (
-            <Message variant="success">{status.message}</Message>
-          ) : null}
+        <Card title='Sign in'>
+          {status.type === 'error' ? <Message variant='error'>{status.message}</Message> : null}
+          {status.type === 'ok' ? <Message variant='success'>{status.message}</Message> : null}
           {status.type === 'sent' ? (
-            <Message variant="success">
-              Magic link sent. Open Inbucket and click the link.
-            </Message>
+            <Message variant='success'>Magic link sent. Open Inbucket and click the link.</Message>
           ) : null}
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className='mt-4 flex flex-wrap items-center gap-2'>
             <button
-              type="button"
+              type='button'
               className={cn(
                 'border border-border px-3 py-2 text-[12px] font-medium uppercase tracking-wide shadow-elevated',
                 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -256,7 +237,7 @@ export function AccountAuthPage() {
               Password
             </button>
             <button
-              type="button"
+              type='button'
               className={cn(
                 'border border-border px-3 py-2 text-[12px] font-medium uppercase tracking-wide shadow-elevated',
                 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -274,44 +255,42 @@ export function AccountAuthPage() {
             </button>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="auth-email">Email</Label>
+          <div className='mt-5 grid gap-4 md:grid-cols-2'>
+            <div className='space-y-1.5'>
+              <Label htmlFor='auth-email'>Email</Label>
               <Input
-                id="auth-email"
+                id='auth-email'
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="email"
+                placeholder='you@example.com'
+                autoComplete='email'
                 disabled={!configured || busy}
               />
             </div>
 
             {mode === 'password' ? (
-              <div className="space-y-1.5">
-                <Label htmlFor="auth-password">Password</Label>
+              <div className='space-y-1.5'>
+                <Label htmlFor='auth-password'>Password</Label>
                 <Input
-                  id="auth-password"
-                  type="password"
+                  id='auth-password'
+                  type='password'
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete={
-                    intent === 'sign_in' ? 'current-password' : 'new-password'
-                  }
+                  placeholder='••••••••'
+                  autoComplete={intent === 'sign_in' ? 'current-password' : 'new-password'}
                   disabled={!configured || busy}
                 />
               </div>
             ) : (
-              <div className="space-y-1.5">
+              <div className='space-y-1.5'>
                 <Label>Inbox</Label>
-                <div className="border border-border bg-subtle p-3 text-sm text-muted-foreground shadow-elevated">
+                <div className='border border-border bg-subtle p-3 text-sm text-muted-foreground shadow-elevated'>
                   {isLocalHost ? (
                     <a
-                      href="http://localhost:55424"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline underline-offset-4 hover:text-foreground"
+                      href='http://localhost:55424'
+                      target='_blank'
+                      rel='noreferrer'
+                      className='underline underline-offset-4 hover:text-foreground'
                     >
                       Open Inbucket → http://localhost:55424
                     </a>
@@ -324,10 +303,10 @@ export function AccountAuthPage() {
           </div>
 
           {mode === 'password' ? (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className='mt-4 flex flex-wrap items-center gap-2'>
               <Button
-                variant="secondary"
-                size="sm"
+                variant='secondary'
+                size='sm'
                 onClick={() => setIntent('sign_in')}
                 disabled={!configured || busy}
                 aria-pressed={intent === 'sign_in'}
@@ -335,25 +314,23 @@ export function AccountAuthPage() {
                 Sign in
               </Button>
               <Button
-                variant="secondary"
-                size="sm"
+                variant='secondary'
+                size='sm'
                 onClick={() => setIntent('sign_up')}
                 disabled={!configured || busy}
                 aria-pressed={intent === 'sign_up'}
               >
                 Sign up
               </Button>
-              <div className="text-xs text-faint">
-                {intent === 'sign_in'
-                  ? 'Use an existing account.'
-                  : 'Creates a new account.'}
+              <div className='text-xs text-faint'>
+                {intent === 'sign_in' ? 'Use an existing account.' : 'Creates a new account.'}
               </div>
             </div>
           ) : null}
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className='mt-4 flex flex-wrap items-center gap-2'>
             <Button
-              size="sm"
+              size='sm'
               onClick={() => {
                 if (mode === 'magic_link') void onSendMagicLink()
                 else void onPasswordSubmit()
@@ -368,8 +345,8 @@ export function AccountAuthPage() {
                   : 'Create account'}
             </Button>
             <Button
-              size="sm"
-              variant="secondary"
+              size='sm'
+              variant='secondary'
               onClick={() => {
                 setEmail('')
                 setPassword('')

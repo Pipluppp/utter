@@ -44,20 +44,15 @@ function Highlight({ text, tokens }: { text: string; tokens: string[] }) {
   const out: React.ReactNode[] = []
   let cursor = 0
   merged.forEach(([s, e]) => {
-    if (cursor < s)
-      out.push(<span key={`t-${cursor}-${s}`}>{text.slice(cursor, s)}</span>)
+    if (cursor < s) out.push(<span key={`t-${cursor}-${s}`}>{text.slice(cursor, s)}</span>)
     out.push(
-      <mark
-        key={`m-${s}-${e}`}
-        className="bg-foreground text-background px-0.5"
-      >
+      <mark key={`m-${s}-${e}`} className='bg-foreground text-background px-0.5'>
         {text.slice(s, e)}
       </mark>,
     )
     cursor = e
   })
-  if (cursor < text.length)
-    out.push(<span key={`t-${cursor}-end`}>{text.slice(cursor)}</span>)
+  if (cursor < text.length) out.push(<span key={`t-${cursor}-end`}>{text.slice(cursor)}</span>)
   return <>{out}</>
 }
 
@@ -78,44 +73,44 @@ const VOICE_SKELETON_VARIANTS = [
 
 function VoiceCardSkeleton({ showPrompt = true }: { showPrompt?: boolean }) {
   return (
-    <div className="bg-background p-4 shadow-elevated">
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-18" />
-            <Skeleton className="h-5 max-w-56 flex-1" />
+    <div className='bg-background p-4 shadow-elevated'>
+      <div className='grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start'>
+        <div className='min-w-0'>
+          <div className='flex items-center gap-2'>
+            <Skeleton className='h-5 w-18' />
+            <Skeleton className='h-5 max-w-56 flex-1' />
           </div>
 
-          <div className="mt-3 space-y-3">
+          <div className='mt-3 space-y-3'>
             <div>
-              <Skeleton className="h-3 w-44" />
-              <div className="mt-2 space-y-2">
-                <Skeleton className="h-3 w-full max-w-3xl" />
-                <Skeleton className="h-3 w-4/5 max-w-2xl" />
+              <Skeleton className='h-3 w-44' />
+              <div className='mt-2 space-y-2'>
+                <Skeleton className='h-3 w-full max-w-3xl' />
+                <Skeleton className='h-3 w-4/5 max-w-2xl' />
               </div>
             </div>
 
             {showPrompt ? (
               <div>
-                <Skeleton className="h-3 w-28" />
-                <div className="mt-2 space-y-2">
-                  <Skeleton className="h-3 w-full max-w-2xl" />
-                  <Skeleton className="h-3 w-3/4 max-w-xl" />
+                <Skeleton className='h-3 w-28' />
+                <div className='mt-2 space-y-2'>
+                  <Skeleton className='h-3 w-full max-w-2xl' />
+                  <Skeleton className='h-3 w-3/4 max-w-xl' />
                 </div>
               </div>
             ) : null}
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end">
-          <Skeleton className="h-8 w-20" />
-          <Skeleton className="h-8 w-18" />
-          <Skeleton className="h-8 w-18" />
+        <div className='flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end'>
+          <Skeleton className='h-8 w-20' />
+          <Skeleton className='h-8 w-18' />
+          <Skeleton className='h-8 w-18' />
         </div>
       </div>
 
-      <div className="mt-4">
-        <Skeleton className="h-12 w-full" />
+      <div className='mt-4'>
+        <Skeleton className='h-12 w-full' />
       </div>
     </div>
   )
@@ -123,7 +118,7 @@ function VoiceCardSkeleton({ showPrompt = true }: { showPrompt?: boolean }) {
 
 function VoicesSkeleton() {
   return (
-    <div className="grid gap-4" aria-hidden="true">
+    <div className='grid gap-4' aria-hidden='true'>
       {VOICE_SKELETON_VARIANTS.map(({ id, showPrompt }) => (
         <VoiceCardSkeleton key={id} showPrompt={showPrompt} />
       ))}
@@ -141,17 +136,13 @@ export function VoicesPage() {
 
   const initialPage = Math.max(1, Number(initialPageRaw ?? '1') || 1)
   const initialSourceValue =
-    initialSource === 'uploaded' || initialSource === 'designed'
-      ? initialSource
-      : 'all'
+    initialSource === 'uploaded' || initialSource === 'designed' ? initialSource : 'all'
 
   const [query, setQuery] = useState(initialQuery)
   const debounced = useDebouncedValue(query, 250)
   const tokens = useMemo(() => tokenize(debounced), [debounced])
 
-  const [source, setSource] = useState<'all' | 'uploaded' | 'designed'>(
-    initialSourceValue,
-  )
+  const [source, setSource] = useState<'all' | 'uploaded' | 'designed'>(initialSourceValue)
   const [page, setPage] = useState(initialPage)
   const [data, setData] = useState<VoicesResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -175,12 +166,9 @@ export function VoicesPage() {
       qs.set('per_page', String(PER_PAGE))
       if (debounced.trim()) qs.set('search', debounced.trim())
       if (source !== 'all') qs.set('source', source)
-      const res = await apiJson<VoicesResponse>(
-        `/api/voices?${qs.toString()}`,
-        {
-          signal: controller.signal,
-        },
-      )
+      const res = await apiJson<VoicesResponse>(`/api/voices?${qs.toString()}`, {
+        signal: controller.signal,
+      })
       setData(res)
     } catch (e) {
       if (controller.signal.aborted) return
@@ -242,39 +230,37 @@ export function VoicesPage() {
   }
 
   return (
-    <div className="space-y-8" aria-busy={loading}>
-      <h2 className="text-balance text-center text-xl font-pixel font-medium uppercase tracking-[2px]">
+    <div className='space-y-8' aria-busy={loading}>
+      <h2 className='text-balance text-center text-xl font-pixel font-medium uppercase tracking-[2px]'>
         Voices
       </h2>
 
-      {error ? <Message variant="error">{error}</Message> : null}
+      {error ? <Message variant='error'>{error}</Message> : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className='grid gap-4 sm:grid-cols-2'>
         <div>
-          <Label htmlFor="voices-search">Search</Label>
+          <Label htmlFor='voices-search'>Search</Label>
           <Input
-            id="voices-search"
-            type="search"
-            name="search"
-            autoComplete="off"
+            id='voices-search'
+            type='search'
+            name='search'
+            autoComplete='off'
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search voices..."
+            placeholder='Search voices...'
           />
         </div>
         <div>
-          <Label htmlFor="voices-source">Source</Label>
+          <Label htmlFor='voices-source'>Source</Label>
           <Select
-            id="voices-source"
-            name="source"
+            id='voices-source'
+            name='source'
             value={source}
-            onChange={(e) =>
-              setSource(e.target.value as 'all' | 'uploaded' | 'designed')
-            }
+            onChange={(e) => setSource(e.target.value as 'all' | 'uploaded' | 'designed')}
           >
-            <option value="all">All</option>
-            <option value="uploaded">Clone</option>
-            <option value="designed">Designed</option>
+            <option value='all'>All</option>
+            <option value='uploaded'>Clone</option>
+            <option value='designed'>Designed</option>
           </Select>
         </div>
       </div>
@@ -282,13 +268,13 @@ export function VoicesPage() {
       {loading && !data ? <VoicesSkeleton /> : null}
 
       {!loading && data && data.voices.length === 0 ? (
-        <div className="border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
+        <div className='border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated'>
           No voices found.
         </div>
       ) : null}
 
       {!loading ? (
-        <div className="grid gap-4">
+        <div className='grid gap-4'>
           {data?.voices.map((v) => {
             const state = playState[v.id] ?? 'idle'
             const label =
@@ -302,35 +288,28 @@ export function VoicesPage() {
             const disabled = state === 'loading'
 
             return (
-              <div
-                key={v.id}
-                className="border border-border bg-background p-4 shadow-elevated"
-              >
-                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="border border-border bg-subtle px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              <div key={v.id} className='border border-border bg-background p-4 shadow-elevated'>
+                <div className='grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start'>
+                  <div className='min-w-0'>
+                    <div className='flex items-center gap-2'>
+                      <span className='border border-border bg-subtle px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground'>
                         {v.source === 'designed' ? 'DESIGNED' : 'CLONE'}
                       </span>
-                      <div className="truncate text-sm font-semibold">
+                      <div className='truncate text-sm font-semibold'>
                         <Highlight text={v.name} tokens={tokens} />
                       </div>
                     </div>
 
-                    <div className="mt-3 space-y-3">
+                    <div className='mt-3 space-y-3'>
                       <div>
-                        <div className="text-[11px] uppercase tracking-wide text-faint">
+                        <div className='text-[11px] uppercase tracking-wide text-faint'>
                           {v.source === 'designed'
                             ? 'Preview text (saved transcript)'
                             : 'Reference transcript'}
                         </div>
-                        <div className="mt-1 text-sm text-muted-foreground">
+                        <div className='mt-1 text-sm text-muted-foreground'>
                           <Highlight
-                            text={snippet(
-                              v.reference_transcript,
-                              120,
-                              'No transcript',
-                            )}
+                            text={snippet(v.reference_transcript, 120, 'No transcript')}
                             tokens={tokens}
                           />
                         </div>
@@ -338,10 +317,10 @@ export function VoicesPage() {
 
                       {v.source === 'designed' ? (
                         <div>
-                          <div className="text-[11px] uppercase tracking-wide text-faint">
+                          <div className='text-[11px] uppercase tracking-wide text-faint'>
                             Design prompt
                           </div>
-                          <div className="mt-1 text-sm text-muted-foreground">
+                          <div className='mt-1 text-sm text-muted-foreground'>
                             <Highlight
                               text={snippet(v.description, 120, 'No prompt')}
                               tokens={tokens}
@@ -352,7 +331,7 @@ export function VoicesPage() {
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end">
+                  <div className='flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end'>
                     <NavLink
                       to={`/generate?voice=${v.id}`}
                       className={buttonStyles({
@@ -363,7 +342,7 @@ export function VoicesPage() {
                       Generate
                     </NavLink>
                     <button
-                      type="button"
+                      type='button'
                       className={cn(
                         buttonStyles({ variant: 'secondary', size: 'sm' }),
                         'disabled:opacity-50',
@@ -376,9 +355,9 @@ export function VoicesPage() {
                       {label}
                     </button>
                     <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
+                      type='button'
+                      variant='secondary'
+                      size='sm'
                       disabled={busyDelete === v.id}
                       onClick={() => void onDelete(v)}
                     >
@@ -387,13 +366,13 @@ export function VoicesPage() {
                   </div>
                 </div>
 
-                <div className="mt-4">
+                <div className='mt-4'>
                   <div
                     ref={(el) => {
                       waveRefs.current[v.id] = el
                     }}
                     id={`voice-wave-${v.id}`}
-                    className="hidden"
+                    className='hidden'
                   />
                 </div>
               </div>
@@ -403,9 +382,9 @@ export function VoicesPage() {
       ) : null}
 
       {!loading && data ? (
-        <div className="flex items-center justify-between gap-3">
+        <div className='flex items-center justify-between gap-3'>
           <button
-            type="button"
+            type='button'
             className={cn(
               buttonStyles({ variant: 'secondary', size: 'sm' }),
               'disabled:opacity-50',
@@ -415,11 +394,11 @@ export function VoicesPage() {
           >
             Prev
           </button>
-          <div className="text-xs text-faint">
+          <div className='text-xs text-faint'>
             Page {data.pagination.page} of {data.pagination.pages}
           </div>
           <button
-            type="button"
+            type='button'
             className={cn(
               buttonStyles({ variant: 'secondary', size: 'sm' }),
               'disabled:opacity-50',

@@ -13,11 +13,7 @@ import { Textarea } from '../components/ui/Textarea'
 import { apiForm, apiJson } from '../lib/api'
 import { cn } from '../lib/cn'
 import { formatElapsed } from '../lib/time'
-import type {
-  DesignPreviewResponse,
-  DesignSaveResponse,
-  StoredTask,
-} from '../lib/types'
+import type { DesignPreviewResponse, DesignSaveResponse, StoredTask } from '../lib/types'
 import { useLanguages } from './hooks'
 
 type DesignFormState = {
@@ -61,7 +57,7 @@ function TaskSummaryRow({
 }) {
   return (
     <button
-      type="button"
+      type='button'
       className={cn(
         'flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left hover:bg-muted',
         'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -69,13 +65,13 @@ function TaskSummaryRow({
       )}
       onClick={onSelect}
     >
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium uppercase tracking-wide">
+      <div className='min-w-0 flex-1'>
+        <div className='truncate text-sm font-medium uppercase tracking-wide'>
           {task.description}
         </div>
-        <div className="mt-1 text-xs text-muted-foreground">{statusText}</div>
+        <div className='mt-1 text-xs text-muted-foreground'>{statusText}</div>
       </div>
-      <div className="shrink-0 text-xs text-faint">
+      <div className='shrink-0 text-xs text-faint'>
         {task.status === 'pending' || task.status === 'processing'
           ? formatElapsed(task.startedAt)
           : task.status === 'completed'
@@ -129,10 +125,7 @@ export function DesignPage() {
   }, [])
 
   useEffect(() => {
-    if (
-      selectedTaskId &&
-      designTasks.some((task) => task.taskId === selectedTaskId)
-    ) {
+    if (selectedTaskId && designTasks.some((task) => task.taskId === selectedTaskId)) {
       return
     }
     setSelectedTaskId(designTasks[0]?.taskId ?? null)
@@ -172,10 +165,7 @@ export function DesignPage() {
     setSavedVoiceName(null)
     setSuccess(null)
 
-    if (
-      selectedTask.status === 'pending' ||
-      selectedTask.status === 'processing'
-    ) {
+    if (selectedTask.status === 'pending' || selectedTask.status === 'processing') {
       handledTaskKeyRef.current = null
       setPreviewUrl(null)
       previewBlobRef.current = null
@@ -250,13 +240,9 @@ export function DesignPage() {
           }),
         )
 
-        const saved = await apiForm<DesignSaveResponse>(
-          '/api/voices/design',
-          form,
-          {
-            method: 'POST',
-          },
-        )
+        const saved = await apiForm<DesignSaveResponse>('/api/voices/design', form, {
+          method: 'POST',
+        })
         setSavedVoiceId(saved.id)
         setSavedVoiceName(saved.name)
         setError(null)
@@ -265,8 +251,7 @@ export function DesignPage() {
         setSavedVoiceId(null)
         setSavedVoiceName(null)
         setSuccess(null)
-        const detail =
-          e instanceof Error ? e.message : 'Failed to save this preview.'
+        const detail = e instanceof Error ? e.message : 'Failed to save this preview.'
         setError(`Preview ready, but save failed. ${detail}`)
       } finally {
         setIsSavingVoice(false)
@@ -307,13 +292,10 @@ export function DesignPage() {
 
     try {
       const snapshot: DesignFormState = { name, language, text, instruct }
-      const res = await apiJson<DesignPreviewResponse>(
-        '/api/voices/design/preview',
-        {
-          method: 'POST',
-          json: { text, language, instruct, name },
-        },
-      )
+      const res = await apiJson<DesignPreviewResponse>('/api/voices/design/preview', {
+        method: 'POST',
+        json: { text, language, instruct, name },
+      })
       startTask(
         res.task_id,
         'design_preview',
@@ -345,18 +327,12 @@ export function DesignPage() {
 
     const snapshot: DesignFormState = {
       name: typeof taskState?.name === 'string' ? taskState.name : name,
-      language:
-        typeof taskState?.language === 'string' ? taskState.language : language,
+      language: typeof taskState?.language === 'string' ? taskState.language : language,
       text: typeof taskState?.text === 'string' ? taskState.text : text,
-      instruct:
-        typeof taskState?.instruct === 'string' ? taskState.instruct : instruct,
+      instruct: typeof taskState?.instruct === 'string' ? taskState.instruct : instruct,
     }
 
-    await saveDesignedVoice(
-      previewBlobRef.current,
-      snapshot,
-      selectedTask.taskId,
-    )
+    await saveDesignedVoice(previewBlobRef.current, snapshot, selectedTask.taskId)
   }
 
   const selectedStatusText = selectedTask
@@ -371,61 +347,61 @@ export function DesignPage() {
   ).length
 
   return (
-    <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
-      <div className="flex items-center justify-center gap-2">
-        <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
+    <GridArtSurface sweepNonce={sweepNonce} contentClassName='space-y-8'>
+      <div className='flex items-center justify-center gap-2'>
+        <h2 className='text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl'>
           Design
         </h2>
-        <InfoTip align="end" label="Design tips">
-          <div className="space-y-2">
+        <InfoTip align='end' label='Design tips'>
+          <div className='space-y-2'>
             <div>No reference audio needed. Describe the voice you want.</div>
             <div>
-              Preview runs as a background job. Save the completed preview you
-              want to keep in your voice library.
+              Preview runs as a background job. Save the completed preview you want to keep in your
+              voice library.
             </div>
             <div>Preview text and description are limited to 500 chars.</div>
           </div>
         </InfoTip>
       </div>
 
-      {error ? <Message variant="error">{error}</Message> : null}
-      {success ? <Message variant="success">{success}</Message> : null}
+      {error ? <Message variant='error'>{error}</Message> : null}
+      {success ? <Message variant='success'>{success}</Message> : null}
 
       <form
-        className="space-y-6"
+        className='space-y-6'
         onSubmit={(e) => {
           e.preventDefault()
           void onPreview()
         }}
       >
         <div>
-          <Label htmlFor="design-voice-name">Voice Name</Label>
+          <Label htmlFor='design-voice-name'>Voice Name</Label>
           <Input
-            id="design-voice-name"
-            name="name"
-            autoComplete="off"
+            id='design-voice-name'
+            name='name'
+            autoComplete='off'
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
 
         <div>
-          <Label htmlFor="design-instruct">Voice Description</Label>
+          <Label htmlFor='design-instruct'>Voice Description</Label>
           <Textarea
-            id="design-instruct"
-            name="instruct"
+            id='design-instruct'
+            name='instruct'
             value={instruct}
             onChange={(e) => setInstruct(e.target.value)}
-            placeholder="Describe the voice (tone, pacing, timbre, vibe)..."
+            placeholder='Describe the voice (tone, pacing, timbre, vibe)...'
           />
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-faint">
+          <div className='mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-faint'>
             <span>{instruct.length}/500</span>
-            <div className="flex flex-wrap gap-2">
+            <div className='flex flex-wrap gap-2'>
               {EXAMPLES.map((ex) => (
                 <button
                   key={ex.title}
-                  type="button"
-                  className="border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  type='button'
+                  className='border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
                   onClick={() => {
                     setName(ex.name)
                     setInstruct(ex.instruct)
@@ -439,22 +415,22 @@ export function DesignPage() {
         </div>
 
         <div>
-          <Label htmlFor="design-text">Preview Text</Label>
+          <Label htmlFor='design-text'>Preview Text</Label>
           <Textarea
-            id="design-text"
-            name="text"
+            id='design-text'
+            name='text'
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="A short line to preview the voice..."
+            placeholder='A short line to preview the voice...'
           />
-          <div className="mt-2 text-xs text-faint">{text.length}/500</div>
+          <div className='mt-2 text-xs text-faint'>{text.length}/500</div>
         </div>
 
         <div>
-          <Label htmlFor="design-language">Language</Label>
+          <Label htmlFor='design-language'>Language</Label>
           <Select
-            id="design-language"
-            name="language"
+            id='design-language'
+            name='language'
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
           >
@@ -466,19 +442,17 @@ export function DesignPage() {
           </Select>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Button type="submit" block disabled={isSubmittingPreview}>
+        <div className='grid gap-3 sm:grid-cols-2'>
+          <Button type='submit' block disabled={isSubmittingPreview}>
             {isSubmittingPreview ? 'Starting preview...' : 'Generate Preview'}
           </Button>
           <Button
-            type="button"
-            variant="secondary"
+            type='button'
+            variant='secondary'
             block
             onClick={() => {
               if (!savedVoiceId) return
-              void navigate(
-                `/generate?voice=${encodeURIComponent(savedVoiceId)}`,
-              )
+              void navigate(`/generate?voice=${encodeURIComponent(savedVoiceId)}`)
             }}
             disabled={!savedVoiceId || isSavingVoice}
           >
@@ -488,19 +462,16 @@ export function DesignPage() {
       </form>
 
       {selectedTask ? (
-        <div className="space-y-4 border border-border bg-subtle p-4 shadow-elevated">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className='space-y-4 border border-border bg-subtle p-4 shadow-elevated'>
+          <div className='flex flex-wrap items-center justify-between gap-3'>
             <div>
-              <div className="text-sm font-medium uppercase tracking-wide">
-                Selected Preview
-              </div>
-              <div className="mt-1 text-sm text-muted-foreground">
+              <div className='text-sm font-medium uppercase tracking-wide'>Selected Preview</div>
+              <div className='mt-1 text-sm text-muted-foreground'>
                 {selectedStatusText ?? 'Processing...'}
               </div>
             </div>
-            <div className="text-xs text-faint">
-              {selectedTask.status === 'pending' ||
-              selectedTask.status === 'processing'
+            <div className='text-xs text-faint'>
+              {selectedTask.status === 'pending' || selectedTask.status === 'processing'
                 ? formatElapsed(selectedTask.startedAt)
                 : selectedTask.status === 'completed'
                   ? 'Ready to save'
@@ -508,10 +479,10 @@ export function DesignPage() {
             </div>
           </div>
           {selectedTask.subtitle ? (
-            <div className="text-xs text-faint">{selectedTask.subtitle}</div>
+            <div className='text-xs text-faint'>{selectedTask.subtitle}</div>
           ) : null}
           {activeDesignCount > 1 ? (
-            <div className="text-xs text-faint">
+            <div className='text-xs text-faint'>
               {activeDesignCount} design previews currently running.
             </div>
           ) : null}
@@ -519,11 +490,9 @@ export function DesignPage() {
       ) : null}
 
       {designTasks.length > 0 ? (
-        <div className="space-y-3">
-          <div className="text-sm font-medium uppercase tracking-wide">
-            Tracked Previews
-          </div>
-          <div className="space-y-2">
+        <div className='space-y-3'>
+          <div className='text-sm font-medium uppercase tracking-wide'>Tracked Previews</div>
+          <div className='space-y-2'>
             {designTasks.map((task) => (
               <TaskSummaryRow
                 key={task.taskId}
@@ -542,19 +511,17 @@ export function DesignPage() {
       ) : null}
 
       {previewUrl ? (
-        <div className="space-y-4 border border-border bg-background p-4 shadow-elevated">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className='space-y-4 border border-border bg-background p-4 shadow-elevated'>
+          <div className='flex flex-wrap items-center justify-between gap-3'>
             <div>
-              <div className="text-sm font-medium uppercase tracking-wide">
-                Preview
-              </div>
+              <div className='text-sm font-medium uppercase tracking-wide'>Preview</div>
               {savedVoiceName ? (
-                <div className="mt-1 text-xs text-faint">{savedVoiceName}</div>
+                <div className='mt-1 text-xs text-faint'>{savedVoiceName}</div>
               ) : null}
             </div>
             <Button
-              type="button"
-              variant="secondary"
+              type='button'
+              variant='secondary'
               onClick={() => void onSaveSelectedPreview()}
               disabled={
                 !selectedTask ||
@@ -566,10 +533,7 @@ export function DesignPage() {
               {isSavingVoice ? 'Saving voice...' : 'Save This Preview'}
             </Button>
           </div>
-          <WaveformPlayer
-            audioUrl={previewUrl}
-            audioBlob={previewBlobRef.current ?? undefined}
-          />
+          <WaveformPlayer audioUrl={previewUrl} audioBlob={previewBlobRef.current ?? undefined} />
         </div>
       ) : null}
     </GridArtSurface>

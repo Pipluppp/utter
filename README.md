@@ -67,7 +67,7 @@ npm run test:worker:local
 
 ## Frontend formatting and linting
 
-Biome is the formatter/linter for `frontend/src`.
+Oxfmt + Oxlint are the formatter/linter for `frontend/src`.
 
 ```bash
 npm --prefix frontend run check

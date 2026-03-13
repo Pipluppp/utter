@@ -1,9 +1,4 @@
-export type TaskStatus =
-  | 'pending'
-  | 'processing'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
+export type TaskStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
 
 export type TaskType = 'generate' | 'design_preview' | 'clone'
 
@@ -117,12 +112,7 @@ export type GenerateResponse = {
   generation_id: string
 }
 
-export type GenerationStatus =
-  | 'pending'
-  | 'processing'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
+export type GenerationStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
 
 export type Generation = {
   id: string

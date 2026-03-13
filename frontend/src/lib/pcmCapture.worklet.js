@@ -48,5 +48,3 @@ class UtterPcmCaptureProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor('utter-pcm-capture', UtterPcmCaptureProcessor)
-
-export {}

@@ -41,7 +41,7 @@ function withAuthorization(
 ): HeadersInit {
   if (!accessToken) return headers ?? {}
   return {
-    ...(headers ?? {}),
+    ...headers,
     Authorization: `Bearer ${accessToken}`,
   }
 }
@@ -86,11 +86,7 @@ export async function apiJson<T>(
   return (await res.json()) as T
 }
 
-export async function apiForm<T>(
-  path: string,
-  form: FormData,
-  init: RequestInit = {},
-): Promise<T> {
+export async function apiForm<T>(path: string, form: FormData, init: RequestInit = {}): Promise<T> {
   const authHeaders = await getDefaultAuthHeaders()
 
   const runRequest = async (requestHeaders: HeadersInit) =>
@@ -103,7 +99,7 @@ export async function apiForm<T>(
 
   const requestHeaders: HeadersInit = {
     ...authHeaders,
-    ...(init.headers ?? {}),
+    ...init.headers,
   }
 
   let res = await runRequest(requestHeaders)

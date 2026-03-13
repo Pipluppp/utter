@@ -94,16 +94,12 @@ async function loadAccountSnapshot() {
 }
 
 function packFromEvent(event: CreditLedgerEvent) {
-  const packId =
-    typeof event.metadata.pack_id === 'string' ? event.metadata.pack_id : null
+  const packId = typeof event.metadata.pack_id === 'string' ? event.metadata.pack_id : null
   return packId ? getCreditPackById(packId) : null
 }
 
 function categoryForEvent(event: CreditLedgerEvent): AccountActivityCategory {
-  if (
-    event.operation === 'paid_purchase' ||
-    event.operation === 'paid_reversal'
-  ) {
+  if (event.operation === 'paid_purchase' || event.operation === 'paid_reversal') {
     return 'purchase'
   }
 
@@ -191,9 +187,7 @@ export function formatDateTime(value: string) {
   return dateTimeFormat.format(new Date(value))
 }
 
-export function buildAccountActivity(
-  event: CreditLedgerEvent,
-): AccountActivity {
+export function buildAccountActivity(event: CreditLedgerEvent): AccountActivity {
   return {
     id: event.id,
     category: categoryForEvent(event),

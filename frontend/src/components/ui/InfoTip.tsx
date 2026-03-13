@@ -39,9 +39,9 @@ export function InfoTip({
   }, [open])
 
   return (
-    <span ref={rootRef} className="relative inline-flex">
+    <span ref={rootRef} className='relative inline-flex'>
       <button
-        type="button"
+        type='button'
         className={cn(
           'inline-flex size-6 items-center justify-center rounded-full border border-border bg-background text-[12px] font-semibold text-muted-foreground',
           'hover:bg-muted hover:text-foreground',
@@ -58,7 +58,7 @@ export function InfoTip({
       {open ? (
         <span
           id={id}
-          role="dialog"
+          role='dialog'
           aria-label={label}
           className={cn(
             'absolute top-full z-20 mt-2 w-[min(320px,calc(100vw-2rem))] border border-border bg-background p-3 text-sm text-muted-foreground shadow-lg',

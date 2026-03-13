@@ -24,14 +24,7 @@ export function useGlobalShortcuts(enabled: boolean) {
       if (isTypingTarget(event.target)) return
 
       const key = event.key.toLowerCase()
-      const to =
-        key === 'c'
-          ? '/clone'
-          : key === 'g'
-            ? '/generate'
-            : key === 'd'
-              ? '/design'
-              : null
+      const to = key === 'c' ? '/clone' : key === 'g' ? '/generate' : key === 'd' ? '/design' : null
       if (!to) return
       if (location.pathname === to) return
 

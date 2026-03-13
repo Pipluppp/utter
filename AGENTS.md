@@ -57,17 +57,17 @@ Queue/R2 local notes:
 - Local queue/R2 bindings are defined at top level in `workers/api/wrangler.toml`.
 - Queue-backed local dev should run with `wrangler dev --local` (the default in `npm --prefix workers/api run dev`), not `--remote`.
 
-## Frontend formatting + linting (Biome)
+## Frontend formatting + linting (Oxc)
 
-Biome is the formatter+linter for `frontend/src`:
+Oxfmt + Oxlint are the formatter/linter for `frontend/src`:
 
 - Verify: `npm --prefix frontend run check`
 - Fix: `npm --prefix frontend run check:write`
 - CI check: `npm --prefix frontend run ci`
 
-Config lives at `frontend/biome.json`. VS Code integration lives in `.vscode/`.
+Config lives at `frontend/.oxfmtrc.jsonc` and `frontend/.oxlintrc.json`. VS Code integration lives in `.vscode/`.
 
-Avoid adding ESLint/Prettier unless explicitly requested; Biome is the source of truth.
+Avoid adding ESLint/Prettier unless explicitly requested; Oxc is the source of truth.
 
 ## Testing
 

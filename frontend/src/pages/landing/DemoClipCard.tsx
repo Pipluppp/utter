@@ -4,13 +4,7 @@ import { buttonStyles } from '../../components/ui/Button'
 import type { UtterDemo } from '../../content/utterDemo'
 import { cn } from '../../lib/cn'
 
-export function DemoClipCard({
-  demo,
-  className,
-}: {
-  demo: UtterDemo
-  className?: string
-}) {
+export function DemoClipCard({ demo, className }: { demo: UtterDemo; className?: string }) {
   const [mode, setMode] = useState<'original' | 'clone'>('original')
   const canClone = Boolean(demo.outputAudioUrl)
 
@@ -29,43 +23,41 @@ export function DemoClipCard({
         className,
       )}
     >
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold uppercase tracking-wide">
+      <div className='p-4'>
+        <div className='flex items-start justify-between gap-3'>
+          <div className='min-w-0'>
+            <div className='truncate text-sm font-semibold uppercase tracking-wide'>
               {demo.title}
             </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              {demo.vibe}
-            </div>
+            <div className='mt-1 text-xs text-muted-foreground'>{demo.vibe}</div>
           </div>
-          <div className="shrink-0 text-xs uppercase tracking-wide text-faint">
+          <div className='shrink-0 text-xs uppercase tracking-wide text-faint'>
             {demo.languageLabel}
           </div>
         </div>
 
         {demo.imageUrl ? (
-          <div className="mt-4 overflow-hidden border border-border bg-muted">
+          <div className='mt-4 overflow-hidden border border-border bg-muted'>
             <img
               src={demo.imageUrl}
-              alt=""
+              alt=''
               width={560}
               height={224}
-              loading="lazy"
-              decoding="async"
-              className="h-56 w-full object-cover grayscale"
+              loading='lazy'
+              decoding='async'
+              className='h-56 w-full object-cover grayscale'
             />
           </div>
         ) : (
-          <div className="mt-4 border border-border bg-muted p-6 text-xs text-faint">
+          <div className='mt-4 border border-border bg-muted p-6 text-xs text-faint'>
             No still available for this demo.
           </div>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex overflow-hidden border border-border bg-background">
+        <div className='mt-4 flex flex-wrap items-center justify-between gap-3'>
+          <div className='inline-flex overflow-hidden border border-border bg-background'>
             <button
-              type="button"
+              type='button'
               className={cn(
                 'px-3 py-2 text-[12px] uppercase tracking-wide transition-colors',
                 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -79,7 +71,7 @@ export function DemoClipCard({
               Original
             </button>
             <button
-              type="button"
+              type='button'
               className={cn(
                 'px-3 py-2 text-[12px] uppercase tracking-wide transition-colors',
                 'border-l border-border',
@@ -87,8 +79,7 @@ export function DemoClipCard({
                 mode === 'clone'
                   ? 'bg-foreground text-background'
                   : 'bg-background text-foreground hover:bg-subtle',
-                !canClone &&
-                  'cursor-not-allowed bg-muted text-faint hover:bg-muted',
+                !canClone && 'cursor-not-allowed bg-muted text-faint hover:bg-muted',
               )}
               disabled={!canClone}
               aria-pressed={mode === 'clone'}
@@ -99,21 +90,18 @@ export function DemoClipCard({
           </div>
 
           {activeAudioUrl ? (
-            <a
-              href={activeAudioUrl}
-              className={buttonStyles({ variant: 'secondary', size: 'sm' })}
-            >
+            <a href={activeAudioUrl} className={buttonStyles({ variant: 'secondary', size: 'sm' })}>
               Download
             </a>
           ) : null}
         </div>
 
         {activeAudioUrl ? (
-          <div className="mt-3 border border-border bg-background p-3">
+          <div className='mt-3 border border-border bg-background p-3'>
             <WaveformPlayer
               key={activeAudioUrl}
               audioUrl={activeAudioUrl}
-              group="landing-demos"
+              group='landing-demos'
               playerId={demo.id}
             />
           </div>

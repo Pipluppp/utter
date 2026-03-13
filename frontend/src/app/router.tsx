@@ -91,7 +91,7 @@ export const router = createBrowserRouter([
         handle: familyHandle('marketing'),
         children: [
           { path: '/', element: <LandingPage /> },
-          { path: '/pricing', element: <Navigate to="/#pricing" replace /> },
+          { path: '/pricing', element: <Navigate to='/#pricing' replace /> },
           { path: '/privacy', element: <PrivacyPage /> },
           { path: '/terms', element: <TermsPage /> },
           { path: '/about', element: <AboutPage /> },
@@ -161,7 +161,7 @@ export const router = createBrowserRouter([
             ),
             children: [
               { index: true, element: <AccountOverviewPage /> },
-              { path: 'auth', element: <Navigate to="/auth" replace /> },
+              { path: 'auth', element: <Navigate to='/auth' replace /> },
               { path: 'profile', element: <AccountProfilePage /> },
               { path: 'credits', element: <AccountCreditsPage /> },
               { path: 'usage', element: <AccountLegacyRedirect /> },

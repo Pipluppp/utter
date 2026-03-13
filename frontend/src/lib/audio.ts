@@ -25,10 +25,7 @@ export function resampleFloat32Linear(
   return result
 }
 
-export function concatFloat32Chunks(
-  chunks: Float32Array[],
-  totalLength: number,
-) {
+export function concatFloat32Chunks(chunks: Float32Array[], totalLength: number) {
   const merged = new Float32Array(totalLength)
   let offset = 0
 
@@ -52,10 +49,7 @@ export function float32ToPcm16leBytes(buffer: Float32Array) {
   return new Uint8Array(ab)
 }
 
-export function createWavHeaderPcm16Mono(
-  pcmByteLength: number,
-  sampleRate: number,
-) {
+export function createWavHeaderPcm16Mono(pcmByteLength: number, sampleRate: number) {
   const header = new ArrayBuffer(44)
   const view = new DataView(header)
 

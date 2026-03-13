@@ -81,8 +81,7 @@ export function WaveformPlayer({
     const faint = styles.getPropertyValue('--color-faint').trim() || '#888888'
 
     const waveColor = resolvedTheme === 'dark' ? foreground : faint
-    const progressColor =
-      resolvedTheme === 'dark' ? mutedForeground : foreground
+    const progressColor = resolvedTheme === 'dark' ? mutedForeground : foreground
 
     const ws = WaveSurfer.create({
       container: el,
@@ -99,9 +98,7 @@ export function WaveformPlayer({
     const onPlay = () => {
       setIsPlaying(true)
       if (group && playerId) {
-        window.dispatchEvent(
-          new CustomEvent(WAVEFORM_PLAY_EVENT, { detail: { group, playerId } }),
-        )
+        window.dispatchEvent(new CustomEvent(WAVEFORM_PLAY_EVENT, { detail: { group, playerId } }))
       }
     }
     const onPause = () => setIsPlaying(false)
@@ -163,9 +160,9 @@ export function WaveformPlayer({
 
   return (
     <div className={cn('space-y-3', className)}>
-      <div className="flex items-center justify-between">
+      <div className='flex items-center justify-between'>
         <button
-          type="button"
+          type='button'
           className={cn(
             'border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted',
             'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -181,20 +178,16 @@ export function WaveformPlayer({
         >
           {isPlaying ? 'Pause' : 'Play'}
         </button>
-        <span className="text-xs text-faint">{timeLabel}</span>
+        <span className='text-xs text-faint'>{timeLabel}</span>
       </div>
 
-      {loadError ? (
-        <div className="text-xs text-red-700 dark:text-red-400">
-          {loadError}
-        </div>
-      ) : null}
+      {loadError ? <div className='text-xs text-red-700 dark:text-red-400'>{loadError}</div> : null}
 
       <div ref={containerRef} />
 
       {loadError && audioUrl && !isReady ? (
         // biome-ignore lint/a11y/useMediaCaption: Generated previews have no caption track; this is a fallback for playback when WaveSurfer fails.
-        <audio controls preload="metadata" className="w-full" src={audioUrl} />
+        <audio controls preload='metadata' className='w-full' src={audioUrl} />
       ) : null}
     </div>
   )

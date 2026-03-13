@@ -10,12 +10,7 @@ import {
 import { cn } from '../lib/cn'
 import { useAuthState } from './auth/AuthStateProvider'
 import { AppFooter } from './Footer'
-import {
-  buildAuthHref,
-  buildReturnTo,
-  getNavVariant,
-  type RouteFamily,
-} from './navigation'
+import { buildAuthHref, buildReturnTo, getNavVariant, type RouteFamily } from './navigation'
 import { TopBar } from './TopBar'
 import { useTheme } from './theme/ThemeProvider'
 import { useGlobalShortcuts } from './useGlobalShortcuts'
@@ -57,14 +52,9 @@ export function Layout() {
   useEffect(() => {
     if (!location.hash) return
 
-    const prefersReducedMotion = window.matchMedia?.(
-      '(prefers-reduced-motion: reduce)',
-    ).matches
-    const allowSmooth = new Set(['#demos', '#features', '#pricing']).has(
-      location.hash,
-    )
-    const behavior: ScrollBehavior =
-      prefersReducedMotion || !allowSmooth ? 'auto' : 'smooth'
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const allowSmooth = new Set(['#demos', '#features', '#pricing']).has(location.hash)
+    const behavior: ScrollBehavior = prefersReducedMotion || !allowSmooth ? 'auto' : 'smooth'
 
     let cancelled = false
     let timeoutId: number | undefined
@@ -110,9 +100,9 @@ export function Layout() {
   }, [menuOpen])
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background text-foreground">
+    <div className='flex min-h-dvh flex-col bg-background text-foreground'>
       <a
-        href="#main"
+        href='#main'
         className={cn(
           'sr-only fixed left-4 top-4 z-50 border border-foreground bg-foreground px-3 py-2 text-[12px] uppercase tracking-wide text-background',
           'focus:not-sr-only focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -131,7 +121,7 @@ export function Layout() {
       />
 
       <main
-        id="main"
+        id='main'
         tabIndex={-1}
         className={cn(
           'w-full flex-1',
@@ -147,30 +137,28 @@ export function Layout() {
       {!isAuthSurface ? <TaskDock /> : null}
 
       <button
-        type="button"
+        type='button'
         onClick={toggleTheme}
         className={cn(
           'fixed bottom-4 left-4 z-50 inline-flex size-9 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm',
           'hover:bg-muted/80 hover:text-foreground',
           'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         )}
-        aria-label={
-          theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
-        }
+        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         aria-pressed={theme === 'dark'}
         title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
       >
         <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          className="size-5"
+          viewBox='0 0 24 24'
+          fill='none'
+          stroke='currentColor'
+          strokeWidth='1.5'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          aria-hidden='true'
+          className='size-5'
         >
-          <path d="M21 12.8A8.5 8.5 0 0 1 11.2 3 6.5 6.5 0 1 0 21 12.8Z" />
+          <path d='M21 12.8A8.5 8.5 0 0 1 11.2 3 6.5 6.5 0 1 0 21 12.8Z' />
         </svg>
       </button>
     </div>

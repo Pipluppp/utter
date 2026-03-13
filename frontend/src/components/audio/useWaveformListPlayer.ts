@@ -57,8 +57,7 @@ export function useWaveformListPlayer() {
       try {
         resolvedAudioUrl = await resolveProtectedMediaUrl(audioUrl)
       } catch (e) {
-        const message =
-          e instanceof Error ? e.message : 'Failed to load protected audio.'
+        const message = e instanceof Error ? e.message : 'Failed to load protected audio.'
         onError?.(message)
         stopAll()
         onState?.('stopped')
@@ -76,8 +75,7 @@ export function useWaveformListPlayer() {
       const faint = styles.getPropertyValue('--color-faint').trim() || '#888888'
 
       const waveColor = resolvedTheme === 'dark' ? foreground : faint
-      const progressColor =
-        resolvedTheme === 'dark' ? mutedForeground : foreground
+      const progressColor = resolvedTheme === 'dark' ? mutedForeground : foreground
 
       const ws = WaveSurfer.create({
         container,
