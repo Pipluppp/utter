@@ -9,7 +9,10 @@ import {
   trialRestore,
 } from "../_shared/credits.ts";
 import { createAdminClient } from "../_shared/supabase.ts";
-import { getQwenConfig } from "../_shared/tts/provider.ts";
+import {
+  getQwenConfig,
+  isVoiceDesignEnabled,
+} from "../_shared/tts/provider.ts";
 import {
   normalizeProviderError,
   providerDetailMessage,
@@ -152,6 +155,10 @@ export async function runQwenDesignPreviewTask(params: {
   }
 
   try {
+    if (!isVoiceDesignEnabled()) {
+      throw new Error("Voice design is disabled by configuration.");
+    }
+
     if (await shouldCancelQwenDesignTask({ admin, userId, taskId })) {
       return;
     }
@@ -282,6 +289,10 @@ async function failQueuedDesignPreviewSubmission(params: {
 export const designRoutes = new Hono();
 
 designRoutes.post("/voices/design/preview", async (c) => {
+  if (!isVoiceDesignEnabled()) {
+    return jsonDetail("Voice design is currently disabled.", 403);
+  }
+
   let userId: string;
   try {
     const { user } = await requireUser(c.req.raw);
@@ -466,6 +477,10 @@ designRoutes.post("/voices/design/preview", async (c) => {
 });
 
 designRoutes.post("/voices/design", async (c) => {
+  if (!isVoiceDesignEnabled()) {
+    return jsonDetail("Voice design is currently disabled.", 403);
+  }
+
   let userId: string;
   try {
     const { user } = await requireUser(c.req.raw);

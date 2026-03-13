@@ -25,6 +25,12 @@ function parsePositiveInt(value: string | null, fallback: number): number {
   return Math.floor(parsed);
 }
 
+export function isVoiceDesignEnabled(): boolean {
+  const value = optionalEnv("VOICE_DESIGN_ENABLED");
+  if (!value) return true;
+  return value.toLowerCase() === "true";
+}
+
 export function getTtsProviderMode(): TtsProviderName {
   return "qwen";
 }
