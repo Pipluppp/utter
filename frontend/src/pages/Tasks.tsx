@@ -49,9 +49,7 @@ export function TasksPage() {
 
     void (async () => {
       try {
-        const response = await apiJson<TaskListResponse>(
-          `/api/tasks?${filterQuery}`,
-        )
+        const response = await apiJson<TaskListResponse>(`/api/tasks?${filterQuery}`)
         if (!active) return
         setTasks(response.tasks)
         setNextBefore(response.next_before)
@@ -74,9 +72,7 @@ export function TasksPage() {
     const id = window.setInterval(() => {
       void (async () => {
         try {
-          const response = await apiJson<TaskListResponse>(
-            `/api/tasks?${filterQuery}`,
-          )
+          const response = await apiJson<TaskListResponse>(`/api/tasks?${filterQuery}`)
           setTasks(response.tasks)
           setNextBefore(response.next_before)
         } catch {
@@ -99,9 +95,7 @@ export function TasksPage() {
         limit: '25',
         before: nextBefore,
       })
-      const response = await apiJson<TaskListResponse>(
-        `/api/tasks?${params.toString()}`,
-      )
+      const response = await apiJson<TaskListResponse>(`/api/tasks?${params.toString()}`)
       setTasks((current) => [...current, ...response.tasks])
       setNextBefore(response.next_before)
     } catch (e) {
@@ -117,9 +111,7 @@ export function TasksPage() {
       setError('Failed to cancel job.')
       return
     }
-    const response = await apiJson<TaskListResponse>(
-      `/api/tasks?${filterQuery}`,
-    )
+    const response = await apiJson<TaskListResponse>(`/api/tasks?${filterQuery}`)
     setTasks(response.tasks)
     setNextBefore(response.next_before)
   }
@@ -134,20 +126,20 @@ export function TasksPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
+    <div className='space-y-8'>
+      <div className='space-y-2'>
+        <h2 className='text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl'>
           Tasks
         </h2>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Live queue-backed work across Generate and Design. History remains the
-          archive for finished audio. This view is the job center.
+        <p className='max-w-2xl text-sm text-muted-foreground'>
+          Live queue-backed work across Generate and Design. History remains the archive for
+          finished audio. This view is the job center.
         </p>
       </div>
 
-      {error ? <Message variant="error">{error}</Message> : null}
+      {error ? <Message variant='error'>{error}</Message> : null}
 
-      <div className="flex flex-wrap gap-3">
+      <div className='flex flex-wrap gap-3'>
         {(
           [
             ['active', 'Active'],
@@ -156,7 +148,7 @@ export function TasksPage() {
         ).map(([value, label]) => (
           <button
             key={value}
-            type="button"
+            type='button'
             className={cn(
               'border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted',
               'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -169,7 +161,7 @@ export function TasksPage() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className='flex flex-wrap gap-3'>
         {(
           [
             ['all', 'All'],
@@ -179,7 +171,7 @@ export function TasksPage() {
         ).map(([value, label]) => (
           <button
             key={value}
-            type="button"
+            type='button'
             className={cn(
               'border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted',
               'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -193,36 +185,32 @@ export function TasksPage() {
       </div>
 
       {loading ? (
-        <div className="border border-border bg-background p-4 text-sm text-muted-foreground shadow-elevated">
+        <div className='border border-border bg-background p-4 text-sm text-muted-foreground shadow-elevated'>
           Loading tasks...
         </div>
       ) : tasks.length === 0 ? (
-        <div className="border border-border bg-background p-4 text-sm text-muted-foreground shadow-elevated">
+        <div className='border border-border bg-background p-4 text-sm text-muted-foreground shadow-elevated'>
           No jobs in this view.
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className='space-y-3'>
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="space-y-3 border border-border bg-background p-4 shadow-elevated"
+              className='space-y-3 border border-border bg-background p-4 shadow-elevated'
             >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="text-sm font-medium uppercase tracking-wide">
-                    {task.title}
-                  </div>
-                  <div className="text-xs text-faint">
+              <div className='flex flex-wrap items-start justify-between gap-3'>
+                <div className='min-w-0 flex-1 space-y-1'>
+                  <div className='text-sm font-medium uppercase tracking-wide'>{task.title}</div>
+                  <div className='text-xs text-faint'>
                     {taskLabel(task.type)} ·{' '}
                     {getStatusText(task.status, null, task.provider_status)}
                   </div>
                   {task.subtitle ? (
-                    <div className="text-sm text-muted-foreground">
-                      {task.subtitle}
-                    </div>
+                    <div className='text-sm text-muted-foreground'>{task.subtitle}</div>
                   ) : null}
                 </div>
-                <div className="text-right text-xs text-faint">
+                <div className='text-right text-xs text-faint'>
                   <div>Created {formatTimestamp(task.created_at)}</div>
                   {task.completed_at ? (
                     <div>Finished {formatTimestamp(task.completed_at)}</div>
@@ -230,38 +218,28 @@ export function TasksPage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-3 text-xs text-faint">
+              <div className='flex flex-wrap gap-3 text-xs text-faint'>
                 {task.voice_name ? <span>Voice: {task.voice_name}</span> : null}
                 {task.language ? <span>Language: {task.language}</span> : null}
                 {task.estimated_duration_minutes ? (
-                  <span>
-                    Est. {task.estimated_duration_minutes.toFixed(1)} min
-                  </span>
+                  <span>Est. {task.estimated_duration_minutes.toFixed(1)} min</span>
                 ) : null}
                 {task.error ? <span>Error: {task.error}</span> : null}
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className='flex flex-wrap gap-3'>
                 <Link
                   to={task.origin_page}
-                  className="inline-flex items-center border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className='inline-flex items-center border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
                 >
                   Open Source Page
                 </Link>
                 {task.supports_cancel ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => void onCancel(task.id)}
-                  >
+                  <Button type='button' variant='secondary' onClick={() => void onCancel(task.id)}>
                     Cancel
                   </Button>
                 ) : (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => void onDismiss(task.id)}
-                  >
+                  <Button type='button' variant='secondary' onClick={() => void onDismiss(task.id)}>
                     Dismiss
                   </Button>
                 )}
@@ -272,8 +250,8 @@ export function TasksPage() {
           {nextBefore ? (
             <div>
               <Button
-                type="button"
-                variant="secondary"
+                type='button'
+                variant='secondary'
                 onClick={() => void loadMore()}
                 disabled={loadingMore}
               >

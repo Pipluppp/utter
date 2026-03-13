@@ -16,29 +16,22 @@ export function AccountPanel({
 }) {
   return (
     <section
-      className={cn(
-        'border border-border bg-background p-5 shadow-elevated md:p-7',
-        className,
-      )}
+      className={cn('border border-border bg-background p-5 shadow-elevated md:p-7', className)}
     >
       {kicker ? (
-        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground/65">
+        <div className='text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground/65'>
           {kicker}
         </div>
       ) : null}
       {title ? (
-        <h3 className="mt-3 text-xl font-medium leading-tight text-foreground md:text-2xl">
+        <h3 className='mt-3 text-xl font-medium leading-tight text-foreground md:text-2xl'>
           {title}
         </h3>
       ) : null}
       {description ? (
-        <p className="mt-2 max-w-2xl text-[15px] leading-7 text-foreground/72">
-          {description}
-        </p>
+        <p className='mt-2 max-w-2xl text-[15px] leading-7 text-foreground/72'>{description}</p>
       ) : null}
-      <div className={cn((title || kicker || description) && 'mt-6')}>
-        {children}
-      </div>
+      <div className={cn((title || kicker || description) && 'mt-6')}>{children}</div>
     </section>
   )
 }
@@ -67,17 +60,11 @@ export function AccountNotice({
   )
 }
 
-export function AccountEmptyState({
-  title,
-  body,
-}: {
-  title: string
-  body: string
-}) {
+export function AccountEmptyState({ title, body }: { title: string; body: string }) {
   return (
-    <div className="border border-border bg-subtle px-4 py-5 text-[15px] leading-6 shadow-elevated">
-      <div className="font-medium text-foreground">{title}</div>
-      <div className="mt-2 text-foreground/68">{body}</div>
+    <div className='border border-border bg-subtle px-4 py-5 text-[15px] leading-6 shadow-elevated'>
+      <div className='font-medium text-foreground'>{title}</div>
+      <div className='mt-2 text-foreground/68'>{body}</div>
     </div>
   )
 }

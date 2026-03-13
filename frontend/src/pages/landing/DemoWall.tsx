@@ -4,12 +4,9 @@ import { DemoClipCard } from './DemoClipCard'
 
 const LAYOUT: Record<string, string> = {
   gojo: 'md:col-span-5 md:col-start-2 md:rotate-[-2.6deg] md:translate-y-2 md:-translate-x-1',
-  frieren:
-    'md:col-span-5 md:col-start-7 md:rotate-[2.3deg] md:-translate-y-1 md:translate-x-1',
-  chungking:
-    'md:col-span-5 md:col-start-7 md:rotate-[2.8deg] md:-translate-y-3 md:translate-x-1',
-  eeaao:
-    'md:col-span-5 md:col-start-2 md:rotate-[-2.1deg] md:translate-y-4 md:-translate-x-1',
+  frieren: 'md:col-span-5 md:col-start-7 md:rotate-[2.3deg] md:-translate-y-1 md:translate-x-1',
+  chungking: 'md:col-span-5 md:col-start-7 md:rotate-[2.8deg] md:-translate-y-3 md:translate-x-1',
+  eeaao: 'md:col-span-5 md:col-start-2 md:rotate-[-2.1deg] md:translate-y-4 md:-translate-x-1',
   brutalist: 'md:col-span-6 md:col-start-4 md:rotate-[2.1deg] md:translate-y-3',
 }
 
@@ -18,7 +15,7 @@ export function DemoWall() {
 
   return (
     <section
-      id="demos"
+      id='demos'
       className={cn(
         'relative left-1/2 right-1/2 -mx-[50vw] w-screen',
         'scroll-mt-24',
@@ -26,7 +23,7 @@ export function DemoWall() {
       )}
     >
       <div
-        aria-hidden="true"
+        aria-hidden='true'
         className={cn(
           'pointer-events-none absolute inset-0',
           'opacity-70',
@@ -37,7 +34,7 @@ export function DemoWall() {
         )}
       />
       <div
-        aria-hidden="true"
+        aria-hidden='true'
         className={cn(
           'pointer-events-none absolute inset-0 mix-blend-multiply dark:mix-blend-screen',
           'opacity-40',
@@ -46,9 +43,9 @@ export function DemoWall() {
         )}
       />
 
-      <div className="relative px-4 py-12 md:px-10">
-        <div className="mx-auto max-w-none">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+      <div className='relative px-4 py-12 md:px-10'>
+        <div className='mx-auto max-w-none'>
+          <div className='grid grid-cols-1 gap-4 md:grid-cols-12'>
             {demos.map((demo) => (
               <DemoClipCard
                 key={demo.id}

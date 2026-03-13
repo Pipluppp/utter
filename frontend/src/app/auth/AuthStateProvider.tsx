@@ -1,12 +1,5 @@
 import type { Session, User } from '@supabase/supabase-js'
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
 export type AuthStatus = 'loading' | 'signed_out' | 'signed_in'
@@ -20,9 +13,7 @@ export type AuthStateSnapshot = {
 
 const AuthStateContext = createContext<AuthStateSnapshot | null>(null)
 
-function createSignedOutSnapshot(
-  error: Error | null = null,
-): AuthStateSnapshot {
+function createSignedOutSnapshot(error: Error | null = null): AuthStateSnapshot {
   return {
     status: 'signed_out',
     session: null,
@@ -45,8 +36,7 @@ async function resolveAuthSnapshot(): Promise<AuthStateSnapshot> {
     return createSignedOutSnapshot()
   }
 
-  const { data: sessionData, error: sessionError } =
-    await supabase.auth.getSession()
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
   if (sessionError) {
     return createSignedOutSnapshot(sessionError)
   }
@@ -63,9 +53,7 @@ async function resolveAuthSnapshot(): Promise<AuthStateSnapshot> {
 
   const user = userData.user
   if (!user) {
-    return createSignedOutSnapshot(
-      new Error('Supabase returned a session without a user.'),
-    )
+    return createSignedOutSnapshot(new Error('Supabase returned a session without a user.'))
   }
 
   return {
@@ -132,11 +120,7 @@ export function AuthStateProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  return (
-    <AuthStateContext.Provider value={authState}>
-      {children}
-    </AuthStateContext.Provider>
-  )
+  return <AuthStateContext.Provider value={authState}>{children}</AuthStateContext.Provider>
 }
 
 export function useAuthState() {

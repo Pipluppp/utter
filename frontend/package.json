@@ -9,11 +9,13 @@
     "build:staging": "vite build --mode staging",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "biome lint ./src",
-    "format": "biome format --write ./src",
-    "check": "biome check ./src",
-    "check:write": "biome check --write ./src",
-    "ci": "biome ci ./src"
+    "lint": "oxlint --config .oxlintrc.json ./src",
+    "lint:fix": "oxlint --config .oxlintrc.json --fix ./src",
+    "format": "oxfmt --config .oxfmtrc.jsonc --write ./src",
+    "format:check": "oxfmt --config .oxfmtrc.jsonc --check ./src",
+    "check": "npm run format:check && npm run lint",
+    "check:write": "npm run format && npm run lint:fix",
+    "ci": "npm run check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
@@ -26,14 +28,20 @@
     "wavesurfer.js": "^7.10.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.13",
-    "@tailwindcss/vite": "^4.0.0",
+    "@tailwindcss/vite": "^4.2.1",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
-    "@vitejs/plugin-react": "^4.4.1",
+    "@vitejs/plugin-react": "^6.0.1",
+    "oxfmt": "^0.17.0",
+    "oxlint": "^1.17.0",
     "react-grab": "^0.1.13",
-    "tailwindcss": "^4.0.0",
+    "tailwindcss": "^4.2.1",
     "typescript": "~5.9.3",
-    "vite": "^7.2.4"
+    "vite": "^8.0.0"
+  },
+  "overrides": {
+    "@tailwindcss/vite": {
+      "vite": "^8.0.0"
+    }
   }
 }

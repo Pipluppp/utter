@@ -4,11 +4,5 @@ import { cn } from '../../lib/cn'
 type SkeletonProps = HTMLAttributes<HTMLDivElement>
 
 export function Skeleton({ className, ...props }: SkeletonProps) {
-  return (
-    <div
-      aria-hidden="true"
-      className={cn('animate-pulse bg-muted', className)}
-      {...props}
-    />
-  )
+  return <div aria-hidden='true' className={cn('animate-pulse bg-muted', className)} {...props} />
 }

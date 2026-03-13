@@ -10,10 +10,7 @@ export type NavVariant =
   | 'auth_minimal'
   | 'app_pending_auth'
 
-export function getNavVariant(
-  routeFamily: RouteFamily,
-  authStatus: AuthStatus,
-): NavVariant {
+export function getNavVariant(routeFamily: RouteFamily, authStatus: AuthStatus): NavVariant {
   if (routeFamily === 'auth') {
     return 'auth_minimal'
   }
@@ -25,9 +22,7 @@ export function getNavVariant(
   return authStatus === 'signed_in' ? 'marketing_member' : 'marketing_public'
 }
 
-export function buildReturnTo(
-  location: Pick<Location, 'pathname' | 'search' | 'hash'>,
-) {
+export function buildReturnTo(location: Pick<Location, 'pathname' | 'search' | 'hash'>) {
   return `${location.pathname}${location.search}${location.hash}`
 }
 
@@ -39,10 +34,7 @@ export function getSafeReturnTo(returnTo: string | null | undefined) {
   return candidate || '/'
 }
 
-export function buildAuthHref(
-  returnTo: string,
-  intent: 'sign_in' | 'sign_up' = 'sign_in',
-) {
+export function buildAuthHref(returnTo: string, intent: 'sign_in' | 'sign_up' = 'sign_in') {
   const params = new URLSearchParams({ returnTo: getSafeReturnTo(returnTo) })
   if (intent === 'sign_up') {
     params.set('intent', intent)

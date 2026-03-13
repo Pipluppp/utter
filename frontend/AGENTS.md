@@ -4,24 +4,24 @@
 
 - React 19 + Vite + TypeScript
 - Tailwind CSS v4
-- Format/lint: Biome
+- Format/lint: Oxfmt + Oxlint
 
 ## Commands
 
 - Dev: `npm run dev`
 - Typecheck: `npm run typecheck`
 - Build: `npm run build`
-- Biome verify: `npm run check`
-- Biome fix: `npm run check:write`
-- Biome CI: `npm run ci`
+- Verify: `npm run check`
+- Fix: `npm run check:write`
+- CI: `npm run ci`
 
 From repo root, you can run:
 
 - `npm --prefix frontend run dev`
 - `npm --prefix frontend run check:write`
 
-## Biome
+## Oxc
 
-- Config: `frontend/biome.json`
-- VS Code: `.vscode/settings.json` sets Biome as the formatter for JS/TS/JSON/CSS.
-- Keep save behavior predictable: fixes/import-organize are configured as "explicit" code actions.
+- Config: `frontend/.oxfmtrc.jsonc`, `frontend/.oxlintrc.json`
+- VS Code: `.vscode/settings.json` sets Oxc as the formatter for JS/TS/JSON/CSS.
+- Keep save behavior predictable: global fix/organize-import code actions are configured as "explicit".

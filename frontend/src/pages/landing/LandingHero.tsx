@@ -6,25 +6,22 @@ import { SVGBlobs } from '../../components/ui/SVGBlobs'
 
 export function LandingHero() {
   return (
-    <section className="relative isolate py-6 md:py-14">
-      <div className="pointer-events-none absolute -left-[18%] top-0 -z-10 w-[56%] overflow-hidden opacity-32 [mask-image:linear-gradient(to_right,#000_0%,#000_50%,transparent_100%)] select-none">
-        <SVGBlobs density="sparse" className="w-full" />
+    <section className='relative isolate py-6 md:py-14'>
+      <div className='pointer-events-none absolute -left-[18%] top-0 -z-10 w-[56%] overflow-hidden opacity-32 [mask-image:linear-gradient(to_right,#000_0%,#000_50%,transparent_100%)] select-none'>
+        <SVGBlobs density='sparse' className='w-full' />
       </div>
-      <div className="pointer-events-none absolute -right-[18%] top-0 -z-10 w-[56%] overflow-hidden opacity-32 [mask-image:linear-gradient(to_left,#000_0%,#000_50%,transparent_100%)] select-none">
-        <SVGBlobs density="sparse" className="w-full" />
+      <div className='pointer-events-none absolute -right-[18%] top-0 -z-10 w-[56%] overflow-hidden opacity-32 [mask-image:linear-gradient(to_left,#000_0%,#000_50%,transparent_100%)] select-none'>
+        <SVGBlobs density='sparse' className='w-full' />
       </div>
-      <div className="mx-auto max-w-4xl text-center">
-        <TextReveal
-          lines={['Clone voices.', 'Design new ones.', 'Generate speech.']}
-        />
+      <div className='mx-auto max-w-4xl text-center'>
+        <TextReveal lines={['Clone voices.', 'Design new ones.', 'Generate speech.']} />
 
-        <p className="mx-auto mt-5 max-w-2xl text-sm text-muted-foreground">
-          Qwen-powered voice cloning, voice design, and speech generation. Hear
-          real demos first, then create voices and queue speech in your own
-          workspace. Supports 10 Qwen TTS languages.
+        <p className='mx-auto mt-5 max-w-2xl text-sm text-muted-foreground'>
+          Qwen-powered voice cloning, voice design, and speech generation. Hear real demos first,
+          then create voices and queue speech in your own workspace. Supports 10 Qwen TTS languages.
         </p>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <div className='mt-8 flex flex-wrap justify-center gap-3'>
           <Link
             to={{ pathname: '/', hash: '#demos' }}
             className={buttonStyles({ variant: 'primary', size: 'md' })}
@@ -32,7 +29,7 @@ export function LandingHero() {
             {'Hear the demos ->'}
           </Link>
           <FeatureEntryLink
-            to="/clone"
+            to='/clone'
             className={buttonStyles({ variant: 'secondary', size: 'md' })}
           >
             {'Clone a voice ->'}

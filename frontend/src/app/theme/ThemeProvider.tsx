@@ -31,8 +31,7 @@ function applyResolvedTheme(resolvedTheme: 'light' | 'dark') {
   root.style.colorScheme = resolvedDark ? 'dark' : 'light'
 
   const metaTheme = document.querySelector('meta[name="theme-color"]')
-  if (metaTheme)
-    metaTheme.setAttribute('content', resolvedDark ? DARK_BG : LIGHT_BG)
+  if (metaTheme) metaTheme.setAttribute('content', resolvedDark ? DARK_BG : LIGHT_BG)
 }
 
 function readStoredTheme(): Theme {

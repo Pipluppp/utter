@@ -57,9 +57,7 @@ export function AccountProfilePage() {
   useEffect(() => {
     if (blocker.state !== 'blocked') return
 
-    const proceed = window.confirm(
-      'You have unsaved profile changes. Leave this page?',
-    )
+    const proceed = window.confirm('You have unsaved profile changes. Leave this page?')
 
     if (proceed) {
       blocker.proceed()
@@ -78,9 +76,7 @@ export function AccountProfilePage() {
       await saveProfile(form)
       setSaveSuccess('Changes saved.')
     } catch (error) {
-      setSaveError(
-        error instanceof Error ? error.message : 'Failed to save profile.',
-      )
+      setSaveError(error instanceof Error ? error.message : 'Failed to save profile.')
     } finally {
       setSaving(false)
     }
@@ -93,54 +89,48 @@ export function AccountProfilePage() {
     try {
       await signOut()
     } catch (error) {
-      setSaveError(
-        error instanceof Error ? error.message : 'Failed to sign out.',
-      )
+      setSaveError(error instanceof Error ? error.message : 'Failed to sign out.')
     }
   }
 
   const displayName = form.displayName.trim() || authEmail || 'Utter account'
 
   return (
-    <div className="space-y-5">
-      {saveError ? (
-        <AccountNotice tone="error">{saveError}</AccountNotice>
-      ) : null}
-      {saveSuccess ? (
-        <AccountNotice tone="success">{saveSuccess}</AccountNotice>
-      ) : null}
+    <div className='space-y-5'>
+      {saveError ? <AccountNotice tone='error'>{saveError}</AccountNotice> : null}
+      {saveSuccess ? <AccountNotice tone='success'>{saveSuccess}</AccountNotice> : null}
 
       {!profile && !authEmail ? <AccountProfileSkeleton /> : null}
 
       {profile || authEmail ? (
         <>
-          <AccountPanel kicker="Profile" title="Account identity">
-            <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 lg:flex-col lg:items-start">
-                  <div className="grid size-20 place-items-center overflow-hidden rounded-full border border-border bg-subtle text-lg font-medium uppercase shadow-elevated">
+          <AccountPanel kicker='Profile' title='Account identity'>
+            <div className='grid gap-6 lg:grid-cols-[220px_1fr]'>
+              <div className='space-y-4'>
+                <div className='flex items-center gap-4 lg:flex-col lg:items-start'>
+                  <div className='grid size-20 place-items-center overflow-hidden rounded-full border border-border bg-subtle text-lg font-medium uppercase shadow-elevated'>
                     {previewInitials(displayName)}
                   </div>
                   <div>
-                    <div className="text-base font-medium text-foreground md:text-lg">
+                    <div className='text-base font-medium text-foreground md:text-lg'>
                       {displayName}
                     </div>
-                    <div className="mt-2 text-[15px] leading-6 text-foreground/68">
+                    <div className='mt-2 text-[15px] leading-6 text-foreground/68'>
                       {authEmail || 'Unavailable'}
                     </div>
-                    <div className="mt-2 break-all text-[13px] leading-6 text-foreground/56">
+                    <div className='mt-2 break-all text-[13px] leading-6 text-foreground/56'>
                       {profile?.id ?? 'Unavailable'}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="grid gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="display_name">Display name</Label>
+              <div className='grid gap-4'>
+                <div className='space-y-1.5'>
+                  <Label htmlFor='display_name'>Display name</Label>
                   <Input
-                    id="display_name"
-                    autoComplete="name"
+                    id='display_name'
+                    autoComplete='name'
                     value={form.displayName}
                     onChange={(event) =>
                       setForm((current) => ({
@@ -148,20 +138,20 @@ export function AccountProfilePage() {
                         displayName: event.target.value,
                       }))
                     }
-                    placeholder="Your name"
+                    placeholder='Your name'
                     disabled={saving}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => void onSave()} loading={saving}>
+            <div className='mt-6 flex flex-wrap gap-2'>
+              <Button size='sm' onClick={() => void onSave()} loading={saving}>
                 Save changes
               </Button>
               <Button
-                variant="secondary"
-                size="sm"
+                variant='secondary'
+                size='sm'
                 onClick={() => setForm(original)}
                 disabled={!hasChanges || saving}
               >
@@ -170,13 +160,9 @@ export function AccountProfilePage() {
             </div>
           </AccountPanel>
 
-          <AccountPanel title="Sign out">
-            <div className="flex flex-wrap gap-3">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => void onSignOut()}
-              >
+          <AccountPanel title='Sign out'>
+            <div className='flex flex-wrap gap-3'>
+              <Button variant='secondary' size='sm' onClick={() => void onSignOut()}>
                 Sign out
               </Button>
             </div>

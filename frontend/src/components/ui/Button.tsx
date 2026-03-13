@@ -24,8 +24,7 @@ export function buttonStyles({
     'disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-faint',
     variant === 'primary' &&
       'border-foreground bg-foreground text-background hover:bg-foreground/80 hover:border-foreground/80',
-    variant === 'secondary' &&
-      'border-border bg-background text-foreground hover:bg-subtle',
+    variant === 'secondary' && 'border-border bg-background text-foreground hover:bg-subtle',
     block && 'w-full',
     loading && 'text-transparent',
     className,
@@ -61,9 +60,7 @@ export function Button({
         <span
           className={cn(
             'pointer-events-none absolute inset-0 m-auto size-4 animate-spin rounded-full border-2 border-r-transparent',
-            variant === 'primary'
-              ? 'border-background/70'
-              : 'border-foreground/60',
+            variant === 'primary' ? 'border-background/70' : 'border-foreground/60',
           )}
         />
       ) : null}

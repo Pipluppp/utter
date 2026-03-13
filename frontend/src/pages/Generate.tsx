@@ -14,10 +14,7 @@ import { getUtterDemo } from '../content/utterDemo'
 import { apiJson } from '../lib/api'
 import { cn } from '../lib/cn'
 import { fetchTextUtf8 } from '../lib/fetchTextUtf8'
-import {
-  resolveProtectedMediaUrl,
-  triggerDownload,
-} from '../lib/protectedMedia'
+import { resolveProtectedMediaUrl, triggerDownload } from '../lib/protectedMedia'
 import { formatElapsed } from '../lib/time'
 import type { GenerateResponse, StoredTask, VoicesResponse } from '../lib/types'
 import { useLanguages } from './hooks'
@@ -41,7 +38,7 @@ function TaskSummaryRow({
 }) {
   return (
     <button
-      type="button"
+      type='button'
       className={cn(
         'flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left hover:bg-muted',
         'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -49,13 +46,13 @@ function TaskSummaryRow({
       )}
       onClick={onSelect}
     >
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium uppercase tracking-wide">
+      <div className='min-w-0 flex-1'>
+        <div className='truncate text-sm font-medium uppercase tracking-wide'>
           {task.description}
         </div>
-        <div className="mt-1 text-xs text-muted-foreground">{statusText}</div>
+        <div className='mt-1 text-xs text-muted-foreground'>{statusText}</div>
       </div>
-      <div className="shrink-0 text-xs text-faint">
+      <div className='shrink-0 text-xs text-faint'>
         {task.status === 'pending' || task.status === 'processing'
           ? formatElapsed(task.startedAt)
           : task.status === 'completed'
@@ -117,10 +114,7 @@ export function GeneratePage() {
   }, [])
 
   useEffect(() => {
-    if (
-      selectedTaskId &&
-      generateTasks.some((task) => task.taskId === selectedTaskId)
-    ) {
+    if (selectedTaskId && generateTasks.some((task) => task.taskId === selectedTaskId)) {
       return
     }
     setSelectedTaskId(generateTasks[0]?.taskId ?? null)
@@ -175,10 +169,7 @@ export function GeneratePage() {
       return
     }
 
-    if (
-      selectedTask.status === 'pending' ||
-      selectedTask.status === 'processing'
-    ) {
+    if (selectedTask.status === 'pending' || selectedTask.status === 'processing') {
       handledTaskKeyRef.current = null
       setAudioUrl(null)
       setDownloadUrl(null)
@@ -204,9 +195,7 @@ export function GeneratePage() {
           setDownloadUrl(resolvedUrl)
           setError(null)
         } catch (e) {
-          setError(
-            e instanceof Error ? e.message : 'Failed to load generation audio.',
-          )
+          setError(e instanceof Error ? e.message : 'Failed to load generation audio.')
         }
       })()
       return
@@ -239,9 +228,7 @@ export function GeneratePage() {
   const selectedVoice = voices?.voices.find((v) => v.id === voiceId) ?? null
   const selectedVoiceProvider = selectedVoice?.tts_provider ?? 'qwen'
   const selectedVoiceCompatible =
-    voiceId.length === 0
-      ? true
-      : Boolean(selectedVoice) && selectedVoiceProvider === provider
+    voiceId.length === 0 ? true : Boolean(selectedVoice) && selectedVoiceProvider === provider
   const activeGenerateCount = generateTasks.filter(
     (task) => task.status === 'pending' || task.status === 'processing',
   ).length
@@ -304,49 +291,49 @@ export function GeneratePage() {
   }
 
   return (
-    <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
-      <div className="flex items-center justify-center gap-2">
-        <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
+    <GridArtSurface sweepNonce={sweepNonce} contentClassName='space-y-8'>
+      <div className='flex items-center justify-center gap-2'>
+        <h2 className='text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl'>
           Generate
         </h2>
-        <InfoTip align="end" label="Generate tips">
-          <div className="space-y-2">
+        <InfoTip align='end' label='Generate tips'>
+          <div className='space-y-2'>
             <div>Pick a voice, enter text, then start generation.</div>
             <div>
-              Generate runs as a background job, so queued or processing work
-              keeps moving even if you leave the page.
+              Generate runs as a background job, so queued or processing work keeps moving even if
+              you leave the page.
             </div>
             <div>Max input: {maxTextChars.toLocaleString()} characters.</div>
           </div>
         </InfoTip>
       </div>
 
-      {error ? <Message variant="error">{error}</Message> : null}
+      {error ? <Message variant='error'>{error}</Message> : null}
 
       <form
-        className="space-y-6"
+        className='space-y-6'
         onSubmit={(e) => {
           e.preventDefault()
           void onGenerate()
         }}
       >
         <div>
-          <Label htmlFor="generate-voice">Voice</Label>
+          <Label htmlFor='generate-voice'>Voice</Label>
           <Select
-            id="generate-voice"
+            id='generate-voice'
             value={voiceId}
             onChange={(e) => setVoiceId(e.target.value)}
             disabled={loadingVoices || !voices}
-            name="voice_id"
+            name='voice_id'
           >
             {loadingVoices ? (
-              <option value="">Loading voices...</option>
+              <option value=''>Loading voices...</option>
             ) : !voices ? (
-              <option value="">Unable to load voices</option>
+              <option value=''>Unable to load voices</option>
             ) : voices.voices.length === 0 ? (
-              <option value="">No voices available</option>
+              <option value=''>No voices available</option>
             ) : (
-              <option value="">Select a voice</option>
+              <option value=''>Select a voice</option>
             )}
             {voices?.voices.map((v) => {
               const voiceProvider = v.tts_provider ?? 'qwen'
@@ -362,12 +349,12 @@ export function GeneratePage() {
         </div>
 
         <div>
-          <Label htmlFor="generate-language">Language</Label>
+          <Label htmlFor='generate-language'>Language</Label>
           <Select
-            id="generate-language"
+            id='generate-language'
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            name="language"
+            name='language'
           >
             {languages.map((l) => (
               <option key={l} value={l}>
@@ -378,55 +365,48 @@ export function GeneratePage() {
         </div>
 
         <div>
-          <Label htmlFor="generate-text">Text</Label>
+          <Label htmlFor='generate-text'>Text</Label>
           <Textarea
-            id="generate-text"
-            name="text"
+            id='generate-text'
+            name='text'
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Type what you want the voice to say..."
-            className="min-h-44"
+            placeholder='Type what you want the voice to say...'
+            className='min-h-44'
           />
-          <div className="mt-2 flex items-center justify-between text-xs text-faint">
-            <span
-              className={cn(
-                charCount > maxTextChars && 'text-red-700 dark:text-red-400',
-              )}
-            >
+          <div className='mt-2 flex items-center justify-between text-xs text-faint'>
+            <span className={cn(charCount > maxTextChars && 'text-red-700 dark:text-red-400')}>
               {charCount}/{maxTextChars}
             </span>
             <span>Max {maxTextChars.toLocaleString()} characters</span>
           </div>
         </div>
 
-        <Button type="submit" block disabled={!canSubmit}>
+        <Button type='submit' block disabled={!canSubmit}>
           {isSubmitting ? 'Starting generation...' : 'Generate Speech'}
         </Button>
       </form>
 
       {selectedTask ? (
-        <div className="space-y-4 border border-border bg-subtle p-4 shadow-elevated">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className='space-y-4 border border-border bg-subtle p-4 shadow-elevated'>
+          <div className='flex flex-wrap items-center justify-between gap-3'>
             <div>
-              <div className="text-sm font-medium uppercase tracking-wide">
-                Selected Job
-              </div>
-              <div className="mt-1 text-sm text-muted-foreground">
+              <div className='text-sm font-medium uppercase tracking-wide'>Selected Job</div>
+              <div className='mt-1 text-sm text-muted-foreground'>
                 {statusText ?? 'Processing...'}
               </div>
             </div>
-            <div className="text-xs text-faint">
-              {selectedTask.status === 'pending' ||
-              selectedTask.status === 'processing'
+            <div className='text-xs text-faint'>
+              {selectedTask.status === 'pending' || selectedTask.status === 'processing'
                 ? formatElapsed(selectedTask.startedAt)
                 : taskLabel(selectedTask.type)}
             </div>
           </div>
           {selectedTask.subtitle ? (
-            <div className="text-xs text-faint">{selectedTask.subtitle}</div>
+            <div className='text-xs text-faint'>{selectedTask.subtitle}</div>
           ) : null}
           {activeGenerateCount > 1 ? (
-            <div className="text-xs text-faint">
+            <div className='text-xs text-faint'>
               {activeGenerateCount} generate jobs currently running.
             </div>
           ) : null}
@@ -434,11 +414,9 @@ export function GeneratePage() {
       ) : null}
 
       {generateTasks.length > 0 ? (
-        <div className="space-y-3">
-          <div className="text-sm font-medium uppercase tracking-wide">
-            Tracked Jobs
-          </div>
-          <div className="space-y-2">
+        <div className='space-y-3'>
+          <div className='text-sm font-medium uppercase tracking-wide'>Tracked Jobs</div>
+          <div className='space-y-2'>
             {generateTasks.map((task) => (
               <TaskSummaryRow
                 key={task.taskId}
@@ -457,15 +435,13 @@ export function GeneratePage() {
       ) : null}
 
       {audioUrl ? (
-        <div className="space-y-4 border border-border bg-background p-4 shadow-elevated">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm font-medium uppercase tracking-wide">
-              Result
-            </div>
+        <div className='space-y-4 border border-border bg-background p-4 shadow-elevated'>
+          <div className='flex flex-wrap items-center justify-between gap-3'>
+            <div className='text-sm font-medium uppercase tracking-wide'>Result</div>
             {downloadUrl ? (
               <button
-                type="button"
-                className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                type='button'
+                className='border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
                 onClick={() => void onDownload()}
               >
                 Download

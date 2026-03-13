@@ -30,9 +30,7 @@ export function useDebouncedValue<T>(value: T, delayMs: number) {
 }
 
 export function useLanguages() {
-  const [data, setData] = useState<LanguagesResponse | null>(
-    () => languagesCache,
-  )
+  const [data, setData] = useState<LanguagesResponse | null>(() => languagesCache)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(() => !languagesCache)
 
