@@ -18,7 +18,10 @@
     "cf:worker:types": "npm --prefix workers/api run types",
     "test:worker:local": "cd workers/api/tests && cross-env API_URL=http://127.0.0.1:8787/api deno test --allow-net --allow-env --allow-read .",
     "test:db": "supabase test db",
-    "test:all": "npm run test:db && npm run test:worker:local"
+    "test:all": "npm run test:db && npm run test:worker:local",
+    "mobile:install": "npm --prefix mobile install && npx --prefix mobile expo install --fix",
+    "mobile:dev": "npm --prefix mobile exec expo start",
+    "mobile:typecheck": "npm --prefix mobile run typecheck"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

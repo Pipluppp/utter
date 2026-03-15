@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Utter",
+    "slug": "utter",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "utter",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.utter.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Utter needs microphone access to record voice references for cloning."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#000000"
+      },
+      "package": "com.utter.app",
+      "permissions": [
+        "RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Utter needs microphone access to record voice references for cloning."
+        }
+      ],
+      "expo-asset",
+      "expo-font"
+    ]
+  }
+}
