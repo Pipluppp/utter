@@ -32,14 +32,14 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | Feature | Web | Mobile | Status |
 |---------|-----|--------|--------|
 | Voice list (FlatList) | Yes | Yes | Done |
-| Source badge (Clone/Designed) | Yes | No | Missing |
+| Source badge (Clone/Designed) | Yes | Yes | Done |
 | Search with debounce | Yes | No | Missing |
 | Source filter (All/Clone/Designed) | Yes | No | Missing |
 | Pagination (20 per page) | Yes | No | Missing |
-| Skeleton loading | Yes | No | Missing |
+| Skeleton loading | Yes | Yes | Done |
 | Preview audio (waveform) | Yes | No | Missing |
-| Generate from voice (navigate) | Yes | No | Missing |
-| Delete voice (confirmation) | Yes | No | Missing |
+| Generate from voice (navigate) | Yes | Yes | Done |
+| Delete voice (confirmation) | Yes | Yes | Done |
 | Search token highlighting | Yes | No | Missing |
 
 ### Generate (`/generate`)
@@ -48,32 +48,32 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 |---------|-----|--------|--------|
 | Voice selector | Yes | Yes | Done |
 | Language selector | Yes | Yes | Done |
-| Text input with char counter | Yes | Partial | Missing char counter |
+| Text input with char counter | Yes | Yes | Done |
 | Generate button with validation | Yes | Yes | Done |
 | Task polling | Yes | Yes | Done |
 | Active task badge on tab | Yes | Yes | Done |
-| Multi-task tracking list | Yes | No | Missing |
-| Task selection UI | Yes | No | Missing |
+| Multi-task tracking list | Yes | Yes | Done |
+| Task selection UI | Yes | Yes | Done |
 | Audio playback on completion | Yes | Yes | Done (expo-audio) |
 | Waveform visualization | Yes | No | Missing (needs RN alternative) |
 | Download audio | Yes | No | Missing |
 | Form state persistence | localStorage | No | Missing |
-| Voice pre-selection via param | URL params | No | Missing |
-| Elapsed time display | Yes | No | Missing |
+| Voice pre-selection via param | URL params | Yes | Done |
+| Elapsed time display | Yes | Yes | Done |
 
 ### Design (`/design`)
 
 | Feature | Web | Mobile | Status |
 |---------|-----|--------|--------|
 | Voice name input | Yes | Yes | Done |
-| Description textarea with counter | Yes | Partial | Missing char counter |
+| Description textarea with counter | Yes | Yes | Done |
 | Example prompt buttons | Yes | Yes | Done |
 | Preview text input | Yes | Yes | Done |
 | Language selector | Yes | Yes | Done |
 | Generate preview (task) | Yes | Yes | Done |
-| Preview audio playback | Yes | Partial | Missing (task result playback not wired) |
+| Preview audio playback | Yes | Yes | Done |
 | Save to library | Yes | Yes | Done |
-| Multi-preview tracking | Yes | No | Missing |
+| Multi-preview tracking | Yes | Yes | Done |
 
 ### Clone (`/clone`)
 
@@ -91,8 +91,8 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | Transcript textarea | Yes | Yes | Done |
 | Language selector | Yes | Yes | Done |
 | 3-step upload (URL, PUT, finalize) | Yes | Yes | Done |
-| Example voice loader | Yes | No | Missing |
-| Success modal with navigation | Yes | Yes | Done (Alert) |
+| Example voice loader | Yes | Yes | Done |
+| Success modal with navigation | Yes | Yes | Done (Alert + navigate to Generate) |
 
 ### History (`/history`)
 
@@ -137,8 +137,8 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 |---------|-----|--------|--------|
 | Dark theme | Yes | Partial | Dark hardcoded, no light mode toggle |
 | Error boundaries | Yes | No | Missing |
-| Skeleton loading states | Yes | No | Missing |
-| Pull-to-refresh | N/A | No | Missing (mobile-native pattern) |
+| Skeleton loading states | Yes | Partial | Done on Voices, missing on other screens |
+| Pull-to-refresh | N/A | Partial | Done on Voices, missing on other list screens |
 | Haptic feedback | N/A | No | Missing (mobile-native pattern) |
 | Offline handling | No | No | Neither has it |
 

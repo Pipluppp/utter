@@ -150,4 +150,10 @@ Build the History screen:
 4. **Update mobile/app/(tabs)/generate.tsx** — accept text and language params in addition to voice param (for regenerate navigation)
 
 Run npx tsc --noEmit from mobile/ after each change. Commit when complete.
+
+**Post-session docs update (required):**
+After the History screen is done:
+1. Update docs/2026-03-15/01-web-parity-plan.md — change all History features from "Missing (no screen)" to "Done"
+2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
+3. Commit the doc updates separately: `docs(mobile): update parity plan after history screen`
 ```

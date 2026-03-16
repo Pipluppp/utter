@@ -161,4 +161,10 @@ Add audio recording to the Clone screen:
 Cross-reference: frontend/src/pages/Clone.tsx (recording section uses WebAudio — mobile uses expo-audio native recording instead)
 
 Run npx tsc --noEmit from mobile/ after changes. Commit when complete.
+
+**Post-session docs update (required):**
+After clone recording is done:
+1. Update docs/2026-03-15/01-web-parity-plan.md — change Clone recording/transcription features from "Missing" to "Done"
+2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
+3. Commit the doc updates separately: `docs(mobile): update parity plan after clone recording`
 ```

@@ -18,6 +18,13 @@ This folder contains execution plans and session prompts for bringing the Utter 
 | 5 | `05-clone-recording.md` | Clone recording: expo-audio mic capture, level meter, timer, auto-transcription | 1 session |
 | 6 | `06-phase3-stretch.md` | Phase 3 stretch: magic link auth, form persistence, theme toggle | 1–2 sessions |
 
+## Post-session requirement
+
+After completing each plan, the agent MUST:
+1. Update `docs/2026-03-15/01-web-parity-plan.md` — change Status from "Missing" to "Done" for every feature implemented
+2. Update the plan file itself — add a "Completed" section at the bottom with what was actually built, any deviations, and the commit hash
+3. Commit the doc updates as a separate commit: `docs(mobile): update parity plan after <phase name>`
+
 ## Branch
 
 - Branch: `feat/mobile-app`

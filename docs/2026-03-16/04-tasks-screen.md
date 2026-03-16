@@ -188,4 +188,10 @@ Build the Tasks screen:
 4. **Add navigation links** in generate.tsx and design.tsx — "View All Tasks →" when multiple tasks exist
 
 Run npx tsc --noEmit from mobile/ after changes. Commit when complete.
+
+**Post-session docs update (required):**
+After the Tasks screen is done:
+1. Update docs/2026-03-15/01-web-parity-plan.md — change all Tasks features from "Missing (no screen)" to "Done"
+2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
+3. Commit the doc updates separately: `docs(mobile): update parity plan after tasks screen`
 ```

@@ -107,6 +107,12 @@ Work through these:
    - Debounce saves (500ms), restore on mount, clear on submit
 
 Run npx tsc --noEmit from mobile/ after changes. Commit after each feature.
+
+**Post-session docs update (required):**
+After stretch features are done:
+1. Update docs/2026-03-15/01-web-parity-plan.md — change Magic link, form persistence, etc. from "Missing" to "Done"
+2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
+3. Commit the doc updates separately: `docs(mobile): update parity plan after phase 3 stretch`
 ```
 
 ## Session Prompt (Theme Toggle)
@@ -140,4 +146,10 @@ Build a theme system:
 This is a large refactor touching every screen file. Consider whether NativeWind/Tailwind would be appropriate at this point.
 
 Run npx tsc --noEmit from mobile/ after changes. Commit when complete.
+
+**Post-session docs update (required):**
+After theme work is done:
+1. Update docs/2026-03-15/01-web-parity-plan.md — change dark theme from "Partial" to "Done"
+2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
+3. Commit the doc updates separately: `docs(mobile): update parity plan after theme system`
 ```

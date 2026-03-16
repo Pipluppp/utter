@@ -122,4 +122,10 @@ Work through these in order:
 5. **Audio duration validation** — Validate Clone audio file duration (60s max) using expo-audio after file pick.
 
 Install new dependencies with --legacy-peer-deps. Run npx tsc --noEmit from mobile/ after each change. Commit after completing each feature.
+
+**Post-session docs update (required):**
+After all features are implemented:
+1. Update docs/2026-03-15/01-web-parity-plan.md — change Status from "Missing" to "Done" for every feature you implemented (search, error boundaries, haptics, download/share, duration validation, etc.)
+2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
+3. Commit the doc updates separately: `docs(mobile): update parity plan after phase 1 remaining`
 ```

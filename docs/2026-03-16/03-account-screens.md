@@ -179,4 +179,10 @@ API endpoints: GET /api/me, GET /api/credits/usage?window_days=90, POST /api/bil
 Types: MeResponse, CreditsUsageResponse (both exist in mobile/lib/types.ts)
 
 Install expo-web-browser if not already present (--legacy-peer-deps). Run npx tsc --noEmit from mobile/ after changes. Commit when complete.
+
+**Post-session docs update (required):**
+After the Account screen is done:
+1. Update docs/2026-03-15/01-web-parity-plan.md — change all Account features from "Missing (no screen)" to "Done" (or "Partial" with notes)
+2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
+3. Commit the doc updates separately: `docs(mobile): update parity plan after account screens`
 ```
