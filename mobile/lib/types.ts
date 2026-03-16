@@ -183,3 +183,34 @@ export type CreditsUsageResponse = {
     created_at: string;
   }[];
 };
+
+export type TaskListStatus = 'active' | 'terminal' | 'all';
+export type TaskListType = 'all' | 'generate' | 'design_preview';
+
+export type BackendTaskListItem = {
+  id: string;
+  type: TaskType | string;
+  status: TaskStatus;
+  created_at: string | null;
+  completed_at: string | null;
+  provider: 'modal' | 'qwen' | string;
+  provider_status: string | null;
+  generation_id: string | null;
+  title: string;
+  subtitle: string | null;
+  language: string | null;
+  voice_name: string | null;
+  text_preview: string | null;
+  estimated_duration_minutes: number | null;
+  origin_page: string;
+  supports_cancel: boolean;
+  error: string | null;
+};
+
+export type TaskListResponse = {
+  tasks: BackendTaskListItem[];
+  status: TaskListStatus;
+  type: TaskListType;
+  limit: number;
+  next_before: string | null;
+};

@@ -351,6 +351,14 @@ export default function DesignScreen() {
       {allTasks.length > 1 && (
         <View style={{ marginTop: 24 }}>
           <Text style={{ color: '#888', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Tracked previews</Text>
+          {allTasks.length > 2 && (
+            <TouchableOpacity
+              onPress={() => router.push('/tasks')}
+              style={{ backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', paddingVertical: 10, alignItems: 'center', marginBottom: 12 }}
+            >
+              <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>{allTasks.filter(t => t.status === 'pending' || t.status === 'processing').length} active — View All Tasks →</Text>
+            </TouchableOpacity>
+          )}
           {allTasks.map((task) => {
             const isActive = task.status === 'pending' || task.status === 'processing';
             const isSelected = task.taskId === selectedTaskId;

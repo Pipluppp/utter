@@ -56,6 +56,16 @@ function AuthGate() {
             headerTintColor: '#fff',
           }}
         />
+        <Stack.Screen
+          name="tasks"
+          options={{
+            presentation: 'modal',
+            headerShown: true,
+            title: 'Tasks',
+            headerStyle: { backgroundColor: '#000' },
+            headerTintColor: '#fff',
+          }}
+        />
       </Stack>
     </>
   );

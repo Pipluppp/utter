@@ -1,7 +1,7 @@
 import { useAudioPlayer } from 'expo-audio';
 import * as FileSystemLegacy from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -263,6 +263,14 @@ export default function GenerateScreen() {
       {allTasks.length > 0 && (
         <View style={{ marginTop: 32 }}>
           <Text style={{ color: '#888', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Recent tasks</Text>
+          {allTasks.length > 2 && (
+            <TouchableOpacity
+              onPress={() => router.push('/tasks')}
+              style={{ backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', paddingVertical: 10, alignItems: 'center', marginBottom: 12 }}
+            >
+              <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>{allTasks.filter(t => t.status === 'pending' || t.status === 'processing').length} active — View All Tasks →</Text>
+            </TouchableOpacity>
+          )}
           {allTasks.slice(0, 10).map((task) => {
             const isActive = task.status === 'pending' || task.status === 'processing';
             const isSelected = task.taskId === selectedTaskId;
