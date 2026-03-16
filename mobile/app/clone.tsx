@@ -16,6 +16,7 @@ import {
 import { Select } from '../components/Select';
 import { apiJson } from '../lib/api';
 import { API_BASE_URL } from '../lib/constants';
+import { hapticSubmit, hapticSuccess } from '../lib/haptics';
 import type { CloneResponse, LanguagesResponse } from '../lib/types';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -130,6 +131,7 @@ export default function CloneScreen() {
     setError(null);
 
     try {
+      void hapticSubmit();
       // Step 1: Get signed upload URL
       const { voice_id, upload_url } = await apiJson<{
         voice_id: string;
@@ -169,6 +171,7 @@ export default function CloneScreen() {
         },
       });
 
+      void hapticSuccess();
       Alert.alert('Voice Cloned', `"${res.name}" has been added to your library.`, [
         {
           text: 'Go to Generate',

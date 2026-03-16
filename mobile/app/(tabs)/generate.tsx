@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Select } from '../../components/Select';
 import { apiJson, apiRedirectUrl } from '../../lib/api';
+import { hapticSubmit, hapticSuccess } from '../../lib/haptics';
 import type {
   GenerateResponse,
   LanguagesResponse,
@@ -126,6 +127,7 @@ export default function GenerateScreen() {
     setSubmitting(true);
     setError(null);
     try {
+      void hapticSubmit();
       const res = await apiJson<GenerateResponse>('/api/generate', {
         method: 'POST',
         json: { voice_id: voiceId, text: text.trim(), language },
@@ -148,6 +150,7 @@ export default function GenerateScreen() {
       setPlayingTaskId(task.taskId);
       const url = await apiRedirectUrl(`/api/generations/${genId}/audio`);
       setAudioUri(url);
+      void hapticSuccess();
     } catch {
       setPlayingTaskId(null);
       Alert.alert('Playback error', 'Could not play audio.');

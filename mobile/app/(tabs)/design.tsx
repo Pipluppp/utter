@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Select } from '../../components/Select';
 import { apiJson, apiRedirectUrl } from '../../lib/api';
+import { hapticSubmit, hapticSuccess } from '../../lib/haptics';
 import type { DesignPreviewResponse, DesignSaveResponse, LanguagesResponse, StoredTask } from '../../lib/types';
 import { useTasks } from '../../providers/TaskProvider';
 
@@ -147,6 +148,7 @@ export default function DesignScreen() {
     setSubmitting(true);
     setError(null);
     try {
+      void hapticSubmit();
       const res = await apiJson<DesignPreviewResponse>('/api/voices/design/preview', {
         method: 'POST',
         json: { name: name.trim(), language, text: text.trim(), instruct: instruct.trim() },
@@ -172,6 +174,7 @@ export default function DesignScreen() {
         json: { task_id: selectedTask.taskId, name: name.trim() || 'Designed voice' },
       });
       setSavedVoiceId(saved.id);
+      void hapticSuccess();
       Alert.alert('Saved', `"${saved.name}" has been saved to your library.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save voice');

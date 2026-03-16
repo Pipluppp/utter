@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { apiJson } from '../../lib/api';
+import { hapticDelete } from '../../lib/haptics';
 import type { Voice, VoicesResponse } from '../../lib/types';
 import { useAuth } from '../../providers/AuthProvider';
 
@@ -130,6 +131,7 @@ export default function VoicesScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            void hapticDelete();
             setDeletingId(voice.id);
             try {
               await apiJson(`/api/voices/${voice.id}`, { method: 'DELETE' });
