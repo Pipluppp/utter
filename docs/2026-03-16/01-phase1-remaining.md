@@ -129,3 +129,27 @@ After all features are implemented:
 2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
 3. Commit the doc updates separately: `docs(mobile): update parity plan after phase 1 remaining`
 ```
+
+## Completed
+
+**Date**: 2026-03-16
+
+### What was built
+
+1. **Audio share** (Generate screen) — Download generation to cache via `expo-file-system/legacy`, then share via `expo-sharing` native sheet. Play and Share buttons side by side on completed tasks.
+2. **Voice search & filter** (Voices screen) — Debounced search TextInput (300ms), segmented source filter (All/Clone/Designed), infinite scroll pagination (20 per page with `onEndReached`). Empty state adapts to active filters.
+3. **Error boundary** — `ErrorBoundary` class component in `mobile/components/ErrorBoundary.tsx`, wraps root layout. Shows "Something went wrong" with error message and "Try Again" reset button.
+4. **Haptic feedback** — `mobile/lib/haptics.ts` helper with `hapticSubmit`, `hapticSuccess`, `hapticError`, `hapticDelete`, `hapticLight`. Wired into Generate (submit + playback), Design (preview submit + save), Clone (submit + success), Voices (delete).
+5. **Audio duration validation** (Clone screen) — Uses `createAudioPlayer` to load picked file, waits for `isLoaded`, checks `duration` property. Rejects files > 60 seconds. Best-effort (allows through if duration can't be read).
+
+### Deviations from plan
+
+- None. All 5 features implemented as specified.
+
+### Commits
+
+- `d58e4a9` — feat(mobile): add audio share on Generate screen
+- `5fad91d` — feat(mobile): add voice search, source filter, and pagination
+- `34159b4` — feat(mobile): add error boundary with crash recovery
+- `1d6dc18` — feat(mobile): add haptic feedback across all screens
+- `ac55a48` — feat(mobile): add audio duration validation on Clone screen

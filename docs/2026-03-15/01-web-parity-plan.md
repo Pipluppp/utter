@@ -33,9 +33,9 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 |---------|-----|--------|--------|
 | Voice list (FlatList) | Yes | Yes | Done |
 | Source badge (Clone/Designed) | Yes | Yes | Done |
-| Search with debounce | Yes | No | Missing |
-| Source filter (All/Clone/Designed) | Yes | No | Missing |
-| Pagination (20 per page) | Yes | No | Missing |
+| Search with debounce | Yes | Yes | Done |
+| Source filter (All/Clone/Designed) | Yes | Yes | Done |
+| Pagination (20 per page) | Yes | Yes | Done |
 | Skeleton loading | Yes | Yes | Done |
 | Preview audio (waveform) | Yes | No | Missing |
 | Generate from voice (navigate) | Yes | Yes | Done |
@@ -56,7 +56,7 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | Task selection UI | Yes | Yes | Done |
 | Audio playback on completion | Yes | Yes | Done (expo-audio) |
 | Waveform visualization | Yes | No | Missing (needs RN alternative) |
-| Download audio | Yes | No | Missing |
+| Download audio | Yes | Yes | Done (Share sheet) |
 | Form state persistence | localStorage | No | Missing |
 | Voice pre-selection via param | URL params | Yes | Done |
 | Elapsed time display | Yes | Yes | Done |
@@ -80,7 +80,7 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | Feature | Web | Mobile | Status |
 |---------|-----|--------|--------|
 | File upload (pick from device) | Yes | Yes | Done |
-| File validation (size/type) | Yes | Partial | Size check done, no duration check |
+| File validation (size/type) | Yes | Yes | Done (size + duration) |
 | Drag-and-drop upload | Yes | N/A | Not applicable on mobile |
 | Audio recording | Yes | No | Missing (needs expo-audio recording) |
 | Microphone level meter | Yes | No | Missing |
@@ -136,10 +136,10 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | Feature | Web | Mobile | Status |
 |---------|-----|--------|--------|
 | Dark theme | Yes | Partial | Dark hardcoded, no light mode toggle |
-| Error boundaries | Yes | No | Missing |
+| Error boundaries | Yes | Yes | Done |
 | Skeleton loading states | Yes | Partial | Done on Voices, missing on other screens |
 | Pull-to-refresh | N/A | Partial | Done on Voices, missing on other list screens |
-| Haptic feedback | N/A | No | Missing (mobile-native pattern) |
+| Haptic feedback | N/A | Yes | Done |
 | Offline handling | No | No | Neither has it |
 
 ---
