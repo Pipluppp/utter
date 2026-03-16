@@ -1,4 +1,4 @@
-import { useAudioPlayer } from 'expo-audio';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import * as FileSystemLegacy from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -71,6 +71,7 @@ export default function GenerateScreen() {
   const appliedVoiceParam = useRef(false);
 
   const player = useAudioPlayer(audioUri ? { uri: audioUri } : null);
+  const playerStatus = useAudioPlayerStatus(player);
 
   const allTasks = useMemo(() => tasks.filter((t) => t.type === 'generate'), [tasks]);
 
@@ -154,12 +155,12 @@ export default function GenerateScreen() {
     setSelectedTaskId(allTasks[0]?.taskId ?? null);
   }, [allTasks, selectedTaskId]);
 
-  // Play when audio source changes
+  // Play when audio source changes and player is loaded
   useEffect(() => {
-    if (audioUri && player) {
+    if (audioUri && player && playerStatus.isLoaded) {
       player.play();
     }
-  }, [audioUri, player]);
+  }, [audioUri, player, playerStatus.isLoaded]);
 
   const handleGenerate = useCallback(async () => {
     if (!voiceId || !text.trim()) {

@@ -1,4 +1,4 @@
-import { useAudioPlayer } from 'expo-audio';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -83,6 +83,7 @@ export default function DesignScreen() {
   const [audioUri, setAudioUri] = useState<string | null>(null);
 
   const player = useAudioPlayer(audioUri ? { uri: audioUri } : null);
+  const playerStatus = useAudioPlayerStatus(player);
 
   const allTasks = useMemo(() => tasks.filter((t) => t.type === 'design_preview'), [tasks]);
 
@@ -155,12 +156,12 @@ export default function DesignScreen() {
     })();
   }, [selectedTask?.taskId, selectedTask?.status]);
 
-  // Play when audio source changes
+  // Play when audio source changes and player is loaded
   useEffect(() => {
-    if (audioUri && player) {
+    if (audioUri && player && playerStatus.isLoaded) {
       player.play();
     }
-  }, [audioUri, player]);
+  }, [audioUri, player, playerStatus.isLoaded]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

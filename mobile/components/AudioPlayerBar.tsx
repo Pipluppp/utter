@@ -1,8 +1,9 @@
 import { type AudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { useCallback, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useCallback, useEffect, useRef } from 'react';
 import {
-  type GestureResponderEvent,
   type LayoutChangeEvent,
+  PanResponder,
   Text,
   TouchableOpacity,
   View,
@@ -36,7 +37,7 @@ function AudioPlayerBarDisabled() {
   return (
     <View style={{ backgroundColor: colors.surfaceHover, borderRadius: 8, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
       <View style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: colors.textTertiary, fontSize: 16 }}>▶</Text>
+        <Ionicons name="play" size={16} color={colors.textTertiary} />
       </View>
       <View style={{ flex: 1, gap: 4 }}>
         <View style={{ height: 4, backgroundColor: colors.border, borderRadius: 2 }} />
@@ -51,7 +52,7 @@ function AudioPlayerBarInner({
   trackWidthRef,
 }: {
   player: AudioPlayer;
-  trackWidthRef: React.RefObject<number>;
+  trackWidthRef: React.MutableRefObject<number>;
 }) {
   const { colors } = useTheme();
   const status = useAudioPlayerStatus(player);
@@ -62,10 +63,11 @@ function AudioPlayerBarInner({
   const isLoaded = status.isLoaded;
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
 
-  // Reset to start when audio finishes
-  if (status.didJustFinish) {
-    player.seekTo(0);
-  }
+  useEffect(() => {
+    if (status.didJustFinish) {
+      player.seekTo(0);
+    }
+  }, [status.didJustFinish, player]);
 
   const togglePlayPause = useCallback(() => {
     if (!isLoaded) return;
@@ -77,20 +79,30 @@ function AudioPlayerBarInner({
   }, [player, isPlaying, isLoaded]);
 
   const handleTrackLayout = useCallback((e: LayoutChangeEvent) => {
-    (trackWidthRef as React.MutableRefObject<number>).current = e.nativeEvent.layout.width;
+    trackWidthRef.current = e.nativeEvent.layout.width;
   }, [trackWidthRef]);
 
-  const handleSeek = useCallback(
-    (e: GestureResponderEvent) => {
+  const seekToX = useCallback(
+    (x: number) => {
       if (!isLoaded || duration <= 0) return;
       const width = trackWidthRef.current;
       if (width <= 0) return;
-      const x = e.nativeEvent.locationX;
       const ratio = Math.max(0, Math.min(x / width, 1));
       player.seekTo(ratio * duration);
     },
     [player, isLoaded, duration, trackWidthRef],
   );
+
+  const seekToXRef = useRef(seekToX);
+  seekToXRef.current = seekToX;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e) => seekToXRef.current(e.nativeEvent.locationX),
+      onPanResponderMove: (e) => seekToXRef.current(e.nativeEvent.locationX),
+    }),
+  ).current;
 
   return (
     <View style={{ backgroundColor: colors.surfaceHover, borderRadius: 8, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -99,22 +111,23 @@ function AudioPlayerBarInner({
         style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}
         disabled={!isLoaded}
       >
-        <Text style={{ color: isLoaded ? colors.text : colors.textTertiary, fontSize: 16 }}>
-          {isPlaying ? '❚❚' : '▶'}
-        </Text>
+        <Ionicons
+          name={isPlaying ? 'pause' : 'play'}
+          size={16}
+          color={isLoaded ? colors.text : colors.textTertiary}
+        />
       </TouchableOpacity>
 
       <View style={{ flex: 1, gap: 4 }}>
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={handleSeek}
+        <View
+          {...panResponder.panHandlers}
           onLayout={handleTrackLayout}
           style={{ height: 16, justifyContent: 'center' }}
         >
           <View style={{ height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' }}>
             <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: colors.accent, borderRadius: 2 }} />
           </View>
-        </TouchableOpacity>
+        </View>
 
         <Text style={{ color: colors.textSecondary, fontSize: 11, fontVariant: ['tabular-nums'] }}>
           {formatTime(currentTime)} / {formatTime(duration)}
