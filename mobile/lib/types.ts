@@ -122,6 +122,13 @@ export type LanguagesResponse = {
 
 export type CloneResponse = { id: string; name: string };
 
+export type RegenerateResponse = {
+  voice_id: string;
+  text: string;
+  language: string;
+  redirect_url: string;
+};
+
 export type DesignPreviewResponse = { task_id: string; status: TaskStatus };
 
 export type DesignSaveResponse = {

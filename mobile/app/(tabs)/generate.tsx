@@ -48,7 +48,7 @@ function ElapsedTimer({ startedAt }: { startedAt: number }) {
 
 export default function GenerateScreen() {
   const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
-  const params = useLocalSearchParams<{ voice?: string }>();
+  const params = useLocalSearchParams<{ voice?: string; text?: string; language?: string }>();
 
   const [voices, setVoices] = useState<Voice[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
@@ -101,6 +101,20 @@ export default function GenerateScreen() {
       appliedVoiceParam.current = true;
     }
   }, [params.voice, voices]);
+
+  // Apply text + language params from regenerate navigation
+  const appliedRegenParams = useRef(false);
+  useEffect(() => {
+    if (appliedRegenParams.current) return;
+    if (params.text) {
+      setText(params.text);
+      appliedRegenParams.current = true;
+    }
+    if (params.language && languages.includes(params.language)) {
+      setLanguage(params.language);
+      appliedRegenParams.current = true;
+    }
+  }, [params.text, params.language, languages]);
 
   // Auto-select latest task
   useEffect(() => {
