@@ -157,3 +157,37 @@ After the History screen is done:
 2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
 3. Commit the doc updates separately: `docs(mobile): update parity plan after history screen`
 ```
+
+## Completed
+
+**Date**: 2026-03-16
+
+### What was built
+
+1. **`mobile/app/(tabs)/history.tsx`** — Full History screen as 4th tab:
+   - FlatList of generations with pull-to-refresh
+   - Debounced search bar (300ms) and status filter segmented control (All/Completed/Failed/Pending/Active)
+   - Infinite scroll pagination (20 per page)
+   - Auto-refresh every 5s when pending/processing items exist
+   - Audio playback on completed items (expo-audio + apiRedirectUrl)
+   - Delete with Alert confirmation + haptic feedback
+   - Regenerate → navigates to Generate with voice, text, language params
+   - Status badges (color-coded), voice name, text preview (3 lines), relative timestamps
+   - Skeleton loading (4 cards), context-aware empty states
+   - ActivityIndicator for active/pending items
+   - Meta row: duration, gen time, language
+
+2. **`mobile/app/(tabs)/_layout.tsx`** — Added History as 4th tab
+
+3. **`mobile/lib/types.ts`** — Added `RegenerateResponse` type
+
+4. **`mobile/app/(tabs)/generate.tsx`** — Expanded params to accept `text` and `language` in addition to `voice` for regenerate navigation flow
+
+### Deviations from plan
+
+- History Download (share sheet) not implemented on this screen — can be added later (it exists on Generate already). Left as "Missing" in parity plan.
+- Used direct navigation for regenerate instead of calling the API endpoint (simpler, avoids unnecessary API call since we already have all the params).
+
+### Commits
+
+- `ea53ba7` — feat(mobile): add History screen as 4th tab

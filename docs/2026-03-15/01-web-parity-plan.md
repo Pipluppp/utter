@@ -98,15 +98,15 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 
 | Feature | Web | Mobile | Status |
 |---------|-----|--------|--------|
-| Generation list | Yes | No | Missing (no screen) |
-| Search/filter | Yes | No | Missing |
-| Status filter | Yes | No | Missing |
-| Pagination | Yes | No | Missing |
-| Audio playback | Yes | No | Missing |
+| Generation list | Yes | Yes | Done |
+| Search/filter | Yes | Yes | Done |
+| Status filter | Yes | Yes | Done |
+| Pagination | Yes | Yes | Done |
+| Audio playback | Yes | Yes | Done |
 | Download audio | Yes | No | Missing |
-| Regenerate (copy params) | Yes | No | Missing |
-| Delete generation | Yes | No | Missing |
-| Auto-refresh (5s) | Yes | No | Missing |
+| Regenerate (copy params) | Yes | Yes | Done |
+| Delete generation | Yes | Yes | Done |
+| Auto-refresh (5s) | Yes | Yes | Done |
 
 ### Tasks (`/tasks`)
 
