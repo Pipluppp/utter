@@ -40,7 +40,7 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | Preview audio (waveform) | Yes | No | Missing |
 | Generate from voice (navigate) | Yes | Yes | Done |
 | Delete voice (confirmation) | Yes | Yes | Done |
-| Search token highlighting | Yes | No | Missing |
+| Search token highlighting | Yes | Yes | Done |
 
 ### Generate (`/generate`)
 
@@ -103,7 +103,7 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | Status filter | Yes | Yes | Done |
 | Pagination | Yes | Yes | Done |
 | Audio playback | Yes | Yes | Done |
-| Download audio | Yes | No | Missing |
+| Download audio | Yes | Yes | Done (Share sheet) |
 | Regenerate (copy params) | Yes | Yes | Done |
 | Delete generation | Yes | Yes | Done |
 | Auto-refresh (5s) | Yes | Yes | Done |
@@ -137,8 +137,8 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 |---------|-----|--------|--------|
 | Dark theme | Yes | Partial | Dark hardcoded, no light mode toggle |
 | Error boundaries | Yes | Yes | Done |
-| Skeleton loading states | Yes | Partial | Done on Voices, missing on other screens |
-| Pull-to-refresh | N/A | Partial | Done on Voices, missing on other list screens |
+| Skeleton loading states | Yes | Yes | Done |
+| Pull-to-refresh | N/A | Yes | Done |
 | Haptic feedback | N/A | Yes | Done |
 | Offline handling | No | No | Neither has it |
 
