@@ -112,7 +112,88 @@ function ElapsedTimer({ startedAt }: { startedAt: number }) {
 }
 ```
 
-### 6.5 Missing accessibility labels (Low — all screens)
+### 6.5 No tab bar icons (Medium — `_layout.tsx`)
+
+All four tabs (Voices, Generate, Design, History) show text-only labels with no icons. On both iOS and Android the tab bar is designed for icon + label — text-only tabs look empty/broken and are harder to tap.
+
+**Fix:** Add `tabBarIcon` to each `Tabs.Screen` using `@expo/vector-icons` (bundled with Expo):
+
+```tsx
+import { Ionicons } from '@expo/vector-icons';
+
+<Tabs.Screen
+  name="index"
+  options={{
+    title: 'Voices',
+    tabBarIcon: ({ color, size }) => <Ionicons name="mic-outline" size={size} color={color} />,
+  }}
+/>
+<Tabs.Screen
+  name="generate"
+  options={{
+    title: 'Generate',
+    tabBarIcon: ({ color, size }) => <Ionicons name="volume-high-outline" size={size} color={color} />,
+    tabBarBadge: activeCount > 0 ? activeCount : undefined,
+  }}
+/>
+<Tabs.Screen
+  name="design"
+  options={{
+    title: 'Design',
+    tabBarIcon: ({ color, size }) => <Ionicons name="color-wand-outline" size={size} color={color} />,
+  }}
+/>
+<Tabs.Screen
+  name="history"
+  options={{
+    title: 'History',
+    tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" size={size} color={color} />,
+  }}
+/>
+```
+
+### 6.6 Voices and Account appear to go to same place (Medium — navigation)
+
+The Voices tab (`index.tsx`) header has a small account button (right side) that pushes `/account`. Because there are no icons and Account is a plain screen (not a modal with distinct presentation), users perceive Voices and Account as the same destination. The account button blends into the header with no visual distinction.
+
+**Fix:**
+- Present `/account` as a modal (`presentation: 'modal'` in `_layout.tsx` — already the case for `clone` and `tasks`, but verify `account` matches)
+- Give the account header button a recognizable icon (person-circle) instead of plain text
+- Consider adding a subtle avatar/initials circle to make it visually distinct
+
+### 6.7 Clone has no standalone tab — only accessible from header button (Medium — navigation)
+
+Clone is a modal triggered from a small "+ Clone" button in the Voices header. Users may not discover it. On web, Clone is a top-level nav item.
+
+**Options (pick one):**
+- **A) Add Clone as a 5th tab** with `tabBarIcon` — most discoverable, but 5 tabs is the iOS max
+- **B) Keep as modal but add a prominent FAB (floating action button)** on the Voices screen — less tab clutter, still visible
+- **C) Keep current approach** but make the header button more prominent (larger, icon + label, accent color)
+
+Recommendation: Option C is the least disruptive. Make the "+ Clone" button visually prominent with an accent background and icon:
+
+```tsx
+headerRight: () => (
+  <TouchableOpacity
+    onPress={() => router.push('/clone')}
+    style={{
+      backgroundColor: colors.accent,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+      marginRight: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    }}
+  >
+    <Ionicons name="add" size={16} color="#000" />
+    <Text style={{ color: '#000', fontWeight: '600', fontSize: 13 }}>Clone</Text>
+  </TouchableOpacity>
+),
+```
+
+### 6.8 Missing accessibility labels (Low — all screens)
 
 All `TouchableOpacity` buttons use child `<Text>` for labels but have no `accessibilityLabel` or `accessibilityRole`. Screen readers (TalkBack on Android, VoiceOver on iOS) won't identify them as actionable.
 
@@ -128,7 +209,7 @@ All `TouchableOpacity` buttons use child `<Text>` for labels but have no `access
 
 Priority targets: primary action buttons (Generate, Clone, Save, Delete, Play/Pause), navigation buttons, filter toggles.
 
-### 6.6 `_layout.tsx` — Auth gate flash on cold start (Medium)
+### 6.9 `_layout.tsx` — Auth gate flash on cold start (Medium)
 
 When the app cold-starts, the loading spinner shows briefly, then the sign-in screen flashes before redirecting to `/(tabs)` for authenticated users.
 
@@ -153,15 +234,21 @@ function AuthGate() {
 
 ## Implementation order
 
-1. **6.4** — ElapsedTimer fix (quick, affects two screens)
-2. **6.1** — KeyboardAvoidingView (biggest UX impact)
-3. **6.3** — Form persistence migration to AsyncStorage
-4. **6.2** — Focus-gated polling
-5. **6.6** — Splash screen auth gate
-6. **6.5** — Accessibility labels (can be done incrementally)
+1. **6.5** — Tab bar icons (most visually obvious gap)
+2. **6.7** — Clone button prominence
+3. **6.6** — Account navigation distinction
+4. **6.4** — ElapsedTimer fix (quick, affects two screens)
+5. **6.1** — KeyboardAvoidingView (biggest UX impact)
+6. **6.3** — Form persistence migration to AsyncStorage
+7. **6.2** — Focus-gated polling
+8. **6.9** — Splash screen auth gate
+9. **6.8** — Accessibility labels (can be done incrementally)
 
 ## Acceptance criteria
 
+- [ ] All 4 tabs have icons from `@expo/vector-icons`
+- [ ] Clone button is visually prominent (accent color, icon + label)
+- [ ] Account opens as a modal with distinct presentation from Voices
 - [ ] Keyboard does not cover text inputs on iOS or Android
 - [ ] Tasks screen stops polling when navigated away from
 - [ ] Form state persists correctly even with 5000+ char text (AsyncStorage)
