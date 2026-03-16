@@ -240,8 +240,24 @@ export default function DesignScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
-        <ActivityIndicator color="#fff" size="large" />
+      <View style={{ flex: 1, backgroundColor: '#000', padding: 16 }}>
+        {/* Examples skeleton */}
+        <View style={{ backgroundColor: '#1a1a1a', height: 14, width: 80, borderRadius: 4, marginBottom: 12 }} />
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ backgroundColor: '#111', height: 80, width: 200, borderRadius: 8, borderCurve: 'continuous' }} />
+          <View style={{ backgroundColor: '#111', height: 80, width: 200, borderRadius: 8, borderCurve: 'continuous' }} />
+        </View>
+        {/* Name skeleton */}
+        <View style={{ backgroundColor: '#1a1a1a', height: 14, width: 50, borderRadius: 4, marginTop: 28, marginBottom: 10 }} />
+        <View style={{ backgroundColor: '#111', height: 44, borderRadius: 8, borderCurve: 'continuous' }} />
+        {/* Language skeleton */}
+        <View style={{ backgroundColor: '#1a1a1a', height: 14, width: 80, borderRadius: 4, marginTop: 20, marginBottom: 10 }} />
+        <View style={{ backgroundColor: '#111', height: 44, borderRadius: 8, borderCurve: 'continuous' }} />
+        {/* Description skeleton */}
+        <View style={{ backgroundColor: '#1a1a1a', height: 14, width: 130, borderRadius: 4, marginTop: 20, marginBottom: 10 }} />
+        <View style={{ backgroundColor: '#111', height: 100, borderRadius: 8, borderCurve: 'continuous' }} />
+        {/* Button skeleton */}
+        <View style={{ backgroundColor: '#222', height: 48, borderRadius: 8, borderCurve: 'continuous', marginTop: 24 }} />
       </View>
     );
   }

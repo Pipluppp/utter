@@ -226,8 +226,18 @@ export default function GenerateScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
-        <ActivityIndicator color="#fff" size="large" />
+      <View style={{ flex: 1, backgroundColor: '#000', padding: 16 }}>
+        {/* Voice selector skeleton */}
+        <View style={{ backgroundColor: '#1a1a1a', height: 14, width: 60, borderRadius: 4, marginTop: 12, marginBottom: 10 }} />
+        <View style={{ backgroundColor: '#111', height: 44, borderRadius: 8, borderCurve: 'continuous' }} />
+        {/* Language selector skeleton */}
+        <View style={{ backgroundColor: '#1a1a1a', height: 14, width: 80, borderRadius: 4, marginTop: 20, marginBottom: 10 }} />
+        <View style={{ backgroundColor: '#111', height: 44, borderRadius: 8, borderCurve: 'continuous' }} />
+        {/* Text input skeleton */}
+        <View style={{ backgroundColor: '#1a1a1a', height: 14, width: 40, borderRadius: 4, marginTop: 20, marginBottom: 10 }} />
+        <View style={{ backgroundColor: '#111', height: 120, borderRadius: 8, borderCurve: 'continuous' }} />
+        {/* Button skeleton */}
+        <View style={{ backgroundColor: '#222', height: 48, borderRadius: 8, borderCurve: 'continuous', marginTop: 24 }} />
       </View>
     );
   }

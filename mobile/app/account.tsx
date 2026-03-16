@@ -168,8 +168,25 @@ export default function AccountScreen() {
   // ---- Loading state ----
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator color="#fff" size="large" />
+      <View style={{ flex: 1, backgroundColor: '#000', padding: 16 }}>
+        {/* Credits section skeleton */}
+        <View style={{ backgroundColor: '#1a1a1a', height: 12, width: 70, borderRadius: 4, marginBottom: 10 }} />
+        <View style={{ backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', padding: 16 }}>
+          <View style={{ backgroundColor: '#222', height: 48, width: 140, borderRadius: 4 }} />
+          <View style={{ backgroundColor: '#1a1a1a', height: 14, width: '70%', borderRadius: 4, marginTop: 10 }} />
+        </View>
+        {/* Trials section skeleton */}
+        <View style={{ height: 1, backgroundColor: '#222', marginVertical: 20 }} />
+        <View style={{ backgroundColor: '#1a1a1a', height: 12, width: 80, borderRadius: 4, marginBottom: 10 }} />
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flex: 1, backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', height: 90 }} />
+          <View style={{ flex: 1, backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', height: 90 }} />
+        </View>
+        {/* Buy credits skeleton */}
+        <View style={{ height: 1, backgroundColor: '#222', marginVertical: 20 }} />
+        <View style={{ backgroundColor: '#1a1a1a', height: 12, width: 90, borderRadius: 4, marginBottom: 10 }} />
+        <View style={{ backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', height: 80, marginBottom: 10 }} />
+        <View style={{ backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', height: 80 }} />
       </View>
     );
   }

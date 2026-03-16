@@ -345,8 +345,22 @@ export default function TasksScreen() {
         }
       />
       {loading && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator color="#fff" size="large" />
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#000', paddingHorizontal: 16, paddingTop: 80 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} style={{ backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', padding: 14, marginBottom: 8 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1, marginRight: 10 }}>
+                  <View style={{ backgroundColor: '#222', height: 16, width: '60%', borderRadius: 4 }} />
+                  <View style={{ backgroundColor: '#1a1a1a', height: 12, width: 70, borderRadius: 4, marginTop: 8 }} />
+                </View>
+                <View style={{ backgroundColor: '#1a1a1a', height: 12, width: 50, borderRadius: 4 }} />
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                <View style={{ backgroundColor: '#1a1a1a', height: 10, width: 80, borderRadius: 4 }} />
+                <View style={{ backgroundColor: '#1a1a1a', height: 10, width: 60, borderRadius: 4 }} />
+              </View>
+            </View>
+          ))}
         </View>
       )}
     </View>
