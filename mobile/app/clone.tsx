@@ -1,4 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
+import { createAudioPlayer } from 'expo-audio';
 import { File } from 'expo-file-system';
 import * as FileSystemLegacy from 'expo-file-system/legacy';
 import { router } from 'expo-router';
@@ -20,6 +21,7 @@ import { hapticSubmit, hapticSuccess } from '../lib/haptics';
 import type { CloneResponse, LanguagesResponse } from '../lib/types';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_DURATION_SECONDS = 60;
 
 function contentTypeForUri(uri: string, mimeType?: string | null): string {
   if (mimeType) return mimeType;
@@ -71,6 +73,32 @@ export default function CloneScreen() {
       if (asset.size && asset.size > MAX_FILE_BYTES) {
         setError('Reference audio must be 10MB or smaller.');
         return;
+      }
+
+      // Check duration using a temporary audio player
+      try {
+        const tempPlayer = createAudioPlayer({ uri: asset.uri });
+        // Wait for the player to load and report duration
+        await new Promise<void>((resolve) => {
+          const check = () => {
+            if (tempPlayer.isLoaded) {
+              resolve();
+            } else {
+              setTimeout(check, 100);
+            }
+          };
+          check();
+          // Timeout after 5s — don't block forever on unreadable files
+          setTimeout(resolve, 5000);
+        });
+        const duration = tempPlayer.duration;
+        tempPlayer.release();
+        if (duration > MAX_DURATION_SECONDS) {
+          setError(`Reference audio must be ${MAX_DURATION_SECONDS} seconds or shorter (got ${Math.round(duration)}s).`);
+          return;
+        }
+      } catch {
+        // Best-effort: if we can't read duration, still allow the file
       }
 
       setFileUri(asset.uri);
