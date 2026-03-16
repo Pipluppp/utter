@@ -1,4 +1,6 @@
 import { useAudioPlayer } from 'expo-audio';
+import * as FileSystemLegacy from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -152,6 +154,26 @@ export default function GenerateScreen() {
     }
   }, []);
 
+  const [sharingTaskId, setSharingTaskId] = useState<string | null>(null);
+
+  const shareGeneration = useCallback(async (task: StoredTask) => {
+    const result = task.result as { generation_id?: string } | undefined;
+    const genId = result?.generation_id;
+    if (!genId) return;
+
+    setSharingTaskId(task.taskId);
+    try {
+      const url = await apiRedirectUrl(`/api/generations/${genId}/audio`);
+      const localPath = `${FileSystemLegacy.cacheDirectory}generation_${genId}.wav`;
+      const download = await FileSystemLegacy.downloadAsync(url, localPath);
+      await Sharing.shareAsync(download.uri, { mimeType: 'audio/wav' });
+    } catch {
+      Alert.alert('Share error', 'Could not share audio.');
+    } finally {
+      setSharingTaskId(null);
+    }
+  }, []);
+
   const charCount = text.length;
   const charOverLimit = charCount > MAX_TEXT_CHARS;
 
@@ -261,15 +283,26 @@ export default function GenerateScreen() {
                   </View>
                 </View>
                 {task.status === 'completed' && (
-                  <TouchableOpacity
-                    style={{ marginTop: 10, backgroundColor: '#222', borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
-                    onPress={() => playGeneration(task)}
-                    disabled={playingTaskId === task.taskId}
-                  >
-                    <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>
-                      {playingTaskId === task.taskId ? 'Playing...' : 'Play'}
-                    </Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                    <TouchableOpacity
+                      style={{ flex: 1, backgroundColor: '#222', borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
+                      onPress={() => playGeneration(task)}
+                      disabled={playingTaskId === task.taskId}
+                    >
+                      <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>
+                        {playingTaskId === task.taskId ? 'Playing...' : 'Play'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={{ flex: 1, backgroundColor: '#222', borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
+                      onPress={() => shareGeneration(task)}
+                      disabled={sharingTaskId === task.taskId}
+                    >
+                      <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>
+                        {sharingTaskId === task.taskId ? 'Sharing...' : 'Share'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
                 {task.status === 'failed' && task.error && (
                   <Text selectable style={{ color: '#f44', fontSize: 12, marginTop: 6 }}>{task.error}</Text>
