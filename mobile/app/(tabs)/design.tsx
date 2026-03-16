@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Select } from '../../components/Select';
 import { apiJson, apiRedirectUrl } from '../../lib/api';
+import { clearFormState, loadFormState, useDebouncedFormSave } from '../../lib/formPersistence';
 import { hapticSubmit, hapticSuccess } from '../../lib/haptics';
 import type { DesignPreviewResponse, DesignSaveResponse, LanguagesResponse, StoredTask } from '../../lib/types';
 import { useTasks } from '../../providers/TaskProvider';
@@ -84,12 +85,30 @@ export default function DesignScreen() {
     ? allTasks.find((t) => t.taskId === selectedTaskId) ?? null
     : allTasks[0] ?? null;
 
+  type DesignFormState = { name: string; language: string; text: string; instruct: string };
+  const saveForm = useDebouncedFormSave<DesignFormState>('design');
+
   useEffect(() => {
     void (async () => {
       try {
-        const data = await apiJson<LanguagesResponse>('/api/languages');
+        const [data, saved] = await Promise.all([
+          apiJson<LanguagesResponse>('/api/languages'),
+          loadFormState<DesignFormState>('design'),
+        ]);
         setLanguages(data.languages);
-        setLanguage(data.default);
+
+        if (saved) {
+          if (saved.name) setName(saved.name);
+          if (saved.language && data.languages.includes(saved.language)) {
+            setLanguage(saved.language);
+          } else {
+            setLanguage(data.default);
+          }
+          if (saved.text) setText(saved.text);
+          if (saved.instruct) setInstruct(saved.instruct);
+        } else {
+          setLanguage(data.default);
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load languages');
       } finally {
@@ -97,6 +116,12 @@ export default function DesignScreen() {
       }
     })();
   }, []);
+
+  // Debounced save of form state
+  useEffect(() => {
+    if (loading) return;
+    saveForm({ name, language, text, instruct });
+  }, [name, language, text, instruct, saveForm, loading]);
 
   // Auto-select latest task
   useEffect(() => {
@@ -175,6 +200,7 @@ export default function DesignScreen() {
       });
       setSavedVoiceId(saved.id);
       void hapticSuccess();
+      void clearFormState('design');
       Alert.alert('Saved', `"${saved.name}" has been saved to your library.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save voice');

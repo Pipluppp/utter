@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Select } from '../../components/Select';
 import { apiJson, apiRedirectUrl } from '../../lib/api';
+import { clearFormState, loadFormState, useDebouncedFormSave } from '../../lib/formPersistence';
 import { hapticSubmit, hapticSuccess } from '../../lib/haptics';
 import type {
   GenerateResponse,
@@ -70,18 +71,40 @@ export default function GenerateScreen() {
 
   const allTasks = getTasksByType('generate');
 
+  type GenerateFormState = { voiceId: string; language: string; text: string };
+  const saveForm = useDebouncedFormSave<GenerateFormState>('generate');
+  const hasNavParams = Boolean(params.voice || params.text || params.language);
+
   useEffect(() => {
     void (async () => {
       try {
-        const [voicesData, langsData] = await Promise.all([
+        const [voicesData, langsData, saved] = await Promise.all([
           apiJson<VoicesResponse>('/api/voices'),
           apiJson<LanguagesResponse>('/api/languages'),
+          hasNavParams
+            ? Promise.resolve(null)
+            : loadFormState<GenerateFormState>('generate'),
         ]);
         setVoices(voicesData.voices);
         setLanguages(langsData.languages);
-        setLanguage(langsData.default);
-        if (voicesData.voices.length > 0 && !params.voice) {
-          setVoiceId(voicesData.voices[0].id);
+
+        if (saved) {
+          if (saved.voiceId && voicesData.voices.some((v) => v.id === saved.voiceId)) {
+            setVoiceId(saved.voiceId);
+          } else if (voicesData.voices.length > 0) {
+            setVoiceId(voicesData.voices[0].id);
+          }
+          if (saved.language && langsData.languages.includes(saved.language)) {
+            setLanguage(saved.language);
+          } else {
+            setLanguage(langsData.default);
+          }
+          if (saved.text) setText(saved.text);
+        } else {
+          setLanguage(langsData.default);
+          if (voicesData.voices.length > 0 && !params.voice) {
+            setVoiceId(voicesData.voices[0].id);
+          }
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load data');
@@ -90,6 +113,12 @@ export default function GenerateScreen() {
       }
     })();
   }, []);
+
+  // Debounced save of form state
+  useEffect(() => {
+    if (loading) return;
+    saveForm({ voiceId, language, text });
+  }, [voiceId, language, text, saveForm, loading]);
 
   // Apply voice param from navigation (e.g., "Generate from this voice")
   useEffect(() => {
@@ -148,6 +177,7 @@ export default function GenerateScreen() {
       });
       startTask(res.task_id, 'generate', `Generate: ${text.trim().slice(0, 40)}`);
       setSelectedTaskId(res.task_id);
+      void clearFormState('generate');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start generation');
     } finally {
