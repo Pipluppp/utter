@@ -1,6 +1,7 @@
 # Plan: Audio Player Component (Play/Pause + Progress Bar)
 
 > **Date**: 2026-03-17
+> **Plan**: 07 (continuation of 2026-03-16 plans)
 > **Scope**: Replace bare "Play" text buttons with a reusable mini audio player across all screens
 > **Estimate**: 1 session
 > **Depends on**: All screens already have working audio playback via `expo-audio`
@@ -197,11 +198,11 @@ We're continuing work on the Expo React Native mobile app for our Utter project.
 - Worktree: C:\Users\Duncan\Desktop\utter-mobile (branch: feat/mobile-app)
 - Mobile app: mobile/ directory (Expo SDK 54, expo-router v6, React 19.1.0)
 - The app runs on Expo Go on a physical device, connected to production backend
-- Session docs: docs/2026-03-17/01-audio-player-component.md (this plan)
+- Session docs: docs/2026-03-16/07-audio-player-component.md (this plan)
 
 **Task: Build AudioPlayerBar component and integrate across screens**
 
-Read docs/2026-03-17/01-audio-player-component.md for the full plan.
+Read docs/2026-03-16/07-audio-player-component.md for the full plan.
 
 1. **Build `mobile/components/AudioPlayerBar.tsx`** — a reusable play/pause + progress bar + time display component that accepts an `expo-audio` `AudioPlayer` instance. See the plan for the visual spec and behavior.
 
@@ -220,6 +221,6 @@ Run `npx tsc --noEmit` from mobile/ after changes. Commit the component first, t
 **Post-session docs update (required):**
 After all items are done:
 1. Update docs/2026-03-15/01-web-parity-plan.md — change completed features from Missing to Done
-2. Add a Completed section to docs/2026-03-17/01-audio-player-component.md
+2. Add a Completed section to docs/2026-03-16/07-audio-player-component.md
 3. Commit the doc updates separately: `docs(mobile): update parity plan after audio player component`
 ```

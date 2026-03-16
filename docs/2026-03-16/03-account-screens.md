@@ -142,6 +142,28 @@ await WebBrowser.openBrowserAsync(url);
 
 ---
 
+## Completed
+
+**What was built:**
+- `mobile/app/account.tsx` — full Account screen as a modal route (accessible from Voices header profile icon)
+- Credit balance display (large typography, 90-day usage summary)
+- Free trial counters (design previews remaining, clone finalizations remaining)
+- Credit pack purchase: Starter ($2.99 / 30k) and Studio ($9.99 / 120k) with expo-web-browser Stripe checkout
+- Recent activity feed (last 10 events, color-coded credits/debits with balance after)
+- Collapsible rate card (pricing per action)
+- Profile section: display name editing with conditional Save button, email display, user ID with copy-to-clipboard
+- Sign out with Alert confirmation
+- Pull-to-refresh on the full ScrollView
+
+**Deviations from plan:**
+- Implemented as a single ScrollView with all 7 sections rather than separate routes/tabs
+- Used `expo-web-browser` for Stripe checkout (deep link return handling via balance refresh)
+- Rate card is collapsible (tap to expand) to keep the default view compact
+
+**Commit:** `ff0d774` feat(mobile): add Account screen with credits, trials, checkout, profile
+
+---
+
 ## Session Prompt
 
 ```

@@ -1,9 +1,10 @@
 # Plan: Dark/Light Theme Toggle
 
 > **Date**: 2026-03-17
+> **Plan**: 08 (continuation of 2026-03-16 plans)
 > **Scope**: Replace hardcoded dark colors with a theme system + toggle in Account screen
 > **Estimate**: 1–2 sessions (touches every screen file)
-> **Depends on**: Audio player component (Plan 01) recommended first, so theme colors can be applied to AudioPlayerBar too
+> **Depends on**: Audio player component (Plan 07) recommended first, so theme colors can be applied to AudioPlayerBar too
 > **Approach**: Simplest path — React context with color tokens, manual replacement of hardcoded values. No NativeWind/Tailwind.
 
 ## Problem
@@ -199,11 +200,11 @@ We're continuing work on the Expo React Native mobile app for our Utter project.
 - Worktree: C:\Users\Duncan\Desktop\utter-mobile (branch: feat/mobile-app)
 - Mobile app: mobile/ directory (Expo SDK 54, expo-router v6, React 19.1.0)
 - The app runs on Expo Go on a physical device, connected to production backend
-- Session docs: docs/2026-03-17/02-theme-toggle.md (this plan)
+- Session docs: docs/2026-03-16/08-theme-toggle.md (this plan)
 
 **Task: Build theme system with dark/light toggle**
 
-Read docs/2026-03-17/02-theme-toggle.md for the full plan with color mapping tables.
+Read docs/2026-03-16/08-theme-toggle.md for the full plan with color mapping tables.
 
 1. **Create `mobile/providers/ThemeProvider.tsx`** — ThemeProvider context with `useTheme()` hook. Supports system/dark/light modes. Persists preference to SecureStore. See the plan for the exact color token definitions (darkColors / lightColors).
 
@@ -222,6 +223,6 @@ Use the color mapping reference table in the plan to translate hardcoded values.
 **Post-session docs update (required):**
 After all items are done:
 1. Update docs/2026-03-15/01-web-parity-plan.md — change "Dark theme" from Partial to Done
-2. Add a Completed section to docs/2026-03-17/02-theme-toggle.md
+2. Add a Completed section to docs/2026-03-16/08-theme-toggle.md
 3. Commit the doc updates separately: `docs(mobile): update parity plan after theme toggle`
 ```

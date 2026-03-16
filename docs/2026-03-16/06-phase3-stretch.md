@@ -50,17 +50,7 @@ The web persists Generate/Design form state to localStorage so users don't lose 
 
 ### 3. Dark/light theme toggle
 
-Currently the app is hardcoded dark. The web supports both themes.
-
-**Implementation:**
-- Create a `ThemeProvider` context with system/dark/light options
-- Use `useColorScheme()` from React Native for system preference
-- Store user preference in SecureStore
-- Define color tokens: `colors.background`, `colors.surface`, `colors.text`, etc.
-- Replace all hardcoded color values with theme tokens
-- Add toggle in Account screen (or settings)
-
-**Complexity:** High — touches every screen file. Best done as a dedicated refactor session. Consider using NativeWind/Tailwind at this point if the color system is getting complex.
+> **Moved to Plan 08** (`08-theme-toggle.md`) — detailed implementation plan with color token definitions, mapping table, and session prompt.
 
 ### 4. Offline handling (optional)
 
