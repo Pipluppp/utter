@@ -2,6 +2,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AuthProvider, useAuth } from '../providers/AuthProvider';
 import { TaskProvider } from '../providers/TaskProvider';
 
@@ -53,10 +54,12 @@ function AuthGate() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <TaskProvider>
-        <AuthGate />
-      </TaskProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <TaskProvider>
+          <AuthGate />
+        </TaskProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
