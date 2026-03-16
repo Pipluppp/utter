@@ -82,11 +82,11 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | File upload (pick from device) | Yes | Yes | Done |
 | File validation (size/type) | Yes | Yes | Done (size + duration) |
 | Drag-and-drop upload | Yes | N/A | Not applicable on mobile |
-| Audio recording | Yes | No | Missing (needs expo-audio recording) |
-| Microphone level meter | Yes | No | Missing |
-| Recording timer | Yes | No | Missing |
-| Waveform preview of recording | Yes | No | Missing |
-| Auto-transcription | Yes | No | Missing |
+| Audio recording | Yes | Yes | Done (expo-audio recorder) |
+| Microphone level meter | Yes | Yes | Done |
+| Recording timer | Yes | Yes | Done |
+| Waveform preview of recording | Yes | No | Missing (level meter only, no waveform) |
+| Auto-transcription | Yes | Yes | Done |
 | Voice name input | Yes | Yes | Done |
 | Transcript textarea | Yes | Yes | Done |
 | Language selector | Yes | Yes | Done |

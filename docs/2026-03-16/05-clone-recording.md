@@ -168,3 +168,32 @@ After clone recording is done:
 2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
 3. Commit the doc updates separately: `docs(mobile): update parity plan after clone recording`
 ```
+
+---
+
+## Completed
+
+### Clone Audio Recording (2026-03-16)
+
+**What was built:**
+- Upload/Record mode toggle (segmented control) in `mobile/app/clone.tsx`
+- Recording UI:
+  - Mic level meter (horizontal bar, normalized from dB metering data)
+  - MM:SS timer display counting up
+  - Start/Stop/Clear/Re-record buttons
+  - Recording status indicators (● Recording..., Recording ready)
+  - Auto-stop at 60 seconds via `forDuration` option
+- `expo-audio` `useAudioRecorder` with `RecordingPresets.HIGH_QUALITY`
+- `useAudioRecorderState` for real-time metering + duration
+- Mic permission request via `requestRecordingPermissionsAsync()` with denial handling
+- Auto-transcription: after recording stops, sends audio to `POST /api/transcriptions` if enabled
+- `apiForm` helper added to `mobile/lib/api.ts` (FormData upload with bearer auth + 401 retry)
+- `TranscriptionResponse` type added to `mobile/lib/types.ts`
+
+**Deviations from plan:**
+- No waveform preview of recording (using level meter bar instead — waveform requires native canvas/Skia)
+- No playback preview of recording after stop (user can hear it played back during clone finalization; adding preview would need additional player state management)
+- Recording outputs `.m4a` (HIGH_QUALITY preset default) rather than `.wav`
+
+**Commits:**
+- `ece1718` — feat(mobile): add audio recording to Clone screen
