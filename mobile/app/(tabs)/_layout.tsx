@@ -1,19 +1,21 @@
 import { Tabs } from 'expo-router';
 import { useTasks } from '../../providers/TaskProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 
 export default function TabLayout() {
   const { activeCount } = useTasks();
+  const { colors } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: true,
-        headerStyle: { backgroundColor: '#000' },
-        headerTintColor: '#fff',
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.text,
         headerTitleStyle: { fontWeight: '600' },
-        tabBarStyle: { backgroundColor: '#000', borderTopColor: '#222' },
-        tabBarActiveTintColor: '#fff',
-        tabBarInactiveTintColor: '#666',
+        tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.skeletonHighlight },
+        tabBarActiveTintColor: colors.text,
+        tabBarInactiveTintColor: colors.textTertiary,
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase' },
       }}
     >
@@ -23,7 +25,7 @@ export default function TabLayout() {
         options={{
           title: 'Generate',
           tabBarBadge: activeCount > 0 ? activeCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: '#0af', fontSize: 10 },
+          tabBarBadgeStyle: { backgroundColor: colors.accent, fontSize: 10 },
         }}
       />
       <Tabs.Screen name="design" options={{ title: 'Design' }} />

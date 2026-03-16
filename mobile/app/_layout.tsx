@@ -5,9 +5,11 @@ import { ActivityIndicator, View } from 'react-native';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AuthProvider, useAuth } from '../providers/AuthProvider';
 import { TaskProvider } from '../providers/TaskProvider';
+import { ThemeProvider, useTheme } from '../providers/ThemeProvider';
 
 function AuthGate() {
   const { session, isLoading } = useAuth();
+  const { colors, isDark } = useTheme();
   const segments = useSegments();
   const router = useRouter();
 
@@ -25,16 +27,16 @@ function AuthGate() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
-        <ActivityIndicator color="#fff" size="large" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator color={colors.text} size="large" />
       </View>
     );
   }
 
   return (
     <>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000' } }}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Screen name="sign-in" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
@@ -43,8 +45,8 @@ function AuthGate() {
             presentation: 'modal',
             headerShown: true,
             title: 'Clone Voice',
-            headerStyle: { backgroundColor: '#000' },
-            headerTintColor: '#fff',
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
           }}
         />
         <Stack.Screen
@@ -52,8 +54,8 @@ function AuthGate() {
           options={{
             title: 'Account',
             headerShown: true,
-            headerStyle: { backgroundColor: '#000' },
-            headerTintColor: '#fff',
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
           }}
         />
         <Stack.Screen
@@ -62,8 +64,8 @@ function AuthGate() {
             presentation: 'modal',
             headerShown: true,
             title: 'Tasks',
-            headerStyle: { backgroundColor: '#000' },
-            headerTintColor: '#fff',
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
           }}
         />
       </Stack>
@@ -74,11 +76,13 @@ function AuthGate() {
 export default function RootLayout() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <TaskProvider>
-          <AuthGate />
-        </TaskProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <TaskProvider>
+            <AuthGate />
+          </TaskProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

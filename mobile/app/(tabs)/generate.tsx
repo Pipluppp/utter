@@ -25,6 +25,7 @@ import type {
   VoicesResponse,
 } from '../../lib/types';
 import { useTasks } from '../../providers/TaskProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 
 const MAX_TEXT_CHARS = 5000;
 
@@ -35,7 +36,7 @@ function formatElapsed(startedAt: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-function ElapsedTimer({ startedAt }: { startedAt: number }) {
+function ElapsedTimer({ startedAt, colors }: { startedAt: number; colors: import('../../providers/ThemeProvider').ThemeColors }) {
   const [label, setLabel] = useState(() => formatElapsed(startedAt));
 
   useEffect(() => {
@@ -44,11 +45,12 @@ function ElapsedTimer({ startedAt }: { startedAt: number }) {
   }, [startedAt]);
 
   return (
-    <Text style={{ color: '#888', fontSize: 12 }}>{label}</Text>
+    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{label}</Text>
   );
 }
 
 export default function GenerateScreen() {
+  const { colors } = useTheme();
   const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
   const params = useLocalSearchParams<{ voice?: string; text?: string; language?: string }>();
 
@@ -227,35 +229,35 @@ export default function GenerateScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#000', padding: 16 }}>
+      <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
         {/* Voice selector skeleton */}
-        <View style={{ backgroundColor: '#1a1a1a', height: 14, width: 60, borderRadius: 4, marginTop: 12, marginBottom: 10 }} />
-        <View style={{ backgroundColor: '#111', height: 44, borderRadius: 8, borderCurve: 'continuous' }} />
+        <View style={{ backgroundColor: colors.surfaceHover, height: 14, width: 60, borderRadius: 4, marginTop: 12, marginBottom: 10 }} />
+        <View style={{ backgroundColor: colors.surface, height: 44, borderRadius: 8, borderCurve: 'continuous' }} />
         {/* Language selector skeleton */}
-        <View style={{ backgroundColor: '#1a1a1a', height: 14, width: 80, borderRadius: 4, marginTop: 20, marginBottom: 10 }} />
-        <View style={{ backgroundColor: '#111', height: 44, borderRadius: 8, borderCurve: 'continuous' }} />
+        <View style={{ backgroundColor: colors.surfaceHover, height: 14, width: 80, borderRadius: 4, marginTop: 20, marginBottom: 10 }} />
+        <View style={{ backgroundColor: colors.surface, height: 44, borderRadius: 8, borderCurve: 'continuous' }} />
         {/* Text input skeleton */}
-        <View style={{ backgroundColor: '#1a1a1a', height: 14, width: 40, borderRadius: 4, marginTop: 20, marginBottom: 10 }} />
-        <View style={{ backgroundColor: '#111', height: 120, borderRadius: 8, borderCurve: 'continuous' }} />
+        <View style={{ backgroundColor: colors.surfaceHover, height: 14, width: 40, borderRadius: 4, marginTop: 20, marginBottom: 10 }} />
+        <View style={{ backgroundColor: colors.surface, height: 120, borderRadius: 8, borderCurve: 'continuous' }} />
         {/* Button skeleton */}
-        <View style={{ backgroundColor: '#222', height: 48, borderRadius: 8, borderCurve: 'continuous', marginTop: 24 }} />
+        <View style={{ backgroundColor: colors.skeletonHighlight, height: 48, borderRadius: 8, borderCurve: 'continuous', marginTop: 24 }} />
       </View>
     );
   }
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: '#000' }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 4 }}
       contentInsetAdjustmentBehavior="automatic"
     >
       {error && (
-        <Text selectable style={{ color: '#f44', fontSize: 14, padding: 12, backgroundColor: '#1a0000', borderRadius: 8, borderCurve: 'continuous', marginBottom: 12 }}>
+        <Text selectable style={{ color: colors.danger, fontSize: 14, padding: 12, backgroundColor: '#1a0000', borderRadius: 8, borderCurve: 'continuous', marginBottom: 12 }}>
           {error}
         </Text>
       )}
 
-      <Text style={{ color: '#aaa', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 12, marginBottom: 8 }}>Voice</Text>
+      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 12, marginBottom: 8 }}>Voice</Text>
       <Select
         value={voiceId}
         options={voices.map((v) => ({ label: v.name, value: v.id }))}
@@ -263,53 +265,53 @@ export default function GenerateScreen() {
         placeholder="Select a voice"
       />
 
-      <Text style={{ color: '#aaa', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 8 }}>Language</Text>
+      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 8 }}>Language</Text>
       <Select
         value={language}
         options={languages.map((l) => ({ label: l, value: l }))}
         onValueChange={setLanguage}
       />
 
-      <Text style={{ color: '#aaa', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 8 }}>Text</Text>
+      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 8 }}>Text</Text>
       <TextInput
-        style={{ backgroundColor: '#111', color: '#fff', borderRadius: 8, borderCurve: 'continuous', padding: 14, fontSize: 15, minHeight: 120, borderWidth: 1, borderColor: charOverLimit ? '#f44' : '#333' }}
+        style={{ backgroundColor: colors.surface, color: colors.text, borderRadius: 8, borderCurve: 'continuous', padding: 14, fontSize: 15, minHeight: 120, borderWidth: 1, borderColor: charOverLimit ? colors.danger : colors.border }}
         value={text}
         onChangeText={setText}
         multiline
         placeholder="Enter text to synthesize..."
-        placeholderTextColor="#666"
+        placeholderTextColor={colors.textTertiary}
         textAlignVertical="top"
       />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-        <Text style={{ color: charOverLimit ? '#f44' : '#555', fontSize: 12 }}>
+        <Text style={{ color: charOverLimit ? colors.danger : colors.textTertiary, fontSize: 12 }}>
           {charCount.toLocaleString()}/{MAX_TEXT_CHARS.toLocaleString()}
         </Text>
-        <Text style={{ color: '#555', fontSize: 12 }}>
+        <Text style={{ color: colors.textTertiary, fontSize: 12 }}>
           Max {MAX_TEXT_CHARS.toLocaleString()} characters
         </Text>
       </View>
 
       <TouchableOpacity
-        style={{ backgroundColor: '#fff', borderRadius: 8, borderCurve: 'continuous', paddingVertical: 14, alignItems: 'center', marginTop: 24, opacity: (submitting || !voiceId || !text.trim() || charOverLimit) ? 0.4 : 1 }}
+        style={{ backgroundColor: colors.text, borderRadius: 8, borderCurve: 'continuous', paddingVertical: 14, alignItems: 'center', marginTop: 24, opacity: (submitting || !voiceId || !text.trim() || charOverLimit) ? 0.4 : 1 }}
         onPress={handleGenerate}
         disabled={submitting || !voiceId || !text.trim() || charOverLimit}
       >
         {submitting ? (
-          <ActivityIndicator color="#000" />
+          <ActivityIndicator color={colors.background} />
         ) : (
-          <Text style={{ color: '#000', fontSize: 16, fontWeight: '600' }}>Generate</Text>
+          <Text style={{ color: colors.background, fontSize: 16, fontWeight: '600' }}>Generate</Text>
         )}
       </TouchableOpacity>
 
       {allTasks.length > 0 && (
         <View style={{ marginTop: 32 }}>
-          <Text style={{ color: '#888', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Recent tasks</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Recent tasks</Text>
           {allTasks.length > 2 && (
             <TouchableOpacity
               onPress={() => router.push('/tasks')}
-              style={{ backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', paddingVertical: 10, alignItems: 'center', marginBottom: 12 }}
+              style={{ backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', paddingVertical: 10, alignItems: 'center', marginBottom: 12 }}
             >
-              <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>{allTasks.filter(t => t.status === 'pending' || t.status === 'processing').length} active — View All Tasks →</Text>
+              <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>{allTasks.filter(t => t.status === 'pending' || t.status === 'processing').length} active — View All Tasks →</Text>
             </TouchableOpacity>
           )}
           {allTasks.slice(0, 10).map((task) => {
@@ -320,21 +322,21 @@ export default function GenerateScreen() {
                 key={task.taskId}
                 onPress={() => setSelectedTaskId(task.taskId)}
                 style={{
-                  backgroundColor: isSelected ? '#1a1a1a' : '#111',
+                  backgroundColor: isSelected ? colors.surfaceHover : colors.surface,
                   borderRadius: 8,
                   borderCurve: 'continuous',
                   padding: 14,
                   marginBottom: 8,
                   borderWidth: isSelected ? 1 : 0,
-                  borderColor: '#333',
+                  borderColor: colors.border,
                 }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500', flex: 1, marginRight: 8 }} numberOfLines={1}>
+                  <Text style={{ color: colors.text, fontSize: 14, fontWeight: '500', flex: 1, marginRight: 8 }} numberOfLines={1}>
                     {task.description}
                   </Text>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ color: '#888', fontSize: 13 }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
                       {task.status === 'completed'
                         ? 'Ready'
                         : task.status === 'failed'
@@ -344,7 +346,7 @@ export default function GenerateScreen() {
                             : getStatusText(task.status, task.providerStatus)}
                     </Text>
                     {isActive && (
-                      <ElapsedTimer startedAt={task.startedAt} />
+                      <ElapsedTimer startedAt={task.startedAt} colors={colors} />
                     )}
                   </View>
                 </View>
@@ -354,25 +356,25 @@ export default function GenerateScreen() {
                       <AudioPlayerBar player={player} />
                     ) : (
                       <TouchableOpacity
-                        style={{ backgroundColor: '#222', borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
+                        style={{ backgroundColor: colors.skeletonHighlight, borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
                         onPress={() => playGeneration(task)}
                       >
-                        <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>Play</Text>
+                        <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Play</Text>
                       </TouchableOpacity>
                     )}
                     <TouchableOpacity
-                      style={{ backgroundColor: '#222', borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
+                      style={{ backgroundColor: colors.skeletonHighlight, borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
                       onPress={() => shareGeneration(task)}
                       disabled={sharingTaskId === task.taskId}
                     >
-                      <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>
+                      <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>
                         {sharingTaskId === task.taskId ? 'Sharing...' : 'Share'}
                       </Text>
                     </TouchableOpacity>
                   </View>
                 )}
                 {task.status === 'failed' && task.error && (
-                  <Text selectable style={{ color: '#f44', fontSize: 12, marginTop: 6 }}>{task.error}</Text>
+                  <Text selectable style={{ color: colors.danger, fontSize: 12, marginTop: 6 }}>{task.error}</Text>
                 )}
               </TouchableOpacity>
             );

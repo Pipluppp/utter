@@ -9,12 +9,14 @@ import {
   View,
 } from 'react-native';
 import { useAuth } from '../providers/AuthProvider';
+import { useTheme } from '../providers/ThemeProvider';
 
 type AuthMode = 'password' | 'magic-link';
 type PasswordIntent = 'sign-in' | 'sign-up';
 
 export default function SignInScreen() {
   const { signIn, signUp, signInWithOtp } = useAuth();
+  const { colors, isDark } = useTheme();
 
   const [authMode, setAuthMode] = useState<AuthMode>('password');
   const [passwordIntent, setPasswordIntent] = useState<PasswordIntent>('sign-in');
@@ -74,12 +76,12 @@ export default function SignInScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.inner}>
-        <Text style={styles.brand}>Utter</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.brand, { color: colors.text }]}>Utter</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           {authMode === 'magic-link'
             ? 'Sign in with a magic link'
             : passwordIntent === 'sign-in'
@@ -88,33 +90,33 @@ export default function SignInScreen() {
         </Text>
 
         {/* Mode tabs */}
-        <View style={styles.modeToggle}>
+        <View style={[styles.modeToggle, { borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.modeTab, authMode === 'password' && styles.modeTabActive]}
+            style={[styles.modeTab, { backgroundColor: colors.background }, authMode === 'password' && { backgroundColor: colors.text }]}
             onPress={() => switchMode('password')}
             disabled={loading}
           >
-            <Text style={[styles.modeTabText, authMode === 'password' && styles.modeTabTextActive]}>
+            <Text style={[styles.modeTabText, { color: colors.textSecondary }, authMode === 'password' && { color: colors.background }]}>
               Password
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.modeTab, styles.modeTabRight, authMode === 'magic-link' && styles.modeTabActive]}
+            style={[styles.modeTab, styles.modeTabRight, { backgroundColor: colors.background, borderLeftColor: colors.border }, authMode === 'magic-link' && { backgroundColor: colors.text }]}
             onPress={() => switchMode('magic-link')}
             disabled={loading}
           >
-            <Text style={[styles.modeTabText, authMode === 'magic-link' && styles.modeTabTextActive]}>
+            <Text style={[styles.modeTabText, { color: colors.textSecondary }, authMode === 'magic-link' && { color: colors.background }]}>
               Magic Link
             </Text>
           </TouchableOpacity>
         </View>
 
-        {error && <Text style={styles.error}>{error}</Text>}
-        {info && <Text style={styles.info}>{info}</Text>}
+        {error && <Text style={[styles.error, { color: colors.danger, backgroundColor: isDark ? '#1a0000' : '#fde8e8' }]}>{error}</Text>}
+        {info && <Text style={[styles.info, { color: colors.success, backgroundColor: isDark ? '#001a0a' : '#e8fde8' }]}>{info}</Text>}
 
         {authMode === 'magic-link' && magicLinkSent ? (
           <View style={styles.sentContainer}>
-            <Text style={styles.sentText}>
+            <Text style={[styles.sentText, { color: colors.success }]}>
               Check your email for a magic link to sign in.
             </Text>
             <TouchableOpacity
@@ -123,18 +125,18 @@ export default function SignInScreen() {
                 setEmail('');
               }}
             >
-              <Text style={styles.toggleText}>Send another</Text>
+              <Text style={[styles.toggleText, { color: colors.accent }]}>Send another</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <>
-            <Text style={styles.label}>Email</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
               value={email}
               onChangeText={setEmail}
               placeholder="you@example.com"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textTertiary}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -142,27 +144,27 @@ export default function SignInScreen() {
 
             {authMode === 'password' && (
               <>
-                <Text style={styles.label}>Password</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Password</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                   value={password}
                   onChangeText={setPassword}
                   placeholder="Password"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={colors.textTertiary}
                   secureTextEntry
                 />
               </>
             )}
 
             <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+              style={[styles.button, { backgroundColor: colors.text }, loading && styles.buttonDisabled]}
               onPress={authMode === 'magic-link' ? handleMagicLink : handlePasswordSubmit}
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#000" />
+                <ActivityIndicator color={colors.background} />
               ) : (
-                <Text style={styles.buttonText}>
+                <Text style={[styles.buttonText, { color: colors.background }]}>
                   {authMode === 'magic-link'
                     ? 'Send Magic Link'
                     : passwordIntent === 'sign-in'
@@ -181,7 +183,7 @@ export default function SignInScreen() {
                   setInfo(null);
                 }}
               >
-                <Text style={styles.toggleText}>
+                <Text style={[styles.toggleText, { color: colors.accent }]}>
                   {passwordIntent === 'sign-in'
                     ? "Don't have an account? Sign up"
                     : 'Already have an account? Sign in'}
@@ -196,10 +198,9 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
   inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
   brand: {
-    color: '#fff',
     fontSize: 36,
     fontWeight: '800',
     textAlign: 'center',
@@ -207,7 +208,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   subtitle: {
-    color: '#888',
     fontSize: 15,
     textAlign: 'center',
     marginTop: 8,
@@ -216,7 +216,6 @@ const styles = StyleSheet.create({
   modeToggle: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: '#333',
     borderRadius: 8,
     marginBottom: 24,
     overflow: 'hidden',
@@ -225,37 +224,26 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    backgroundColor: '#000',
   },
   modeTabRight: {
     borderLeftWidth: 1,
-    borderLeftColor: '#333',
-  },
-  modeTabActive: {
-    backgroundColor: '#fff',
   },
   modeTabText: {
-    color: '#888',
     fontSize: 13,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  modeTabTextActive: {
-    color: '#000',
   },
   sentContainer: {
     alignItems: 'center',
     paddingVertical: 32,
   },
   sentText: {
-    color: '#0c6',
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 16,
   },
   label: {
-    color: '#aaa',
     fontSize: 13,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -264,39 +252,31 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#111',
-    color: '#fff',
     borderRadius: 8,
     padding: 14,
     fontSize: 15,
     borderWidth: 1,
-    borderColor: '#333',
   },
   button: {
-    backgroundColor: '#fff',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 24,
   },
   buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#000', fontSize: 16, fontWeight: '600' },
+  buttonText: { fontSize: 16, fontWeight: '600' },
   toggle: { marginTop: 20, alignItems: 'center' },
-  toggleText: { color: '#0af', fontSize: 14 },
+  toggleText: { fontSize: 14 },
   error: {
-    color: '#f44',
     fontSize: 14,
     padding: 12,
-    backgroundColor: '#1a0000',
     borderRadius: 8,
     textAlign: 'center',
     marginBottom: 8,
   },
   info: {
-    color: '#0c6',
     fontSize: 14,
     padding: 12,
-    backgroundColor: '#001a0a',
     borderRadius: 8,
     textAlign: 'center',
     marginBottom: 8,

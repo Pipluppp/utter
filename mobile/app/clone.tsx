@@ -27,6 +27,7 @@ import { apiForm, apiJson } from '../lib/api';
 import { API_BASE_URL } from '../lib/constants';
 import { hapticError, hapticLight, hapticSubmit, hapticSuccess } from '../lib/haptics';
 import type { CloneResponse, LanguagesResponse, TranscriptionResponse } from '../lib/types';
+import { useTheme } from '../providers/ThemeProvider';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_DURATION_SECONDS = 60;
@@ -49,6 +50,7 @@ function formatTimer(ms: number): string {
 }
 
 export default function CloneScreen() {
+  const { colors } = useTheme();
   const [languages, setLanguages] = useState<string[]>([]);
   const [transcriptionEnabled, setTranscriptionEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -341,8 +343,8 @@ export default function CloneScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#fff" size="large" />
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.text} size="large" />
       </View>
     );
   }
@@ -352,19 +354,19 @@ export default function CloneScreen() {
     : 0;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {error && <Text style={styles.error}>{error}</Text>}
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      {error && <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>}
 
       {/* Mode toggle */}
-      <Text style={styles.label}>Input Mode</Text>
-      <View style={{ flexDirection: 'row', backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', overflow: 'hidden', marginBottom: 16 }}>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>Input Mode</Text>
+      <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', overflow: 'hidden', marginBottom: 16 }}>
         {(['upload', 'record'] as const).map((m) => (
           <TouchableOpacity
             key={m}
             onPress={() => setMode(m)}
-            style={{ flex: 1, paddingVertical: 10, alignItems: 'center', backgroundColor: mode === m ? '#333' : 'transparent' }}
+            style={{ flex: 1, paddingVertical: 10, alignItems: 'center', backgroundColor: mode === m ? colors.border : 'transparent' }}
           >
-            <Text style={{ color: mode === m ? '#fff' : '#888', fontSize: 14, fontWeight: '600' }}>
+            <Text style={{ color: mode === m ? colors.text : colors.textSecondary, fontSize: 14, fontWeight: '600' }}>
               {m === 'upload' ? 'Upload' : 'Record'}
             </Text>
           </TouchableOpacity>
@@ -374,13 +376,13 @@ export default function CloneScreen() {
       {/* Upload mode */}
       {mode === 'upload' && (
         <>
-          <Text style={styles.label}>Reference Audio</Text>
-          <TouchableOpacity style={styles.fileButton} onPress={pickFile}>
-            <Text style={styles.fileButtonText}>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Reference Audio</Text>
+          <TouchableOpacity style={[styles.fileButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={pickFile}>
+            <Text style={[styles.fileButtonText, { color: colors.textSecondary }]}>
               {fileName ?? 'Pick audio file (WAV, MP3, M4A)'}
             </Text>
           </TouchableOpacity>
-          <Text style={styles.hint}>10-20 seconds recommended, 60s max, 10MB max</Text>
+          <Text style={[styles.hint, { color: colors.textTertiary }]}>10-20 seconds recommended, 60s max, 10MB max</Text>
           {fileUri && !recorderState.isRecording && (
             <View style={{ marginTop: 10 }}>
               <AudioPlayerBar player={previewPlayer} />
@@ -392,10 +394,10 @@ export default function CloneScreen() {
       {/* Record mode */}
       {mode === 'record' && (
         <>
-          <Text style={styles.label}>Record Audio</Text>
-          <View style={{ backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', padding: 16, gap: 12 }}>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Record Audio</Text>
+          <View style={{ backgroundColor: colors.surface, borderRadius: 10, borderCurve: 'continuous', padding: 16, gap: 12 }}>
             {/* Level meter */}
-            <View style={{ height: 8, backgroundColor: '#222', borderRadius: 4, overflow: 'hidden' }}>
+            <View style={{ height: 8, backgroundColor: colors.skeletonHighlight, borderRadius: 4, overflow: 'hidden' }}>
               <View style={{
                 height: '100%',
                 width: `${meterLevel * 100}%`,
@@ -405,10 +407,10 @@ export default function CloneScreen() {
             </View>
 
             {/* Timer */}
-            <Text style={{ color: '#fff', fontSize: 32, fontWeight: '700', textAlign: 'center', fontVariant: ['tabular-nums'] }}>
+            <Text style={{ color: colors.text, fontSize: 32, fontWeight: '700', textAlign: 'center', fontVariant: ['tabular-nums'] }}>
               {formatTimer(recorderState.durationMillis)}
             </Text>
-            <Text style={{ color: '#666', fontSize: 12, textAlign: 'center' }}>
+            <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center' }}>
               {MAX_DURATION_SECONDS}s max
             </Text>
 
@@ -434,7 +436,7 @@ export default function CloneScreen() {
                 <>
                   <TouchableOpacity
                     onPress={clearRecording}
-                    style={{ backgroundColor: '#222', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderCurve: 'continuous' }}
+                    style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderCurve: 'continuous' }}
                   >
                     <Text style={{ color: '#f66', fontSize: 15, fontWeight: '600' }}>Clear</Text>
                   </TouchableOpacity>
@@ -457,8 +459,8 @@ export default function CloneScreen() {
             )}
             {transcribing && (
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <ActivityIndicator color="#888" size="small" />
-                <Text style={{ color: '#888', fontSize: 13 }}>Transcribing...</Text>
+                <ActivityIndicator color={colors.textSecondary} size="small" />
+                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Transcribing...</Text>
               </View>
             )}
 
@@ -468,7 +470,7 @@ export default function CloneScreen() {
               </Text>
             )}
           </View>
-          <Text style={styles.hint}>10-20 seconds recommended, {MAX_DURATION_SECONDS}s max</Text>
+          <Text style={[styles.hint, { color: colors.textTertiary }]}>10-20 seconds recommended, {MAX_DURATION_SECONDS}s max</Text>
           {hasRecording && !recorderState.isRecording && fileUri && (
             <View style={{ marginTop: 10 }}>
               <AudioPlayerBar player={previewPlayer} />
@@ -477,58 +479,58 @@ export default function CloneScreen() {
         </>
       )}
 
-      <Text style={styles.label}>Voice Name</Text>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>Voice Name</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
         value={name}
         onChangeText={setName}
         placeholder="e.g. My Voice"
-        placeholderTextColor="#666"
+        placeholderTextColor={colors.textTertiary}
       />
 
-      <Text style={styles.label}>Language</Text>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>Language</Text>
       <Select
         value={language}
         options={languages.map((l) => ({ label: l, value: l }))}
         onValueChange={setLanguage}
       />
 
-      <Text style={styles.label}>Transcript</Text>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>Transcript</Text>
       <TextInput
-        style={styles.textArea}
+        style={[styles.textArea, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
         value={transcript}
         onChangeText={setTranscript}
         multiline
         placeholder="What is said in the reference audio..."
-        placeholderTextColor="#666"
+        placeholderTextColor={colors.textTertiary}
         textAlignVertical="top"
       />
 
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 24 }}>
         <TouchableOpacity
-          style={[styles.exampleButton, loadingExample && styles.buttonDisabled]}
+          style={[styles.exampleButton, { backgroundColor: colors.skeletonHighlight }, loadingExample && styles.buttonDisabled]}
           onPress={loadExample}
           disabled={loadingExample || submitting}
         >
           {loadingExample ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={colors.text} size="small" />
           ) : (
-            <Text style={styles.exampleButtonText}>Try Example</Text>
+            <Text style={[styles.exampleButtonText, { color: colors.text }]}>Try Example</Text>
           )}
         </TouchableOpacity>
         <TouchableOpacity
           style={[
             styles.button,
-            { flex: 1 },
+            { flex: 1, backgroundColor: colors.text },
             (submitting || !fileUri || !name.trim() || !transcript.trim()) && styles.buttonDisabled,
           ]}
           onPress={handleClone}
           disabled={submitting || !fileUri || !name.trim() || !transcript.trim()}
         >
           {submitting ? (
-            <ActivityIndicator color="#000" />
+            <ActivityIndicator color={colors.background} />
           ) : (
-            <Text style={styles.buttonText}>Clone Voice</Text>
+            <Text style={[styles.buttonText, { color: colors.background }]}>Clone Voice</Text>
           )}
         </TouchableOpacity>
       </View>

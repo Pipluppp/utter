@@ -16,6 +16,7 @@ import { apiJson } from '../lib/api';
 import { hapticError, hapticLight, hapticSubmit, hapticSuccess } from '../lib/haptics';
 import type { CreditsUsageResponse, MeResponse } from '../lib/types';
 import { useAuth } from '../providers/AuthProvider';
+import { useTheme } from '../providers/ThemeProvider';
 
 // ---------------------------------------------------------------------------
 // Credit packs — mirrors frontend/src/content/plans.ts
@@ -33,24 +34,24 @@ function formatCredits(n: number) {
 // Section components
 // ---------------------------------------------------------------------------
 
-function SectionHeader({ title }: { title: string }) {
+function SectionHeader({ title, colors }: { title: string; colors: import('../providers/ThemeProvider').ThemeColors }) {
   return (
-    <Text style={{ color: '#888', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
+    <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
       {title}
     </Text>
   );
 }
 
-function Card({ children, style }: { children: React.ReactNode; style?: object }) {
+function Card({ children, style, colors }: { children: React.ReactNode; style?: object; colors: import('../providers/ThemeProvider').ThemeColors }) {
   return (
-    <View style={{ backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', padding: 16, ...style }}>
+    <View style={{ backgroundColor: colors.surface, borderRadius: 10, borderCurve: 'continuous', padding: 16, ...style }}>
       {children}
     </View>
   );
 }
 
-function Divider() {
-  return <View style={{ height: 1, backgroundColor: '#222', marginVertical: 20 }} />;
+function Divider({ colors }: { colors: import('../providers/ThemeProvider').ThemeColors }) {
+  return <View style={{ height: 1, backgroundColor: colors.skeletonHighlight, marginVertical: 20 }} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -59,6 +60,7 @@ function Divider() {
 
 export default function AccountScreen() {
   const { signOut, user } = useAuth();
+  const { colors, mode, isDark, setTheme } = useTheme();
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const [credits, setCredits] = useState<CreditsUsageResponse | null>(null);
@@ -168,25 +170,25 @@ export default function AccountScreen() {
   // ---- Loading state ----
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#000', padding: 16 }}>
+      <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
         {/* Credits section skeleton */}
-        <View style={{ backgroundColor: '#1a1a1a', height: 12, width: 70, borderRadius: 4, marginBottom: 10 }} />
-        <View style={{ backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', padding: 16 }}>
-          <View style={{ backgroundColor: '#222', height: 48, width: 140, borderRadius: 4 }} />
-          <View style={{ backgroundColor: '#1a1a1a', height: 14, width: '70%', borderRadius: 4, marginTop: 10 }} />
+        <View style={{ backgroundColor: colors.surfaceHover, height: 12, width: 70, borderRadius: 4, marginBottom: 10 }} />
+        <View style={{ backgroundColor: colors.surface, borderRadius: 10, borderCurve: 'continuous', padding: 16 }}>
+          <View style={{ backgroundColor: colors.skeletonHighlight, height: 48, width: 140, borderRadius: 4 }} />
+          <View style={{ backgroundColor: colors.surfaceHover, height: 14, width: '70%', borderRadius: 4, marginTop: 10 }} />
         </View>
         {/* Trials section skeleton */}
-        <View style={{ height: 1, backgroundColor: '#222', marginVertical: 20 }} />
-        <View style={{ backgroundColor: '#1a1a1a', height: 12, width: 80, borderRadius: 4, marginBottom: 10 }} />
+        <View style={{ height: 1, backgroundColor: colors.skeletonHighlight, marginVertical: 20 }} />
+        <View style={{ backgroundColor: colors.surfaceHover, height: 12, width: 80, borderRadius: 4, marginBottom: 10 }} />
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <View style={{ flex: 1, backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', height: 90 }} />
-          <View style={{ flex: 1, backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', height: 90 }} />
+          <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10, borderCurve: 'continuous', height: 90 }} />
+          <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10, borderCurve: 'continuous', height: 90 }} />
         </View>
         {/* Buy credits skeleton */}
-        <View style={{ height: 1, backgroundColor: '#222', marginVertical: 20 }} />
-        <View style={{ backgroundColor: '#1a1a1a', height: 12, width: 90, borderRadius: 4, marginBottom: 10 }} />
-        <View style={{ backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', height: 80, marginBottom: 10 }} />
-        <View style={{ backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', height: 80 }} />
+        <View style={{ height: 1, backgroundColor: colors.skeletonHighlight, marginVertical: 20 }} />
+        <View style={{ backgroundColor: colors.surfaceHover, height: 12, width: 90, borderRadius: 4, marginBottom: 10 }} />
+        <View style={{ backgroundColor: colors.surface, borderRadius: 10, borderCurve: 'continuous', height: 80, marginBottom: 10 }} />
+        <View style={{ backgroundColor: colors.surface, borderRadius: 10, borderCurve: 'continuous', height: 80 }} />
       </View>
     );
   }
@@ -195,12 +197,12 @@ export default function AccountScreen() {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: '#000' }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
     >
       {error && (
-        <Text selectable style={{ color: '#f44', fontSize: 14, padding: 12, backgroundColor: '#1a0000', borderRadius: 8, borderCurve: 'continuous', marginBottom: 16 }}>
+        <Text selectable style={{ color: colors.danger, fontSize: 14, padding: 12, backgroundColor: isDark ? '#1a0000' : '#fde8e8', borderRadius: 8, borderCurve: 'continuous', marginBottom: 16 }}>
           {error}
         </Text>
       )}
@@ -208,12 +210,12 @@ export default function AccountScreen() {
       {/* ---- Credit Balance ---- */}
       {credits && (
         <>
-          <SectionHeader title="Credits" />
-          <Card>
-            <Text style={{ color: '#fff', fontSize: 48, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
+          <SectionHeader title="Credits" colors={colors} />
+          <Card colors={colors}>
+            <Text style={{ color: colors.text, fontSize: 48, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
               {formatCredits(credits.balance)}
             </Text>
-            <Text style={{ color: '#888', fontSize: 14, marginTop: 6 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 6 }}>
               {formatCredits(credits.usage.debited)} credits used in the past {credits.window_days} days
             </Text>
           </Card>
@@ -223,26 +225,26 @@ export default function AccountScreen() {
       {/* ---- Trial Counters ---- */}
       {credits && (
         <>
-          <Divider />
-          <SectionHeader title="Free trials" />
+          <Divider colors={colors} />
+          <SectionHeader title="Free trials" colors={colors} />
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Card style={{ flex: 1 }}>
-              <Text style={{ color: '#888', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
+            <Card style={{ flex: 1 }} colors={colors}>
+              <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
                 Design
               </Text>
-              <Text style={{ color: '#fff', fontSize: 28, fontWeight: '700', marginTop: 6, fontVariant: ['tabular-nums'] }}>
+              <Text style={{ color: colors.text, fontSize: 28, fontWeight: '700', marginTop: 6, fontVariant: ['tabular-nums'] }}>
                 {credits.trials.design_remaining}
               </Text>
-              <Text style={{ color: '#666', fontSize: 12, marginTop: 4 }}>previews left</Text>
+              <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 4 }}>previews left</Text>
             </Card>
-            <Card style={{ flex: 1 }}>
-              <Text style={{ color: '#888', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
+            <Card style={{ flex: 1 }} colors={colors}>
+              <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
                 Clone
               </Text>
-              <Text style={{ color: '#fff', fontSize: 28, fontWeight: '700', marginTop: 6, fontVariant: ['tabular-nums'] }}>
+              <Text style={{ color: colors.text, fontSize: 28, fontWeight: '700', marginTop: 6, fontVariant: ['tabular-nums'] }}>
                 {credits.trials.clone_remaining}
               </Text>
-              <Text style={{ color: '#666', fontSize: 12, marginTop: 4 }}>finalizations left</Text>
+              <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 4 }}>finalizations left</Text>
             </Card>
           </View>
         </>
@@ -250,29 +252,29 @@ export default function AccountScreen() {
 
       {/* ---- Buy Credits ---- */}
       <>
-        <Divider />
-        <SectionHeader title="Buy credits" />
+        <Divider colors={colors} />
+        <SectionHeader title="Buy credits" colors={colors} />
         <View style={{ gap: 10 }}>
           {CREDIT_PACKS.map((pack) => (
-            <Card key={pack.id} style={pack.featured ? { borderWidth: 1, borderColor: '#333' } : undefined}>
+            <Card key={pack.id} style={pack.featured ? { borderWidth: 1, borderColor: colors.border } : undefined} colors={colors}>
               {pack.featured && (
-                <View style={{ position: 'absolute', top: -10, left: 12, backgroundColor: '#000', paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: '#333', borderRadius: 4, borderCurve: 'continuous' }}>
-                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>Best value</Text>
+                <View style={{ position: 'absolute', top: -10, left: 12, backgroundColor: colors.background, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: colors.border, borderRadius: 4, borderCurve: 'continuous' }}>
+                  <Text style={{ color: colors.text, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>Best value</Text>
                 </View>
               )}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{pack.name}</Text>
-                  <Text style={{ color: '#888', fontSize: 14, marginTop: 4 }}>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{pack.name}</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4 }}>
                     ${pack.priceUsd.toFixed(2)} · {formatCredits(pack.credits)} credits
                   </Text>
-                  <Text style={{ color: '#666', fontSize: 13, marginTop: 4 }}>{pack.blurb}</Text>
+                  <Text style={{ color: colors.textTertiary, fontSize: 13, marginTop: 4 }}>{pack.blurb}</Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => void startCheckout(pack.id)}
                   disabled={checkingOut !== null}
                   style={{
-                    backgroundColor: checkingOut === pack.id ? '#444' : '#fff',
+                    backgroundColor: checkingOut === pack.id ? colors.border : colors.text,
                     paddingHorizontal: 16,
                     paddingVertical: 8,
                     borderRadius: 6,
@@ -281,9 +283,9 @@ export default function AccountScreen() {
                   }}
                 >
                   {checkingOut === pack.id ? (
-                    <ActivityIndicator color="#000" size="small" />
+                    <ActivityIndicator color={colors.background} size="small" />
                   ) : (
-                    <Text style={{ color: '#000', fontSize: 14, fontWeight: '600' }}>Buy</Text>
+                    <Text style={{ color: colors.background, fontSize: 14, fontWeight: '600' }}>Buy</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -295,24 +297,24 @@ export default function AccountScreen() {
       {/* ---- Recent Activity ---- */}
       {credits && credits.events.length > 0 && (
         <>
-          <Divider />
-          <SectionHeader title="Recent activity" />
+          <Divider colors={colors} />
+          <SectionHeader title="Recent activity" colors={colors} />
           <View style={{ gap: 8 }}>
             {credits.events.slice(0, 10).map((ev) => {
               const isCredit = ev.signed_amount > 0;
               const ts = new Date(ev.created_at);
               const dateStr = `${ts.getMonth() + 1}/${ts.getDate()} ${ts.getHours()}:${String(ts.getMinutes()).padStart(2, '0')}`;
               return (
-                <Card key={ev.id}>
+                <Card key={ev.id} colors={colors}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <View style={{ flex: 1, marginRight: 12 }}>
-                      <Text style={{ color: '#ccc', fontSize: 14, fontWeight: '500' }}>{ev.operation}</Text>
-                      <Text style={{ color: '#666', fontSize: 12, marginTop: 4 }}>
+                      <Text style={{ color: colors.text, fontSize: 14, fontWeight: '500' }}>{ev.operation}</Text>
+                      <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 4 }}>
                         Balance: {formatCredits(ev.balance_after)} · {dateStr}
                       </Text>
                     </View>
                     <Text style={{
-                      color: isCredit ? '#4c6' : '#f66',
+                      color: isCredit ? colors.success : colors.danger,
                       fontSize: 15,
                       fontWeight: '600',
                       fontVariant: ['tabular-nums'],
@@ -330,11 +332,11 @@ export default function AccountScreen() {
       {/* ---- Rate Card ---- */}
       {credits && credits.rate_card.length > 0 && (
         <>
-          <Divider />
+          <Divider colors={colors} />
           <TouchableOpacity onPress={() => setRateCardExpanded(!rateCardExpanded)} activeOpacity={0.7}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <SectionHeader title="Pricing" />
-              <Text style={{ color: '#666', fontSize: 13, marginBottom: 10 }}>
+              <SectionHeader title="Pricing" colors={colors} />
+              <Text style={{ color: colors.textTertiary, fontSize: 13, marginBottom: 10 }}>
                 {rateCardExpanded ? '▲' : '▼'}
               </Text>
             </View>
@@ -342,13 +344,13 @@ export default function AccountScreen() {
           {rateCardExpanded && (
             <View style={{ gap: 8 }}>
               {credits.rate_card.map((item) => (
-                <Card key={item.action}>
+                <Card key={item.action} colors={colors}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <View style={{ flex: 1, marginRight: 12 }}>
-                      <Text style={{ color: '#ccc', fontSize: 14, fontWeight: '500' }}>{item.action}</Text>
-                      <Text style={{ color: '#666', fontSize: 12, marginTop: 4 }}>{item.note}</Text>
+                      <Text style={{ color: colors.text, fontSize: 14, fontWeight: '500' }}>{item.action}</Text>
+                      <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 4 }}>{item.note}</Text>
                     </View>
-                    <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>{item.cost}</Text>
+                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>{item.cost}</Text>
                   </View>
                 </Card>
               ))}
@@ -357,43 +359,62 @@ export default function AccountScreen() {
         </>
       )}
 
+      {/* ---- Theme Toggle ---- */}
+      <>
+        <Divider colors={colors} />
+        <SectionHeader title="Theme" colors={colors} />
+        <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', overflow: 'hidden' }}>
+          {(['system', 'dark', 'light'] as const).map((m) => (
+            <TouchableOpacity
+              key={m}
+              onPress={() => setTheme(m)}
+              style={{ flex: 1, paddingVertical: 10, alignItems: 'center', backgroundColor: mode === m ? colors.border : 'transparent' }}
+            >
+              <Text style={{ color: mode === m ? colors.text : colors.textSecondary, fontSize: 13, fontWeight: '600', textTransform: 'capitalize' }}>
+                {m}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </>
+
       {/* ---- Profile ---- */}
       <>
-        <Divider />
-        <SectionHeader title="Profile" />
-        <Card>
-          <Text style={{ color: '#888', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+        <Divider colors={colors} />
+        <SectionHeader title="Profile" colors={colors} />
+        <Card colors={colors}>
+          <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
             Display name
           </Text>
           <TextInput
             style={{
-              backgroundColor: '#1a1a1a',
-              color: '#fff',
+              backgroundColor: colors.surfaceHover,
+              color: colors.text,
               borderRadius: 8,
               borderCurve: 'continuous',
               paddingHorizontal: 14,
               paddingVertical: 10,
               fontSize: 15,
               borderWidth: 1,
-              borderColor: '#333',
+              borderColor: colors.border,
             }}
             value={displayName}
             onChangeText={setDisplayName}
             placeholder="Your name"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textTertiary}
             autoCorrect={false}
             editable={!savingProfile}
           />
-          <Text style={{ color: '#888', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginTop: 16, marginBottom: 4 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginTop: 16, marginBottom: 4 }}>
             Email
           </Text>
-          <Text style={{ color: '#999', fontSize: 15 }}>{user?.email ?? 'Unknown'}</Text>
+          <Text style={{ color: colors.textTertiary, fontSize: 15 }}>{user?.email ?? 'Unknown'}</Text>
 
-          <Text style={{ color: '#888', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginTop: 16, marginBottom: 4 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginTop: 16, marginBottom: 4 }}>
             User ID
           </Text>
           <TouchableOpacity onPress={copyUserId} activeOpacity={0.7}>
-            <Text style={{ color: '#666', fontSize: 13 }}>{me?.profile?.id ?? '—'}</Text>
+            <Text style={{ color: colors.textTertiary, fontSize: 13 }}>{me?.profile?.id ?? '—'}</Text>
           </TouchableOpacity>
 
           {hasProfileChange && (
@@ -401,7 +422,7 @@ export default function AccountScreen() {
               onPress={() => void saveProfile()}
               disabled={savingProfile}
               style={{
-                backgroundColor: '#fff',
+                backgroundColor: colors.text,
                 marginTop: 16,
                 paddingVertical: 10,
                 borderRadius: 8,
@@ -411,9 +432,9 @@ export default function AccountScreen() {
               }}
             >
               {savingProfile ? (
-                <ActivityIndicator color="#000" size="small" />
+                <ActivityIndicator color={colors.background} size="small" />
               ) : (
-                <Text style={{ color: '#000', fontSize: 15, fontWeight: '600' }}>Save</Text>
+                <Text style={{ color: colors.background, fontSize: 15, fontWeight: '600' }}>Save</Text>
               )}
             </TouchableOpacity>
           )}
@@ -422,20 +443,20 @@ export default function AccountScreen() {
 
       {/* ---- Sign Out ---- */}
       <>
-        <Divider />
+        <Divider colors={colors} />
         <TouchableOpacity
           onPress={handleSignOut}
           style={{
-            backgroundColor: '#1a0000',
+            backgroundColor: isDark ? '#1a0000' : '#fde8e8',
             paddingVertical: 14,
             borderRadius: 10,
             borderCurve: 'continuous',
             alignItems: 'center',
             borderWidth: 1,
-            borderColor: '#331111',
+            borderColor: isDark ? '#331111' : '#f5c6c6',
           }}
         >
-          <Text style={{ color: '#f66', fontSize: 15, fontWeight: '600' }}>Sign Out</Text>
+          <Text style={{ color: colors.danger, fontSize: 15, fontWeight: '600' }}>Sign Out</Text>
         </TouchableOpacity>
       </>
     </ScrollView>

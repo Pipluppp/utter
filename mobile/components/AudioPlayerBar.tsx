@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTheme } from '../providers/ThemeProvider';
 
 interface AudioPlayerBarProps {
   player: AudioPlayer | null;
@@ -31,14 +32,15 @@ export function AudioPlayerBar({ player }: AudioPlayerBarProps) {
 }
 
 function AudioPlayerBarDisabled() {
+  const { colors } = useTheme();
   return (
-    <View style={{ backgroundColor: '#1a1a1a', borderRadius: 8, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+    <View style={{ backgroundColor: colors.surfaceHover, borderRadius: 8, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
       <View style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: '#555', fontSize: 16 }}>▶</Text>
+        <Text style={{ color: colors.textTertiary, fontSize: 16 }}>▶</Text>
       </View>
       <View style={{ flex: 1, gap: 4 }}>
-        <View style={{ height: 4, backgroundColor: '#333', borderRadius: 2 }} />
-        <Text style={{ color: '#555', fontSize: 11, fontVariant: ['tabular-nums'] }}>0:00 / 0:00</Text>
+        <View style={{ height: 4, backgroundColor: colors.border, borderRadius: 2 }} />
+        <Text style={{ color: colors.textTertiary, fontSize: 11, fontVariant: ['tabular-nums'] }}>0:00 / 0:00</Text>
       </View>
     </View>
   );
@@ -51,6 +53,7 @@ function AudioPlayerBarInner({
   player: AudioPlayer;
   trackWidthRef: React.RefObject<number>;
 }) {
+  const { colors } = useTheme();
   const status = useAudioPlayerStatus(player);
 
   const currentTime = status.currentTime;
@@ -90,13 +93,13 @@ function AudioPlayerBarInner({
   );
 
   return (
-    <View style={{ backgroundColor: '#1a1a1a', borderRadius: 8, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+    <View style={{ backgroundColor: colors.surfaceHover, borderRadius: 8, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
       <TouchableOpacity
         onPress={togglePlayPause}
         style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}
         disabled={!isLoaded}
       >
-        <Text style={{ color: isLoaded ? '#fff' : '#555', fontSize: 16 }}>
+        <Text style={{ color: isLoaded ? colors.text : colors.textTertiary, fontSize: 16 }}>
           {isPlaying ? '❚❚' : '▶'}
         </Text>
       </TouchableOpacity>
@@ -108,12 +111,12 @@ function AudioPlayerBarInner({
           onLayout={handleTrackLayout}
           style={{ height: 16, justifyContent: 'center' }}
         >
-          <View style={{ height: 4, backgroundColor: '#333', borderRadius: 2, overflow: 'hidden' }}>
-            <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: '#0af', borderRadius: 2 }} />
+          <View style={{ height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' }}>
+            <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: colors.accent, borderRadius: 2 }} />
           </View>
         </TouchableOpacity>
 
-        <Text style={{ color: '#888', fontSize: 11, fontVariant: ['tabular-nums'] }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 11, fontVariant: ['tabular-nums'] }}>
           {formatTime(currentTime)} / {formatTime(duration)}
         </Text>
       </View>

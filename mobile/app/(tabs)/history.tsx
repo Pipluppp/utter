@@ -17,6 +17,7 @@ import { apiJson, apiRedirectUrl } from '../../lib/api';
 import { hapticDelete, hapticSuccess } from '../../lib/haptics';
 import { AudioPlayerBar } from '../../components/AudioPlayerBar';
 import type { Generation, GenerationsResponse } from '../../lib/types';
+import { useTheme } from '../../providers/ThemeProvider';
 
 const PER_PAGE = 20;
 const STATUSES = ['all', 'completed', 'failed', 'pending', 'processing'] as const;
@@ -29,12 +30,20 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
   processing: 'Active',
 };
 
-const STATUS_COLORS: Record<string, string> = {
+const STATUS_COLORS_DARK: Record<string, string> = {
   completed: '#0a0',
   failed: '#f44',
   pending: '#fa0',
   processing: '#0af',
   cancelled: '#888',
+};
+
+const STATUS_COLORS_LIGHT: Record<string, string> = {
+  completed: '#090',
+  failed: '#d33',
+  pending: '#e90',
+  processing: '#07f',
+  cancelled: '#999',
 };
 
 function formatDate(iso: string | null): string {
@@ -52,24 +61,26 @@ function formatDate(iso: string | null): string {
   return d.toLocaleDateString();
 }
 
-function SkeletonCard() {
+function SkeletonCard({ colors }: { colors: import('../../providers/ThemeProvider').ThemeColors }) {
   return (
-    <View style={{ backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', padding: 16, marginBottom: 8 }}>
+    <View style={{ backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', padding: 16, marginBottom: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <View style={{ backgroundColor: '#222', height: 18, width: 70, borderRadius: 4 }} />
-        <View style={{ backgroundColor: '#222', height: 16, width: '50%', borderRadius: 4 }} />
+        <View style={{ backgroundColor: colors.skeletonHighlight, height: 18, width: 70, borderRadius: 4 }} />
+        <View style={{ backgroundColor: colors.skeletonHighlight, height: 16, width: '50%', borderRadius: 4 }} />
       </View>
-      <View style={{ backgroundColor: '#1a1a1a', height: 12, width: '90%', borderRadius: 4, marginTop: 10 }} />
-      <View style={{ backgroundColor: '#1a1a1a', height: 12, width: '60%', borderRadius: 4, marginTop: 6 }} />
+      <View style={{ backgroundColor: colors.surfaceHover, height: 12, width: '90%', borderRadius: 4, marginTop: 10 }} />
+      <View style={{ backgroundColor: colors.surfaceHover, height: 12, width: '60%', borderRadius: 4, marginTop: 6 }} />
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-        <View style={{ backgroundColor: '#1a1a1a', height: 10, width: 60, borderRadius: 4 }} />
-        <View style={{ backgroundColor: '#1a1a1a', height: 10, width: 80, borderRadius: 4 }} />
+        <View style={{ backgroundColor: colors.surfaceHover, height: 10, width: 60, borderRadius: 4 }} />
+        <View style={{ backgroundColor: colors.surfaceHover, height: 10, width: 80, borderRadius: 4 }} />
       </View>
     </View>
   );
 }
 
 export default function HistoryScreen() {
+  const { colors, isDark } = useTheme();
+  const STATUS_COLORS = isDark ? STATUS_COLORS_DARK : STATUS_COLORS_LIGHT;
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -215,19 +226,19 @@ export default function HistoryScreen() {
 
   if (loading && page === 1) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#000', paddingHorizontal: 16, paddingTop: 8 }}>
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
+      <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 16, paddingTop: 8 }}>
+        <SkeletonCard colors={colors} />
+        <SkeletonCard colors={colors} />
+        <SkeletonCard colors={colors} />
+        <SkeletonCard colors={colors} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {error && (
-        <Text selectable style={{ color: '#f44', fontSize: 14, padding: 12, marginHorizontal: 16, backgroundColor: '#1a0000', borderRadius: 8, borderCurve: 'continuous', marginBottom: 8 }}>
+        <Text selectable style={{ color: colors.danger, fontSize: 14, padding: 12, marginHorizontal: 16, backgroundColor: '#1a0000', borderRadius: 8, borderCurve: 'continuous', marginBottom: 8 }}>
           {error}
         </Text>
       )}
@@ -237,27 +248,27 @@ export default function HistoryScreen() {
         keyExtractor={(g) => g.id}
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
         }
         ListHeaderComponent={
           <View style={{ gap: 10, marginBottom: 12 }}>
             <TextInput
-              style={{ backgroundColor: '#111', color: '#fff', borderRadius: 8, borderCurve: 'continuous', paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, borderWidth: 1, borderColor: '#333' }}
+              style={{ backgroundColor: colors.surface, color: colors.text, borderRadius: 8, borderCurve: 'continuous', paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, borderWidth: 1, borderColor: colors.border }}
               value={search}
               onChangeText={setSearch}
               placeholder="Search history..."
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textTertiary}
               autoCorrect={false}
               clearButtonMode="while-editing"
             />
-            <View style={{ flexDirection: 'row', backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', overflow: 'hidden' }}>
+            <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', overflow: 'hidden' }}>
               {STATUSES.map((s) => (
                 <TouchableOpacity
                   key={s}
                   onPress={() => setStatusFilter(s)}
-                  style={{ flex: 1, paddingVertical: 8, alignItems: 'center', backgroundColor: statusFilter === s ? '#333' : 'transparent' }}
+                  style={{ flex: 1, paddingVertical: 8, alignItems: 'center', backgroundColor: statusFilter === s ? colors.border : 'transparent' }}
                 >
-                  <Text style={{ color: statusFilter === s ? '#fff' : '#888', fontSize: 11, fontWeight: '600' }}>
+                  <Text style={{ color: statusFilter === s ? colors.text : colors.textSecondary, fontSize: 11, fontWeight: '600' }}>
                     {STATUS_LABELS[s]}
                   </Text>
                 </TouchableOpacity>
@@ -268,10 +279,10 @@ export default function HistoryScreen() {
         ListEmptyComponent={
           !loading ? (
             <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
-              <Text style={{ color: '#888', fontSize: 18, fontWeight: '600' }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 18, fontWeight: '600' }}>
                 {debouncedSearch || statusFilter !== 'all' ? 'No matches' : 'No generations yet'}
               </Text>
-              <Text style={{ color: '#555', fontSize: 14, marginTop: 8, textAlign: 'center' }}>
+              <Text style={{ color: colors.textTertiary, fontSize: 14, marginTop: 8, textAlign: 'center' }}>
                 {debouncedSearch || statusFilter !== 'all'
                   ? 'Try a different search or filter'
                   : 'Generate some speech to see it here'}
@@ -282,7 +293,7 @@ export default function HistoryScreen() {
         ListFooterComponent={
           loadingMore ? (
             <View style={{ paddingVertical: 16, alignItems: 'center' }}>
-              <Text style={{ color: '#555', fontSize: 13 }}>Loading more...</Text>
+              <Text style={{ color: colors.textTertiary, fontSize: 13 }}>Loading more...</Text>
             </View>
           ) : null
         }
@@ -290,10 +301,10 @@ export default function HistoryScreen() {
         onEndReachedThreshold={0.3}
         renderItem={({ item: gen }) => {
           const isCompleted = gen.status === 'completed';
-          const statusColor = STATUS_COLORS[gen.status] ?? '#888';
+          const statusColor = STATUS_COLORS[gen.status] ?? colors.textSecondary;
 
           return (
-            <View style={{ backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', padding: 16, marginBottom: 8 }}>
+            <View style={{ backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', padding: 16, marginBottom: 8 }}>
               {/* Status + voice name */}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ backgroundColor: `${statusColor}22`, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, borderCurve: 'continuous' }}>
@@ -301,22 +312,22 @@ export default function HistoryScreen() {
                     {gen.status}
                   </Text>
                 </View>
-                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', flex: 1 }} numberOfLines={1}>
+                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600', flex: 1 }} numberOfLines={1}>
                   {gen.voice_name ?? 'Unknown voice'}
                 </Text>
-                <Text style={{ color: '#555', fontSize: 11 }}>
+                <Text style={{ color: colors.textTertiary, fontSize: 11 }}>
                   {formatDate(gen.created_at)}
                 </Text>
               </View>
 
               {/* Text preview */}
-              <Text style={{ color: '#888', fontSize: 13, marginTop: 8 }} numberOfLines={3}>
+              <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 8 }} numberOfLines={3}>
                 {gen.text}
               </Text>
 
               {/* Error message */}
               {gen.error_message && (
-                <Text selectable style={{ color: '#f44', fontSize: 12, marginTop: 6 }} numberOfLines={2}>
+                <Text selectable style={{ color: colors.danger, fontSize: 12, marginTop: 6 }} numberOfLines={2}>
                   {gen.error_message}
                 </Text>
               )}
@@ -324,16 +335,16 @@ export default function HistoryScreen() {
               {/* Meta row */}
               <View style={{ flexDirection: 'row', gap: 16, marginTop: 8 }}>
                 {gen.duration_seconds != null && (
-                  <Text style={{ color: '#555', fontSize: 11 }}>
+                  <Text style={{ color: colors.textTertiary, fontSize: 11 }}>
                     {gen.duration_seconds.toFixed(1)}s
                   </Text>
                 )}
                 {gen.generation_time_seconds != null && (
-                  <Text style={{ color: '#555', fontSize: 11 }}>
+                  <Text style={{ color: colors.textTertiary, fontSize: 11 }}>
                     Gen: {gen.generation_time_seconds.toFixed(1)}s
                   </Text>
                 )}
-                <Text style={{ color: '#555', fontSize: 11 }}>
+                <Text style={{ color: colors.textTertiary, fontSize: 11 }}>
                   {gen.language}
                 </Text>
               </View>
@@ -341,8 +352,8 @@ export default function HistoryScreen() {
               {/* Active indicator */}
               {(gen.status === 'pending' || gen.status === 'processing') && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
-                  <ActivityIndicator color="#0af" size="small" />
-                  <Text style={{ color: '#0af', fontSize: 12 }}>Generating...</Text>
+                  <ActivityIndicator color={colors.accent} size="small" />
+                  <Text style={{ color: colors.accent, fontSize: 12 }}>Generating...</Text>
                 </View>
               )}
 
@@ -356,34 +367,34 @@ export default function HistoryScreen() {
                 {isCompleted && playingId !== gen.id && (
                   <TouchableOpacity
                     onPress={() => handlePlay(gen)}
-                    style={{ backgroundColor: '#222', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous' }}
+                    style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous' }}
                   >
-                    <Text style={{ color: '#0af', fontSize: 13, fontWeight: '600' }}>Play</Text>
+                    <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>Play</Text>
                   </TouchableOpacity>
                 )}
                 {isCompleted && (
                   <TouchableOpacity
                     onPress={() => void handleShare(gen)}
                     disabled={sharingId === gen.id}
-                    style={{ backgroundColor: '#222', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous', opacity: sharingId === gen.id ? 0.4 : 1 }}
+                    style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous', opacity: sharingId === gen.id ? 0.4 : 1 }}
                   >
-                    <Text style={{ color: '#0af', fontSize: 13, fontWeight: '600' }}>
+                    <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
                       {sharingId === gen.id ? 'Sharing...' : 'Share'}
                     </Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   onPress={() => handleRegenerate(gen)}
-                  style={{ backgroundColor: '#222', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous' }}
+                  style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous' }}
                 >
-                  <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Regenerate</Text>
+                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>Regenerate</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleDelete(gen)}
                   disabled={deletingId === gen.id}
-                  style={{ backgroundColor: '#222', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous', opacity: deletingId === gen.id ? 0.4 : 1 }}
+                  style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous', opacity: deletingId === gen.id ? 0.4 : 1 }}
                 >
-                  <Text style={{ color: '#f44', fontSize: 13, fontWeight: '600' }}>
+                  <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600' }}>
                     {deletingId === gen.id ? 'Deleting...' : 'Delete'}
                   </Text>
                 </TouchableOpacity>
