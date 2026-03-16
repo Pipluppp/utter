@@ -39,6 +39,24 @@ function SourceBadge({ source }: { source: 'uploaded' | 'designed' }) {
   );
 }
 
+function HighlightedText({ text, highlight, style }: { text: string; highlight: string; style: object }) {
+  if (!highlight.trim()) {
+    return <Text style={style} numberOfLines={1}>{text}</Text>;
+  }
+  const escaped = highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  const parts = text.split(regex);
+  return (
+    <Text style={style} numberOfLines={1}>
+      {parts.map((part, i) =>
+        regex.test(part)
+          ? <Text key={i} style={{ backgroundColor: '#fa03', color: '#fff' }}>{part}</Text>
+          : part,
+      )}
+    </Text>
+  );
+}
+
 export default function VoicesScreen() {
   const navigation = useNavigation();
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -245,9 +263,11 @@ export default function VoicesScreen() {
             <View style={{ backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', padding: 16, marginBottom: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <SourceBadge source={item.source} />
-                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', flex: 1 }} numberOfLines={1}>
-                  {item.name}
-                </Text>
+                <HighlightedText
+                  text={item.name}
+                  highlight={debouncedSearch}
+                  style={{ color: '#fff', fontSize: 16, fontWeight: '600', flex: 1 }}
+                />
               </View>
               <Text style={{ color: '#888', fontSize: 13, marginTop: 6 }}>
                 {item.language}
