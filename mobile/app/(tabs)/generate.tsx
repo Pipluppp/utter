@@ -2,7 +2,7 @@ import { useAudioPlayer } from 'expo-audio';
 import * as FileSystemLegacy from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -51,7 +51,7 @@ function ElapsedTimer({ startedAt, colors }: { startedAt: number; colors: import
 
 export default function GenerateScreen() {
   const { colors } = useTheme();
-  const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
+  const { tasks, startTask, getLatestTask, getStatusText } = useTasks();
   const params = useLocalSearchParams<{ voice?: string; text?: string; language?: string }>();
 
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -72,7 +72,7 @@ export default function GenerateScreen() {
 
   const player = useAudioPlayer(audioUri ? { uri: audioUri } : null);
 
-  const allTasks = getTasksByType('generate');
+  const allTasks = useMemo(() => tasks.filter((t) => t.type === 'generate'), [tasks]);
 
   type GenerateFormState = { voiceId: string; language: string; text: string };
   const saveForm = useDebouncedFormSave<GenerateFormState>('generate');

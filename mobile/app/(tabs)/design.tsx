@@ -1,6 +1,6 @@
 import { useAudioPlayer } from 'expo-audio';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -64,7 +64,7 @@ function ElapsedTimer({ startedAt, colors }: { startedAt: number; colors: import
 
 export default function DesignScreen() {
   const { colors } = useTheme();
-  const { startTask, getLatestTask, getTasksByType, getStatusText, dismissTask } = useTasks();
+  const { tasks, startTask, getLatestTask, getStatusText, dismissTask } = useTasks();
 
   const [languages, setLanguages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +84,7 @@ export default function DesignScreen() {
 
   const player = useAudioPlayer(audioUri ? { uri: audioUri } : null);
 
-  const allTasks = getTasksByType('design_preview');
+  const allTasks = useMemo(() => tasks.filter((t) => t.type === 'design_preview'), [tasks]);
 
   const selectedTask = selectedTaskId
     ? allTasks.find((t) => t.taskId === selectedTaskId) ?? null
