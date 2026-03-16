@@ -12,7 +12,8 @@ import {
   View,
 } from 'react-native';
 import { Select } from '../../components/Select';
-import { apiJson, apiRedirectUrl } from '../../lib/api';
+import { AudioPlayerBar } from '../../components/AudioPlayerBar';
+import { apiJson } from '../../lib/api';
 import { clearFormState, loadFormState, useDebouncedFormSave } from '../../lib/formPersistence';
 import { hapticSubmit, hapticSuccess } from '../../lib/haptics';
 import type { DesignPreviewResponse, DesignSaveResponse, LanguagesResponse, StoredTask } from '../../lib/types';
@@ -223,13 +224,6 @@ export default function DesignScreen() {
     }
   }, [selectedTask, name]);
 
-  const handlePlayPreview = useCallback(() => {
-    if (audioUri && player) {
-      player.seekTo(0);
-      player.play();
-    }
-  }, [audioUri, player]);
-
   const applyExample = useCallback((example: (typeof EXAMPLES)[number]) => {
     setName(example.name);
     setInstruct(example.instruct);
@@ -350,14 +344,9 @@ export default function DesignScreen() {
       {/* Audio playback + save section for selected task */}
       {selectedTask && selectedTask.status === 'completed' && audioUri && (
         <View style={{ backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', padding: 16, marginTop: 16 }}>
-          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>Preview Ready</Text>
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600', marginBottom: 12 }}>Preview Ready</Text>
+          <AudioPlayerBar player={player} />
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-            <TouchableOpacity
-              onPress={handlePlayPreview}
-              style={{ flex: 1, backgroundColor: '#222', borderRadius: 8, borderCurve: 'continuous', paddingVertical: 10, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>Play Again</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSave}
               disabled={saving}

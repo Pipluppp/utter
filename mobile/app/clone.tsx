@@ -3,6 +3,7 @@ import {
   createAudioPlayer,
   RecordingPresets,
   requestRecordingPermissionsAsync,
+  useAudioPlayer,
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
@@ -21,6 +22,7 @@ import {
   View,
 } from 'react-native';
 import { Select } from '../components/Select';
+import { AudioPlayerBar } from '../components/AudioPlayerBar';
 import { apiForm, apiJson } from '../lib/api';
 import { API_BASE_URL } from '../lib/constants';
 import { hapticError, hapticLight, hapticSubmit, hapticSuccess } from '../lib/haptics';
@@ -71,6 +73,11 @@ export default function CloneScreen() {
   const [hasRecording, setHasRecording] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
   const autoStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Audio preview player for uploaded file or recording
+  const previewPlayer = useAudioPlayer(
+    fileUri && !recorderState.isRecording ? { uri: fileUri } : null,
+  );
 
   useEffect(() => {
     void (async () => {
@@ -374,6 +381,11 @@ export default function CloneScreen() {
             </Text>
           </TouchableOpacity>
           <Text style={styles.hint}>10-20 seconds recommended, 60s max, 10MB max</Text>
+          {fileUri && !recorderState.isRecording && (
+            <View style={{ marginTop: 10 }}>
+              <AudioPlayerBar player={previewPlayer} />
+            </View>
+          )}
         </>
       )}
 
@@ -457,6 +469,11 @@ export default function CloneScreen() {
             )}
           </View>
           <Text style={styles.hint}>10-20 seconds recommended, {MAX_DURATION_SECONDS}s max</Text>
+          {hasRecording && !recorderState.isRecording && fileUri && (
+            <View style={{ marginTop: 10 }}>
+              <AudioPlayerBar player={previewPlayer} />
+            </View>
+          )}
         </>
       )}
 

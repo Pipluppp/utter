@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { apiJson, apiRedirectUrl } from '../../lib/api';
 import { hapticDelete, hapticSuccess } from '../../lib/haptics';
+import { AudioPlayerBar } from '../../components/AudioPlayerBar';
 import type { Generation, GenerationsResponse } from '../../lib/types';
 
 const PER_PAGE = 20;
@@ -346,16 +347,18 @@ export default function HistoryScreen() {
               )}
 
               {/* Action buttons */}
+              {isCompleted && playingId === gen.id && (
+                <View style={{ marginTop: 12 }}>
+                  <AudioPlayerBar player={player} />
+                </View>
+              )}
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                {isCompleted && (
+                {isCompleted && playingId !== gen.id && (
                   <TouchableOpacity
                     onPress={() => handlePlay(gen)}
-                    disabled={playingId === gen.id}
                     style={{ backgroundColor: '#222', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous' }}
                   >
-                    <Text style={{ color: '#0af', fontSize: 13, fontWeight: '600' }}>
-                      {playingId === gen.id ? 'Playing...' : 'Play'}
-                    </Text>
+                    <Text style={{ color: '#0af', fontSize: 13, fontWeight: '600' }}>Play</Text>
                   </TouchableOpacity>
                 )}
                 {isCompleted && (

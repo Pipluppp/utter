@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { AudioPlayerBar } from '../../components/AudioPlayerBar';
 import { Select } from '../../components/Select';
 import { apiJson, apiRedirectUrl } from '../../lib/api';
 import { clearFormState, loadFormState, useDebouncedFormSave } from '../../lib/formPersistence';
@@ -348,18 +349,19 @@ export default function GenerateScreen() {
                   </View>
                 </View>
                 {task.status === 'completed' && (
-                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                  <View style={{ gap: 8, marginTop: 10 }}>
+                    {playingTaskId === task.taskId ? (
+                      <AudioPlayerBar player={player} />
+                    ) : (
+                      <TouchableOpacity
+                        style={{ backgroundColor: '#222', borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
+                        onPress={() => playGeneration(task)}
+                      >
+                        <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>Play</Text>
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity
-                      style={{ flex: 1, backgroundColor: '#222', borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
-                      onPress={() => playGeneration(task)}
-                      disabled={playingTaskId === task.taskId}
-                    >
-                      <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>
-                        {playingTaskId === task.taskId ? 'Playing...' : 'Play'}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={{ flex: 1, backgroundColor: '#222', borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
+                      style={{ backgroundColor: '#222', borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
                       onPress={() => shareGeneration(task)}
                       disabled={sharingTaskId === task.taskId}
                     >
