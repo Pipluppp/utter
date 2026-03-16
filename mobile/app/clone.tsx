@@ -1,9 +1,15 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { createAudioPlayer } from 'expo-audio';
+import {
+  createAudioPlayer,
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from 'expo-audio';
 import { File } from 'expo-file-system';
 import * as FileSystemLegacy from 'expo-file-system/legacy';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,13 +21,15 @@ import {
   View,
 } from 'react-native';
 import { Select } from '../components/Select';
-import { apiJson } from '../lib/api';
+import { apiForm, apiJson } from '../lib/api';
 import { API_BASE_URL } from '../lib/constants';
-import { hapticSubmit, hapticSuccess } from '../lib/haptics';
-import type { CloneResponse, LanguagesResponse } from '../lib/types';
+import { hapticError, hapticLight, hapticSubmit, hapticSuccess } from '../lib/haptics';
+import type { CloneResponse, LanguagesResponse, TranscriptionResponse } from '../lib/types';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_DURATION_SECONDS = 60;
+
+type InputMode = 'upload' | 'record';
 
 function contentTypeForUri(uri: string, mimeType?: string | null): string {
   if (mimeType) return mimeType;
@@ -31,9 +39,19 @@ function contentTypeForUri(uri: string, mimeType?: string | null): string {
   return 'application/octet-stream';
 }
 
+function formatTimer(ms: number): string {
+  const total = Math.floor(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 export default function CloneScreen() {
   const [languages, setLanguages] = useState<string[]>([]);
+  const [transcriptionEnabled, setTranscriptionEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const [mode, setMode] = useState<InputMode>('upload');
 
   const [fileUri, setFileUri] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -44,7 +62,15 @@ export default function CloneScreen() {
   const [transcript, setTranscript] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loadingExample, setLoadingExample] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Recording state
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder, 200);
+  const [hasRecording, setHasRecording] = useState(false);
+  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
+  const autoStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -52,6 +78,7 @@ export default function CloneScreen() {
         const data = await apiJson<LanguagesResponse>('/api/languages');
         setLanguages(data.languages);
         setLanguage(data.default);
+        if (data.transcription?.enabled) setTranscriptionEnabled(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load languages');
       } finally {
@@ -108,6 +135,92 @@ export default function CloneScreen() {
     } catch {
       setError('Failed to pick file.');
     }
+  }, []);
+
+  // ---- Recording ----
+  const requestMicPermission = useCallback(async () => {
+    const { granted } = await requestRecordingPermissionsAsync();
+    setPermissionGranted(granted);
+    if (!granted) {
+      Alert.alert('Microphone Access', 'Microphone permission is required to record audio. Please enable it in Settings.');
+    }
+    return granted;
+  }, []);
+
+  const startRecording = useCallback(async () => {
+    setError(null);
+    if (permissionGranted === null || permissionGranted === false) {
+      const granted = await requestMicPermission();
+      if (!granted) return;
+    }
+    try {
+      await recorder.prepareToRecordAsync();
+      recorder.record({ forDuration: MAX_DURATION_SECONDS });
+      void hapticLight();
+      setHasRecording(false);
+
+      // Auto-stop safety (forDuration should handle it, but just in case)
+      autoStopTimer.current = setTimeout(async () => {
+        if (recorder.isRecording) {
+          await recorder.stop();
+        }
+      }, (MAX_DURATION_SECONDS + 1) * 1000);
+    } catch (e) {
+      void hapticError();
+      setError(e instanceof Error ? e.message : 'Failed to start recording');
+    }
+  }, [permissionGranted, requestMicPermission, recorder]);
+
+  const stopRecording = useCallback(async () => {
+    if (autoStopTimer.current) {
+      clearTimeout(autoStopTimer.current);
+      autoStopTimer.current = null;
+    }
+    try {
+      await recorder.stop();
+      void hapticSuccess();
+      const uri = recorder.uri;
+      if (uri) {
+        setFileUri(uri);
+        setFileName('recording.m4a');
+        setFileMimeType('audio/mp4');
+        setHasRecording(true);
+
+        // Auto-transcribe if available
+        if (transcriptionEnabled && !transcript.trim()) {
+          setTranscribing(true);
+          try {
+            const form = new FormData();
+            form.append('audio', { uri, type: 'audio/mp4', name: 'recording.m4a' } as unknown as Blob);
+            form.append('language', language);
+            const res = await apiForm<TranscriptionResponse>('/api/transcriptions', form, { method: 'POST' });
+            if (res.text) setTranscript(res.text);
+          } catch {
+            // Non-fatal: user can type transcript manually
+          } finally {
+            setTranscribing(false);
+          }
+        }
+      }
+    } catch (e) {
+      void hapticError();
+      setError(e instanceof Error ? e.message : 'Failed to stop recording');
+    }
+  }, [recorder, transcriptionEnabled, transcript, language]);
+
+  const clearRecording = useCallback(() => {
+    setFileUri(null);
+    setFileName(null);
+    setFileMimeType(null);
+    setHasRecording(false);
+    void hapticLight();
+  }, []);
+
+  // Clean up auto-stop timer
+  useEffect(() => {
+    return () => {
+      if (autoStopTimer.current) clearTimeout(autoStopTimer.current);
+    };
   }, []);
 
   const loadExample = useCallback(async () => {
@@ -227,17 +340,125 @@ export default function CloneScreen() {
     );
   }
 
+  const meterLevel = recorderState.metering != null
+    ? Math.max(0, Math.min(1, (recorderState.metering + 60) / 60))
+    : 0;
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {error && <Text style={styles.error}>{error}</Text>}
 
-      <Text style={styles.label}>Reference Audio</Text>
-      <TouchableOpacity style={styles.fileButton} onPress={pickFile}>
-        <Text style={styles.fileButtonText}>
-          {fileName ?? 'Pick audio file (WAV, MP3, M4A)'}
-        </Text>
-      </TouchableOpacity>
-      <Text style={styles.hint}>10-20 seconds recommended, 60s max, 10MB max</Text>
+      {/* Mode toggle */}
+      <Text style={styles.label}>Input Mode</Text>
+      <View style={{ flexDirection: 'row', backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', overflow: 'hidden', marginBottom: 16 }}>
+        {(['upload', 'record'] as const).map((m) => (
+          <TouchableOpacity
+            key={m}
+            onPress={() => setMode(m)}
+            style={{ flex: 1, paddingVertical: 10, alignItems: 'center', backgroundColor: mode === m ? '#333' : 'transparent' }}
+          >
+            <Text style={{ color: mode === m ? '#fff' : '#888', fontSize: 14, fontWeight: '600' }}>
+              {m === 'upload' ? 'Upload' : 'Record'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Upload mode */}
+      {mode === 'upload' && (
+        <>
+          <Text style={styles.label}>Reference Audio</Text>
+          <TouchableOpacity style={styles.fileButton} onPress={pickFile}>
+            <Text style={styles.fileButtonText}>
+              {fileName ?? 'Pick audio file (WAV, MP3, M4A)'}
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.hint}>10-20 seconds recommended, 60s max, 10MB max</Text>
+        </>
+      )}
+
+      {/* Record mode */}
+      {mode === 'record' && (
+        <>
+          <Text style={styles.label}>Record Audio</Text>
+          <View style={{ backgroundColor: '#111', borderRadius: 10, borderCurve: 'continuous', padding: 16, gap: 12 }}>
+            {/* Level meter */}
+            <View style={{ height: 8, backgroundColor: '#222', borderRadius: 4, overflow: 'hidden' }}>
+              <View style={{
+                height: '100%',
+                width: `${meterLevel * 100}%`,
+                backgroundColor: recorderState.isRecording ? '#0f0' : '#444',
+                borderRadius: 4,
+              }} />
+            </View>
+
+            {/* Timer */}
+            <Text style={{ color: '#fff', fontSize: 32, fontWeight: '700', textAlign: 'center', fontVariant: ['tabular-nums'] }}>
+              {formatTimer(recorderState.durationMillis)}
+            </Text>
+            <Text style={{ color: '#666', fontSize: 12, textAlign: 'center' }}>
+              {MAX_DURATION_SECONDS}s max
+            </Text>
+
+            {/* Controls */}
+            <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'center' }}>
+              {!recorderState.isRecording && !hasRecording && (
+                <TouchableOpacity
+                  onPress={() => void startRecording()}
+                  style={{ backgroundColor: '#d00', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, borderCurve: 'continuous' }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>Start</Text>
+                </TouchableOpacity>
+              )}
+              {recorderState.isRecording && (
+                <TouchableOpacity
+                  onPress={() => void stopRecording()}
+                  style={{ backgroundColor: '#fff', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, borderCurve: 'continuous' }}
+                >
+                  <Text style={{ color: '#000', fontSize: 15, fontWeight: '600' }}>Stop</Text>
+                </TouchableOpacity>
+              )}
+              {hasRecording && !recorderState.isRecording && (
+                <>
+                  <TouchableOpacity
+                    onPress={clearRecording}
+                    style={{ backgroundColor: '#222', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderCurve: 'continuous' }}
+                  >
+                    <Text style={{ color: '#f66', fontSize: 15, fontWeight: '600' }}>Clear</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => void startRecording()}
+                    style={{ backgroundColor: '#d00', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderCurve: 'continuous' }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>Re-record</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+
+            {/* Recording status */}
+            {recorderState.isRecording && (
+              <Text style={{ color: '#d00', fontSize: 13, textAlign: 'center', fontWeight: '600' }}>● Recording...</Text>
+            )}
+            {hasRecording && !recorderState.isRecording && (
+              <Text style={{ color: '#4c6', fontSize: 13, textAlign: 'center' }}>Recording ready: {fileName}</Text>
+            )}
+            {transcribing && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <ActivityIndicator color="#888" size="small" />
+                <Text style={{ color: '#888', fontSize: 13 }}>Transcribing...</Text>
+              </View>
+            )}
+
+            {permissionGranted === false && (
+              <Text style={{ color: '#f90', fontSize: 13, textAlign: 'center' }}>
+                Microphone permission denied. Please enable in Settings.
+              </Text>
+            )}
+          </View>
+          <Text style={styles.hint}>10-20 seconds recommended, {MAX_DURATION_SECONDS}s max</Text>
+        </>
+      )}
 
       <Text style={styles.label}>Voice Name</Text>
       <TextInput

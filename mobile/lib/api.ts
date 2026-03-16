@@ -108,3 +108,41 @@ export async function apiRedirectUrl(path: string): Promise<string> {
 
   return res.url || `${API_BASE_URL}${path}`;
 }
+
+/**
+ * FormData upload with bearer token + 401 retry.
+ */
+export async function apiForm<T>(
+  path: string,
+  body: FormData,
+  init: RequestInit = {},
+): Promise<T> {
+  const { headers: extraHeaders, ...rest } = init;
+  const auth = await authHeaders();
+
+  const buildHeaders = (base: Record<string, string>) => ({
+    ...base,
+    ...(extraHeaders as Record<string, string>),
+  });
+
+  const doFetch = (h: Record<string, string>) =>
+    fetch(`${API_BASE_URL}${path}`, {
+      ...rest,
+      headers: buildHeaders(h),
+      body,
+    });
+
+  let res = await doFetch(auth);
+  if (res.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      res = await doFetch(withToken(auth, refreshed));
+    }
+  }
+
+  if (!res.ok) {
+    throw new ApiError(await parseErrorMessage(res), res.status);
+  }
+
+  return (await res.json()) as T;
+}

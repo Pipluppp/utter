@@ -214,3 +214,9 @@ export type TaskListResponse = {
   limit: number;
   next_before: string | null;
 };
+
+export type TranscriptionResponse = {
+  text: string;
+  model: string;
+  language: string | null;
+};
