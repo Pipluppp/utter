@@ -13,7 +13,6 @@ import { useNavigation } from 'expo-router';
 import { apiJson } from '../../lib/api';
 import { hapticDelete } from '../../lib/haptics';
 import type { Voice, VoicesResponse } from '../../lib/types';
-import { useAuth } from '../../providers/AuthProvider';
 
 const PER_PAGE = 20;
 const SOURCES = ['all', 'uploaded', 'designed'] as const;
@@ -41,7 +40,6 @@ function SourceBadge({ source }: { source: 'uploaded' | 'designed' }) {
 }
 
 export default function VoicesScreen() {
-  const { signOut } = useAuth();
   const navigation = useNavigation();
   const [voices, setVoices] = useState<Voice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,13 +78,13 @@ export default function VoicesScreen() {
           >
             <Text style={{ color: '#000', fontSize: 14, fontWeight: '600' }}>+ Clone</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={signOut} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
-            <Text style={{ color: '#666', fontSize: 13 }}>Sign Out</Text>
+          <TouchableOpacity onPress={() => router.push('/account')} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
+            <Text style={{ color: '#999', fontSize: 20 }}>👤</Text>
           </TouchableOpacity>
         </View>
       ),
     });
-  }, [navigation, signOut]);
+  }, [navigation]);
 
   const fetchVoices = useCallback(async (pageNum: number, append: boolean) => {
     try {

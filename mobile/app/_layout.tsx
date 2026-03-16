@@ -47,6 +47,15 @@ function AuthGate() {
             headerTintColor: '#fff',
           }}
         />
+        <Stack.Screen
+          name="account"
+          options={{
+            title: 'Account',
+            headerShown: true,
+            headerStyle: { backgroundColor: '#000' },
+            headerTintColor: '#fff',
+          }}
+        />
       </Stack>
     </>
   );
