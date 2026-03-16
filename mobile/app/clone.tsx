@@ -114,27 +114,35 @@ export default function CloneScreen() {
       // Check duration using a temporary audio player
       try {
         const tempPlayer = createAudioPlayer({ uri: asset.uri });
-        // Wait for the player to load and report duration
-        await new Promise<void>((resolve) => {
+        const duration = await new Promise<number>((resolve, reject) => {
+          let settled = false;
+          const timeoutId = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              reject(new Error('Could not read audio duration'));
+            }
+          }, 5000);
+
           const check = () => {
+            if (settled) return;
             if (tempPlayer.isLoaded) {
-              resolve();
+              settled = true;
+              clearTimeout(timeoutId);
+              resolve(tempPlayer.duration);
             } else {
               setTimeout(check, 100);
             }
           };
           check();
-          // Timeout after 5s — don't block forever on unreadable files
-          setTimeout(resolve, 5000);
         });
-        const duration = tempPlayer.duration;
         tempPlayer.release();
         if (duration > MAX_DURATION_SECONDS) {
           setError(`Reference audio must be ${MAX_DURATION_SECONDS} seconds or shorter (got ${Math.round(duration)}s).`);
           return;
         }
-      } catch {
-        // Best-effort: if we can't read duration, still allow the file
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Could not read audio duration');
+        return;
       }
 
       setFileUri(asset.uri);
@@ -200,7 +208,8 @@ export default function CloneScreen() {
           setTranscribing(true);
           try {
             const form = new FormData();
-            form.append('audio', { uri, type: 'audio/mp4', name: 'recording.m4a' } as unknown as Blob);
+            // RN FormData accepts { uri, type, name } for file uploads; cast is a TS workaround
+            form.append('audio', { uri, type: 'audio/mp4', name: 'recording.m4a' } as any);
             form.append('language', language);
             const res = await apiForm<TranscriptionResponse>('/api/transcriptions', form, { method: 'POST' });
             if (res.text) setTranscript(res.text);
@@ -225,17 +234,21 @@ export default function CloneScreen() {
     void hapticLight();
   }, []);
 
-  // Clean up auto-stop timer
+  // Clean up auto-stop timer and stop recording on unmount (modal dismiss)
   useEffect(() => {
     return () => {
       if (autoStopTimer.current) clearTimeout(autoStopTimer.current);
+      if (recorder.isRecording) {
+        recorder.stop().catch(() => {});
+      }
     };
-  }, []);
+  }, [recorder]);
 
   const loadExample = useCallback(async () => {
     setLoadingExample(true);
     setError(null);
     try {
+      // Public static assets served without auth — no apiJson needed
       const [textRes, audioRes] = await Promise.all([
         fetch(`${API_BASE_URL}/static/examples/audio_text.txt`),
         fetch(`${API_BASE_URL}/static/examples/audio.wav`),
