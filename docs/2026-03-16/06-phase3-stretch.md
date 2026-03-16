@@ -153,3 +153,39 @@ After theme work is done:
 2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
 3. Commit the doc updates separately: `docs(mobile): update parity plan after theme system`
 ```
+
+## Completed
+
+### Magic link authentication (Task 1)
+
+**What was built:**
+- Added `signInWithOtp` method to AuthProvider context
+- Deep link handler in AuthProvider using `expo-linking` — handles both implicit grant (hash fragment with `access_token`/`refresh_token`) and PKCE code flow (query param `code`)
+- Listens for both cold-start URLs (`getInitialURL`) and foreground URLs (`addEventListener`)
+- Redirect URL generated via `Linking.createURL('auth/callback')` — resolves to `utter://auth/callback` in production, `exp://` in Expo Go
+- Rewrote sign-in screen with Password / Magic Link mode tabs:
+  - Password mode: existing email+password with sign-in/sign-up toggle (unchanged behavior)
+  - Magic Link mode: email-only field, "Send Magic Link" button, "Check your email" confirmation state
+- URL scheme `utter://` was already configured in app.json
+
+**Note:** Supabase dashboard must have `utter://auth/callback` added to the allowed redirect URLs for magic links to work in production builds.
+
+**Deviations from plan:** None. `expo-linking` was already a dependency; `app.json` already had `scheme: "utter"`.
+
+### Form state persistence (Task 2)
+
+**What was built:**
+- Created `mobile/lib/formPersistence.ts` with generic helpers:
+  - `loadFormState<T>(key)` — restore from SecureStore
+  - `saveFormState(key, state)` — persist to SecureStore
+  - `clearFormState(key)` — remove from SecureStore
+  - `useDebouncedFormSave(key, delay)` — hook returning a debounced save function (500ms default)
+- Generate screen (`generate.tsx`): persists `{ voiceId, language, text }`
+  - Restores on mount (skipped if navigation params are present)
+  - Validates restored voiceId exists in voice list, restored language exists in language list
+  - Clears on successful generation submit
+- Design screen (`design.tsx`): persists `{ name, language, text, instruct }`
+  - Restores on mount alongside language list load
+  - Clears on successful save-to-library (not preview, to allow iteration)
+
+**Deviations from plan:** Design clears on save-to-library instead of preview submission, since the user iterates between previews and shouldn't lose form data mid-workflow.

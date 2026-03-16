@@ -22,7 +22,7 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 |---------|-----|--------|--------|
 | Email/password sign in | Yes | Yes | Done |
 | Email/password sign up | Yes | Yes | Done |
-| Magic link auth | Yes | No | Missing |
+| Magic link auth | Yes | Yes | Done |
 | Session persistence | localStorage | SecureStore | Done |
 | Auto token refresh | Yes | Yes | Done |
 | 401 retry with refresh | Yes | Yes | Done |
@@ -57,7 +57,7 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | Audio playback on completion | Yes | Yes | Done (expo-audio) |
 | Waveform visualization | Yes | No | Missing (needs RN alternative) |
 | Download audio | Yes | Yes | Done (Share sheet) |
-| Form state persistence | localStorage | No | Missing |
+| Form state persistence | localStorage | SecureStore | Done |
 | Voice pre-selection via param | URL params | Yes | Done |
 | Elapsed time display | Yes | Yes | Done |
 
