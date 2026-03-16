@@ -1,4 +1,6 @@
 import { useAudioPlayer } from 'expo-audio';
+import * as FileSystemLegacy from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -82,6 +84,7 @@ export default function HistoryScreen() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [audioUri, setAudioUri] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [sharingId, setSharingId] = useState<string | null>(null);
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoRefreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -163,6 +166,20 @@ export default function HistoryScreen() {
     } catch {
       setPlayingId(null);
       Alert.alert('Playback error', 'Could not play audio.');
+    }
+  }, []);
+
+  const handleShare = useCallback(async (gen: Generation) => {
+    setSharingId(gen.id);
+    try {
+      const url = await apiRedirectUrl(`/api/generations/${gen.id}/audio`);
+      const localPath = `${FileSystemLegacy.cacheDirectory}generation_${gen.id}.wav`;
+      const download = await FileSystemLegacy.downloadAsync(url, localPath);
+      await Sharing.shareAsync(download.uri, { mimeType: 'audio/wav' });
+    } catch {
+      Alert.alert('Share error', 'Could not share audio.');
+    } finally {
+      setSharingId(null);
     }
   }, []);
 
@@ -338,6 +355,17 @@ export default function HistoryScreen() {
                   >
                     <Text style={{ color: '#0af', fontSize: 13, fontWeight: '600' }}>
                       {playingId === gen.id ? 'Playing...' : 'Play'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {isCompleted && (
+                  <TouchableOpacity
+                    onPress={() => void handleShare(gen)}
+                    disabled={sharingId === gen.id}
+                    style={{ backgroundColor: '#222', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous', opacity: sharingId === gen.id ? 0.4 : 1 }}
+                  >
+                    <Text style={{ color: '#0af', fontSize: 13, fontWeight: '600' }}>
+                      {sharingId === gen.id ? 'Sharing...' : 'Share'}
                     </Text>
                   </TouchableOpacity>
                 )}
