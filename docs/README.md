@@ -44,7 +44,9 @@ Local queue/R2 note:
 ## Active work
 
 - Current task hub: `tasks.md`
-- Mobile app scaffold: `2026-03-15/` (Expo React Native, branch `feat/mobile-app`)
+- **Mobile app clean-up: `2026-03-16/clean-up/`** (7 plans — bug fixes, performance, parity gaps)
+- Mobile app initial scaffold: `2026-03-15/initial/`
+- Mobile app parity implementation: `2026-03-16/initial/`
 - 2026-03-02 continuation artifacts: `2026-03-02/`
 - Simplification execution pack: `2026-03-02/remove-modal-supastorage-queue-simplify/`
 - Security sweep planning pack: `2026-03-07/security-sweep-plan-bundle/`

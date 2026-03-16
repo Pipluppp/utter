@@ -13,15 +13,17 @@ This folder captures the initial scaffolding of the Expo React Native mobile app
 
 ## Artifacts
 
-1. `00-initial-scaffold-summary.md` -- What was built and how the mobile app works
-2. `01-web-parity-plan.md` -- Feature gap analysis and phased plan to reach 1:1 web parity
-3. `02-architecture-and-setup.md` -- Technical architecture, file map, and developer setup guide
+All initial scaffold plans are in `initial/`:
+
+1. `initial/00-initial-scaffold-summary.md` -- What was built and how the mobile app works
+2. `initial/01-web-parity-plan.md` -- Feature gap analysis and phased plan to reach 1:1 web parity
+3. `initial/02-architecture-and-setup.md` -- Technical architecture, file map, and developer setup guide
+4. `initial/03-next-session-prompt.md` -- Continuation prompt for next session
 
 ## Branch
 
 - Branch: `feat/mobile-app`
 - Worktree: `C:\Users\Duncan\Desktop\utter-mobile` (git worktree of `utter/`)
-- Status: uncommitted -- all mobile scaffold work is staged for first commit
 
 ## Working style
 

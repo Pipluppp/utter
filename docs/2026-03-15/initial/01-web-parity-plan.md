@@ -135,7 +135,7 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 
 | Feature | Web | Mobile | Status |
 |---------|-----|--------|--------|
-| Dark theme | Yes | Partial | Dark hardcoded, no light mode toggle |
+| Dark theme | Yes | Yes | Done — system/dark/light toggle in Account |
 | Error boundaries | Yes | Yes | Done |
 | Skeleton loading states | Yes | Yes | Done |
 | Pull-to-refresh | N/A | Yes | Done |

@@ -191,6 +191,18 @@ In `docs/2026-03-15/01-web-parity-plan.md`, change:
 
 ---
 
+## Completed
+
+- **2026-03-17**: All items implemented.
+  - `ThemeProvider` with system/dark/light modes, SecureStore persistence
+  - Theme toggle (segmented control) in Account screen
+  - All screens migrated: index, generate, design, history, clone, tasks, account, sign-in
+  - All components migrated: Select, AudioPlayerBar
+  - Tab bar colors use theme tokens
+  - Parity plan updated: Dark theme → Done
+
+---
+
 ## Prompt
 
 ```
