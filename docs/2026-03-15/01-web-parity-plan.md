@@ -37,7 +37,7 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | Source filter (All/Clone/Designed) | Yes | Yes | Done |
 | Pagination (20 per page) | Yes | Yes | Done |
 | Skeleton loading | Yes | Yes | Done |
-| Preview audio (waveform) | Yes | No | Missing |
+| Preview audio (waveform) | Yes | No | Missing (no backend endpoint) |
 | Generate from voice (navigate) | Yes | Yes | Done |
 | Delete voice (confirmation) | Yes | Yes | Done |
 | Search token highlighting | Yes | Yes | Done |
@@ -55,7 +55,7 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | Multi-task tracking list | Yes | Yes | Done |
 | Task selection UI | Yes | Yes | Done |
 | Audio playback on completion | Yes | Yes | Done (expo-audio) |
-| Waveform visualization | Yes | No | Missing (needs RN alternative) |
+| Waveform visualization | Yes | Yes | Done (play/pause progress bar) |
 | Download audio | Yes | Yes | Done (Share sheet) |
 | Form state persistence | localStorage | SecureStore | Done |
 | Voice pre-selection via param | URL params | Yes | Done |
@@ -85,7 +85,7 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 | Audio recording | Yes | Yes | Done (expo-audio recorder) |
 | Microphone level meter | Yes | Yes | Done |
 | Recording timer | Yes | Yes | Done |
-| Waveform preview of recording | Yes | No | Missing (level meter only, no waveform) |
+| Waveform preview of recording | Yes | Yes | Done (play/pause progress bar) |
 | Auto-transcription | Yes | Yes | Done |
 | Voice name input | Yes | Yes | Done |
 | Transcript textarea | Yes | Yes | Done |

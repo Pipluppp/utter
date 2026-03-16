@@ -189,6 +189,36 @@ In `docs/2026-03-15/01-web-parity-plan.md`, change:
 
 ---
 
+## Completed
+
+**Date**: 2026-03-17
+
+### What was built
+
+- `mobile/components/AudioPlayerBar.tsx` — reusable component accepting `AudioPlayer` instance
+  - Play/pause toggle, progress bar with tap-to-seek, elapsed/total time display
+  - Uses `useAudioPlayerStatus()` for real-time updates
+  - Disabled state when player is null
+  - Resets to start on `didJustFinish`
+
+### Integration points
+
+| Screen | Integration | Notes |
+|--------|------------|-------|
+| Generate | AudioPlayerBar replaces "Play/Playing..." on active task | Share button kept alongside |
+| History | AudioPlayerBar shown in card of currently-playing generation | Other cards keep "Play" button |
+| Design | AudioPlayerBar replaces "Play Again" in Preview Ready card | Save Voice button kept alongside |
+| Clone | AudioPlayerBar for previewing uploaded file or recording | Both upload and record modes |
+| Voices | Skipped | Voice type has no `preview_url` field — no backend endpoint |
+
+### Parity plan updates
+
+- Generate: Waveform visualization → Done (play/pause progress bar)
+- Clone: Waveform preview of recording → Done (play/pause progress bar)
+- Voices: Preview audio (waveform) → Missing (no backend endpoint)
+
+---
+
 ## Prompt
 
 ```
