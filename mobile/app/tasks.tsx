@@ -1,10 +1,12 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   RefreshControl,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -16,9 +18,10 @@ import type {
   TaskListResponse,
   TaskListStatus,
   TaskListType,
+  TaskStatus,
 } from '../lib/types';
 import { useTasks } from '../providers/TaskProvider';
-import { useTheme } from '../providers/ThemeProvider';
+import { useTheme, type ThemeColors } from '../providers/ThemeProvider';
 
 // ---------------------------------------------------------------------------
 // Filters
@@ -51,7 +54,7 @@ function relativeTime(dateStr: string | null): string {
   return `${days}d ago`;
 }
 
-function statusColor(status: string, isDark: boolean): string {
+function statusColorValue(status: string, isDark: boolean): string {
   switch (status) {
     case 'completed': return isDark ? '#4c6' : '#090';
     case 'failed': return isDark ? '#f66' : '#d33';
@@ -73,17 +76,17 @@ function SegmentedControl<T extends string>({
   options: { value: T; label: string }[];
   value: T;
   onChange: (v: T) => void;
-  colors: import('../providers/ThemeProvider').ThemeColors;
+  colors: ThemeColors;
 }) {
   return (
-    <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', overflow: 'hidden' }}>
+    <View style={[styles.segmentedControl, { backgroundColor: colors.surface }]}>
       {options.map((o) => (
         <TouchableOpacity
           key={o.value}
           onPress={() => onChange(o.value)}
-          style={{ flex: 1, paddingVertical: 8, alignItems: 'center', backgroundColor: value === o.value ? colors.border : 'transparent' }}
+          style={[styles.segmentButton, { backgroundColor: value === o.value ? colors.border : 'transparent' }]}
         >
-          <Text style={{ color: value === o.value ? colors.text : colors.textSecondary, fontSize: 13, fontWeight: '600' }}>
+          <Text style={[styles.segmentText, { color: value === o.value ? colors.text : colors.textSecondary }]}>
             {o.label}
           </Text>
         </TouchableOpacity>
@@ -91,6 +94,106 @@ function SegmentedControl<T extends string>({
     </View>
   );
 }
+
+// ---------------------------------------------------------------------------
+// TaskCard — memoized list item
+// ---------------------------------------------------------------------------
+type TaskCardProps = {
+  task: BackendTaskListItem;
+  colors: ThemeColors;
+  isDark: boolean;
+  getStatusText: (status: TaskStatus, providerStatus?: string | null) => string;
+  onOpen: (task: BackendTaskListItem) => void;
+  onCancel: (task: BackendTaskListItem) => void;
+  onDismiss: (task: BackendTaskListItem) => void;
+};
+
+const TaskCard = React.memo(function TaskCard({
+  task, colors, isDark, getStatusText, onOpen, onCancel, onDismiss,
+}: TaskCardProps) {
+  const sc = statusColorValue(task.status, isDark);
+
+  return (
+    <View style={[styles.card, { backgroundColor: colors.surface }]}>
+      {/* Header row */}
+      <View style={styles.taskHeader}>
+        <View style={styles.taskHeaderLeft}>
+          <Text style={[styles.taskTitle, { color: colors.text }]} numberOfLines={2}>
+            {task.title}
+          </Text>
+          <Text style={[styles.taskStatus, { color: sc }]}>
+            {task.status === 'completed'
+              ? 'Completed'
+              : task.status === 'failed'
+                ? 'Failed'
+                : task.status === 'cancelled'
+                  ? 'Cancelled'
+                  : getStatusText(task.status, task.provider_status)}
+          </Text>
+          {task.subtitle ? (
+            <Text style={[styles.taskSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>{task.subtitle}</Text>
+          ) : null}
+        </View>
+        <View style={styles.taskHeaderRight}>
+          <Text style={[styles.taskTime, { color: colors.textTertiary }]}>{relativeTime(task.created_at)}</Text>
+          {task.completed_at ? (
+            <Text style={[styles.taskTimeDone, { color: colors.textTertiary }]}>Done {relativeTime(task.completed_at)}</Text>
+          ) : null}
+        </View>
+      </View>
+
+      {/* Metadata row */}
+      <View style={styles.taskMeta}>
+        {task.voice_name ? (
+          <Text style={[styles.taskMetaText, { color: colors.textTertiary }]}>Voice: {task.voice_name}</Text>
+        ) : null}
+        {task.language ? (
+          <Text style={[styles.taskMetaText, { color: colors.textTertiary }]}>Lang: {task.language}</Text>
+        ) : null}
+        {task.estimated_duration_minutes ? (
+          <Text style={[styles.taskMetaText, { color: colors.textTertiary }]}>Est. {task.estimated_duration_minutes.toFixed(1)} min</Text>
+        ) : null}
+      </View>
+
+      {/* Text preview */}
+      {task.text_preview ? (
+        <Text style={[styles.taskPreview, { color: colors.textTertiary }]} numberOfLines={2}>
+          {task.text_preview}
+        </Text>
+      ) : null}
+
+      {/* Error */}
+      {task.error ? (
+        <Text selectable style={[styles.taskError, { color: colors.danger }]}>{task.error}</Text>
+      ) : null}
+
+      {/* Actions */}
+      <View style={styles.actionsRow}>
+        <TouchableOpacity
+          onPress={() => onOpen(task)}
+          style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }]}
+        >
+          <Text style={[styles.actionText, { color: colors.accent }]}>Open</Text>
+        </TouchableOpacity>
+        {task.supports_cancel ? (
+          <TouchableOpacity
+            onPress={() => onCancel(task)}
+            style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }]}
+          >
+            <Text style={[styles.actionText, { color: colors.danger }]}>Cancel</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={() => void onDismiss(task)}
+            style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }]}
+          >
+            <Text style={[styles.actionText, { color: colors.textSecondary }]}>Dismiss</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+});
 
 // ---------------------------------------------------------------------------
 // Main screen
@@ -224,90 +327,21 @@ export default function TasksScreen() {
 
   // ---- Render ----
   const renderTask = useCallback(({ item }: { item: BackendTaskListItem }) => (
-    <View style={{ backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', padding: 14, marginBottom: 8 }}>
-      {/* Header row */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <View style={{ flex: 1, marginRight: 10 }}>
-          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }} numberOfLines={2}>
-            {item.title}
-          </Text>
-          <Text style={{ color: statusColor(item.status, isDark), fontSize: 12, marginTop: 4 }}>
-            {item.status === 'completed'
-              ? 'Completed'
-              : item.status === 'failed'
-                ? 'Failed'
-                : item.status === 'cancelled'
-                  ? 'Cancelled'
-                  : getStatusText(item.status, item.provider_status)}
-          </Text>
-          {item.subtitle ? (
-            <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }} numberOfLines={1}>{item.subtitle}</Text>
-          ) : null}
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={{ color: colors.textTertiary, fontSize: 11 }}>{relativeTime(item.created_at)}</Text>
-          {item.completed_at ? (
-            <Text style={{ color: colors.textTertiary, fontSize: 11, marginTop: 2 }}>Done {relativeTime(item.completed_at)}</Text>
-          ) : null}
-        </View>
-      </View>
-
-      {/* Metadata row */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-        {item.voice_name ? (
-          <Text style={{ color: colors.textTertiary, fontSize: 12 }}>Voice: {item.voice_name}</Text>
-        ) : null}
-        {item.language ? (
-          <Text style={{ color: colors.textTertiary, fontSize: 12 }}>Lang: {item.language}</Text>
-        ) : null}
-        {item.estimated_duration_minutes ? (
-          <Text style={{ color: colors.textTertiary, fontSize: 12 }}>Est. {item.estimated_duration_minutes.toFixed(1)} min</Text>
-        ) : null}
-      </View>
-
-      {/* Text preview */}
-      {item.text_preview ? (
-        <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 6 }} numberOfLines={2}>
-          {item.text_preview}
-        </Text>
-      ) : null}
-
-      {/* Error */}
-      {item.error ? (
-        <Text selectable style={{ color: colors.danger, fontSize: 12, marginTop: 6 }}>{item.error}</Text>
-      ) : null}
-
-      {/* Actions */}
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-        <TouchableOpacity
-          onPress={() => handleOpen(item)}
-          style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous' }}
-        >
-          <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>Open</Text>
-        </TouchableOpacity>
-        {item.supports_cancel ? (
-          <TouchableOpacity
-            onPress={() => handleCancel(item)}
-            style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous' }}
-          >
-            <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600' }}>Cancel</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={() => void handleDismiss(item)}
-            style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous' }}
-          >
-            <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600' }}>Dismiss</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  ), [getStatusText, handleOpen, handleCancel, handleDismiss]);
+    <TaskCard
+      task={item}
+      colors={colors}
+      isDark={isDark}
+      getStatusText={getStatusText}
+      onOpen={handleOpen}
+      onCancel={handleCancel}
+      onDismiss={handleDismiss}
+    />
+  ), [colors, isDark, getStatusText, handleOpen, handleCancel, handleDismiss]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {error && (
-        <Text selectable style={{ color: colors.danger, fontSize: 14, padding: 12, marginHorizontal: 16, backgroundColor: '#1a0000', borderRadius: 8, borderCurve: 'continuous', marginTop: 8 }}>
+        <Text selectable style={[styles.errorBanner, { color: colors.danger }]}>
           {error}
         </Text>
       )}
@@ -315,19 +349,20 @@ export default function TasksScreen() {
         data={tasks}
         keyExtractor={(t) => t.id}
         renderItem={renderTask}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 }}
+        contentContainerStyle={styles.listContent}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
         ListHeaderComponent={
-          <View style={{ gap: 8, marginBottom: 12 }}>
+          <View style={styles.listHeader}>
             <SegmentedControl options={STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} colors={colors} />
             <SegmentedControl options={TYPE_OPTIONS} value={typeFilter} onChange={setTypeFilter} colors={colors} />
           </View>
         }
         ListEmptyComponent={
           !loading ? (
-            <View style={{ alignItems: 'center', paddingTop: 60 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 16, fontWeight: '600' }}>No tasks</Text>
-              <Text style={{ color: colors.textTertiary, fontSize: 14, marginTop: 8 }}>
+            <View style={styles.emptyContainer}>
+              <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No tasks</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
                 {statusFilter === 'active' ? 'No active tasks right now' : 'No recent tasks to show'}
               </Text>
             </View>
@@ -335,33 +370,33 @@ export default function TasksScreen() {
         }
         ListFooterComponent={
           loadingMore ? (
-            <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+            <View style={styles.footerLoading}>
               <ActivityIndicator color={colors.text} size="small" />
             </View>
           ) : nextBefore ? (
             <TouchableOpacity
               onPress={() => void loadMore()}
-              style={{ backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', paddingVertical: 12, alignItems: 'center', marginTop: 4 }}
+              style={[styles.loadOlderButton, { backgroundColor: colors.surface }]}
             >
-              <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Load Older</Text>
+              <Text style={[styles.loadOlderText, { color: colors.accent }]}>Load Older</Text>
             </TouchableOpacity>
           ) : null
         }
       />
       {loading && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.background, paddingHorizontal: 16, paddingTop: 80 }}>
+        <View style={[styles.loadingOverlay, { backgroundColor: colors.background }]}>
           {[0, 1, 2, 3].map((i) => (
-            <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', padding: 14, marginBottom: 8 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <View style={{ flex: 1, marginRight: 10 }}>
-                  <View style={{ backgroundColor: colors.skeletonHighlight, height: 16, width: '60%', borderRadius: 4 }} />
-                  <View style={{ backgroundColor: colors.surfaceHover, height: 12, width: 70, borderRadius: 4, marginTop: 8 }} />
+            <View key={i} style={[styles.card, { backgroundColor: colors.surface }]}>
+              <View style={styles.skeletonHeader}>
+                <View style={styles.taskHeaderLeft}>
+                  <View style={[styles.skeletonBar, { backgroundColor: colors.skeletonHighlight, height: 16, width: '60%' }]} />
+                  <View style={[styles.skeletonBar, { backgroundColor: colors.surfaceHover, height: 12, width: 70, marginTop: 8 }]} />
                 </View>
-                <View style={{ backgroundColor: colors.surfaceHover, height: 12, width: 50, borderRadius: 4 }} />
+                <View style={[styles.skeletonBar, { backgroundColor: colors.surfaceHover, height: 12, width: 50 }]} />
               </View>
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-                <View style={{ backgroundColor: colors.surfaceHover, height: 10, width: 80, borderRadius: 4 }} />
-                <View style={{ backgroundColor: colors.surfaceHover, height: 10, width: 60, borderRadius: 4 }} />
+              <View style={styles.skeletonMetaRow}>
+                <View style={[styles.skeletonBar, { backgroundColor: colors.surfaceHover, height: 10, width: 80 }]} />
+                <View style={[styles.skeletonBar, { backgroundColor: colors.surfaceHover, height: 10, width: 60 }]} />
               </View>
             </View>
           ))}
@@ -370,3 +405,49 @@ export default function TasksScreen() {
     </View>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  listContent: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
+  listHeader: { gap: 8, marginBottom: 12 },
+
+  segmentedControl: { flexDirection: 'row', borderRadius: 8, borderCurve: 'continuous', overflow: 'hidden' },
+  segmentButton: { flex: 1, paddingVertical: 8, alignItems: 'center' },
+  segmentText: { fontSize: 13, fontWeight: '600' },
+
+  card: { borderRadius: 8, borderCurve: 'continuous', padding: 14, marginBottom: 8 },
+  taskHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  taskHeaderLeft: { flex: 1, marginRight: 10 },
+  taskHeaderRight: { alignItems: 'flex-end' },
+  taskTitle: { fontSize: 14, fontWeight: '600' },
+  taskStatus: { fontSize: 12, marginTop: 4 },
+  taskSubtitle: { fontSize: 13, marginTop: 4 },
+  taskTime: { fontSize: 11 },
+  taskTimeDone: { fontSize: 11, marginTop: 2 },
+  taskMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  taskMetaText: { fontSize: 12 },
+  taskPreview: { fontSize: 12, marginTop: 6 },
+  taskError: { fontSize: 12, marginTop: 6 },
+  actionsRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  actionButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous' },
+  actionText: { fontSize: 13, fontWeight: '600' },
+
+  errorBanner: { fontSize: 14, padding: 12, marginHorizontal: 16, backgroundColor: '#1a0000', borderRadius: 8, borderCurve: 'continuous', marginTop: 8 },
+
+  emptyContainer: { alignItems: 'center', paddingTop: 60 },
+  emptyTitle: { fontSize: 16, fontWeight: '600' },
+  emptySubtitle: { fontSize: 14, marginTop: 8 },
+
+  footerLoading: { paddingVertical: 16, alignItems: 'center' },
+  loadOlderButton: { borderRadius: 8, borderCurve: 'continuous', paddingVertical: 12, alignItems: 'center', marginTop: 4 },
+  loadOlderText: { fontSize: 14, fontWeight: '600' },
+
+  loadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 80 },
+
+  skeletonHeader: { flexDirection: 'row', justifyContent: 'space-between' },
+  skeletonBar: { borderRadius: 4 },
+  skeletonMetaRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
+});

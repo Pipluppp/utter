@@ -1,9 +1,11 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Platform,
   RefreshControl,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -13,34 +15,34 @@ import { useNavigation } from 'expo-router';
 import { apiJson } from '../../lib/api';
 import { hapticDelete } from '../../lib/haptics';
 import type { Voice, VoicesResponse } from '../../lib/types';
-import { useTheme } from '../../providers/ThemeProvider';
+import { useTheme, type ThemeColors } from '../../providers/ThemeProvider';
 
 const PER_PAGE = 20;
 const SOURCES = ['all', 'uploaded', 'designed'] as const;
 type SourceFilter = (typeof SOURCES)[number];
 const SOURCE_LABELS: Record<SourceFilter, string> = { all: 'All', uploaded: 'Clone', designed: 'Designed' };
 
-function SkeletonCard({ colors }: { colors: import('../../providers/ThemeProvider').ThemeColors }) {
+function SkeletonCard({ colors }: { colors: ThemeColors }) {
   return (
-    <View style={{ backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', padding: 16, marginBottom: 8 }}>
-      <View style={{ backgroundColor: colors.skeletonHighlight, height: 16, width: '50%', borderRadius: 4 }} />
-      <View style={{ backgroundColor: colors.surfaceHover, height: 12, width: '30%', borderRadius: 4, marginTop: 10 }} />
-      <View style={{ backgroundColor: colors.surfaceHover, height: 12, width: '80%', borderRadius: 4, marginTop: 8 }} />
+    <View style={[styles.card, { backgroundColor: colors.surface }]}>
+      <View style={[styles.skeletonBar, { backgroundColor: colors.skeletonHighlight, height: 16, width: '50%' }]} />
+      <View style={[styles.skeletonBar, { backgroundColor: colors.surfaceHover, height: 12, width: '30%', marginTop: 10 }]} />
+      <View style={[styles.skeletonBar, { backgroundColor: colors.surfaceHover, height: 12, width: '80%', marginTop: 8 }]} />
     </View>
   );
 }
 
-function SourceBadge({ source, colors }: { source: 'uploaded' | 'designed'; colors: import('../../providers/ThemeProvider').ThemeColors }) {
+function SourceBadge({ source, colors }: { source: 'uploaded' | 'designed'; colors: ThemeColors }) {
   return (
-    <View style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, borderCurve: 'continuous' }}>
-      <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+    <View style={[styles.sourceBadge, { backgroundColor: colors.skeletonHighlight }]}>
+      <Text style={[styles.sourceBadgeText, { color: colors.textSecondary }]}>
         {source === 'designed' ? 'Designed' : 'Clone'}
       </Text>
     </View>
   );
 }
 
-function HighlightedText({ text, highlight, style }: { text: string; highlight: string; style: object }) {
+const HighlightedText = React.memo(function HighlightedText({ text, highlight, style }: { text: string; highlight: string; style: object }) {
   if (!highlight.trim()) {
     return <Text style={style} numberOfLines={1}>{text}</Text>;
   }
@@ -51,13 +53,74 @@ function HighlightedText({ text, highlight, style }: { text: string; highlight: 
     <Text style={style} numberOfLines={1}>
       {parts.map((part, i) =>
         regex.test(part)
-          ? <Text key={i} style={{ backgroundColor: '#fa03' }}>{part}</Text>
+          ? <Text key={i} style={styles.highlight}>{part}</Text>
           : part,
       )}
     </Text>
   );
-}
+});
 
+// ---------------------------------------------------------------------------
+// VoiceCard — memoized list item
+// ---------------------------------------------------------------------------
+type VoiceCardProps = {
+  voice: Voice;
+  colors: ThemeColors;
+  highlight: string;
+  onGenerate: (voice: Voice) => void;
+  onDelete: (voice: Voice) => void;
+  isDeleting: boolean;
+};
+
+const VoiceCard = React.memo(function VoiceCard({
+  voice, colors, highlight, onGenerate, onDelete, isDeleting,
+}: VoiceCardProps) {
+  return (
+    <View style={[styles.card, { backgroundColor: colors.surface }]}>
+      <View style={styles.cardHeaderRow}>
+        <SourceBadge source={voice.source} colors={colors} />
+        <HighlightedText
+          text={voice.name}
+          highlight={highlight}
+          style={[styles.voiceName, { color: colors.text }]}
+        />
+      </View>
+      <Text style={[styles.languageText, { color: colors.textSecondary }]}>
+        {voice.language}
+      </Text>
+      {voice.description ? (
+        <Text style={[styles.subtitleText, { color: colors.textTertiary }]} numberOfLines={2}>
+          {voice.description}
+        </Text>
+      ) : voice.reference_transcript ? (
+        <Text style={[styles.subtitleText, { color: colors.textTertiary }]} numberOfLines={2}>
+          {voice.reference_transcript}
+        </Text>
+      ) : null}
+      <View style={styles.actionsRow}>
+        <TouchableOpacity
+          onPress={() => onGenerate(voice)}
+          style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }]}
+        >
+          <Text style={[styles.actionText, { color: colors.accent }]}>Generate</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => onDelete(voice)}
+          disabled={isDeleting}
+          style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }, isDeleting && styles.disabled]}
+        >
+          <Text style={[styles.actionText, { color: colors.danger }]}>
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Main screen
+// ---------------------------------------------------------------------------
 export default function VoicesScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation();
@@ -83,23 +146,18 @@ export default function VoicesScreen() {
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [search]);
 
-  // Reset page when search/source changes
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, source]);
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+        <View style={styles.headerRight}>
           <TouchableOpacity
             onPress={() => router.push('/clone')}
-            style={{ backgroundColor: colors.text, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 6, borderCurve: 'continuous' }}
+            style={[styles.cloneButton, { backgroundColor: colors.text }]}
           >
-            <Text style={{ color: colors.background, fontSize: 14, fontWeight: '600' }}>+ Clone</Text>
+            <Text style={[styles.cloneButtonText, { color: colors.background }]}>+ Clone</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/account')} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
-            <Text style={{ color: colors.textTertiary, fontSize: 20 }}>👤</Text>
+          <TouchableOpacity onPress={() => router.push('/account')} style={styles.accountButton}>
+            <Text style={[styles.accountButtonText, { color: colors.textTertiary }]}>👤</Text>
           </TouchableOpacity>
         </View>
       ),
@@ -124,10 +182,22 @@ export default function VoicesScreen() {
     }
   }, [debouncedSearch, source]);
 
+  // Ref for stable access in pagination effect
+  const fetchRef = useRef(fetchVoices);
+  fetchRef.current = fetchVoices;
+
+  // Fetch on filter/search change (always page 1) — fixes double-fetch (4.3)
   useEffect(() => {
-    setLoading(page === 1);
-    void fetchVoices(page, page > 1);
-  }, [fetchVoices, page]);
+    setPage(1);
+    setLoading(true);
+    void fetchVoices(1, false);
+  }, [fetchVoices]);
+
+  // Pagination (page > 1 only)
+  useEffect(() => {
+    if (page <= 1) return;
+    void fetchRef.current(page, true);
+  }, [page]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -170,9 +240,23 @@ export default function VoicesScreen() {
     router.navigate({ pathname: '/(tabs)/generate', params: { voice: voice.id } });
   }, []);
 
+  const renderVoice = useCallback(
+    ({ item }: { item: Voice }) => (
+      <VoiceCard
+        voice={item}
+        colors={colors}
+        highlight={debouncedSearch}
+        onGenerate={handleGenerate}
+        onDelete={handleDelete}
+        isDeleting={deletingId === item.id}
+      />
+    ),
+    [colors, debouncedSearch, handleGenerate, handleDelete, deletingId],
+  );
+
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 16, paddingTop: 8 }}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <SkeletonCard colors={colors} />
         <SkeletonCard colors={colors} />
         <SkeletonCard colors={colors} />
@@ -182,9 +266,9 @@ export default function VoicesScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {error && (
-        <Text selectable style={{ color: colors.danger, fontSize: 14, padding: 12, marginHorizontal: 16, backgroundColor: '#1a0000', borderRadius: 8, borderCurve: 'continuous', marginBottom: 8 }}>
+        <Text selectable style={[styles.errorBanner, { color: colors.danger }]}>
           {error}
         </Text>
       )}
@@ -193,13 +277,14 @@ export default function VoicesScreen() {
         data={voices}
         keyExtractor={(v) => v.id}
         contentInsetAdjustmentBehavior="automatic"
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
         }
         ListHeaderComponent={
-          <View style={{ gap: 10, marginBottom: 12 }}>
+          <View style={styles.listHeader}>
             <TextInput
-              style={{ backgroundColor: colors.surface, color: colors.text, borderRadius: 8, borderCurve: 'continuous', paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, borderWidth: 1, borderColor: colors.border }}
+              style={[styles.searchInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
               value={search}
               onChangeText={setSearch}
               placeholder="Search voices..."
@@ -207,14 +292,14 @@ export default function VoicesScreen() {
               autoCorrect={false}
               clearButtonMode="while-editing"
             />
-            <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', overflow: 'hidden' }}>
+            <View style={[styles.filterRow, { backgroundColor: colors.surface }]}>
               {SOURCES.map((s) => (
                 <TouchableOpacity
                   key={s}
                   onPress={() => setSource(s)}
-                  style={{ flex: 1, paddingVertical: 8, alignItems: 'center', backgroundColor: source === s ? colors.border : 'transparent' }}
+                  style={[styles.filterButton, { backgroundColor: source === s ? colors.border : 'transparent' }]}
                 >
-                  <Text style={{ color: source === s ? colors.text : colors.textSecondary, fontSize: 13, fontWeight: '600' }}>
+                  <Text style={[styles.filterText, { color: source === s ? colors.text : colors.textSecondary }]}>
                     {SOURCE_LABELS[s]}
                   </Text>
                 </TouchableOpacity>
@@ -224,28 +309,28 @@ export default function VoicesScreen() {
         }
         ListEmptyComponent={
           !loading ? (
-            <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 18, fontWeight: '600' }}>
+            <View style={styles.emptyContainer}>
+              <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
                 {debouncedSearch || source !== 'all' ? 'No matches' : 'No voices yet'}
               </Text>
-              <Text style={{ color: colors.textTertiary, fontSize: 14, marginTop: 8, textAlign: 'center' }}>
+              <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
                 {debouncedSearch || source !== 'all'
                   ? 'Try a different search or filter'
                   : 'Clone a voice or design one to get started'}
               </Text>
               {!debouncedSearch && source === 'all' && (
-                <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
+                <View style={styles.emptyActions}>
                   <TouchableOpacity
                     onPress={() => router.push('/clone')}
-                    style={{ backgroundColor: colors.text, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderCurve: 'continuous' }}
+                    style={[styles.emptyActionButton, { backgroundColor: colors.text }]}
                   >
-                    <Text style={{ color: colors.background, fontSize: 15, fontWeight: '600' }}>Clone a Voice</Text>
+                    <Text style={[styles.emptyActionText, { color: colors.background }]}>Clone a Voice</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => router.navigate('/(tabs)/design')}
-                    style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderCurve: 'continuous' }}
+                    style={[styles.emptyActionButton, { backgroundColor: colors.skeletonHighlight }]}
                   >
-                    <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>Design a Voice</Text>
+                    <Text style={[styles.emptyActionText, { color: colors.text }]}>Design a Voice</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -254,56 +339,65 @@ export default function VoicesScreen() {
         }
         ListFooterComponent={
           loadingMore ? (
-            <View style={{ paddingVertical: 16, alignItems: 'center' }}>
-              <Text style={{ color: colors.textTertiary, fontSize: 13 }}>Loading more...</Text>
+            <View style={styles.footerContainer}>
+              <Text style={[styles.footerText, { color: colors.textTertiary }]}>Loading more...</Text>
             </View>
           ) : null
         }
         onEndReached={loadMore}
         onEndReachedThreshold={0.3}
-        renderItem={({ item }) => (
-            <View style={{ backgroundColor: colors.surface, borderRadius: 8, borderCurve: 'continuous', padding: 16, marginBottom: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <SourceBadge source={item.source} colors={colors} />
-                <HighlightedText
-                  text={item.name}
-                  highlight={debouncedSearch}
-                  style={{ color: colors.text, fontSize: 16, fontWeight: '600', flex: 1 }}
-                />
-              </View>
-              <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>
-                {item.language}
-              </Text>
-              {item.description ? (
-                <Text style={{ color: colors.textTertiary, fontSize: 13, marginTop: 4 }} numberOfLines={2}>
-                  {item.description}
-                </Text>
-              ) : item.reference_transcript ? (
-                <Text style={{ color: colors.textTertiary, fontSize: 13, marginTop: 4 }} numberOfLines={2}>
-                  {item.reference_transcript}
-                </Text>
-              ) : null}
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-                <TouchableOpacity
-                  onPress={() => handleGenerate(item)}
-                  style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous' }}
-                >
-                  <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>Generate</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleDelete(item)}
-                  disabled={deletingId === item.id}
-                  style={{ backgroundColor: colors.skeletonHighlight, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous', opacity: deletingId === item.id ? 0.4 : 1 }}
-                >
-                  <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600' }}>
-                    {deletingId === item.id ? 'Deleting...' : 'Delete'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 }}
-        />
+        renderItem={renderVoice}
+        contentContainerStyle={styles.listContent}
+      />
     </View>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  loadingContainer: { flex: 1, paddingHorizontal: 16, paddingTop: 8 },
+  listContent: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
+
+  headerRight: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  cloneButton: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 6, borderCurve: 'continuous' },
+  cloneButtonText: { fontSize: 14, fontWeight: '600' },
+  accountButton: { paddingHorizontal: 8, paddingVertical: 6 },
+  accountButtonText: { fontSize: 20 },
+
+  card: { borderRadius: 8, borderCurve: 'continuous', padding: 16, marginBottom: 8 },
+  cardHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sourceBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, borderCurve: 'continuous' },
+  sourceBadgeText: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  voiceName: { fontSize: 16, fontWeight: '600', flex: 1 },
+  languageText: { fontSize: 13, marginTop: 6 },
+  subtitleText: { fontSize: 13, marginTop: 4 },
+  actionsRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  actionButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, borderCurve: 'continuous' },
+  actionText: { fontSize: 13, fontWeight: '600' },
+  disabled: { opacity: 0.4 },
+
+  highlight: { backgroundColor: '#fa03' },
+
+  errorBanner: { fontSize: 14, padding: 12, marginHorizontal: 16, backgroundColor: '#1a0000', borderRadius: 8, borderCurve: 'continuous', marginBottom: 8 },
+
+  listHeader: { gap: 10, marginBottom: 12 },
+  searchInput: { borderRadius: 8, borderCurve: 'continuous', paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, borderWidth: 1 },
+  filterRow: { flexDirection: 'row', borderRadius: 8, borderCurve: 'continuous', overflow: 'hidden' },
+  filterButton: { flex: 1, paddingVertical: 8, alignItems: 'center' },
+  filterText: { fontSize: 13, fontWeight: '600' },
+
+  emptyContainer: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 18, fontWeight: '600' },
+  emptySubtitle: { fontSize: 14, marginTop: 8, textAlign: 'center' },
+  emptyActions: { flexDirection: 'row', gap: 12, marginTop: 24 },
+  emptyActionButton: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderCurve: 'continuous' },
+  emptyActionText: { fontSize: 15, fontWeight: '600' },
+
+  footerContainer: { paddingVertical: 16, alignItems: 'center' },
+  footerText: { fontSize: 13 },
+
+  skeletonBar: { borderRadius: 4 },
+});
