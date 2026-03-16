@@ -195,3 +195,32 @@ After the Tasks screen is done:
 2. Add a "## Completed" section at the bottom of this plan file with: what was built, any deviations from the plan, and the commit hash(es)
 3. Commit the doc updates separately: `docs(mobile): update parity plan after tasks screen`
 ```
+
+---
+
+## Completed
+
+### Tasks Screen (2026-03-16)
+
+**What was built:**
+- `mobile/app/tasks.tsx` — modal screen (like clone.tsx) with:
+  - FlatList of tasks from `GET /api/tasks`
+  - Status filter: segmented control (Active / Recent)
+  - Type filter: segmented control (All / Generate / Design)
+  - Task rows: title, status text with color coding, subtitle, voice name, language, text preview, relative timestamps, error message
+  - Actions: Open (navigate to source tab), Cancel (with confirmation alert), Dismiss
+  - Live polling every 3s when Active filter selected
+  - Cursor pagination with "Load Older" button using `next_before`
+  - Pull-to-refresh
+  - Empty states per filter
+- Added `TaskListStatus`, `TaskListType`, `BackendTaskListItem`, `TaskListResponse` types to `mobile/lib/types.ts`
+- Registered `tasks` as modal stack screen in `_layout.tsx`
+- Added "View All Tasks →" link in `generate.tsx` and `design.tsx` (shown when > 2 tasks)
+
+**Deviations from plan:**
+- Used only Active/Recent status filters (not "All") to match the web implementation
+- Navigation links show active count + "View All Tasks →" rather than just a plain link
+- No Account screen quick action link (Account screen wasn't part of this plan's scope for nav links)
+
+**Commits:**
+- `8321d96` — feat(mobile): add Tasks modal screen with filters, cancel, dismiss

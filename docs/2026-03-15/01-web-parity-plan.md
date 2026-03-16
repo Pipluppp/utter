@@ -112,12 +112,12 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 
 | Feature | Web | Mobile | Status |
 |---------|-----|--------|--------|
-| Task list view | Yes | No | Missing (no screen) |
-| Status/type filters | Yes | No | Missing |
-| Cancel task | Yes | No | Missing |
-| Dismiss task | Yes | No | Missing |
-| Navigate to source page | Yes | No | Missing |
-| Auto-refresh (3s) | Yes | No | Missing |
+| Task list view | Yes | Yes | Done |
+| Status/type filters | Yes | Yes | Done |
+| Cancel task | Yes | Yes | Done |
+| Dismiss task | Yes | Yes | Done |
+| Navigate to source page | Yes | Yes | Done |
+| Auto-refresh (3s) | Yes | Yes | Done |
 
 ### Account
 
