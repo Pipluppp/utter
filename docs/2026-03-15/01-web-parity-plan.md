@@ -123,13 +123,13 @@ The mobile scaffold covers the core happy paths: sign in, list voices, generate 
 
 | Feature | Web | Mobile | Status |
 |---------|-----|--------|--------|
-| Account overview | Yes | No | Missing (no screen) |
-| Credit balance display | Yes | No | Missing |
-| Credit pack purchase (Stripe) | Yes | No | Missing |
-| Trial counters | Yes | No | Missing |
-| Activity log | Yes | No | Missing |
-| Profile management | Yes | No | Missing |
-| Pricing info | Yes | No | Missing |
+| Account overview | Yes | Yes | Done |
+| Credit balance display | Yes | Yes | Done |
+| Credit pack purchase (Stripe) | Yes | Yes | Done (expo-web-browser) |
+| Trial counters | Yes | Yes | Done |
+| Activity log | Yes | Yes | Done |
+| Profile management | Yes | Yes | Done |
+| Pricing info | Yes | Yes | Done (collapsible rate card) |
 
 ### Cross-cutting
 
@@ -291,3 +291,31 @@ Priority: Full account management.
 | Phase 4: Audio visualization | Medium | May need dev client if using native waveform library |
 | Phase 5: Billing | Medium | Stripe deep link return flow on mobile |
 | Phase 6: Polish | Medium | Pagination + search patterns are repetitive but time-consuming |
+
+---
+
+## Completed
+
+### Account Screen (2026-03-16)
+
+**What was built:**
+- `mobile/app/account.tsx` — single ScrollView screen with all account sections:
+  - Credit balance (large display + 90-day usage subtitle)
+  - Trial counters (design previews, clone finalizations remaining)
+  - Credit pack purchase (2 packs, expo-web-browser → Stripe checkout)
+  - Recent activity timeline (last 10 events, color-coded signed amounts)
+  - Collapsible rate card (action/cost/note list)
+  - Profile editing (display name input + save via POST /api/profile)
+  - Sign Out button with confirmation alert
+  - Pull-to-refresh on entire screen
+- Registered `account` stack screen in `_layout.tsx`
+- Replaced "Sign Out" text in Voices header with 👤 icon navigating to `/account`
+- Installed `expo-web-browser` for Stripe checkout
+
+**Deviations from plan:**
+- No "View History" quick action button (History is already a tab, navigation is one tap away)
+- Used built-in `Clipboard` from react-native instead of `expo-clipboard` (works on RN 0.81)
+- Credit packs hardcoded inline (2 packs) rather than importing from a shared content file
+
+**Commits:**
+- `ff0d774` — feat(mobile): add Account screen with credits, trials, checkout, profile
