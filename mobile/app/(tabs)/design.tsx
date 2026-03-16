@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -71,6 +72,7 @@ export default function DesignScreen() {
   const [instruct, setInstruct] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedVoiceId, setSavedVoiceId] = useState<string | null>(null);
 
@@ -157,6 +159,18 @@ export default function DesignScreen() {
     }
   }, [audioUri, player]);
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const data = await apiJson<LanguagesResponse>('/api/languages');
+      setLanguages(data.languages);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to refresh');
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
   const handlePreview = useCallback(async () => {
     if (!name.trim() || !text.trim() || !instruct.trim()) {
       Alert.alert('Missing fields', 'Please fill in name, text, and voice description.');
@@ -237,6 +251,9 @@ export default function DesignScreen() {
       style={{ flex: 1, backgroundColor: '#000' }}
       contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
       contentInsetAdjustmentBehavior="automatic"
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor="#fff" />
+      }
     >
       {error && (
         <Text selectable style={{ color: '#f44', fontSize: 14, padding: 12, backgroundColor: '#1a0000', borderRadius: 8, borderCurve: 'continuous', marginBottom: 12 }}>
