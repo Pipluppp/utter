@@ -1,39 +1,50 @@
 # Mobile App Setup
 
-Expo + TypeScript React Native app for Utter.
+Expo SDK 54 + React Native 0.81 + TypeScript app for Utter.
 
 ## Architecture
 
 ```
 mobile/
-├── app/                 # Expo Router screens
-│   ├── _layout.tsx      # Root: providers + auth gate
-│   ├── sign-in.tsx      # Email/password auth
-│   ├── clone.tsx        # Clone voice (modal)
-│   └── (tabs)/          # Tab navigator
-│       ├── index.tsx    # Voices list
-│       ├── generate.tsx # TTS generation
-│       └── design.tsx   # Voice design
-├── lib/                 # Shared utilities
-│   ├── supabase.ts      # Supabase client (SecureStore adapter)
-│   ├── api.ts           # Typed API client (bearer + 401 retry)
-│   ├── types.ts         # API contract types (mirrored from web)
-│   └── constants.ts     # Env vars
+├── app/                   # Expo Router screens
+│   ├── _layout.tsx        # Root: providers + auth gate
+│   ├── sign-in.tsx        # Email/password + magic link auth
+│   ├── clone.tsx          # Clone voice (modal, mic recording + transcription)
+│   ├── account.tsx        # Credits, billing, profile, theme toggle
+│   ├── tasks.tsx          # Task queue viewer (cancel/dismiss, live polling)
+│   └── (tabs)/            # Tab navigator
+│       ├── _layout.tsx    # Tab bar + active-task badge
+│       ├── index.tsx      # Voices list (search, filter, delete)
+│       ├── generate.tsx   # TTS generation
+│       ├── design.tsx     # Voice design
+│       └── history.tsx    # Generation history (playback, share, delete)
+├── lib/                   # Shared utilities
+│   ├── supabase.ts        # Supabase client (SecureStore adapter, deduped refresh)
+│   ├── api.ts             # Typed API client (bearer + 401 retry + redirect fix)
+│   ├── types.ts           # API contract types (mirrored from web)
+│   ├── constants.ts       # Env vars
+│   ├── haptics.ts         # Haptic feedback helpers
+│   └── formPersistence.ts # Form draft persistence
 ├── providers/
-│   ├── AuthProvider.tsx  # Supabase auth context
-│   └── TaskProvider.tsx  # Task polling + state
+│   ├── AuthProvider.tsx    # Supabase auth context (deep link handling)
+│   ├── TaskProvider.tsx    # Task polling + persistence (AsyncStorage)
+│   └── ThemeProvider.tsx   # Dark/light/system theme context
 └── components/
-    └── Select.tsx       # Cross-platform picker
+    ├── AudioPlayerBar.tsx  # Play/pause + drag-to-seek progress bar
+    ├── ErrorBoundary.tsx   # Screen-level error boundary
+    └── Select.tsx          # Cross-platform picker
 ```
 
-### Phase plan
+### Progress
 
 | Phase | Scope | Status |
 |-------|-------|--------|
 | 0 | Scaffold, auth, API client, types | Done |
-| 1 | Voices list, Generate, Design, Clone screens, task polling | Done |
-| 2 | Audio recording (expo-av), playback polish, credits/billing | Planned |
-| 3 | Offline caching, push notifications, performance tuning | Planned |
+| 1 | All screens: voices, generate, design, clone, history, tasks, account | Done |
+| 2 | Audio recording (expo-audio), playback, credits/billing, theme toggle | Done |
+| Clean-up A | TaskProvider stabilization, AudioPlayerBar fixes, clone modal safety | Done |
+| Clean-up B | FlatList performance, auth & API hardening | Done |
+| Clean-up C | UX polish (keyboard, icons, a11y) + feature parity gaps | Next |
 
 ### Data flow
 
@@ -48,6 +59,14 @@ API Worker (same as web)
 
 No server changes needed — the mobile app is a pure client consuming the same `/api/*` routes.
 
+### Key implementation details
+
+- **FlatList performance**: All list screens (voices, history, tasks) use `React.memo` card components and `StyleSheet.create` at module level. History auto-refresh uses a ref to avoid interval teardown.
+- **Auth**: Deep link callbacks have error handling with user-facing alerts. `getSession`/`onAuthStateChange` race condition is guarded with a stale flag.
+- **API client**: `apiRedirectUrl` uses `redirect:'manual'` + Location header (Android OkHttp compat). Concurrent 401 refreshes are deduplicated via shared promise.
+- **Task polling**: Persistent via AsyncStorage, stable context refs, 1s polling for active tasks.
+- **Theme**: System/dark/light toggle stored in AsyncStorage, color tokens via context.
+
 ## Prerequisites
 
 - **Node.js** 20+
@@ -60,8 +79,7 @@ No server changes needed — the mobile app is a pure client consuming the same 
 
 ```bash
 cd mobile
-npm install
-npx expo install --fix   # resolves exact compatible versions
+npm install --legacy-peer-deps
 ```
 
 ## Environment
@@ -102,49 +120,20 @@ npx expo start --ios
 
 Press `a` for Android emulator, `i` for iOS simulator, or scan the QR code with Expo Go on a physical device.
 
-## VS Code setup
-
-### Recommended extensions
-
-- **Expo Tools** (`expo.vscode-expo-tools`) — app.json intellisense, EAS helpers
-- **React Native Tools** (`msjsdiag.vscode-react-native`) — debugger, log streaming
-- **ESLint** + **Prettier** — standard linting
-
-### Workspace settings
-
-Add to `.vscode/settings.json`:
-
-```json
-{
-  "editor.formatOnSave": true,
-  "typescript.preferences.importModuleSpecifier": "relative"
-}
-```
-
-### Debug configuration
-
-Add to `.vscode/launch.json`:
-
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Expo: Debug",
-      "type": "reactnative",
-      "request": "attach",
-      "platform": "exponent",
-      "expoHostType": "lan"
-    }
-  ]
-}
-```
-
 ## Typecheck
 
 ```bash
-npm run typecheck
+npx tsc --noEmit
 ```
+
+## What's next (Session C)
+
+Remaining clean-up plans in `docs/2026-03-16/clean-up/`:
+
+- **06-ux-polish.md** — Tab icons (Ionicons), KeyboardAvoidingView on form screens, focus-gated polling, form persistence migration to AsyncStorage, splash screen gate, accessibility labels
+- **07-feature-parity-gaps.md** — Voice preview playback on voices list, model parameter passthrough, cancelled status filter in history, transcribe-upload button in clone, type sync for missing fields
+
+See `docs/2026-03-16/clean-up/README.md` for the full session C prompt and priority order.
 
 ## Troubleshooting
 
@@ -164,6 +153,12 @@ Android emulator uses `10.0.2.2` to reach the host machine's `127.0.0.1`. Set `E
 
 ### SecureStore errors on web
 SecureStore is native-only. The app is designed for iOS/Android. For web testing, use the existing web frontend.
+
+### Peer dependency conflicts during install
+```bash
+npm install --legacy-peer-deps
+```
+The project has a react 19.1 / react-dom 19.2 peer dep mismatch that requires `--legacy-peer-deps` for now.
 
 ### Expo version mismatches
 ```bash
