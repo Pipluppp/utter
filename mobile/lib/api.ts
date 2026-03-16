@@ -90,7 +90,7 @@ export async function apiRedirectUrl(path: string): Promise<string> {
   const doFetch = (h: Record<string, string>) =>
     fetch(`${API_BASE_URL}${path}`, {
       method: 'GET',
-      redirect: 'follow',
+      redirect: 'manual',
       headers: h,
     });
 
@@ -102,11 +102,15 @@ export async function apiRedirectUrl(path: string): Promise<string> {
     }
   }
 
+  if (res.status >= 300 && res.status < 400) {
+    return res.headers.get('Location') || `${API_BASE_URL}${path}`;
+  }
+
   if (!res.ok) {
     throw new ApiError(await parseErrorMessage(res), res.status);
   }
 
-  return res.url || `${API_BASE_URL}${path}`;
+  return `${API_BASE_URL}${path}`;
 }
 
 /**
@@ -120,10 +124,14 @@ export async function apiForm<T>(
   const { headers: extraHeaders, ...rest } = init;
   const auth = await authHeaders();
 
-  const buildHeaders = (base: Record<string, string>) => ({
-    ...base,
-    ...(extraHeaders as Record<string, string>),
-  });
+  const buildHeaders = (base: Record<string, string>) => {
+    const h: Record<string, string> = {
+      ...base,
+      ...(extraHeaders as Record<string, string>),
+    };
+    delete h['Content-Type'];
+    return h;
+  };
 
   const doFetch = (h: Record<string, string>) =>
     fetch(`${API_BASE_URL}${path}`, {

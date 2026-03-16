@@ -23,7 +23,20 @@ export async function getAccessToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
 export async function refreshAccessToken(): Promise<string | null> {
-  const { data } = await supabase.auth.refreshSession();
-  return data.session?.access_token ?? null;
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error || !data.session) return null;
+      return data.session.access_token;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }

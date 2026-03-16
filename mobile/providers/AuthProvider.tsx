@@ -1,6 +1,7 @@
 import type { Session, User } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
 import { supabase } from '../lib/supabase';
 
 type AuthContextValue = {
@@ -51,44 +52,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let stale = false;
+
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setIsLoading(false);
+      if (!stale) {
+        setSession(data.session);
+        setIsLoading(false);
+      }
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      stale = true;
       setSession(session);
+      setIsLoading(false);
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => { sub.subscription.unsubscribe(); };
   }, []);
 
   // Deep link handler for magic link auth callbacks
   useEffect(() => {
     const handleAuthUrl = async (url: string) => {
-      const params = getParamsFromUrl(url);
+      try {
+        const params = getParamsFromUrl(url);
 
-      if (params.access_token && params.refresh_token) {
-        await supabase.auth.setSession({
-          access_token: params.access_token,
-          refresh_token: params.refresh_token,
-        });
-        return;
-      }
+        if (params.access_token && params.refresh_token) {
+          const { error } = await supabase.auth.setSession({
+            access_token: params.access_token,
+            refresh_token: params.refresh_token,
+          });
+          if (error) Alert.alert('Sign-in failed', error.message);
+          return;
+        }
 
-      if (params.code) {
-        await supabase.auth.exchangeCodeForSession(params.code);
+        if (params.code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(params.code);
+          if (error) Alert.alert('Sign-in failed', error.message);
+        }
+      } catch {
+        Alert.alert('Sign-in failed', 'The link may have expired. Please try again.');
       }
     };
 
     // Handle cold-start deep link (app opened from link while not running)
-    Linking.getInitialURL().then((url) => {
-      if (url) handleAuthUrl(url);
-    });
+    Linking.getInitialURL()
+      .then((url) => { if (url) return handleAuthUrl(url); })
+      .catch(() => {});
 
     // Handle deep links while app is in foreground
     const sub = Linking.addEventListener('url', (event) => {
-      handleAuthUrl(event.url);
+      void handleAuthUrl(event.url);
     });
 
     return () => sub.remove();

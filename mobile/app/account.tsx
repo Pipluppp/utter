@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Clipboard,
   RefreshControl,
   ScrollView,
   Text,
@@ -12,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { apiJson } from '../lib/api';
 import { hapticError, hapticLight, hapticSubmit, hapticSuccess } from '../lib/haptics';
 import type { CreditsUsageResponse, MeResponse } from '../lib/types';
@@ -160,9 +160,9 @@ export default function AccountScreen() {
   }, [signOut]);
 
   // ---- Copy user ID ----
-  const copyUserId = useCallback(() => {
+  const copyUserId = useCallback(async () => {
     if (!me?.profile?.id) return;
-    Clipboard.setString(me.profile.id);
+    await Clipboard.setStringAsync(me.profile.id);
     void hapticLight();
     Alert.alert('Copied', 'User ID copied to clipboard');
   }, [me?.profile?.id]);
