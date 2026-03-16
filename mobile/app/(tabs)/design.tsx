@@ -1,3 +1,5 @@
+import { useAudioPlayer } from 'expo-audio';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,9 +11,12 @@ import {
   View,
 } from 'react-native';
 import { Select } from '../../components/Select';
-import { apiJson } from '../../lib/api';
-import type { DesignPreviewResponse, DesignSaveResponse, LanguagesResponse } from '../../lib/types';
+import { apiJson, apiRedirectUrl } from '../../lib/api';
+import type { DesignPreviewResponse, DesignSaveResponse, LanguagesResponse, StoredTask } from '../../lib/types';
 import { useTasks } from '../../providers/TaskProvider';
+
+const MAX_DESCRIPTION_CHARS = 500;
+const MAX_PREVIEW_TEXT_CHARS = 500;
 
 const EXAMPLES = [
   {
@@ -34,8 +39,26 @@ const EXAMPLES = [
   },
 ];
 
+function formatElapsed(startedAt: number): string {
+  const secs = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function ElapsedTimer({ startedAt }: { startedAt: number }) {
+  const [label, setLabel] = useState(() => formatElapsed(startedAt));
+
+  useEffect(() => {
+    const t = setInterval(() => setLabel(formatElapsed(startedAt)), 1000);
+    return () => clearInterval(t);
+  }, [startedAt]);
+
+  return <Text style={{ color: '#888', fontSize: 12 }}>{label}</Text>;
+}
+
 export default function DesignScreen() {
-  const { startTask, getLatestTask, getStatusText, dismissTask } = useTasks();
+  const { startTask, getLatestTask, getTasksByType, getStatusText, dismissTask } = useTasks();
 
   const [languages, setLanguages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,8 +70,18 @@ export default function DesignScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedVoiceId, setSavedVoiceId] = useState<string | null>(null);
 
-  const latestTask = getLatestTask('design_preview');
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [audioUri, setAudioUri] = useState<string | null>(null);
+
+  const player = useAudioPlayer(audioUri ? { uri: audioUri } : null);
+
+  const allTasks = getTasksByType('design_preview');
+
+  const selectedTask = selectedTaskId
+    ? allTasks.find((t) => t.taskId === selectedTaskId) ?? null
+    : allTasks[0] ?? null;
 
   useEffect(() => {
     void (async () => {
@@ -64,9 +97,51 @@ export default function DesignScreen() {
     })();
   }, []);
 
+  // Auto-select latest task
+  useEffect(() => {
+    if (selectedTaskId && allTasks.some((t) => t.taskId === selectedTaskId)) return;
+    setSelectedTaskId(allTasks[0]?.taskId ?? null);
+  }, [allTasks, selectedTaskId]);
+
+  // Wire up audio playback when selected task completes
+  useEffect(() => {
+    if (!selectedTask || selectedTask.status !== 'completed') {
+      setAudioUri(null);
+      setSavedVoiceId(null);
+      return;
+    }
+    const result = selectedTask.result as { audio_url?: string } | undefined;
+    const audioUrl = result?.audio_url;
+    if (!audioUrl) return;
+
+    void (async () => {
+      try {
+        // audio_url from design preview is a direct URL, use it
+        setAudioUri(audioUrl);
+      } catch {
+        setAudioUri(null);
+      }
+    })();
+  }, [selectedTask?.taskId, selectedTask?.status]);
+
+  // Play when audio source changes
+  useEffect(() => {
+    if (audioUri && player) {
+      player.play();
+    }
+  }, [audioUri, player]);
+
   const handlePreview = useCallback(async () => {
     if (!name.trim() || !text.trim() || !instruct.trim()) {
       Alert.alert('Missing fields', 'Please fill in name, text, and voice description.');
+      return;
+    }
+    if (instruct.length > MAX_DESCRIPTION_CHARS) {
+      Alert.alert('Too long', `Voice description must be ${MAX_DESCRIPTION_CHARS} characters or less.`);
+      return;
+    }
+    if (text.length > MAX_PREVIEW_TEXT_CHARS) {
+      Alert.alert('Too long', `Preview text must be ${MAX_PREVIEW_TEXT_CHARS} characters or less.`);
       return;
     }
     setSubmitting(true);
@@ -77,6 +152,9 @@ export default function DesignScreen() {
         json: { name: name.trim(), language, text: text.trim(), instruct: instruct.trim() },
       });
       startTask(res.task_id, 'design_preview', `Design: ${name.trim()}`);
+      setSelectedTaskId(res.task_id);
+      setAudioUri(null);
+      setSavedVoiceId(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start preview');
     } finally {
@@ -85,30 +163,37 @@ export default function DesignScreen() {
   }, [name, language, text, instruct, startTask]);
 
   const handleSave = useCallback(async () => {
-    if (!latestTask || latestTask.status !== 'completed') return;
+    if (!selectedTask || selectedTask.status !== 'completed') return;
     setSaving(true);
     setError(null);
     try {
-      await apiJson<DesignSaveResponse>('/api/voices/design', {
+      const saved = await apiJson<DesignSaveResponse>('/api/voices/design', {
         method: 'POST',
-        json: { task_id: latestTask.taskId, name: name.trim() || 'Designed voice' },
+        json: { task_id: selectedTask.taskId, name: name.trim() || 'Designed voice' },
       });
-      Alert.alert('Saved', 'Voice has been saved to your library.');
-      void dismissTask(latestTask.taskId);
-      setName('');
-      setText('');
-      setInstruct('');
+      setSavedVoiceId(saved.id);
+      Alert.alert('Saved', `"${saved.name}" has been saved to your library.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save voice');
     } finally {
       setSaving(false);
     }
-  }, [latestTask, name, dismissTask]);
+  }, [selectedTask, name]);
+
+  const handlePlayPreview = useCallback(() => {
+    if (audioUri && player) {
+      player.seekTo(0);
+      player.play();
+    }
+  }, [audioUri, player]);
 
   const applyExample = useCallback((example: (typeof EXAMPLES)[number]) => {
     setName(example.name);
     setInstruct(example.instruct);
   }, []);
+
+  const instructOverLimit = instruct.length > MAX_DESCRIPTION_CHARS;
+  const textOverLimit = text.length > MAX_PREVIEW_TEXT_CHARS;
 
   if (loading) {
     return (
@@ -160,20 +245,9 @@ export default function DesignScreen() {
         onValueChange={setLanguage}
       />
 
-      <Text style={{ color: '#aaa', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 8 }}>Sample text</Text>
-      <TextInput
-        style={{ backgroundColor: '#111', color: '#fff', borderRadius: 8, borderCurve: 'continuous', padding: 14, fontSize: 15, minHeight: 100, borderWidth: 1, borderColor: '#333' }}
-        value={text}
-        onChangeText={setText}
-        multiline
-        placeholder="Text the voice will speak in the preview..."
-        placeholderTextColor="#666"
-        textAlignVertical="top"
-      />
-
       <Text style={{ color: '#aaa', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 8 }}>Voice description</Text>
       <TextInput
-        style={{ backgroundColor: '#111', color: '#fff', borderRadius: 8, borderCurve: 'continuous', padding: 14, fontSize: 15, minHeight: 100, borderWidth: 1, borderColor: '#333' }}
+        style={{ backgroundColor: '#111', color: '#fff', borderRadius: 8, borderCurve: 'continuous', padding: 14, fontSize: 15, minHeight: 100, borderWidth: 1, borderColor: instructOverLimit ? '#f44' : '#333' }}
         value={instruct}
         onChangeText={setInstruct}
         multiline
@@ -181,11 +255,28 @@ export default function DesignScreen() {
         placeholderTextColor="#666"
         textAlignVertical="top"
       />
+      <Text style={{ color: instructOverLimit ? '#f44' : '#555', fontSize: 12, marginTop: 4 }}>
+        {instruct.length}/{MAX_DESCRIPTION_CHARS}
+      </Text>
+
+      <Text style={{ color: '#aaa', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 8 }}>Sample text</Text>
+      <TextInput
+        style={{ backgroundColor: '#111', color: '#fff', borderRadius: 8, borderCurve: 'continuous', padding: 14, fontSize: 15, minHeight: 100, borderWidth: 1, borderColor: textOverLimit ? '#f44' : '#333' }}
+        value={text}
+        onChangeText={setText}
+        multiline
+        placeholder="Text the voice will speak in the preview..."
+        placeholderTextColor="#666"
+        textAlignVertical="top"
+      />
+      <Text style={{ color: textOverLimit ? '#f44' : '#555', fontSize: 12, marginTop: 4 }}>
+        {text.length}/{MAX_PREVIEW_TEXT_CHARS}
+      </Text>
 
       <TouchableOpacity
-        style={{ backgroundColor: '#fff', borderRadius: 8, borderCurve: 'continuous', paddingVertical: 14, alignItems: 'center', marginTop: 24, opacity: submitting ? 0.4 : 1 }}
+        style={{ backgroundColor: '#fff', borderRadius: 8, borderCurve: 'continuous', paddingVertical: 14, alignItems: 'center', marginTop: 24, opacity: submitting || instructOverLimit || textOverLimit ? 0.4 : 1 }}
         onPress={handlePreview}
-        disabled={submitting}
+        disabled={submitting || instructOverLimit || textOverLimit}
       >
         {submitting ? (
           <ActivityIndicator color="#000" />
@@ -194,30 +285,104 @@ export default function DesignScreen() {
         )}
       </TouchableOpacity>
 
-      {latestTask && (
+      {/* Audio playback + save section for selected task */}
+      {selectedTask && selectedTask.status === 'completed' && audioUri && (
         <View style={{ backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', padding: 16, marginTop: 16 }}>
-          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>{latestTask.description}</Text>
-          <Text style={{ color: '#888', fontSize: 13, marginTop: 4 }}>
-            {latestTask.status === 'completed'
-              ? 'Preview ready'
-              : latestTask.status === 'failed'
-                ? latestTask.error ?? 'Failed'
-                : getStatusText(latestTask.status, latestTask.providerStatus)}
-          </Text>
-
-          {latestTask.status === 'completed' && (
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>Preview Ready</Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
             <TouchableOpacity
-              style={{ backgroundColor: '#0af', borderRadius: 8, borderCurve: 'continuous', paddingVertical: 12, alignItems: 'center', marginTop: 12, opacity: saving ? 0.4 : 1 }}
+              onPress={handlePlayPreview}
+              style={{ flex: 1, backgroundColor: '#222', borderRadius: 8, borderCurve: 'continuous', paddingVertical: 10, alignItems: 'center' }}
+            >
+              <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>Play Again</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={handleSave}
               disabled={saving}
+              style={{ flex: 1, backgroundColor: '#0af', borderRadius: 8, borderCurve: 'continuous', paddingVertical: 10, alignItems: 'center', opacity: saving ? 0.4 : 1 }}
             >
               {saving ? (
                 <ActivityIndicator color="#000" />
               ) : (
-                <Text style={{ color: '#000', fontSize: 15, fontWeight: '600' }}>Save to Library</Text>
+                <Text style={{ color: '#000', fontSize: 14, fontWeight: '600' }}>Save Voice</Text>
               )}
             </TouchableOpacity>
+          </View>
+          {savedVoiceId && (
+            <TouchableOpacity
+              onPress={() => router.navigate({ pathname: '/(tabs)/generate', params: { voice: savedVoiceId } })}
+              style={{ backgroundColor: '#222', borderRadius: 8, borderCurve: 'continuous', paddingVertical: 10, alignItems: 'center', marginTop: 8 }}
+            >
+              <Text style={{ color: '#0af', fontSize: 14, fontWeight: '600' }}>Use Voice →</Text>
+            </TouchableOpacity>
           )}
+        </View>
+      )}
+
+      {/* Active task status */}
+      {selectedTask && (selectedTask.status === 'pending' || selectedTask.status === 'processing') && (
+        <View style={{ backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', padding: 16, marginTop: 16 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View>
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>{selectedTask.description}</Text>
+              <Text style={{ color: '#888', fontSize: 13, marginTop: 4 }}>
+                {getStatusText(selectedTask.status, selectedTask.providerStatus)}
+              </Text>
+            </View>
+            <ElapsedTimer startedAt={selectedTask.startedAt} />
+          </View>
+        </View>
+      )}
+
+      {/* Failed task */}
+      {selectedTask && selectedTask.status === 'failed' && (
+        <View style={{ backgroundColor: '#111', borderRadius: 8, borderCurve: 'continuous', padding: 16, marginTop: 16 }}>
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>{selectedTask.description}</Text>
+          <Text selectable style={{ color: '#f44', fontSize: 13, marginTop: 4 }}>
+            {selectedTask.error ?? 'Failed'}
+          </Text>
+        </View>
+      )}
+
+      {/* Multi-preview task list */}
+      {allTasks.length > 1 && (
+        <View style={{ marginTop: 24 }}>
+          <Text style={{ color: '#888', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Tracked previews</Text>
+          {allTasks.map((task) => {
+            const isActive = task.status === 'pending' || task.status === 'processing';
+            const isSelected = task.taskId === selectedTaskId;
+            return (
+              <TouchableOpacity
+                key={task.taskId}
+                onPress={() => setSelectedTaskId(task.taskId)}
+                style={{
+                  backgroundColor: isSelected ? '#1a1a1a' : '#111',
+                  borderRadius: 8,
+                  borderCurve: 'continuous',
+                  padding: 14,
+                  marginBottom: 8,
+                  borderWidth: isSelected ? 1 : 0,
+                  borderColor: '#333',
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500', flex: 1 }} numberOfLines={1}>
+                    {task.description}
+                  </Text>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ color: '#888', fontSize: 13 }}>
+                      {task.status === 'completed'
+                        ? 'Ready'
+                        : task.status === 'failed'
+                          ? 'Failed'
+                          : getStatusText(task.status, task.providerStatus)}
+                    </Text>
+                    {isActive && <ElapsedTimer startedAt={task.startedAt} />}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       )}
     </ScrollView>

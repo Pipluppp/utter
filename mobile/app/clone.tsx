@@ -1,5 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
+import * as FileSystemLegacy from 'expo-file-system/legacy';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -14,10 +15,10 @@ import {
 } from 'react-native';
 import { Select } from '../components/Select';
 import { apiJson } from '../lib/api';
+import { API_BASE_URL } from '../lib/constants';
 import type { CloneResponse, LanguagesResponse } from '../lib/types';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const ALLOWED_TYPES = ['audio/wav', 'audio/mpeg', 'audio/mp4', 'audio/x-m4a'];
 
 function contentTypeForUri(uri: string, mimeType?: string | null): string {
   if (mimeType) return mimeType;
@@ -39,6 +40,7 @@ export default function CloneScreen() {
   const [language, setLanguage] = useState('English');
   const [transcript, setTranscript] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [loadingExample, setLoadingExample] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,6 +78,45 @@ export default function CloneScreen() {
       setError(null);
     } catch {
       setError('Failed to pick file.');
+    }
+  }, []);
+
+  const loadExample = useCallback(async () => {
+    setLoadingExample(true);
+    setError(null);
+    try {
+      const [textRes, audioRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/static/examples/audio_text.txt`),
+        fetch(`${API_BASE_URL}/static/examples/audio.wav`),
+      ]);
+      if (!textRes.ok || !audioRes.ok) {
+        throw new Error('Failed to load example voice.');
+      }
+      const exampleText = await textRes.text();
+      const audioBlob = await audioRes.blob();
+
+      // Write blob to cache so we can use File(uri)
+      const exPath = `${FileSystemLegacy.cacheDirectory}example_audio.wav`;
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(audioBlob);
+      });
+      await FileSystemLegacy.writeAsStringAsync(exPath, base64, { encoding: FileSystemLegacy.EncodingType.Base64 });
+
+      setName('ASMR');
+      setTranscript(exampleText.trim());
+      setFileUri(exPath);
+      setFileName('audio.wav');
+      setFileMimeType('audio/wav');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load example.');
+    } finally {
+      setLoadingExample(false);
     }
   }, []);
 
@@ -129,6 +170,15 @@ export default function CloneScreen() {
       });
 
       Alert.alert('Voice Cloned', `"${res.name}" has been added to your library.`, [
+        {
+          text: 'Go to Generate',
+          onPress: () => {
+            router.back();
+            setTimeout(() => {
+              router.navigate({ pathname: '/(tabs)/generate', params: { voice: res.id } });
+            }, 300);
+          },
+        },
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (e) {
@@ -185,20 +235,34 @@ export default function CloneScreen() {
         textAlignVertical="top"
       />
 
-      <TouchableOpacity
-        style={[
-          styles.button,
-          (submitting || !fileUri || !name.trim() || !transcript.trim()) && styles.buttonDisabled,
-        ]}
-        onPress={handleClone}
-        disabled={submitting || !fileUri || !name.trim() || !transcript.trim()}
-      >
-        {submitting ? (
-          <ActivityIndicator color="#000" />
-        ) : (
-          <Text style={styles.buttonText}>Clone Voice</Text>
-        )}
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 24 }}>
+        <TouchableOpacity
+          style={[styles.exampleButton, loadingExample && styles.buttonDisabled]}
+          onPress={loadExample}
+          disabled={loadingExample || submitting}
+        >
+          {loadingExample ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.exampleButtonText}>Try Example</Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            { flex: 1 },
+            (submitting || !fileUri || !name.trim() || !transcript.trim()) && styles.buttonDisabled,
+          ]}
+          onPress={handleClone}
+          disabled={submitting || !fileUri || !name.trim() || !transcript.trim()}
+        >
+          {submitting ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <Text style={styles.buttonText}>Clone Voice</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -256,8 +320,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 24,
   },
+  exampleButton: {
+    backgroundColor: '#222',
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  exampleButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   buttonDisabled: { opacity: 0.4 },
   buttonText: { color: '#000', fontSize: 16, fontWeight: '600' },
   error: {
