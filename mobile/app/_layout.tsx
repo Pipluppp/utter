@@ -1,17 +1,24 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AuthProvider, useAuth } from '../providers/AuthProvider';
 import { TaskProvider } from '../providers/TaskProvider';
 import { ThemeProvider, useTheme } from '../providers/ThemeProvider';
+
+SplashScreen.preventAutoHideAsync();
 
 function AuthGate() {
   const { session, isLoading } = useAuth();
   const { colors, isDark } = useTheme();
   const segments = useSegments();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading) void SplashScreen.hideAsync();
+  }, [isLoading]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -25,13 +32,7 @@ function AuthGate() {
     }
   }, [session, isLoading, segments, router]);
 
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.text} size="large" />
-      </View>
-    );
-  }
+  if (isLoading) return null; // splash screen still visible
 
   return (
     <>
