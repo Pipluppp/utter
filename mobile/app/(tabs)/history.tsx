@@ -22,7 +22,7 @@ import type { Generation, GenerationsResponse } from '../../lib/types';
 import { useTheme, type ThemeColors } from '../../providers/ThemeProvider';
 
 const PER_PAGE = 20;
-const STATUSES = ['all', 'completed', 'failed', 'pending', 'processing'] as const;
+const STATUSES = ['all', 'completed', 'failed', 'pending', 'processing', 'cancelled'] as const;
 type StatusFilter = (typeof STATUSES)[number];
 const STATUS_LABELS: Record<StatusFilter, string> = {
   all: 'All',
@@ -30,6 +30,7 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
   failed: 'Failed',
   pending: 'Pending',
   processing: 'Active',
+  cancelled: 'Cancelled',
 };
 
 const STATUS_COLORS_DARK: Record<string, string> = {
