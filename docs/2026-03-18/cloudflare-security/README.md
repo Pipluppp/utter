@@ -11,6 +11,7 @@ Within hours of attaching `uttervoice.com` to our Cloudflare Workers on 2026-03-
 | File | Purpose |
 |---|---|
 | `cloudflare-security-plan.md` | Final validated implementation plan - 4 WAF custom rules, rate limiting, dashboard toggles |
+| `implementation-audit-2026-03-19.md` | Concise audit of the dashboard changes completed and the verification performed |
 | `execution-prompt.md` | Agent execution prompt for walking a user through the dashboard steps |
 | `vulnerability-scan-event.md` | Post-mortem of the 2026-03-18 scanner burst that triggered this work |
 | `cloudflare-security-hardening-plan.md` | Superseded initial draft - kept for reference only |
@@ -56,6 +57,10 @@ The vulnerability scan event (`vulnerability-scan-event.md`) showed that a singl
 ## Execution
 
 Use `execution-prompt.md` to walk through the dashboard configuration step by step.
+
+## Current status
+
+Implemented on 2026-03-19. See `implementation-audit-2026-03-19.md` for the exact dashboard changes, rule order, verification outcomes, and remaining exposure.
 
 ## Sequence position
 

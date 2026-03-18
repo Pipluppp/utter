@@ -47,6 +47,9 @@ Before touching the dashboard, keep these scope constraints in mind:
 
 All in **Dashboard -> Security -> Settings**, except Onion Routing.
 
+**Dashboard UI note validated during implementation (2026-03-19):**
+Some zones now surface `Browser Integrity Check` and `Onion Routing` inside an `Activate basic features` modal instead of as separate toggles. If that modal appears, keep `Browser Integrity Check` enabled and uncheck `Onion Routing` before activating.
+
 | Setting | Value | Why |
 |---|---|---|
 | Bot Fight Mode | **ON, but only if `uttervoice.com/api/*` is browser-only traffic** | Strong free protection, but it protects the whole zone and cannot be skipped with WAF rules. |
@@ -79,9 +82,9 @@ Rules are evaluated top-to-bottom. Order matters. Rule 1 still goes first, but i
 - All Super Bot Fight Mode rules
 - Under "More components to skip": Zone Lockdown, User Agent Blocking, Browser Integrity Check, Hotlink Protection, Security Level, Rate limiting rules (Previous version), Managed rules (Previous version)
 
-**Do not expect these to be available on Free / in the dashboard:**
-- Bot Fight Mode skip
-- "All remaining custom rules" skip
+**Dashboard update validated during implementation (2026-03-19):**
+- `All remaining custom rules` skip is available in the current dashboard UI and should be enabled for this rule.
+- `Bot Fight Mode` skip is still not available.
 
 **Log matching requests:** ON
 
@@ -96,7 +99,7 @@ Rules are evaluated top-to-bottom. Order matters. Rule 1 still goes first, but i
 - It does **not** bypass Bot Fight Mode.
 - It does **not** reliably skip later custom rules in the dashboard.
 
-That is why the later rules below still include explicit `not cf.client.bot` guards where appropriate.
+That is why the later rules below still include explicit `not cf.client.bot` guards where appropriate, even though the current dashboard now exposes `All remaining custom rules`.
 
 The ACME clause is belt-and-suspenders only. Cloudflare already auto-bypasses some certificate validation paths, but keeping this clause is harmless.
 
@@ -227,7 +230,7 @@ Navigate to **Dashboard -> Security -> WAF -> Rate limiting rules**.
 
 ## After Implementation: Verify
 
-1. **Security Events:** Dashboard -> Security -> Events. Within 24 hours you should see entries from:
+1. **Security Events:** In the current dashboard UI, go to **Analytics -> Events**. (Older docs and older navigation may still refer to **Security -> Events**.) Within 24 hours you should see entries from:
    - Custom rules
    - Block AI Bots
    - Bot Fight Mode, if enabled
