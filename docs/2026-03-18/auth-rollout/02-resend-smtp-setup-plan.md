@@ -157,6 +157,39 @@ User-side / shared:
 Do not use Supabase Send Email Hook for phase 1. It is valid for deeper customization
 later, but it is not on the shortest path to working email verification now.
 
+## Execution status
+
+Completed 2026-03-19.
+
+### Steps executed
+
+1. Created sending domain `mail.uttervoice.com` in the Resend dashboard.
+2. Resend detected Cloudflare as the DNS provider and offered automatic DNS
+   configuration. Authorized the one-time Cloudflare DNS integration — Resend added
+   three records automatically (DKIM TXT, SPF MX, SPF TXT), all DNS-only.
+3. Clicked **Verify DNS Records** in Resend. Domain verified immediately.
+4. Created a dedicated Resend API key (`supabase-auth-smtp`) with **Sending access**
+   only, restricted to `mail.uttervoice.com`.
+5. Installed the Resend CLI (`npm install -g resend-cli`) for test sends.
+   - Note: `resend login` rejects send-only keys. A full-access key is needed for the
+     CLI, or skip the CLI and use the dashboard/app for testing.
+6. Configured hosted Supabase custom SMTP:
+   - host: `smtp.resend.com`
+   - port: `465`
+   - username: `resend`
+   - password: the send-only API key
+   - sender email: `no-reply@mail.uttervoice.com`
+   - sender name: `Utter`
+7. Sent a test email via the Resend CLI to a non-team external inbox — arrived
+   successfully.
+8. Verified email confirmation works end-to-end through the app's signup flow.
+
+### No code changes required
+
+The existing frontend already uses `window.location.origin` for `emailRedirectTo` and
+has `detectSessionInUrl: true`. CORS in the API Worker already allows
+`uttervoice.com`. SMTP is entirely a hosted Supabase + Resend configuration concern.
+
 ## Source anchors
 
 - Supabase custom SMTP
