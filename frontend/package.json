@@ -18,6 +18,7 @@
     "ci": "npm run check"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.4.2",
     "@supabase/supabase-js": "^2.57.0",
     "clsx": "^2.1.1",
     "geist": "^1.7.0",

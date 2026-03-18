@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthState } from '../app/auth/AuthStateProvider'
 import { getSafeReturnTo } from '../app/navigation'
@@ -36,6 +37,8 @@ export function AuthPage() {
     | { type: 'error'; message: string }
     | { type: 'ok'; message: string }
   >({ type: 'idle' })
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const turnstileRef = useRef<TurnstileInstance>(null)
   const isLocalHost = useMemo(() => {
     const host = window.location.hostname
     return host === 'localhost' || host === '127.0.0.1'
@@ -59,8 +62,13 @@ export function AuthPage() {
     setStatus({ type: 'loading', label: 'Sending magic link...' })
     const { error } = await supabaseClient.auth.signInWithOtp({
       email: normalizedEmail,
-      options: { emailRedirectTo: `${window.location.origin}${safeReturnTo}` },
+      options: {
+        captchaToken: captchaToken ?? undefined,
+        emailRedirectTo: `${window.location.origin}${safeReturnTo}`,
+      },
     })
+    turnstileRef.current?.reset()
+    setCaptchaToken(null)
     if (error) {
       setStatus({ type: 'error', message: error.message })
       return
@@ -95,7 +103,10 @@ export function AuthPage() {
       const { error } = await supabaseClient.auth.signInWithPassword({
         email: normalizedEmail,
         password,
+        options: { captchaToken: captchaToken ?? undefined },
       })
+      turnstileRef.current?.reset()
+      setCaptchaToken(null)
       if (error) {
         setStatus({ type: 'error', message: error.message })
         return
@@ -109,8 +120,13 @@ export function AuthPage() {
     const { error } = await supabaseClient.auth.signUp({
       email: normalizedEmail,
       password,
-      options: { emailRedirectTo: `${window.location.origin}${safeReturnTo}` },
+      options: {
+        captchaToken: captchaToken ?? undefined,
+        emailRedirectTo: `${window.location.origin}${safeReturnTo}`,
+      },
     })
+    turnstileRef.current?.reset()
+    setCaptchaToken(null)
     if (error) {
       setStatus({ type: 'error', message: error.message })
       return
@@ -253,7 +269,22 @@ export function AuthPage() {
               </div>
             ) : null}
 
-            <Button type='submit' block disabled={!configured || busy} loading={busy}>
+            {/* TODO: resetPasswordForEmail() will also need captchaToken when that flow is built */}
+            <Turnstile
+              ref={turnstileRef}
+              className='w-full'
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              options={{ theme: 'dark', size: 'flexible', refreshExpired: 'auto' }}
+              onSuccess={setCaptchaToken}
+              onExpire={() => setCaptchaToken(null)}
+            />
+
+            <Button
+              type='submit'
+              block
+              disabled={!configured || busy || !captchaToken}
+              loading={busy}
+            >
               {mode === 'magic_link'
                 ? 'Send magic link'
                 : intent === 'sign_in'
