@@ -37,6 +37,14 @@ npm run cf:deploy:api:staging
 npm run cf:deploy:frontend:staging
 ```
 
+Domain cutover note:
+
+- the staging frontend Worker is the live app Worker (`utter`)
+- `workers/frontend/wrangler.toml` attaches `uttervoice.com` to that Worker as the custom domain target
+- the `/api/*` proxy path stays on the frontend Worker; no separate public API domain is introduced in this step
+- keep `https://utter.duncanb013.workers.dev` available as a temporary fallback until the branded domain is confirmed live
+- `https://www.uttervoice.com/*` should redirect to `https://uttervoice.com/$1` via a Cloudflare redirect rule
+
 Optional one-shot:
 
 ```bash
@@ -53,6 +61,8 @@ Use the manual sequence above when you want to guarantee the frontend build comp
 
 ## Staging Smoke Checks
 
+- `https://uttervoice.com` serves the SPA after the custom domain attachment is active
+- `https://uttervoice.com/api/health` returns 200 through the frontend Worker proxy
 - `GET /api/health` returns 200
 - protected routes reject unauthenticated requests
 - `GET /api/languages` reflects qwen runtime config

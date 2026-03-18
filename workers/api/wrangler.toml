@@ -37,7 +37,7 @@ dead_letter_queue = "tts-jobs-dlq-local"
 
 [env.staging.vars]
 # Explicit allowlist for local + deployed staging frontend.
-CORS_ALLOWED_ORIGIN = "http://localhost:5173,https://utter.duncanb013.workers.dev"
+CORS_ALLOWED_ORIGIN = "http://localhost:5173,https://utter.duncanb013.workers.dev,https://uttervoice.com"
 DASHSCOPE_REGION = "intl"
 QWEN_VC_TARGET_MODEL = "qwen3-tts-vc-2026-01-22"
 QWEN_VD_TARGET_MODEL = "qwen3-tts-vd-2026-01-26"
@@ -48,8 +48,8 @@ QWEN_ASR_BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
 QUEUE_BILLING_ENABLED = "false"
 
 [env.production.vars]
-# Keep explicit and narrow. Replace with custom domain at production cutover.
-CORS_ALLOWED_ORIGIN = "https://utter.duncanb013.workers.dev,https://utter-wheat.vercel.app"
+# Keep explicit and narrow while the branded app domain and legacy hosts coexist.
+CORS_ALLOWED_ORIGIN = "https://uttervoice.com,https://utter.duncanb013.workers.dev,https://utter-wheat.vercel.app"
 DASHSCOPE_REGION = "intl"
 QWEN_VC_TARGET_MODEL = "qwen3-tts-vc-2026-01-22"
 QWEN_VD_TARGET_MODEL = "qwen3-tts-vd-2026-01-26"

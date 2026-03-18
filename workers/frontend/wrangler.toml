@@ -2,6 +2,7 @@ name = "utter-frontend-staging"
 main = "src/index.ts"
 compatibility_date = "2026-03-01"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
 [assets]
 directory = "../../frontend/dist"
@@ -15,6 +16,10 @@ name = "utter"
 [[env.staging.services]]
 binding = "API"
 service = "utter-api-staging"
+
+[[env.staging.routes]]
+pattern = "uttervoice.com"
+custom_domain = true
 
 [env.staging.vars]
 API_ORIGIN = "https://utter-api-staging.duncanb013.workers.dev"

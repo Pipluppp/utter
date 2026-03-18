@@ -11,7 +11,9 @@ This doc describes the active Cloudflare + Supabase deployment model (simplified
 - Frontend Worker: `utter` (`workers/frontend`)
 - API Worker: `utter-api-staging` (`workers/api`)
 - API URL: `https://utter-api-staging.duncanb013.workers.dev/api`
-- Frontend URL: `https://utter.duncanb013.workers.dev`
+- Frontend URL today: `https://utter.duncanb013.workers.dev`
+- Canonical frontend hostname target: `https://uttervoice.com`
+- Temporary fallback frontend hostname during cutover: `https://utter.duncanb013.workers.dev`
 - R2 buckets:
   - `utter-references-staging`
   - `utter-generations-staging`
@@ -31,6 +33,12 @@ This doc describes the active Cloudflare + Supabase deployment model (simplified
 2. Frontend Worker serves static assets and SPA routes.
 3. `/api/*` requests are forwarded to API Worker via service binding.
 4. API Worker talks to Supabase (Auth + Postgres), R2, queues, Stripe, and qwen provider APIs.
+
+Cutover note:
+
+- the branded app domain attaches to the frontend Worker only
+- the public browser contract remains frontend origin plus `/api/*`
+- `www.uttervoice.com` is a redirect alias, not a second app origin
 
 ## Secrets and bindings
 

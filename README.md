@@ -18,7 +18,8 @@ Current runtime stack (as of 2026-03-03):
 
 ## Current deployed surfaces
 
-- Frontend Worker (staging/prod-like): `https://utter.duncanb013.workers.dev`
+- Frontend Worker canonical app domain: `https://uttervoice.com`
+- Frontend Worker fallback hostname: `https://utter.duncanb013.workers.dev`
 - API Worker: `https://utter-api-staging.duncanb013.workers.dev/api`
 - Supabase project (system of record): `utter-dev` (`jgmivviwockcwjkvpqra`)
 
