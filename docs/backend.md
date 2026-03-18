@@ -101,6 +101,16 @@ Rules:
 - queue consumer performs provider execution and persistence
 - task polling routes do not reach out to providers
 
+## Rate Limiting
+
+- Rate limiting is enforced in `workers/api/src/index.ts` through the `rate_limit_check_and_increment(...)` RPC.
+- Actor identity currently falls back to hashed client IP in middleware, even on authenticated routes.
+- Tier 1 is reserved for expensive write paths:
+  `POST /generate`, `POST /clone/upload-url`, `POST /clone/finalize`,
+  `POST /voices/design/preview`, `POST /voices/design`, `POST /billing/checkout`,
+  `POST /transcriptions`, `PUT/POST /storage/upload`.
+- Default Tier 1 ceiling is `30` requests per `300` seconds per IP unless env overrides are supplied.
+
 ## Storage Model
 
 - R2 bindings: `R2_REFERENCES`, `R2_GENERATIONS`

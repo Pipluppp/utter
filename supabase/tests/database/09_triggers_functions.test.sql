@@ -1,6 +1,6 @@
 -- Phase 08b: Triggers + database functions
 BEGIN;
-SELECT plan(13);
+SELECT plan(15);
 
 -- ============================================================
 -- 1. handle_new_user trigger: auto-creates profile on auth.users insert
@@ -22,8 +22,14 @@ SELECT results_eq(
 
 SELECT results_eq(
   $$SELECT credits_remaining FROM public.profiles WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
-  ARRAY[100],
-  'Auto-created profile has default credits_remaining=100'
+  ARRAY[0],
+  'Auto-created profile has default credits_remaining=0'
+);
+
+SELECT results_eq(
+  $$SELECT design_trials_remaining, clone_trials_remaining FROM public.profiles WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
+  $$VALUES (0, 0)$$,
+  'Auto-created profile has default design/clone trials=0'
 );
 
 -- ============================================================
@@ -66,6 +72,10 @@ SELECT results_eq(
 -- ============================================================
 -- 4. credit_apply_event + credit_usage_window_totals RPCs
 -- ============================================================
+UPDATE public.profiles
+SET credits_remaining = 100
+WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+
 SELECT results_eq(
   $$SELECT applied, duplicate, insufficient, balance_remaining
     FROM public.credit_apply_event(

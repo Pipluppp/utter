@@ -26,6 +26,8 @@ const endpointRules: EndpointRule[] = [
   { method: "POST", pattern: /^\/api\/voices\/design$/, tier: "tier1" },
   { method: "POST", pattern: /^\/api\/billing\/checkout$/, tier: "tier1" },
   { method: "POST", pattern: /^\/api\/transcriptions$/, tier: "tier1" },
+  { method: "PUT", pattern: /^\/api\/storage\/upload$/, tier: "tier1" },
+  { method: "POST", pattern: /^\/api\/storage\/upload$/, tier: "tier1" },
   { method: "GET", pattern: /^\/api\/tasks$/, tier: "tier2" },
   { method: "GET", pattern: /^\/api\/tasks\/[^/]+$/, tier: "tier2" },
   { method: "POST", pattern: /^\/api\/tasks\/[^/]+\/cancel$/, tier: "tier2" },
@@ -45,8 +47,8 @@ function tierRules(): Record<RateLimitTier, RateLimitRule> {
 
   return {
     tier1: {
-      userLimit: parsePositiveIntEnv("RATE_LIMIT_TIER1_USER_LIMIT", 20),
-      ipLimit: parsePositiveIntEnv("RATE_LIMIT_TIER1_IP_LIMIT", 120),
+      userLimit: parsePositiveIntEnv("RATE_LIMIT_TIER1_USER_LIMIT", 10),
+      ipLimit: parsePositiveIntEnv("RATE_LIMIT_TIER1_IP_LIMIT", 30),
       windowSeconds: parsePositiveIntEnv("RATE_LIMIT_TIER1_WINDOW_SECONDS", defaultWindowSeconds),
     },
     tier2: {

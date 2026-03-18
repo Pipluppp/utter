@@ -54,9 +54,10 @@ Key SQL artifacts:
 
 Runtime meaning:
 
+- new profiles default to `credits_remaining = 0`, `design_trials_remaining = 0`, `clone_trials_remaining = 0`
 - generate charges credits through the ledger
-- design preview can use a trial first, then credits
-- clone can use a trial first, then credits
+- design preview uses a trial first only when the profile already has remaining design trials; otherwise it debits credits
+- clone uses a trial first only when the profile already has remaining clone trials; otherwise it debits credits
 - billing webhook grants prepaid credits into the ledger
 
 ## Tests

@@ -53,8 +53,8 @@ Deno.test({
     let seenRetryAfter = 0;
 
     // Current worker rate-limit identity resolves to IP hash in middleware.
-    // Tier1 default IP limit is 120 requests per window.
-    for (let i = 1; i <= 140; i++) {
+    // Tier1 default IP limit is 30 requests per 5-minute window.
+    for (let i = 1; i <= 50; i++) {
       const res = await postCloneUploadUrl(
         userA.accessToken,
         `Rate Probe ${i}`,
@@ -79,7 +79,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "Tier1 user counters are independent between accounts",
+  name: "Tier1 counters are independent between source IPs",
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

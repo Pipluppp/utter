@@ -34,7 +34,7 @@ Deno.test("GET /me with valid auth returns signed_in: true + profile", async () 
   assertExists(body.profile);
   assertEquals(body.profile.id, userA.userId);
   assertEquals(body.profile.subscription_tier, "free");
-  assertEquals(body.profile.credits_remaining, 100);
+  assertEquals(body.profile.credits_remaining, 0);
 });
 
 Deno.test("GET /me without auth returns signed_in: false", async () => {
@@ -71,7 +71,7 @@ Deno.test("PATCH /profile ignores server-owned fields in body", async () => {
   const body = await res.json();
   assertEquals(body.profile.display_name, "Safe Update");
   assertEquals(body.profile.subscription_tier, "free");
-  assertEquals(body.profile.credits_remaining, 100);
+  assertEquals(body.profile.credits_remaining, 0);
 });
 
 Deno.test("PATCH /profile updates handle", async () => {

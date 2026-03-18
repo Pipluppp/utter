@@ -115,13 +115,13 @@ export const CREDIT_RATE_CARD: CreditRateCardRow[] = [
   },
   {
     action: "Voice design preview",
-    cost: "First 2 attempts free, then 2,400 credits",
-    note: "Flat price after free design trials are used.",
+    cost: "2,400 credits",
+    note: "Uses remaining design trial balance first when present. New accounts start with 0 design trials.",
   },
   {
     action: "Voice clone",
-    cost: "First 2 attempts free, then 200 credits",
-    note: "Flat price after free clone trials are used.",
+    cost: "200 credits",
+    note: "Uses remaining clone trial balance first when present. New accounts start with 0 clone trials.",
   },
 ];
 

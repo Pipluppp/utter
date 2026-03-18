@@ -1,6 +1,6 @@
 -- Phase 08b: Schema validation — tables, columns, types, constraints
 BEGIN;
-SELECT plan(99);
+SELECT plan(101);
 
 -- ============================================================
 -- PROFILES
@@ -17,7 +17,11 @@ SELECT col_not_null('public', 'profiles', 'subscription_tier', 'subscription_tie
 SELECT col_default_is('public', 'profiles', 'subscription_tier', 'free', 'subscription_tier defaults to free');
 SELECT has_column('public', 'profiles', 'credits_remaining', 'profiles.credits_remaining exists');
 SELECT col_not_null('public', 'profiles', 'credits_remaining', 'credits_remaining is NOT NULL');
-SELECT col_default_is('public', 'profiles', 'credits_remaining', '100', 'credits_remaining defaults to 100');
+SELECT col_default_is('public', 'profiles', 'credits_remaining', '0', 'credits_remaining defaults to 0');
+SELECT has_column('public', 'profiles', 'design_trials_remaining', 'profiles.design_trials_remaining exists');
+SELECT col_default_is('public', 'profiles', 'design_trials_remaining', '0', 'design_trials_remaining defaults to 0');
+SELECT has_column('public', 'profiles', 'clone_trials_remaining', 'profiles.clone_trials_remaining exists');
+SELECT col_default_is('public', 'profiles', 'clone_trials_remaining', '0', 'clone_trials_remaining defaults to 0');
 SELECT has_column('public', 'profiles', 'created_at', 'profiles.created_at exists');
 SELECT has_column('public', 'profiles', 'updated_at', 'profiles.updated_at exists');
 
