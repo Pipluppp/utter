@@ -36,7 +36,10 @@ export type BackendTask = {
   error?: string | null;
   provider?: 'modal' | 'qwen' | string;
   provider_status?: string | null;
+  provider_poll_count?: number | null;
   modal_status?: string | null;
+  modal_elapsed_seconds?: number | null;
+  modal_poll_count?: number | null;
   created_at?: string | null;
   completed_at?: string | null;
   title?: string | null;
@@ -58,6 +61,9 @@ export type Voice = {
   description: string | null;
   created_at: string | null;
   tts_provider?: 'modal' | 'qwen' | string;
+  provider_voice_id?: string | null;
+  provider_target_model?: string | null;
+  provider_voice_kind?: 'vc' | 'vd' | string | null;
 };
 
 export type VoicesResponse = {
