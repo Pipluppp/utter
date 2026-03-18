@@ -236,6 +236,27 @@ export default function CloneScreen() {
     void hapticLight();
   }, []);
 
+  // Transcribe uploaded file (same API as recording transcription)
+  const transcribeUploadedFile = useCallback(async () => {
+    if (!fileUri || !transcriptionEnabled) return;
+    setTranscribing(true);
+    try {
+      const form = new FormData();
+      form.append('audio', {
+        uri: fileUri,
+        type: contentTypeForUri(fileUri, fileMimeType),
+        name: fileName ?? 'audio',
+      } as any);
+      form.append('language', language);
+      const res = await apiForm<TranscriptionResponse>('/api/transcriptions', form, { method: 'POST' });
+      if (res.text) setTranscript(res.text);
+    } catch {
+      setError('Transcription failed. You can type the transcript manually.');
+    } finally {
+      setTranscribing(false);
+    }
+  }, [fileUri, fileMimeType, fileName, language, transcriptionEnabled]);
+
   // Clean up auto-stop timer and stop recording on unmount (modal dismiss)
   useEffect(() => {
     return () => {
@@ -406,6 +427,22 @@ export default function CloneScreen() {
           {fileUri && !recorderState.isRecording && (
             <View style={{ marginTop: 10 }}>
               <AudioPlayerBar player={previewPlayer} />
+            </View>
+          )}
+          {fileUri && transcriptionEnabled && !transcript.trim() && !transcribing && (
+            <TouchableOpacity
+              onPress={() => void transcribeUploadedFile()}
+              style={{ backgroundColor: colors.skeletonHighlight, borderRadius: 8, borderCurve: 'continuous', paddingVertical: 10, alignItems: 'center', marginTop: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Transcribe uploaded audio"
+            >
+              <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Transcribe</Text>
+            </TouchableOpacity>
+          )}
+          {transcribing && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8 }}>
+              <ActivityIndicator color={colors.textSecondary} size="small" />
+              <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Transcribing...</Text>
             </View>
           )}
         </>
