@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { type AudioPlayer, useAudioPlayer } from 'expo-audio';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
@@ -13,8 +14,9 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from 'expo-router';
-import { apiJson } from '../../lib/api';
-import { hapticDelete } from '../../lib/haptics';
+import { AudioPlayerBar } from '../../components/AudioPlayerBar';
+import { apiJson, apiRedirectUrl } from '../../lib/api';
+import { hapticDelete, hapticSuccess } from '../../lib/haptics';
 import type { Voice, VoicesResponse } from '../../lib/types';
 import { useTheme, type ThemeColors } from '../../providers/ThemeProvider';
 
@@ -70,11 +72,14 @@ type VoiceCardProps = {
   highlight: string;
   onGenerate: (voice: Voice) => void;
   onDelete: (voice: Voice) => void;
+  onPreview: (voice: Voice) => void;
   isDeleting: boolean;
+  isPlaying: boolean;
+  player: AudioPlayer | null | undefined;
 };
 
 const VoiceCard = React.memo(function VoiceCard({
-  voice, colors, highlight, onGenerate, onDelete, isDeleting,
+  voice, colors, highlight, onGenerate, onDelete, onPreview, isDeleting, isPlaying, player,
 }: VoiceCardProps) {
   return (
     <View style={[styles.card, { backgroundColor: colors.surface }]}>
@@ -98,7 +103,22 @@ const VoiceCard = React.memo(function VoiceCard({
           {voice.reference_transcript}
         </Text>
       ) : null}
+      {isPlaying && player && (
+        <View style={{ marginTop: 10 }}>
+          <AudioPlayerBar player={player} />
+        </View>
+      )}
       <View style={styles.actionsRow}>
+        {!isPlaying && (
+          <TouchableOpacity
+            onPress={() => onPreview(voice)}
+            style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }]}
+            accessibilityRole="button"
+            accessibilityLabel="Preview voice"
+          >
+            <Text style={[styles.actionText, { color: colors.accent }]}>Preview</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           onPress={() => onGenerate(voice)}
           style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }]}
@@ -141,6 +161,18 @@ export default function VoicesScreen() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Shared audio preview — single player for all voice cards
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const [audioUri, setAudioUri] = useState<string | null>(null);
+  const player = useAudioPlayer(audioUri ? { uri: audioUri } : null);
+
+  // Play when audio source changes
+  useEffect(() => {
+    if (audioUri && player) {
+      player.play();
+    }
+  }, [audioUri, player]);
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -249,6 +281,18 @@ export default function VoicesScreen() {
     [],
   );
 
+  const handlePreview = useCallback(async (voice: Voice) => {
+    setPlayingId(voice.id);
+    try {
+      const url = await apiRedirectUrl(`/api/voices/${voice.id}/preview`);
+      setAudioUri(url);
+      void hapticSuccess();
+    } catch {
+      setPlayingId(null);
+      Alert.alert('Preview error', 'Could not play voice preview.');
+    }
+  }, []);
+
   const handleGenerate = useCallback((voice: Voice) => {
     router.navigate({ pathname: '/(tabs)/generate', params: { voice: voice.id } });
   }, []);
@@ -261,10 +305,13 @@ export default function VoicesScreen() {
         highlight={debouncedSearch}
         onGenerate={handleGenerate}
         onDelete={handleDelete}
+        onPreview={handlePreview}
         isDeleting={deletingId === item.id}
+        isPlaying={playingId === item.id}
+        player={playingId === item.id ? player : undefined}
       />
     ),
-    [colors, debouncedSearch, handleGenerate, handleDelete, deletingId],
+    [colors, debouncedSearch, handleGenerate, handleDelete, handlePreview, deletingId, playingId, player],
   );
 
   if (loading) {
