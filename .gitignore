@@ -74,6 +74,12 @@ htmlcov/
 /utter_demo_v2
 
 node_modules/
+
+# Mobile (Expo / React Native)
+mobile/.expo/
+mobile/android/
+mobile/ios/
+
 .vercel
 .wrangler/
 **/.wrangler/

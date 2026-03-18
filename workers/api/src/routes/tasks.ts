@@ -306,6 +306,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     id: taskRow.id,
     type: taskRow.type,
     status: taskRow.status,
+    generation_id: taskRow.generation_id,
     result: taskRow.result ?? undefined,
     error: taskRow.error ?? null,
     provider: taskRow.provider ?? "qwen",

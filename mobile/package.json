@@ -1,0 +1,52 @@
+{
+  "name": "utter-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "dev:client": "expo start --dev-client",
+    "dev:android": "expo start --android",
+    "dev:ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "build:dev:android": "npx eas-cli build --platform android --profile development",
+    "build:dev:ios": "npx eas-cli build --platform ios --profile development",
+    "build:dev:ios-simulator": "npx eas-cli build --platform ios --profile development-simulator",
+    "typecheck": "tsc --noEmit",
+    "lint": "expo lint"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@supabase/supabase-js": "^2.57.0",
+    "babel-preset-expo": "~55.0.8",
+    "expo": "^55.0.7",
+    "expo-asset": "~55.0.9",
+    "expo-audio": "~55.0.9",
+    "expo-clipboard": "~55.0.9",
+    "expo-constants": "~55.0.8",
+    "expo-dev-client": "~55.0.17",
+    "expo-document-picker": "~55.0.9",
+    "expo-file-system": "~55.0.11",
+    "expo-font": "~55.0.4",
+    "expo-haptics": "~55.0.9",
+    "expo-linking": "~55.0.7",
+    "expo-router": "~55.0.6",
+    "expo-secure-store": "~55.0.9",
+    "expo-sharing": "~55.0.12",
+    "expo-splash-screen": "~55.0.11",
+    "expo-status-bar": "~55.0.4",
+    "expo-web-browser": "~55.0.10",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-native": "0.83.2",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.23.0",
+    "react-native-url-polyfill": "^2.0.0",
+    "react-native-web": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.10",
+    "typescript": "~5.9.2"
+  }
+}

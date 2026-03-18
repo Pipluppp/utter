@@ -21,6 +21,16 @@
       "sourceType": "github",
       "computedHash": "16c53e80cacd65369acfd8a4f5cf06a60083cc6d980127b4b2e384b81ce0e547"
     },
+    "react-native-best-practices": {
+      "source": "callstackincubator/agent-skills",
+      "sourceType": "github",
+      "computedHash": "550d7e8dc8e69248c171e87a055435deed78b56cf0fdca8a0e6d21d8e98186f7"
+    },
+    "vercel-react-native-skills": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "a804b4e848059822638c390359976f7021380bcefb1469d473aa4e9202c15ecb"
+    },
     "wrangler": {
       "source": "cloudflare/skills",
       "sourceType": "github",
