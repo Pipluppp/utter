@@ -1,167 +1,106 @@
 # Mobile App Setup
 
-Expo SDK 54 + React Native 0.81 + TypeScript app for Utter.
+The mobile app lives in `mobile/`. It is an Expo SDK 55 app that uses Expo Router on the client side and talks to the same backend the web app uses: Cloudflare Workers for the API and frontend runtime, R2 for files, Queues for async jobs, and Supabase for auth and database state. The current deployed frontend Worker is `https://utter.duncanb013.workers.dev`, and the current deployed API Worker root is `https://utter-api-staging.duncanb013.workers.dev`.
 
-## Architecture
+At the moment, the mobile app is good enough for real feature work. You can sign in, browse voices, preview reference audio, generate speech, design voices, clone voices, browse history, and use the task center. Push notifications are still deferred.
 
-```
-mobile/
-├── app/                   # Expo Router screens
-│   ├── _layout.tsx        # Root: providers + auth gate
-│   ├── sign-in.tsx        # Email/password + magic link auth
-│   ├── clone.tsx          # Clone voice (modal, mic recording + transcription)
-│   ├── account.tsx        # Credits, billing, profile, theme toggle
-│   ├── tasks.tsx          # Task queue viewer (cancel/dismiss, live polling)
-│   └── (tabs)/            # Tab navigator
-│       ├── _layout.tsx    # Tab bar + active-task badge
-│       ├── index.tsx      # Voices list (search, filter, delete)
-│       ├── generate.tsx   # TTS generation
-│       ├── design.tsx     # Voice design
-│       └── history.tsx    # Generation history (playback, share, delete)
-├── lib/                   # Shared utilities
-│   ├── supabase.ts        # Supabase client (SecureStore adapter, deduped refresh)
-│   ├── api.ts             # Typed API client (bearer + 401 retry + redirect fix)
-│   ├── types.ts           # API contract types (mirrored from web)
-│   ├── constants.ts       # Env vars
-│   ├── haptics.ts         # Haptic feedback helpers
-│   └── formPersistence.ts # Form draft persistence
-├── providers/
-│   ├── AuthProvider.tsx    # Supabase auth context (deep link handling)
-│   ├── TaskProvider.tsx    # Task polling + persistence (AsyncStorage)
-│   └── ThemeProvider.tsx   # Dark/light/system theme context
-└── components/
-    ├── AudioPlayerBar.tsx  # Play/pause + drag-to-seek progress bar
-    ├── ErrorBoundary.tsx   # Screen-level error boundary
-    └── Select.tsx          # Cross-platform picker
-```
+The important thing to understand if you have only used Expo Go before is that the recommended workflow has changed. Expo Go is still fine for quick checks, but the normal way to test this app now is with a development build. That means you build and install your own Utter app shell once, and then you point that installed app at Metro while you work. Expo Go skips that first step, but it is less representative of the real app runtime.
 
-### Progress
+That first native build can be slow on a fresh machine. Gradle, Android dependencies, and caches all need to settle the first time. That is normal. It should not be your everyday loop. Once the app is installed on the emulator or device, the normal loop is just Metro plus reopening the installed Utter app. You only need another native rebuild when you change native dependencies, config plugins, package identifiers, permissions, or other app config that affects the native shell.
 
-| Phase | Scope | Status |
-|-------|-------|--------|
-| 0 | Scaffold, auth, API client, types | Done |
-| 1 | All screens: voices, generate, design, clone, history, tasks, account | Done |
-| 2 | Audio recording (expo-audio), playback, credits/billing, theme toggle | Done |
-| Clean-up A | TaskProvider stabilization, AudioPlayerBar fixes, clone modal safety | Done |
-| Clean-up B | FlatList performance, auth & API hardening | Done |
-| Clean-up C | UX polish (keyboard, icons, a11y) + feature parity gaps | Next |
-
-### Data flow
-
-```
-Mobile app
-  ↓ Supabase Auth (SecureStore session)
-  ↓ Bearer token
-API Worker (same as web)
-  ↓ Supabase RLS + R2 + Queues
-  ↓ Qwen TTS provider
-```
-
-No server changes needed — the mobile app is a pure client consuming the same `/api/*` routes.
-
-### Key implementation details
-
-- **FlatList performance**: All list screens (voices, history, tasks) use `React.memo` card components and `StyleSheet.create` at module level. History auto-refresh uses a ref to avoid interval teardown.
-- **Auth**: Deep link callbacks have error handling with user-facing alerts. `getSession`/`onAuthStateChange` race condition is guarded with a stale flag.
-- **API client**: `apiRedirectUrl` uses `redirect:'manual'` + Location header (Android OkHttp compat). Concurrent 401 refreshes are deduplicated via shared promise.
-- **Task polling**: Persistent via AsyncStorage, stable context refs, 1s polling for active tasks.
-- **Theme**: System/dark/light toggle stored in AsyncStorage, color tokens via context.
-
-## Prerequisites
-
-- **Node.js** 20+
-- **Expo CLI**: `npm install -g expo-cli` (or use `npx expo`)
-- **Android**: Android Studio + emulator (API 34+), or physical device with Expo Go
-- **iOS** (macOS only): Xcode 15+, or physical device with Expo Go
-- **Backend running**: Follow root `docs/setup.md` to start Supabase + API Worker
-
-## Install
+If you are starting from zero, first install dependencies in `mobile/`:
 
 ```bash
 cd mobile
 npm install --legacy-peer-deps
 ```
 
-## Environment
+Then copy the env file:
 
 ```bash
 cp .env.example .env
 ```
 
-Fill in your values:
+The mobile app only needs three public env values: the Supabase URL, the Supabase anon key, and the API origin. The API origin must be the root origin only, without `/api` at the end. If you want the fastest path just to see the app working, keep the deployed staging Worker origin in `.env`. If you want the app to hit your local backend, change `EXPO_PUBLIC_API_BASE_URL` based on where you are running the app: Android emulator should use `http://10.0.2.2:8787`, iOS simulator should use `http://127.0.0.1:8787`, and a physical device should use `http://<YOUR_LAN_IP>:8787`.
 
-| Variable | Value |
-|----------|-------|
-| `EXPO_PUBLIC_SUPABASE_URL` | Same as web `VITE_SUPABASE_URL` |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Same as web `VITE_SUPABASE_ANON_KEY` |
-| `EXPO_PUBLIC_API_BASE_URL` | See table below |
-
-### API URL by platform
-
-| Platform | `EXPO_PUBLIC_API_BASE_URL` |
-|----------|---------------------------|
-| Android emulator | `http://10.0.2.2:8787` |
-| iOS simulator | `http://127.0.0.1:8787` |
-| Physical device | `http://<YOUR_LAN_IP>:8787` |
-| Production | `https://utter-wheat.vercel.app` |
-
-For physical devices, find your LAN IP with `ipconfig` (Windows) or `ifconfig` (macOS/Linux).
-
-## Run
+If your goal is local Android emulator development on this Windows machine, the simplest starting command is:
 
 ```bash
-# Start Expo dev server
-npx expo start
-
-# Or target a specific platform
-npx expo start --android
-npx expo start --ios
+npm run android
 ```
 
-Press `a` for Android emulator, `i` for iOS simulator, or scan the QR code with Expo Go on a physical device.
+That command does the local native Android build, installs the app on the emulator, and starts Metro. Use it the first time, and again whenever native config changes.
 
-## Typecheck
+Once the development build is installed on your emulator or device, your normal daily loop is just:
 
 ```bash
+npm run dev:client
+```
+
+Then open the installed Utter dev build and connect it to Metro. That is the mobile equivalent of opening your local web frontend in the browser.
+
+For Android emulator specifically, the easiest mental model is this:
+
+```bash
+# first time, or after native changes
+npm run android
+
+# normal daily loop after the app is already installed
+npm run dev:client
+```
+
+If `npm run android` ever asks to rebuild after you only changed JavaScript or TypeScript, that usually means you used the wrong command out of habit. Use `npm run dev:client` for normal app work and keep `npm run android` for native-shell moments.
+
+If you want a cloud-built dev client instead of a local emulator install, log in to Expo/EAS first:
+
+```bash
+npx eas-cli login
+```
+
+Then use one of these:
+
+```bash
+npm run build:dev:android
+npm run build:dev:ios-simulator
+npm run build:dev:ios
+```
+
+That EAS path is optional. It is useful for physical devices and shared builds, but it is not required for normal emulator development on your laptop.
+
+If you want to test against local backend services instead of the deployed staging Worker, you usually need three terminals. In terminal 1, from the repo root, start Supabase:
+
+```bash
+supabase start
+```
+
+In terminal 2, from the repo root, start the API Worker:
+
+```bash
+npm --prefix workers/api install
+cp workers/api/.dev.vars.example workers/api/.dev.vars
+npm --prefix workers/api run dev
+```
+
+In terminal 3, from `mobile/`, start Metro for the dev build:
+
+```bash
+npm run dev:client
+```
+
+At that point you should be able to open the app and sign in with the same account you use on web, list voices, generate audio, design voices, clone voices, and browse history and tasks. Push notifications are intentionally deferred for now, so do not expect that part of the app to exist yet.
+
+The most useful verification commands are:
+
+```bash
+npx expo-doctor
+npx expo install --check
 npx tsc --noEmit
 ```
 
-## What's next (Session C)
+If something fails in a way that looks like Metro caching or package drift, clear Metro and try again:
 
-Remaining clean-up plans in `docs/2026-03-16/clean-up/`:
-
-- **06-ux-polish.md** — Tab icons (Ionicons), KeyboardAvoidingView on form screens, focus-gated polling, form persistence migration to AsyncStorage, splash screen gate, accessibility labels
-- **07-feature-parity-gaps.md** — Voice preview playback on voices list, model parameter passthrough, cancelled status filter in history, transcribe-upload button in clone, type sync for missing fields
-
-See `docs/2026-03-16/clean-up/README.md` for the full session C prompt and priority order.
-
-## Troubleshooting
-
-### "Network request failed" on API calls
-- Verify API Worker is running at `http://127.0.0.1:8787`
-- Check `EXPO_PUBLIC_API_BASE_URL` matches your platform (see table above)
-- For physical devices, ensure phone and dev machine are on the same network
-- Check API Worker CORS allows the request origin
-
-### "Unable to resolve module" after install
 ```bash
 npx expo start --clear
 ```
 
-### Android emulator can't reach localhost
-Android emulator uses `10.0.2.2` to reach the host machine's `127.0.0.1`. Set `EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8787`.
-
-### SecureStore errors on web
-SecureStore is native-only. The app is designed for iOS/Android. For web testing, use the existing web frontend.
-
-### Peer dependency conflicts during install
-```bash
-npm install --legacy-peer-deps
-```
-The project has a react 19.1 / react-dom 19.2 peer dep mismatch that requires `--legacy-peer-deps` for now.
-
-### Expo version mismatches
-```bash
-npx expo install --fix
-```
-This resolves all dependency versions to be compatible with your Expo SDK version.
+If API calls fail, the first thing to check is the API origin in `.env`. A wrong origin is the most common local setup issue. If audio playback fails, test it in the installed dev build before assuming the backend is broken, because Expo Go is not the preferred runtime anymore. If you are on Android emulator and the app cannot reach your local Worker, make sure you are using `10.0.2.2` rather than `localhost`.
