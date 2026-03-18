@@ -5,7 +5,7 @@ export function PricingSection() {
   return (
     <section
       id='pricing'
-      className='relative isolate left-1/2 right-1/2 -mx-[50vw] w-screen scroll-mt-24 -mt-px border-t border-border/60'
+      className='relative isolate left-1/2 right-1/2 -mx-[50vw] w-screen overflow-x-clip scroll-mt-24 -mt-px border-t border-border/60'
     >
       <div className='pointer-events-none absolute -left-[14%] top-6 -z-10 w-[50%] overflow-hidden opacity-24 [mask-image:linear-gradient(to_right,#000_0%,#000_46%,transparent_100%)] select-none'>
         <SVGBlobs density='sparse' className='w-full' />

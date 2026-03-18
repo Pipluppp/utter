@@ -94,6 +94,7 @@ export function FeaturesSection() {
       id='features'
       className={cn(
         'relative isolate left-1/2 right-1/2 -mx-[50vw] w-screen',
+        'overflow-x-clip',
         'scroll-mt-24 -mt-px border-t border-border/60',
       )}
     >
