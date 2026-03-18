@@ -183,7 +183,7 @@ export default function GenerateScreen() {
       void hapticSubmit();
       const res = await apiJson<GenerateResponse>('/api/generate', {
         method: 'POST',
-        json: { voice_id: voiceId, text: text.trim(), language },
+        json: { voice_id: voiceId, text: text.trim(), language, model: '0.6B' },
       });
       startTask(res.task_id, 'generate', `Generate: ${text.trim().slice(0, 40)}`);
       setSelectedTaskId(res.task_id);
