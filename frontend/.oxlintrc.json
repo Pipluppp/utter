@@ -1,34 +1,3 @@
 {
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "categories": {
-    "correctness": "error",
-    "suspicious": "warn"
-  },
-  "plugins": [
-    "typescript",
-    "oxc",
-    "unicorn",
-    "react",
-    "import"
-  ],
-  "env": {
-    "browser": true,
-    "es6": true
-  },
-  "settings": {
-    "react": {
-      "version": "19.0.0"
-    }
-  },
-  "rules": {
-    "react/react-in-jsx-scope": "off",
-    "react/jsx-uses-react": "off",
-    "unicorn/prefer-add-event-listener": "off",
-    "no-unused-expressions": "off",
-    "react-hooks/exhaustive-deps": "warn",
-    "import/no-unassigned-import": "off"
-  },
-  "ignorePatterns": [
-    "dist/**"
-  ]
+  "$schema": "./node_modules/oxlint/configuration_schema.json"
 }

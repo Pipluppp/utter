@@ -1,152 +1,152 @@
-import { getAccessToken, refreshAccessToken } from './supabase'
+import { getAccessToken, refreshAccessToken } from "./supabase";
 
 export type ApiErrorShape = {
-  detail?: string
-  message?: string
-}
+  detail?: string;
+  message?: string;
+};
 
 export class ApiError extends Error {
-  status: number
+  status: number;
 
   constructor(message: string, status: number) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
   }
 }
 
 async function parseErrorMessage(res: Response): Promise<string> {
-  const contentType = res.headers.get('content-type') ?? ''
-  if (contentType.includes('application/json')) {
-    const data = (await res.json().catch(() => null)) as ApiErrorShape | null
-    if (data?.detail) return data.detail
-    if (data?.message) return data.message
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const data = (await res.json().catch(() => null)) as ApiErrorShape | null;
+    if (data?.detail) return data.detail;
+    if (data?.message) return data.message;
   }
-  const text = await res.text().catch(() => '')
-  return text || `${res.status} ${res.statusText}`
+  const text = await res.text().catch(() => "");
+  return text || `${res.status} ${res.statusText}`;
 }
 
 async function getDefaultAuthHeaders(): Promise<Record<string, string>> {
-  const accessToken = await getAccessToken()
-  const headers: Record<string, string> = {}
+  const accessToken = await getAccessToken();
+  const headers: Record<string, string> = {};
 
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
-  return headers
+  return headers;
 }
 
 function withAuthorization(
   headers: HeadersInit | undefined,
   accessToken: string | null,
 ): HeadersInit {
-  if (!accessToken) return headers ?? {}
+  if (!accessToken) return headers ?? {};
   return {
     ...headers,
     Authorization: `Bearer ${accessToken}`,
-  }
+  };
 }
 
 export async function apiJson<T>(
   path: string,
   init: RequestInit & { json?: unknown } = {},
 ): Promise<T> {
-  const { json, headers, ...rest } = init
-  const authHeaders = await getDefaultAuthHeaders()
+  const { json, headers, ...rest } = init;
+  const authHeaders = await getDefaultAuthHeaders();
 
   const runRequest = async (requestHeaders: HeadersInit) =>
     fetch(path, {
       ...rest,
       headers: requestHeaders,
       body: json ? JSON.stringify(json) : rest.body,
-    })
+    });
 
   const requestHeaders: HeadersInit = {
     ...authHeaders,
-    ...(json ? { 'content-type': 'application/json' } : {}),
+    ...(json ? { "content-type": "application/json" } : {}),
     ...headers,
-  }
+  };
 
-  let res = await runRequest(requestHeaders)
+  let res = await runRequest(requestHeaders);
   if (res.status === 401) {
-    const refreshedToken = await refreshAccessToken()
+    const refreshedToken = await refreshAccessToken();
     if (refreshedToken) {
-      res = await runRequest(withAuthorization(requestHeaders, refreshedToken))
+      res = await runRequest(withAuthorization(requestHeaders, refreshedToken));
     }
   }
 
   if (!res.ok) {
-    throw new ApiError(await parseErrorMessage(res), res.status)
+    throw new ApiError(await parseErrorMessage(res), res.status);
   }
 
-  const ct = res.headers.get('content-type') ?? ''
-  if (!ct.includes('application/json')) {
-    throw new ApiError('Server returned non-JSON response', res.status)
+  const ct = res.headers.get("content-type") ?? "";
+  if (!ct.includes("application/json")) {
+    throw new ApiError("Server returned non-JSON response", res.status);
   }
 
-  return (await res.json()) as T
+  return (await res.json()) as T;
 }
 
 export async function apiForm<T>(path: string, form: FormData, init: RequestInit = {}): Promise<T> {
-  const authHeaders = await getDefaultAuthHeaders()
+  const authHeaders = await getDefaultAuthHeaders();
 
   const runRequest = async (requestHeaders: HeadersInit) =>
     fetch(path, {
       ...init,
-      method: init.method ?? 'POST',
+      method: init.method ?? "POST",
       headers: requestHeaders,
       body: form,
-    })
+    });
 
   const requestHeaders: HeadersInit = {
     ...authHeaders,
     ...init.headers,
-  }
+  };
 
-  let res = await runRequest(requestHeaders)
+  let res = await runRequest(requestHeaders);
   if (res.status === 401) {
-    const refreshedToken = await refreshAccessToken()
+    const refreshedToken = await refreshAccessToken();
     if (refreshedToken) {
-      res = await runRequest(withAuthorization(requestHeaders, refreshedToken))
+      res = await runRequest(withAuthorization(requestHeaders, refreshedToken));
     }
   }
 
   if (!res.ok) {
-    throw new ApiError(await parseErrorMessage(res), res.status)
+    throw new ApiError(await parseErrorMessage(res), res.status);
   }
 
-  const ct = res.headers.get('content-type') ?? ''
-  if (!ct.includes('application/json')) {
-    throw new ApiError('Server returned non-JSON response', res.status)
+  const ct = res.headers.get("content-type") ?? "";
+  if (!ct.includes("application/json")) {
+    throw new ApiError("Server returned non-JSON response", res.status);
   }
 
-  return (await res.json()) as T
+  return (await res.json()) as T;
 }
 
 export async function apiRedirectUrl(path: string): Promise<string> {
-  const authHeaders = await getDefaultAuthHeaders()
+  const authHeaders = await getDefaultAuthHeaders();
 
   const runRequest = async (requestHeaders: HeadersInit) =>
     fetch(path, {
-      method: 'GET',
-      redirect: 'follow',
+      method: "GET",
+      redirect: "follow",
       headers: requestHeaders,
-    })
+    });
 
-  let res = await runRequest(authHeaders)
+  let res = await runRequest(authHeaders);
   if (res.status === 401) {
-    const refreshedToken = await refreshAccessToken()
+    const refreshedToken = await refreshAccessToken();
     if (refreshedToken) {
-      res = await runRequest(withAuthorization(authHeaders, refreshedToken))
+      res = await runRequest(withAuthorization(authHeaders, refreshedToken));
     }
   }
 
   if (!res.ok) {
-    throw new ApiError(await parseErrorMessage(res), res.status)
+    throw new ApiError(await parseErrorMessage(res), res.status);
   }
 
   // We only need the final resolved URL (typically a signed Storage URL).
   // Cancel any body stream so this probe doesn't download audio bytes.
-  await res.body?.cancel().catch(() => {})
+  await res.body?.cancel().catch(() => {});
 
-  return res.url || path
+  return res.url || path;
 }

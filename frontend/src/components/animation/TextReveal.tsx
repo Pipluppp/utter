@@ -1,133 +1,133 @@
 // Taken from https://gist.github.com/cristicretu/b808942d39ec8178f9c9a8bdfd13bbb9
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
-const ACCENT_COLORS = ['#e63946', '#457b9d', '#2a9d8f', '#e9c46a', '#6a4c93']
-const SYMBOLS = ['✣', '◈', '⌁', '✦', '◎', '⊹', '⟡', '△']
-const PERIOD_COLOR = '#2a9d8f'
-const STEP_MS = 70
+const ACCENT_COLORS = ["#e63946", "#457b9d", "#2a9d8f", "#e9c46a", "#6a4c93"];
+const SYMBOLS = ["✣", "◈", "⌁", "✦", "◎", "⊹", "⟡", "△"];
+const PERIOD_COLOR = "#2a9d8f";
+const STEP_MS = 70;
 
 function randomFrom<T>(list: readonly T[]): T {
-  return list[Math.floor(Math.random() * list.length)]
+  return list[Math.floor(Math.random() * list.length)];
 }
 
 interface Burst {
-  color: string
-  symbol: string
+  color: string;
+  symbol: string;
 }
 
 interface Props {
-  lines: string[]
-  className?: string
+  lines: string[];
+  className?: string;
 }
 
 export function TextReveal({ lines, className }: Props) {
   const { words, wordKeys, lineBreakAfter } = useMemo(() => {
-    const w: string[] = []
-    const keys: string[] = []
-    const wordCounts = new Map<string, number>()
-    const breaks = new Set<number>()
+    const w: string[] = [];
+    const keys: string[] = [];
+    const wordCounts = new Map<string, number>();
+    const breaks = new Set<number>();
     for (let i = 0; i < lines.length; i++) {
-      const lineWords = lines[i].trim().split(/\s+/).filter(Boolean)
+      const lineWords = lines[i].trim().split(/\s+/).filter(Boolean);
       for (const word of lineWords) {
-        const count = wordCounts.get(word) ?? 0
-        wordCounts.set(word, count + 1)
-        w.push(word)
-        keys.push(`${word}-${count}-${i}`)
+        const count = wordCounts.get(word) ?? 0;
+        wordCounts.set(word, count + 1);
+        w.push(word);
+        keys.push(`${word}-${count}-${i}`);
       }
-      if (i < lines.length - 1) breaks.add(w.length - 1)
+      if (i < lines.length - 1) breaks.add(w.length - 1);
     }
-    return { words: w, wordKeys: keys, lineBreakAfter: breaks }
-  }, [lines])
+    return { words: w, wordKeys: keys, lineBreakAfter: breaks };
+  }, [lines]);
 
   // 2 steps per word: burst → reveal. +1 final step for period settle.
-  const totalSteps = words.length * 2 + 1
+  const totalSteps = words.length * 2 + 1;
   const prefersReduced = useRef(
-    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-  )
-  const [step, setStep] = useState(prefersReduced.current ? totalSteps : 0)
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  const [step, setStep] = useState(prefersReduced.current ? totalSteps : 0);
 
   // Pre-generate one burst per word so colors don't change on re-render
-  const bursts = useRef<Burst[]>([])
+  const bursts = useRef<Burst[]>([]);
   if (bursts.current.length !== words.length) {
     bursts.current = words.map(() => ({
       color: randomFrom(ACCENT_COLORS),
       symbol: randomFrom(SYMBOLS),
-    }))
+    }));
   }
 
   useEffect(() => {
-    if (prefersReduced.current) return
-    setStep(0)
-    const timers: ReturnType<typeof setTimeout>[] = []
+    if (prefersReduced.current) return;
+    setStep(0);
+    const timers: ReturnType<typeof setTimeout>[] = [];
     for (let i = 1; i <= totalSteps; i++) {
-      timers.push(setTimeout(() => setStep(i), i * STEP_MS))
+      timers.push(setTimeout(() => setStep(i), i * STEP_MS));
     }
-    return () => timers.forEach(clearTimeout)
-  }, [totalSteps])
+    return () => timers.forEach(clearTimeout);
+  }, [totalSteps]);
 
   const h1Classes =
-    'text-balance text-[clamp(34px,6vw,64px)] font-pixel font-medium uppercase tracking-[2px] text-center'
+    "text-balance text-[clamp(34px,6vw,64px)] font-pixel font-medium uppercase tracking-[2px] text-center";
 
   return (
-    <div className={className} style={{ position: 'relative' }}>
+    <div className={className} style={{ position: "relative" }}>
       {/* Invisible placeholder reserves layout space */}
       <div
         className={h1Classes}
         aria-hidden
-        style={{ visibility: 'hidden', whiteSpace: 'pre-line' }}
+        style={{ visibility: "hidden", whiteSpace: "pre-line" }}
       >
-        {lines.join('\n')}
+        {lines.join("\n")}
       </div>
 
       {/* Animated overlay */}
       <h1
         className={h1Classes}
-        aria-label={lines.join(' ')}
-        style={{ position: 'absolute', inset: 0 }}
+        aria-label={lines.join(" ")}
+        style={{ position: "absolute", inset: 0 }}
       >
         {words.map((word, wi) => {
-          const burstStep = wi * 2 + 1
-          const revealStep = wi * 2 + 2
-          const burst = bursts.current[wi]
-          const isLast = wi === words.length - 1
+          const burstStep = wi * 2 + 1;
+          const revealStep = wi * 2 + 2;
+          const burst = bursts.current[wi];
+          const isLast = wi === words.length - 1;
 
-          let content: React.ReactNode = null
+          let content: React.ReactNode = null;
 
           if (step < burstStep) {
             // Not reached yet — render nothing
-            content = null
+            content = null;
           } else if (step === burstStep) {
             // Symbol burst phase
             content = (
-              <span style={{ color: burst.color }} className='font-mono'>
+              <span style={{ color: burst.color }} className="font-mono">
                 {burst.symbol}
               </span>
-            )
+            );
           } else if (step === revealStep) {
             // Word revealed in accent color
-            content = <span style={{ color: burst.color }}>{word}</span>
+            content = <span style={{ color: burst.color }}>{word}</span>;
           } else {
             // Settled — inherit foreground color, period gets special color on settle step
-            const isPeriodSettle = step === totalSteps && isLast && /[.!?]$/.test(word)
+            const isPeriodSettle = step === totalSteps && isLast && /[.!?]$/.test(word);
             content = (
               <span
-                className='transition-colors duration-300'
+                className="transition-colors duration-300"
                 style={isPeriodSettle ? { color: PERIOD_COLOR } : undefined}
               >
                 {word}
               </span>
-            )
+            );
           }
 
           return (
             <Fragment key={wordKeys[wi]}>
-              {wi > 0 && !lineBreakAfter.has(wi - 1) && ' '}
+              {wi > 0 && !lineBreakAfter.has(wi - 1) && " "}
               {lineBreakAfter.has(wi - 1) && <br />}
               {content}
             </Fragment>
-          )
+          );
         })}
       </h1>
     </div>
-  )
+  );
 }

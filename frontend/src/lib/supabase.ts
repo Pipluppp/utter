@@ -1,7 +1,7 @@
-import { createClient, type Session } from '@supabase/supabase-js'
+import { createClient, type Session } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 export const supabase =
   supabaseUrl && supabaseAnonKey
@@ -12,32 +12,32 @@ export const supabase =
           detectSessionInUrl: true,
         },
       })
-    : null
+    : null;
 
 export function isSupabaseConfigured(): boolean {
-  return Boolean(supabase)
+  return Boolean(supabase);
 }
 
 export async function getSession(): Promise<Session | null> {
-  if (!supabase) return null
-  const { data, error } = await supabase.auth.getSession()
-  if (error) return null
-  return data.session ?? null
+  if (!supabase) return null;
+  const { data, error } = await supabase.auth.getSession();
+  if (error) return null;
+  return data.session ?? null;
 }
 
 export async function getAccessToken(): Promise<string | null> {
-  const session = await getSession()
-  return session?.access_token ?? null
+  const session = await getSession();
+  return session?.access_token ?? null;
 }
 
 export async function refreshAccessToken(): Promise<string | null> {
-  if (!supabase) return null
-  const { data, error } = await supabase.auth.refreshSession()
-  if (error) return null
-  return data.session?.access_token ?? null
+  if (!supabase) return null;
+  const { data, error } = await supabase.auth.refreshSession();
+  if (error) return null;
+  return data.session?.access_token ?? null;
 }
 
 export async function getUserId(): Promise<string | null> {
-  const session = await getSession()
-  return session?.user?.id ?? null
+  const session = await getSession();
+  return session?.user?.id ?? null;
 }

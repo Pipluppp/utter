@@ -1,38 +1,39 @@
-import { useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false
-  const tag = target.tagName
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
-  return target.isContentEditable
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  return target.isContentEditable;
 }
 
 export function useGlobalShortcuts(enabled: boolean) {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!enabled) {
-      return
+      return;
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) return
-      if (event.repeat) return
-      if (event.metaKey || event.ctrlKey || event.altKey) return
-      if (isTypingTarget(event.target)) return
+      if (event.defaultPrevented) return;
+      if (event.repeat) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isTypingTarget(event.target)) return;
 
-      const key = event.key.toLowerCase()
-      const to = key === 'c' ? '/clone' : key === 'g' ? '/generate' : key === 'd' ? '/design' : null
-      if (!to) return
-      if (location.pathname === to) return
+      const key = event.key.toLowerCase();
+      const to =
+        key === "c" ? "/clone" : key === "g" ? "/generate" : key === "d" ? "/design" : null;
+      if (!to) return;
+      if (location.pathname === to) return;
 
-      event.preventDefault()
-      navigate(to)
-    }
+      event.preventDefault();
+      navigate(to);
+    };
 
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [enabled, location.pathname, navigate])
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [enabled, location.pathname, navigate]);
 }

@@ -1,29 +1,29 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { WaveformPlayer } from '../components/audio/WaveformPlayer'
-import { useTasks } from '../components/tasks/TaskProvider'
-import { taskLabel } from '../components/tasks/taskKeys'
-import { Button } from '../components/ui/Button'
-import { GridArtSurface } from '../components/ui/GridArt'
-import { InfoTip } from '../components/ui/InfoTip'
-import { Label } from '../components/ui/Label'
-import { Message } from '../components/ui/Message'
-import { Select } from '../components/ui/Select'
-import { Textarea } from '../components/ui/Textarea'
-import { getUtterDemo } from '../content/utterDemo'
-import { apiJson } from '../lib/api'
-import { cn } from '../lib/cn'
-import { fetchTextUtf8 } from '../lib/fetchTextUtf8'
-import { resolveProtectedMediaUrl, triggerDownload } from '../lib/protectedMedia'
-import { formatElapsed } from '../lib/time'
-import type { GenerateResponse, StoredTask, VoicesResponse } from '../lib/types'
-import { useLanguages } from './hooks'
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { WaveformPlayer } from "../components/audio/WaveformPlayer";
+import { taskLabel } from "../components/tasks/taskKeys";
+import { useTasks } from "../components/tasks/TaskProvider";
+import { Button } from "../components/ui/Button";
+import { GridArtSurface } from "../components/ui/GridArt";
+import { InfoTip } from "../components/ui/InfoTip";
+import { Label } from "../components/ui/Label";
+import { Message } from "../components/ui/Message";
+import { Select } from "../components/ui/Select";
+import { Textarea } from "../components/ui/Textarea";
+import { getUtterDemo } from "../content/utterDemo";
+import { apiJson } from "../lib/api";
+import { cn } from "../lib/cn";
+import { fetchTextUtf8 } from "../lib/fetchTextUtf8";
+import { resolveProtectedMediaUrl, triggerDownload } from "../lib/protectedMedia";
+import { formatElapsed } from "../lib/time";
+import type { GenerateResponse, StoredTask, VoicesResponse } from "../lib/types";
+import { useLanguages } from "./hooks";
 
 type GenerateFormState = {
-  voiceId: string
-  language: string
-  text: string
-}
+  voiceId: string;
+  language: string;
+  text: string;
+};
 
 function TaskSummaryRow({
   task,
@@ -31,214 +31,214 @@ function TaskSummaryRow({
   onSelect,
   statusText,
 }: {
-  task: StoredTask
-  selected: boolean
-  onSelect: () => void
-  statusText: string
+  task: StoredTask;
+  selected: boolean;
+  onSelect: () => void;
+  statusText: string;
 }) {
   return (
     <button
-      type='button'
+      type="button"
       className={cn(
-        'flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left hover:bg-muted',
-        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-        selected && 'bg-subtle',
+        "flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left hover:bg-muted",
+        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        selected && "bg-subtle",
       )}
       onClick={onSelect}
     >
-      <div className='min-w-0 flex-1'>
-        <div className='truncate text-sm font-medium uppercase tracking-wide'>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium uppercase tracking-wide">
           {task.description}
         </div>
-        <div className='mt-1 text-xs text-muted-foreground'>{statusText}</div>
+        <div className="mt-1 text-xs text-muted-foreground">{statusText}</div>
       </div>
-      <div className='shrink-0 text-xs text-faint'>
-        {task.status === 'pending' || task.status === 'processing'
+      <div className="shrink-0 text-xs text-faint">
+        {task.status === "pending" || task.status === "processing"
           ? formatElapsed(task.startedAt)
-          : task.status === 'completed'
-            ? 'Ready'
-            : task.status === 'cancelled'
-              ? 'Cancelled'
-              : 'Failed'}
+          : task.status === "completed"
+            ? "Ready"
+            : task.status === "cancelled"
+              ? "Cancelled"
+              : "Failed"}
       </div>
     </button>
-  )
+  );
 }
 
 export function GeneratePage() {
-  const [params] = useSearchParams()
-  const { languages, defaultLanguage, provider, capabilities } = useLanguages()
-  const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks()
+  const [params] = useSearchParams();
+  const { languages, defaultLanguage, provider, capabilities } = useLanguages();
+  const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
 
-  const generateTasks = getTasksByType('generate')
-  const latestTask = getLatestTask('generate')
+  const generateTasks = getTasksByType("generate");
+  const latestTask = getLatestTask("generate");
 
-  const [voices, setVoices] = useState<VoicesResponse | null>(null)
-  const [loadingVoices, setLoadingVoices] = useState(true)
+  const [voices, setVoices] = useState<VoicesResponse | null>(null);
+  const [loadingVoices, setLoadingVoices] = useState(true);
 
-  const [voiceId, setVoiceId] = useState('')
-  const [language, setLanguage] = useState(defaultLanguage)
-  const [text, setText] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [sweepNonce, setSweepNonce] = useState(0)
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [voiceId, setVoiceId] = useState("");
+  const [language, setLanguage] = useState(defaultLanguage);
+  const [text, setText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sweepNonce, setSweepNonce] = useState(0);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  const [error, setError] = useState<string | null>(null)
-  const [audioUrl, setAudioUrl] = useState<string | null>(null)
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
-  const restoredRef = useRef(false)
-  const handledTaskKeyRef = useRef<string | null>(null)
-  const loadedDemoRef = useRef<string | null>(null)
-  const submitInFlightRef = useRef(false)
+  const restoredRef = useRef(false);
+  const handledTaskKeyRef = useRef<string | null>(null);
+  const loadedDemoRef = useRef<string | null>(null);
+  const submitInFlightRef = useRef(false);
 
-  useEffect(() => setLanguage(defaultLanguage), [defaultLanguage])
+  useEffect(() => setLanguage(defaultLanguage), [defaultLanguage]);
 
   useEffect(() => {
-    let active = true
+    let active = true;
     void (async () => {
       try {
-        const res = await apiJson<VoicesResponse>('/api/voices')
-        if (!active) return
-        setVoices(res)
+        const res = await apiJson<VoicesResponse>("/api/voices");
+        if (!active) return;
+        setVoices(res);
       } catch (e) {
-        if (!active) return
-        setError(e instanceof Error ? e.message : 'Failed to load voices.')
+        if (!active) return;
+        setError(e instanceof Error ? e.message : "Failed to load voices.");
       } finally {
-        if (active) setLoadingVoices(false)
+        if (active) setLoadingVoices(false);
       }
-    })()
+    })();
     return () => {
-      active = false
-    }
-  }, [])
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedTaskId && generateTasks.some((task) => task.taskId === selectedTaskId)) {
-      return
+      return;
     }
-    setSelectedTaskId(generateTasks[0]?.taskId ?? null)
-  }, [generateTasks, selectedTaskId])
+    setSelectedTaskId(generateTasks[0]?.taskId ?? null);
+  }, [generateTasks, selectedTaskId]);
 
   useEffect(() => {
-    if (restoredRef.current) return
-    restoredRef.current = true
+    if (restoredRef.current) return;
+    restoredRef.current = true;
 
-    const storedTask = latestTask as StoredTask | null
-    if (storedTask?.formState && typeof storedTask.formState === 'object') {
-      const fs = storedTask.formState as Partial<GenerateFormState>
-      if (typeof fs.voiceId === 'string') setVoiceId(fs.voiceId)
-      if (typeof fs.language === 'string') setLanguage(fs.language)
-      if (typeof fs.text === 'string') setText(fs.text)
+    const storedTask = latestTask as StoredTask | null;
+    if (storedTask?.formState && typeof storedTask.formState === "object") {
+      const fs = storedTask.formState as Partial<GenerateFormState>;
+      if (typeof fs.voiceId === "string") setVoiceId(fs.voiceId);
+      if (typeof fs.language === "string") setLanguage(fs.language);
+      if (typeof fs.text === "string") setText(fs.text);
     }
 
-    const voice = params.get('voice')
-    const qsText = params.get('text')
-    const qsLang = params.get('language')
-    const demoId = params.get('demo')
-    if (voice) setVoiceId(voice)
-    if (typeof qsText === 'string' && qsText.length > 0) setText(qsText)
-    if (typeof qsLang === 'string' && qsLang.length > 0) setLanguage(qsLang)
+    const voice = params.get("voice");
+    const qsText = params.get("text");
+    const qsLang = params.get("language");
+    const demoId = params.get("demo");
+    if (voice) setVoiceId(voice);
+    if (typeof qsText === "string" && qsText.length > 0) setText(qsText);
+    if (typeof qsLang === "string" && qsLang.length > 0) setLanguage(qsLang);
 
     if (demoId && loadedDemoRef.current !== demoId) {
-      loadedDemoRef.current = demoId
-      const demo = getUtterDemo(demoId)
+      loadedDemoRef.current = demoId;
+      const demo = getUtterDemo(demoId);
       if (demo?.transcriptUrl) {
         void (async () => {
           try {
-            const demoText = await fetchTextUtf8(demo.transcriptUrl as string)
-            setText(demoText.trim())
+            const demoText = await fetchTextUtf8(demo.transcriptUrl as string);
+            setText(demoText.trim());
           } catch {
-            return
+            return;
           }
-        })()
+        })();
       }
     }
-  }, [latestTask, params])
+  }, [latestTask, params]);
 
   const selectedTask = useMemo(
     () => generateTasks.find((task) => task.taskId === selectedTaskId) ?? null,
     [generateTasks, selectedTaskId],
-  )
+  );
 
   useEffect(() => {
     if (!selectedTask) {
-      handledTaskKeyRef.current = null
-      setAudioUrl(null)
-      setDownloadUrl(null)
-      return
+      handledTaskKeyRef.current = null;
+      setAudioUrl(null);
+      setDownloadUrl(null);
+      return;
     }
 
-    if (selectedTask.status === 'pending' || selectedTask.status === 'processing') {
-      handledTaskKeyRef.current = null
-      setAudioUrl(null)
-      setDownloadUrl(null)
-      return
+    if (selectedTask.status === "pending" || selectedTask.status === "processing") {
+      handledTaskKeyRef.current = null;
+      setAudioUrl(null);
+      setDownloadUrl(null);
+      return;
     }
 
-    const terminalKey = `${selectedTask.taskId}:${selectedTask.status}`
-    if (handledTaskKeyRef.current === terminalKey) return
-    handledTaskKeyRef.current = terminalKey
+    const terminalKey = `${selectedTask.taskId}:${selectedTask.status}`;
+    if (handledTaskKeyRef.current === terminalKey) return;
+    handledTaskKeyRef.current = terminalKey;
 
-    if (selectedTask.status === 'completed') {
-      const result = selectedTask.result as { audio_url?: string } | undefined
-      const generatedAudioUrl = result?.audio_url
+    if (selectedTask.status === "completed") {
+      const result = selectedTask.result as { audio_url?: string } | undefined;
+      const generatedAudioUrl = result?.audio_url;
       if (!generatedAudioUrl) {
-        setError('Failed to load generation audio.')
-        return
+        setError("Failed to load generation audio.");
+        return;
       }
 
       void (async () => {
         try {
-          const resolvedUrl = await resolveProtectedMediaUrl(generatedAudioUrl)
-          setAudioUrl(resolvedUrl)
-          setDownloadUrl(resolvedUrl)
-          setError(null)
+          const resolvedUrl = await resolveProtectedMediaUrl(generatedAudioUrl);
+          setAudioUrl(resolvedUrl);
+          setDownloadUrl(resolvedUrl);
+          setError(null);
         } catch (e) {
-          setError(e instanceof Error ? e.message : 'Failed to load generation audio.')
+          setError(e instanceof Error ? e.message : "Failed to load generation audio.");
         }
-      })()
-      return
+      })();
+      return;
     }
 
-    if (selectedTask.status === 'failed') {
-      setAudioUrl(null)
-      setDownloadUrl(null)
-      setError(selectedTask.error ?? 'Generation failed. Please try again.')
-      return
+    if (selectedTask.status === "failed") {
+      setAudioUrl(null);
+      setDownloadUrl(null);
+      setError(selectedTask.error ?? "Generation failed. Please try again.");
+      return;
     }
 
-    setAudioUrl(null)
-    setDownloadUrl(null)
-    setError('Generation was cancelled.')
-  }, [selectedTask])
+    setAudioUrl(null);
+    setDownloadUrl(null);
+    setError("Generation was cancelled.");
+  }, [selectedTask]);
 
   async function onDownload() {
-    if (!downloadUrl) return
+    if (!downloadUrl) return;
     try {
-      const resolvedUrl = await resolveProtectedMediaUrl(downloadUrl)
-      triggerDownload(resolvedUrl)
+      const resolvedUrl = await resolveProtectedMediaUrl(downloadUrl);
+      triggerDownload(resolvedUrl);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to download audio.')
+      setError(e instanceof Error ? e.message : "Failed to download audio.");
     }
   }
 
-  const charCount = text.length
-  const maxTextChars = capabilities?.max_text_chars ?? 10000
-  const selectedVoice = voices?.voices.find((v) => v.id === voiceId) ?? null
-  const selectedVoiceProvider = selectedVoice?.tts_provider ?? 'qwen'
+  const charCount = text.length;
+  const maxTextChars = capabilities?.max_text_chars ?? 10000;
+  const selectedVoice = voices?.voices.find((v) => v.id === voiceId) ?? null;
+  const selectedVoiceProvider = selectedVoice?.tts_provider ?? "qwen";
   const selectedVoiceCompatible =
-    voiceId.length === 0 ? true : Boolean(selectedVoice) && selectedVoiceProvider === provider
+    voiceId.length === 0 ? true : Boolean(selectedVoice) && selectedVoiceProvider === provider;
   const activeGenerateCount = generateTasks.filter(
-    (task) => task.status === 'pending' || task.status === 'processing',
-  ).length
+    (task) => task.status === "pending" || task.status === "processing",
+  ).length;
   const statusText = selectedTask
     ? getStatusText(
         selectedTask.status,
         selectedTask.modalStatus ?? null,
         selectedTask.providerStatus ?? null,
       )
-    : null
+    : null;
 
   const canSubmit =
     Boolean(voices) &&
@@ -247,57 +247,57 @@ export function GeneratePage() {
     selectedVoiceCompatible &&
     Boolean(text.trim()) &&
     charCount <= maxTextChars &&
-    !isSubmitting
+    !isSubmitting;
 
   const formState: GenerateFormState = useMemo(
     () => ({ voiceId, language, text }),
     [language, text, voiceId],
-  )
+  );
 
   async function onGenerate() {
-    if (submitInFlightRef.current) return
+    if (submitInFlightRef.current) return;
 
-    setError(null)
-    setAudioUrl(null)
-    setDownloadUrl(null)
+    setError(null);
+    setAudioUrl(null);
+    setDownloadUrl(null);
 
     if (!canSubmit) {
       if (!selectedVoiceCompatible) {
-        setError('Selected voice is not compatible with the current runtime.')
-        return
+        setError("Selected voice is not compatible with the current runtime.");
+        return;
       }
-      setError('Please select a voice and enter some text.')
-      return
+      setError("Please select a voice and enter some text.");
+      return;
     }
 
-    submitInFlightRef.current = true
-    setIsSubmitting(true)
-    setSweepNonce((value) => value + 1)
+    submitInFlightRef.current = true;
+    setIsSubmitting(true);
+    setSweepNonce((value) => value + 1);
 
     try {
-      const res = await apiJson<GenerateResponse>('/api/generate', {
-        method: 'POST',
-        json: { voice_id: voiceId, text, language, model: '0.6B' },
-      })
-      const description = `Generate: ${text.slice(0, 50)}${text.length > 50 ? '...' : ''}`
-      startTask(res.task_id, 'generate', '/generate', description, formState)
-      setSelectedTaskId(res.task_id)
+      const res = await apiJson<GenerateResponse>("/api/generate", {
+        method: "POST",
+        json: { voice_id: voiceId, text, language, model: "0.6B" },
+      });
+      const description = `Generate: ${text.slice(0, 50)}${text.length > 50 ? "..." : ""}`;
+      startTask(res.task_id, "generate", "/generate", description, formState);
+      setSelectedTaskId(res.task_id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to start generation.')
+      setError(e instanceof Error ? e.message : "Failed to start generation.");
     } finally {
-      setIsSubmitting(false)
-      submitInFlightRef.current = false
+      setIsSubmitting(false);
+      submitInFlightRef.current = false;
     }
   }
 
   return (
-    <GridArtSurface sweepNonce={sweepNonce} contentClassName='space-y-8'>
-      <div className='flex items-center justify-center gap-2'>
-        <h2 className='text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl'>
+    <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
+      <div className="flex items-center justify-center gap-2">
+        <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Generate
         </h2>
-        <InfoTip align='end' label='Generate tips'>
-          <div className='space-y-2'>
+        <InfoTip align="end" label="Generate tips">
+          <div className="space-y-2">
             <div>Pick a voice, enter text, then start generation.</div>
             <div>
               Generate runs as a background job, so queued or processing work keeps moving even if
@@ -308,53 +308,53 @@ export function GeneratePage() {
         </InfoTip>
       </div>
 
-      {error ? <Message variant='error'>{error}</Message> : null}
+      {error ? <Message variant="error">{error}</Message> : null}
 
       <form
-        className='space-y-6'
+        className="space-y-6"
         onSubmit={(e) => {
-          e.preventDefault()
-          void onGenerate()
+          e.preventDefault();
+          void onGenerate();
         }}
       >
         <div>
-          <Label htmlFor='generate-voice'>Voice</Label>
+          <Label htmlFor="generate-voice">Voice</Label>
           <Select
-            id='generate-voice'
+            id="generate-voice"
             value={voiceId}
             onChange={(e) => setVoiceId(e.target.value)}
             disabled={loadingVoices || !voices}
-            name='voice_id'
+            name="voice_id"
           >
             {loadingVoices ? (
-              <option value=''>Loading voices...</option>
+              <option value="">Loading voices...</option>
             ) : !voices ? (
-              <option value=''>Unable to load voices</option>
+              <option value="">Unable to load voices</option>
             ) : voices.voices.length === 0 ? (
-              <option value=''>No voices available</option>
+              <option value="">No voices available</option>
             ) : (
-              <option value=''>Select a voice</option>
+              <option value="">Select a voice</option>
             )}
             {voices?.voices.map((v) => {
-              const voiceProvider = v.tts_provider ?? 'qwen'
-              const incompatible = voiceProvider !== provider
+              const voiceProvider = v.tts_provider ?? "qwen";
+              const incompatible = voiceProvider !== provider;
               return (
                 <option key={v.id} value={v.id} disabled={incompatible}>
                   {v.name}
-                  {incompatible ? ' (not available in this runtime)' : ''}
+                  {incompatible ? " (not available in this runtime)" : ""}
                 </option>
-              )
+              );
             })}
           </Select>
         </div>
 
         <div>
-          <Label htmlFor='generate-language'>Language</Label>
+          <Label htmlFor="generate-language">Language</Label>
           <Select
-            id='generate-language'
+            id="generate-language"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            name='language'
+            name="language"
           >
             {languages.map((l) => (
               <option key={l} value={l}>
@@ -365,48 +365,48 @@ export function GeneratePage() {
         </div>
 
         <div>
-          <Label htmlFor='generate-text'>Text</Label>
+          <Label htmlFor="generate-text">Text</Label>
           <Textarea
-            id='generate-text'
-            name='text'
+            id="generate-text"
+            name="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder='Type what you want the voice to say...'
-            className='min-h-44'
+            placeholder="Type what you want the voice to say..."
+            className="min-h-44"
           />
-          <div className='mt-2 flex items-center justify-between text-xs text-faint'>
-            <span className={cn(charCount > maxTextChars && 'text-red-700 dark:text-red-400')}>
+          <div className="mt-2 flex items-center justify-between text-xs text-faint">
+            <span className={cn(charCount > maxTextChars && "text-red-700 dark:text-red-400")}>
               {charCount}/{maxTextChars}
             </span>
             <span>Max {maxTextChars.toLocaleString()} characters</span>
           </div>
         </div>
 
-        <Button type='submit' block disabled={!canSubmit}>
-          {isSubmitting ? 'Starting generation...' : 'Generate Speech'}
+        <Button type="submit" block disabled={!canSubmit}>
+          {isSubmitting ? "Starting generation..." : "Generate Speech"}
         </Button>
       </form>
 
       {selectedTask ? (
-        <div className='space-y-4 border border-border bg-subtle p-4 shadow-elevated'>
-          <div className='flex flex-wrap items-center justify-between gap-3'>
+        <div className="space-y-4 border border-border bg-subtle p-4 shadow-elevated">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className='text-sm font-medium uppercase tracking-wide'>Selected Job</div>
-              <div className='mt-1 text-sm text-muted-foreground'>
-                {statusText ?? 'Processing...'}
+              <div className="text-sm font-medium uppercase tracking-wide">Selected Job</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {statusText ?? "Processing..."}
               </div>
             </div>
-            <div className='text-xs text-faint'>
-              {selectedTask.status === 'pending' || selectedTask.status === 'processing'
+            <div className="text-xs text-faint">
+              {selectedTask.status === "pending" || selectedTask.status === "processing"
                 ? formatElapsed(selectedTask.startedAt)
                 : taskLabel(selectedTask.type)}
             </div>
           </div>
           {selectedTask.subtitle ? (
-            <div className='text-xs text-faint'>{selectedTask.subtitle}</div>
+            <div className="text-xs text-faint">{selectedTask.subtitle}</div>
           ) : null}
           {activeGenerateCount > 1 ? (
-            <div className='text-xs text-faint'>
+            <div className="text-xs text-faint">
               {activeGenerateCount} generate jobs currently running.
             </div>
           ) : null}
@@ -414,9 +414,9 @@ export function GeneratePage() {
       ) : null}
 
       {generateTasks.length > 0 ? (
-        <div className='space-y-3'>
-          <div className='text-sm font-medium uppercase tracking-wide'>Tracked Jobs</div>
-          <div className='space-y-2'>
+        <div className="space-y-3">
+          <div className="text-sm font-medium uppercase tracking-wide">Tracked Jobs</div>
+          <div className="space-y-2">
             {generateTasks.map((task) => (
               <TaskSummaryRow
                 key={task.taskId}
@@ -435,13 +435,13 @@ export function GeneratePage() {
       ) : null}
 
       {audioUrl ? (
-        <div className='space-y-4 border border-border bg-background p-4 shadow-elevated'>
-          <div className='flex flex-wrap items-center justify-between gap-3'>
-            <div className='text-sm font-medium uppercase tracking-wide'>Result</div>
+        <div className="space-y-4 border border-border bg-background p-4 shadow-elevated">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm font-medium uppercase tracking-wide">Result</div>
             {downloadUrl ? (
               <button
-                type='button'
-                className='border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+                type="button"
+                className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 onClick={() => void onDownload()}
               >
                 Download
@@ -452,5 +452,5 @@ export function GeneratePage() {
         </div>
       ) : null}
     </GridArtSurface>
-  )
+  );
 }
