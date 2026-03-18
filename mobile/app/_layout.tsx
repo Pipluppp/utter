@@ -52,6 +52,7 @@ function AuthGate() {
         <Stack.Screen
           name="account"
           options={{
+            presentation: 'modal',
             title: 'Account',
             headerShown: true,
             headerStyle: { backgroundColor: colors.background },

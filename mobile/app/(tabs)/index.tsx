@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
@@ -152,17 +153,25 @@ export default function VoicesScreen() {
         <View style={styles.headerRight}>
           <TouchableOpacity
             onPress={() => router.push('/clone')}
-            style={[styles.cloneButton, { backgroundColor: colors.text }]}
+            style={[styles.cloneButton, { backgroundColor: colors.accent }]}
+            accessibilityRole="button"
+            accessibilityLabel="Clone a voice"
           >
-            <Text style={[styles.cloneButtonText, { color: colors.background }]}>+ Clone</Text>
+            <Ionicons name="add" size={16} color="#000" />
+            <Text style={styles.cloneButtonText}>Clone</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/account')} style={styles.accountButton}>
-            <Text style={[styles.accountButtonText, { color: colors.textTertiary }]}>👤</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/account')}
+            style={styles.accountButton}
+            accessibilityRole="button"
+            accessibilityLabel="Account"
+          >
+            <Ionicons name="person-circle-outline" size={26} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       ),
     });
-  }, [navigation]);
+  }, [navigation, colors]);
 
   const fetchVoices = useCallback(async (pageNum: number, append: boolean) => {
     try {
@@ -362,10 +371,9 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
 
   headerRight: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  cloneButton: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 6, borderCurve: 'continuous' },
-  cloneButtonText: { fontSize: 14, fontWeight: '600' },
-  accountButton: { paddingHorizontal: 8, paddingVertical: 6 },
-  accountButtonText: { fontSize: 20 },
+  cloneButton: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderCurve: 'continuous' },
+  cloneButtonText: { color: '#000', fontSize: 13, fontWeight: '600' },
+  accountButton: { paddingHorizontal: 4, paddingVertical: 4 },
 
   card: { borderRadius: 8, borderCurve: 'continuous', padding: 16, marginBottom: 8 },
   cardHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

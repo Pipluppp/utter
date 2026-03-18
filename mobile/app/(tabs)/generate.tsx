@@ -2,7 +2,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import * as FileSystemLegacy from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -38,11 +38,15 @@ function formatElapsed(startedAt: number): string {
 
 function ElapsedTimer({ startedAt, colors }: { startedAt: number; colors: import('../../providers/ThemeProvider').ThemeColors }) {
   const [label, setLabel] = useState(() => formatElapsed(startedAt));
+  const startRef = useRef(startedAt);
+  startRef.current = startedAt;
 
   useEffect(() => {
-    const t = setInterval(() => setLabel(formatElapsed(startedAt)), 1000);
+    const update = () => setLabel(formatElapsed(startRef.current));
+    update();
+    const t = setInterval(update, 1000);
     return () => clearInterval(t);
-  }, [startedAt]);
+  }, []);
 
   return (
     <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{label}</Text>

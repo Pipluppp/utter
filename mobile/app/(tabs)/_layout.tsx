@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useTasks } from '../../providers/TaskProvider';
 import { useTheme } from '../../providers/ThemeProvider';
@@ -19,17 +20,36 @@ export default function TabLayout() {
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase' },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Voices' }} />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Voices',
+          tabBarIcon: ({ color, size }) => <Ionicons name="mic-outline" size={size} color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="generate"
         options={{
           title: 'Generate',
+          tabBarIcon: ({ color, size }) => <Ionicons name="volume-high-outline" size={size} color={color} />,
           tabBarBadge: activeCount > 0 ? activeCount : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.accent, fontSize: 10 },
         }}
       />
-      <Tabs.Screen name="design" options={{ title: 'Design' }} />
-      <Tabs.Screen name="history" options={{ title: 'History' }} />
+      <Tabs.Screen
+        name="design"
+        options={{
+          title: 'Design',
+          tabBarIcon: ({ color, size }) => <Ionicons name="color-wand-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: 'History',
+          tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" size={size} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
