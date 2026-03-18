@@ -1,3 +1,4 @@
+import { useIsFocused } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -201,6 +202,7 @@ const TaskCard = React.memo(function TaskCard({
 export default function TasksScreen() {
   const { colors, isDark } = useTheme();
   const { cancelTask, dismissTask, getStatusText } = useTasks();
+  const isFocused = useIsFocused();
 
   const [statusFilter, setStatusFilter] = useState<TaskListStatus>('active');
   const [typeFilter, setTypeFilter] = useState<TaskListType>('all');
@@ -251,12 +253,12 @@ export default function TasksScreen() {
     void fetchTasks();
   }, [fetchTasks]);
 
-  // Live polling every 3s when active filter
+  // Live polling every 3s when active filter and screen is focused
   useEffect(() => {
-    if (statusFilter !== 'active') return;
+    if (statusFilter !== 'active' || !isFocused) return;
     const id = setInterval(() => { void fetchTasks(); }, 3000);
     return () => clearInterval(id);
-  }, [fetchTasks, statusFilter]);
+  }, [fetchTasks, statusFilter, isFocused]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
