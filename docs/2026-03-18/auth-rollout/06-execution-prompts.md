@@ -33,7 +33,31 @@ Read `docs/2026-03-18/auth-rollout/03-email-verification-cutover-plan.md` and ex
 
 ## Prompt 4: Turnstile abuse protection
 
-Read `docs/2026-03-18/auth-rollout/04-turnstile-abuse-protection-plan.md` and execute that task for this repo. Inspect the existing auth pages first and identify every auth flow that can trigger email sends. Then implement the minimal Turnstile integration needed for hosted auth hardening, thread the `captchaToken` through the supported Supabase calls, update docs, and stop at the plan's manual checkpoint with the exact Cloudflare and Supabase CAPTCHA settings the user must complete. Continue to hosted verification only after user confirmation.
+Read both `docs/2026-03-18/auth-rollout/04-turnstile-abuse-protection-plan.md` and `docs/2026-03-18/auth-rollout/04-turnstile-research-verification.md`. The research verification doc is the ground-truth implementation plan with verified package APIs and orchestration phases. Follow it precisely.
+
+This task alternates between agent code work and manual user steps. You MUST stop and wait for my confirmation at each `>> MANUAL STEP` phase before continuing. Do not skip ahead or assume manual steps are done.
+
+**Phase 1 — Agent code work:**
+
+1. Install `@marsidev/react-turnstile` in `frontend/`.
+2. Add `VITE_TURNSTILE_SITE_KEY` to `frontend/.env.example` with the test key `1x00000000000000000000AA`.
+3. Inspect the existing auth pages (`frontend/src/pages/Auth.tsx` and `frontend/src/pages/account/Auth.tsx`). Identify every Supabase auth call: `signUp()`, `signInWithPassword()`, `signInWithOtp()`.
+4. Add the `<Turnstile>` component to both auth pages, inside the form, below the input fields and above the submit button. Use `siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}`, `theme="dark"`, `refreshExpired="auto"`. Use a ref for reset.
+5. Thread `captchaToken` through the `options` of ALL THREE auth calls — `signUp`, `signInWithPassword`, and `signInWithOtp`. Supabase rejects all auth requests when CAPTCHA is enabled, not just the ones that send email. Do NOT call Turnstile's siteverify endpoint yourself — Supabase handles server-side validation and tokens are single-use.
+6. After every auth call (success or failure), call `ref.current?.reset()`.
+7. Disable submit buttons until a valid captcha token is ready.
+8. Add a TODO comment noting that `resetPasswordForEmail()` will also need `captchaToken` when that flow is built.
+9. No changes to the API Worker or wrangler config.
+
+After completing all code changes, STOP. Tell me exactly what you changed, then give me the Phase 2 manual steps to do in the Cloudflare dashboard to create the Turnstile widget. Wait for me to confirm before continuing.
+
+**Phase 2 — I will create the Turnstile widget in the Cloudflare dashboard and give you the site key.**
+
+**Phase 3 — I will enable CAPTCHA in the Supabase dashboard and confirm.**
+
+**Phase 4 — I will set the production site key in the frontend build environment and confirm.**
+
+**Phase 5 — Verification:** After I confirm all manual steps, walk me through testing all three auth flows (signup, sign-in, magic link) on both the hosted app and local dev.
 
 ## Prompt 5: OAuth follow-up
 

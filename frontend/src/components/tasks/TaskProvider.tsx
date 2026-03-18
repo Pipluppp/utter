@@ -78,7 +78,7 @@ function buildTaskDescription(task: {
 
 function sortTaskIds(byId: Record<string, StoredTask>) {
   return Object.values(byId)
-    .sort((a: StoredTask, b: StoredTask) => {
+    .toSorted((a: StoredTask, b: StoredTask) => {
       const timeDelta = taskSortTimestamp(b) - taskSortTimestamp(a)
       if (timeDelta !== 0) return timeDelta
       return b.taskId.localeCompare(a.taskId)

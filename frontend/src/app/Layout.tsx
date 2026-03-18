@@ -22,7 +22,7 @@ export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
   const routeFamily = useMemo<RouteFamily>(() => {
-    for (const match of [...matches].reverse()) {
+    for (const match of [...matches].toReversed()) {
       const handle = match.handle as { routeFamily?: RouteFamily } | undefined
       if (handle?.routeFamily) {
         return handle.routeFamily

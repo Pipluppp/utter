@@ -24,6 +24,9 @@ This folder captures the March 18 research and execution plans for the two remai
 6. `auth-rollout/06-execution-prompts.md`
 7. `stripe-testing-plan.md`
 8. `vulnerability-scan-event.md` — post-mortem of the automated scanner burst after domain attachment
+9. `auth-rollout/04-turnstile-research-verification.md` — research verification for plan 04
+10. `auth-rollout/05-oauth-research-verification.md` — research verification for plan 05
+11. `stripe-testing-research-verification.md` — research verification for Stripe plan
 
 ## Repo context this research assumes
 
