@@ -1,121 +1,149 @@
-# Architecture: Cloudflare + Supabase (Simplified)
+# Architecture
 
-Last updated: 2026-03-03
-
-This is the active architecture.
+Read this when you need the active topology, request flow, and boundaries.
 
 ## Topology
 
 ```mermaid
 flowchart LR
-  U[Browser SPA]
+  U["Browser SPA"]
 
-  subgraph CF[Cloudflare]
-    FW[Frontend Worker]
-    AW[API Worker]
-    Q[Queue: tts-jobs]
-    DLQ[Queue DLQ]
-    R2R[R2 references]
-    R2G[R2 generations]
+  subgraph CF["Cloudflare"]
+    FW["Frontend Worker"]
+    AW["API Worker"]
+    Q["TTS Queue"]
+    DLQ["TTS DLQ"]
+    R2R["R2 references"]
+    R2G["R2 generations"]
   end
 
-  subgraph SB[Supabase]
-    SA[Auth]
-    PG[(Postgres + RLS)]
+  subgraph SB["Supabase"]
+    SA["Auth"]
+    PG["Postgres + RLS"]
   end
 
-  QW[Qwen API]
-  ST[Stripe]
+  QW["Qwen"]
+  ST["Stripe"]
 
   U --> FW
   FW --> AW
-
   U --> SA
-  AW --> SA
   AW --> PG
-
   AW --> R2R
   AW --> R2G
-
   AW --> Q
   Q --> AW
   AW --> DLQ
-
   AW --> QW
   ST --> AW
 ```
 
-## Responsibilities by layer
+## Key Files
 
-- Browser/frontend:
-  - Supabase Auth session lifecycle
-  - Calls app API on `/api/*`
+- API entry: `workers/api/src/index.ts`
+- Frontend worker entry: `workers/frontend/src/index.ts`
+- Queue messages: `workers/api/src/queues/messages.ts`
+- Queue consumer: `workers/api/src/queues/consumer.ts`
+- API bindings: `workers/api/wrangler.toml`
+- Frontend bindings: `workers/frontend/wrangler.toml`
+
+## Layer Responsibilities
+
+- Browser SPA:
+  - Supabase auth session lifecycle
+  - UI routes
+  - task polling
 - Frontend Worker:
-  - Serves SPA assets
+  - serves built SPA assets
   - SPA fallback routing
-  - Proxies `/api/*` to API Worker (service binding)
+  - proxies `/api/*` to the API Worker
 - API Worker:
-  - Authn/authz checks
-  - API contract and validation
-  - Queue produce/consume for async generate/design preview
-  - Storage signing/proxy and R2 adapter
-  - Credits/billing orchestration via Supabase RPC + Stripe webhook handling
+  - auth checks
+  - route validation
+  - signed storage upload/download flow
+  - queue submission and consumption
+  - credits and billing orchestration
+  - provider integration
 - Supabase:
-  - Source of truth for users, voices, generations, tasks, credits, billing
-  - RLS and DB invariants
-- Cloudflare storage/async:
-  - R2 for reference/generation objects
-  - Queues for async provider workloads and retry/DLQ
+  - durable data
+  - auth
+  - RLS
+  - credit ledger and billing events
+- Cloudflare storage and async:
+  - R2 for reference and generation audio
+  - Queues for long-running TTS jobs
 
-## Request flow (critical paths)
+## Critical Flows
 
-1. Clone flow
-- `POST /api/clone/upload-url` -> signed upload URL
-- Browser uploads object
-- `POST /api/clone/finalize` -> clones qwen voice + inserts voice row
+### Clone
 
-2. Generate flow (queue-first)
-- `POST /api/generate` -> creates task + generation row, debits credits, enqueues qwen start message
-- Queue consumer executes provider call + storage finalization
-- `GET /api/tasks/:id` -> read-only task/result view (no provider polling/writes)
-- `GET /api/generations/:id/audio` -> signed playback URL redirect
+1. `POST /api/clone/upload-url` returns a signed upload URL for the API storage route.
+2. Browser uploads reference audio through `/api/storage/upload`, and the Worker writes it to R2.
+3. `POST /api/clone/finalize` verifies the upload, charges trial or credits, clones the qwen voice, inserts the `voices` row.
 
-3. Voice design flow (queue-first)
-- `POST /api/voices/design/preview` -> creates task + debits credits/trial, enqueues qwen design message
-- Queue consumer writes preview result to storage/task row
-- `POST /api/voices/design` -> persists designed voice from completed preview task
+Key code:
 
-4. Billing flow
-- `POST /api/billing/checkout` -> Stripe Checkout session
-- `POST /api/webhooks/stripe` -> signature verified, idempotent credits/billing updates
+- `workers/api/src/routes/clone.ts`
 
-## Storage model
+### Generate
 
-- R2-only object lifecycle for `references` and `generations`.
-- Signed upload/download tokens are HMAC-based via `STORAGE_SIGNING_SECRET`.
-- No Supabase Storage runtime fallback branches.
+1. `POST /api/generate` validates voice ownership and qwen provider metadata.
+2. API inserts a `generations` row and a `tasks` row, debits credits, and enqueues `generate.qwen.start`.
+3. Queue consumer calls qwen, downloads audio, uploads to R2, finalizes `generations`, finalizes `tasks`.
+4. Frontend polls `GET /api/tasks/:id`.
+5. Playback uses `GET /api/generations/:id/audio`.
 
-## Trust boundaries
+Key code:
 
-1. Browser -> `/api/*`
-- untrusted input boundary
-- bearer token required for protected routes
+- `workers/api/src/routes/generate.ts`
+- `workers/api/src/queues/messages.ts`
+- `workers/api/src/queues/consumer.ts`
 
-2. API Worker -> Supabase
-- anon key + forwarded JWT for RLS-scoped reads
-- service-role key only for privileged server-owned operations
+### Design Preview
 
-3. API Worker -> R2/Queues/Qwen
-- queue consumers must be idempotent and terminal-safe
-- cancelled tasks must not be overwritten back to completed
+1. `POST /api/voices/design/preview` validates inputs and charges trial or credits.
+2. API inserts a `tasks` row and enqueues `design_preview.qwen.start`.
+3. Queue consumer generates preview audio and stores it in R2.
+4. `POST /api/voices/design` turns the completed preview task into a saved `voices` row.
 
-4. Stripe -> webhook route
-- verified via Stripe signature, not user JWT
+Key code:
 
-## Invariants that must not regress
+- `workers/api/src/routes/design.ts`
 
-- `/api/*` request/response contracts for frontend
-- credits ledger idempotency
-- billing webhook idempotency
-- RLS-owned data isolation by `user_id`
-- queue-first async execution (no route-side finalize fallback)
+### Billing
+
+1. `POST /api/billing/checkout` creates a Stripe Checkout session for a prepaid pack.
+2. `POST /api/webhooks/stripe` verifies the Stripe signature.
+3. Webhook processing inserts `billing_events` and grants credits through the ledger RPC path.
+
+Key code:
+
+- `workers/api/src/routes/billing.ts`
+
+## Trust Boundaries
+
+1. Browser to `/api/*`
+   - untrusted input
+   - protected routes require bearer token
+2. API Worker to Supabase
+   - user-scoped client for RLS reads
+   - service role for server-owned writes and RPCs
+3. API Worker to R2 / Queues / Qwen
+   - queue messages must be validated and idempotent
+   - cancellation must not be overwritten back to completed
+4. Stripe to webhook
+   - authenticated by signature, not user token
+
+## Invariants
+
+- `/api/*` remains the frontend contract.
+- Queue-backed job types are the long-running execution path.
+- Tasks and generations are durable in Postgres.
+- Credits and trials are charged through the database-backed ledger / trial flow.
+- Audio bytes live in R2.
+
+## Read Next
+
+- [stack.md](./stack.md)
+- [backend.md](./backend.md)
+- [database.md](./database.md)

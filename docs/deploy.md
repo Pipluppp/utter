@@ -1,92 +1,94 @@
-# Deploy Runbook
+# Deploy
 
-Last updated: 2026-03-05
+Read this when you are shipping the current Cloudflare stack.
 
-Canonical deploy flow for the simplified Cloudflare + Supabase runtime.
+## Deploy Units
 
-## Deploy units
+1. API Worker in `workers/api`
+2. Frontend assets from `frontend/dist`
+3. Frontend Worker in `workers/frontend`
+4. Cloudflare queue and R2 bindings
+5. Supabase migrations if schema changed
 
-1. Frontend Worker (`workers/frontend`)
-2. API Worker (`workers/api`)
-3. Cloudflare R2 + Queue bindings used by API Worker
-4. Supabase remains system of record (Postgres/Auth/RLS/credits/billing)
+## Key Files
 
-## Preconditions
+- `package.json`
+- `workers/api/wrangler.toml`
+- `workers/frontend/wrangler.toml`
+- `frontend/.env.staging`
 
-- Wrangler authenticated and targeting the intended Cloudflare account
-- Required Worker secrets set for the target environment
-- Supabase project and keys correct for the target environment
-- Frontend build artifacts generated before frontend Worker deploy
+## Staging Flow
 
-## Staging deploy
-
-1) Build frontend assets (staging mode)
+1. Build frontend assets:
 
 ```bash
 npm run cf:frontend:build:staging
 ```
 
-This uses `frontend/.env.staging` so deploy builds cannot accidentally bake local `.env.local` values.
-
-2) Deploy API Worker
+2. Deploy API Worker:
 
 ```bash
 npm run cf:deploy:api:staging
 ```
 
-3) Deploy frontend Worker
+3. Deploy frontend Worker:
 
 ```bash
 npm run cf:deploy:frontend:staging
 ```
 
-Optional one-shot command:
+Optional one-shot:
 
 ```bash
 npm run cf:deploy:staging
 ```
 
-4) Smoke checks
+Current script order in `package.json` is:
+
+1. deploy API Worker
+2. build frontend assets
+3. deploy frontend Worker
+
+Use the manual sequence above when you want to guarantee the frontend build completes before any deploy step. Use the one-shot script when you want repo-default behavior.
+
+## Staging Smoke Checks
 
 - `GET /api/health` returns 200
-- unauthenticated protected routes return 401
-- `GET /api/languages` reports `provider: "qwen"`
-- clone/design/generate task lifecycle works for a staging test user
-- queue-backed routes transition tasks to terminal states via queue consumer
-- `GET /api/tasks/:id` is read-only (no provider polling side effects)
+- protected routes reject unauthenticated requests
+- `GET /api/languages` reflects qwen runtime config
+- clone upload + finalize works
+- generate creates a task and completes through the queue consumer
+- `GET /api/tasks/:id` stays read-only
 
-## Production cutover checklist
+## Production Status
 
-1. Env correctness
-- `CORS_ALLOWED_ORIGIN` matches real frontend origins
-- qwen config vars set (`DASHSCOPE_REGION`, target model vars)
+- Production frontend/API origins are partly wired.
+- Production R2 and queue bindings are still commented out in `workers/api/wrangler.toml`.
+- Treat production deploy as incomplete until those bindings and secrets are set explicitly.
 
-2. Bindings
-- production R2 bindings configured (`R2_REFERENCES`, `R2_GENERATIONS`)
-- production queue producer/consumer bindings configured (`TTS_QUEUE` + DLQ)
-- remember Wrangler `vars/r2_buckets/queues` are non-inheritable per env
+## Release Checks
 
-3. Secrets
-- set/rotate production values for required secrets
-- validate Stripe webhook signing secret and destination
+```bash
+npm --prefix frontend run ci
+npm --prefix workers/api run typecheck
+npm --prefix workers/api run check
+supabase test db
+npm run test:worker:local
+```
 
-4. Validation
-- `npm --prefix workers/api run typecheck`
-- `npm --prefix workers/api run check`
-- worker-target tests against running local worker
-- staging smoke + logs review
+## Rollback
 
-## Rollback controls
+- API rollback: deploy the previous Worker version
+- frontend rollback: deploy the previous frontend Worker
+- queue incident mode: stop submits or drain/replay the queue and DLQ operationally
 
-- API rollback: redeploy previous Worker version
-- Frontend rollback: redeploy previous frontend Worker
-- Queue incident mode: pause submit traffic and/or operationally drain/replay queue/DLQ
-- No Modal or Supabase-Storage runtime rollback switches remain in active architecture
+## Invariants
 
-## Reference evidence
+- Build frontend assets before deploying the frontend Worker.
+- Keep Cloudflare env bindings explicit per environment.
+- Do not assume production is ready just because staging is healthy.
 
-- `docs/2026-03-02/remove-modal-supastorage-queue-simplify/`
-- `security/audits/2026-03-02/cloudflare-hybrid-phase-01.md`
-- `security/audits/2026-03-02/cloudflare-hybrid-phase-02.md`
-- `security/audits/2026-03-02/cloudflare-hybrid-phase-03.md`
-- `security/audits/2026-03-02/cloudflare-hybrid-phase-04.md`
+## Read Next
+
+- [stack.md](./stack.md)
+- [architecture.md](./architecture.md)

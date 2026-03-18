@@ -1,89 +1,135 @@
-# Backend: API Worker
+# Backend
 
-Last updated: 2026-03-03
+Read this when you need the API Worker surface and queue model.
 
-Utter backend is a Cloudflare Worker API runtime backed by Supabase data/auth.
-
-## Runtime shape
+## Runtime Shape
 
 - Entrypoint: `workers/api/src/index.ts`
-- Router: Hono, base path `/api`
-- Bindings/config: `workers/api/src/env.ts`, `workers/api/wrangler.toml`
-- Queue consumer: exported from the same Worker (`queue(...)` handler)
+- Framework: Hono
+- Base path: `/api`
+- Queue consumer: same Worker export via `queue(...)`
+- Main config: `workers/api/wrangler.toml`, `workers/api/src/env.ts`
 
-## Route surface
+## Route Files
 
-All routes are mounted under `/api`.
+- `clone.ts`
+- `generate.ts`
+- `design.ts`
+- `voices.ts`
+- `generations.ts`
+- `tasks.ts`
+- `storage.ts`
+- `credits.ts`
+- `billing.ts`
+- `transcriptions.ts`
+- `languages.ts`
+- `me.ts`
 
-- Health and metadata
-  - `GET /health`
-  - `GET /languages`
-- Auth/profile
-  - `GET /me`
-  - `PATCH /profile`
-- Voice clone and voices
-  - `POST /clone/upload-url`
-  - `POST /clone/finalize`
-  - `GET /voices`
-  - `GET /voices/:id/preview`
-  - `DELETE /voices/:id`
-- Voice design
-  - `POST /voices/design/preview`
-  - `POST /voices/design`
-- Generation lifecycle
-  - `POST /generate`
-  - `GET /tasks/:id` (read-only status/result)
-  - `POST /tasks/:id/cancel`
-  - `DELETE /tasks/:id`
-  - `GET /generations`
-  - `GET /generations/:id/audio`
-  - `DELETE /generations/:id`
-  - `POST /generations/:id/regenerate`
-- Credits and billing
-  - `GET /credits/usage`
-  - `POST /billing/checkout`
-  - `POST /webhooks/stripe`
-- Storage signed proxy (R2 token flow)
-  - `PUT /storage/upload`
-  - `POST /storage/upload`
-  - `GET /storage/download`
-- Transcription
-  - `POST /transcriptions`
+## Route Surface
 
-## Auth and data access model
+### Health and metadata
 
-1. Protected routes require `Authorization: Bearer <supabase-access-token>`.
-2. User-scoped reads/writes use Supabase anon key + forwarded JWT (RLS enforced).
-3. Privileged server-owned operations use Supabase service-role key.
-4. Stripe webhook route is signature-authenticated, not user-authenticated.
+- `GET /health`
+- `GET /languages`
 
-## Queue model
+### Auth and profile
 
-Queue wiring lives in:
-- Producer: `workers/api/src/queues/producer.ts`
-- Message contracts: `workers/api/src/queues/messages.ts`
-- Consumer: `workers/api/src/queues/consumer.ts`
+- `GET /me`
+- `PATCH /profile`
 
-Active message types:
+### Clone and voices
+
+- `POST /clone/upload-url`
+- `POST /clone/finalize`
+- `GET /voices`
+- `GET /voices/:id/preview`
+- `DELETE /voices/:id`
+
+### Design
+
+- `POST /voices/design/preview`
+- `POST /voices/design`
+
+### Generations and tasks
+
+- `POST /generate`
+- `GET /tasks`
+- `GET /tasks/:id`
+- `POST /tasks/:id/cancel`
+- `DELETE /tasks/:id`
+- `GET /generations`
+- `GET /generations/:id/audio`
+- `DELETE /generations/:id`
+- `POST /generations/:id/regenerate`
+
+### Credits and billing
+
+- `GET /credits/usage`
+- `POST /billing/checkout`
+- `POST /webhooks/stripe`
+
+### Storage and transcription
+
+- `PUT /storage/upload`
+- `POST /storage/upload`
+- `GET /storage/download`
+- `POST /transcriptions`
+
+## Auth Model
+
+- Protected routes require `Authorization: Bearer <supabase access token>`.
+- User-scoped reads go through the user client and RLS.
+- Server-owned writes, queue processing, and RPCs use the service role client.
+- Stripe webhook auth is signature-based, not JWT-based.
+
+## Queue Model
+
+Key files:
+
+- `workers/api/src/queues/producer.ts`
+- `workers/api/src/queues/messages.ts`
+- `workers/api/src/queues/consumer.ts`
+
+Message types:
+
 - `generate.qwen.start`
 - `design_preview.qwen.start`
 
-Behavior:
-- submit routes enqueue work and return
-- queue consumer handles provider execution + finalization
-- `GET /tasks/:id` performs no provider polling and no writes
+Rules:
 
-## Storage model
+- submit routes enqueue and return
+- queue consumer performs provider execution and persistence
+- task polling routes do not reach out to providers
 
-Storage adapter lives in `workers/api/src/_shared/storage.ts`.
+## Storage Model
 
-- R2-only runtime path
-- Explicit failure when `R2_REFERENCES`/`R2_GENERATIONS` bindings are missing
-- Signed storage token flow is HMAC-based using `STORAGE_SIGNING_SECRET`
+- R2 bindings: `R2_REFERENCES`, `R2_GENERATIONS`
+- Signed URL logic lives in `workers/api/src/_shared/storage.ts`
+- Reference and generation audio are addressed by object key and resolved to signed URLs at read time
 
-## Key operational files
+## Billing and Credits Touchpoints
 
-- `workers/api/wrangler.toml`: env vars + R2 + Queue bindings
-- `workers/api/.dev.vars.example`: local var template
-- `workers/api/README.md`: package-level deploy notes
-- `docs/security/audits/2026-03-02/`: migration audit evidence
+- credit charge and refund logic: `workers/api/src/_shared/credits.ts`
+- billing routes: `workers/api/src/routes/billing.ts`
+- DB ledger and trial RPCs live in Supabase migrations
+
+## Important Runtime Flags
+
+- `VOICE_DESIGN_ENABLED`
+- `QWEN_VC_TARGET_MODEL`
+- `QWEN_VD_TARGET_MODEL`
+- `QWEN_ASR_MODEL`
+- `QUEUE_BILLING_ENABLED`
+
+## Invariants
+
+- Frontend contract stays under `/api/*`.
+- Queue-backed job routes must be safe to retry.
+- Cancellation must not be overwritten by later worker steps.
+- Missing bindings should fail clearly, not silently degrade.
+
+## Read Next
+
+- [architecture.md](./architecture.md)
+- [database.md](./database.md)
+- [workers/api/README.md](../workers/api/README.md)

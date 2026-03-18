@@ -1,20 +1,16 @@
-# Setup Runbook
+# Setup
 
-Last updated: 2026-03-03
-
-Canonical local setup for the simplified Cloudflare + Supabase stack.
+Read this when you need local development running.
 
 ## Prerequisites
 
 - Node.js 20+
 - npm
 - Supabase CLI
-- Docker (for `supabase start`)
-- Wrangler CLI auth if you plan to deploy or inspect remote resources
+- Docker
+- Wrangler auth if you plan to deploy
 
-## 1) Install dependencies
-
-From repo root:
+## Install
 
 ```bash
 npm install
@@ -22,69 +18,72 @@ npm --prefix frontend install
 npm --prefix workers/api install
 ```
 
-## 2) Start Supabase local services
+## Configure
+
+Copy once:
+
+- `workers/api/.dev.vars.example` -> `workers/api/.dev.vars`
+- `frontend/.env.example` -> `frontend/.env.local` if you do not already have one
+
+Required API Worker secrets live in `workers/api/.dev.vars`. At minimum:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `STORAGE_SIGNING_SECRET`
+
+Provider and billing flows need extra keys such as `DASHSCOPE_API_KEY` and Stripe secrets.
+
+## Run
+
+Terminal 1:
 
 ```bash
 supabase start
 ```
 
-This provides local Postgres/Auth for Worker integration.
-
-## 3) Configure API Worker local vars
-
-```bash
-cp workers/api/.dev.vars.example workers/api/.dev.vars
-```
-
-Fill required values in `workers/api/.dev.vars`:
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY` (set to Supabase publishable key value)
-- `SUPABASE_SERVICE_ROLE_KEY` (set to Supabase secret/service-role server key)
-- `STORAGE_SIGNING_SECRET`
-- provider/billing keys for flows you are testing (`DASHSCOPE_API_KEY`, Stripe, etc.)
-
-## 4) Start API Worker (queue + R2 local mode)
+Terminal 2:
 
 ```bash
 npm --prefix workers/api run dev
 ```
 
-Default URL: `http://127.0.0.1:8787`
-
-Important:
-- Queue-backed local dev should use local simulation (`wrangler dev --local`), not `--remote`.
-- Local `R2` and `Queue` bindings are explicitly defined in top-level `workers/api/wrangler.toml` bindings.
-- Wrangler env keys (`vars`, `r2_buckets`, `queues`) are non-inheritable; keep env-specific bindings explicit.
-
-## 5) Start frontend dev server
+Terminal 3:
 
 ```bash
-cd frontend
-test -f .env.local || cp .env.example .env.local
-npm run dev
+npm --prefix frontend run dev
 ```
 
-Frontend URL: `http://localhost:5173`
+Local URLs:
 
-Notes:
-- Vite defaults `BACKEND_ORIGIN` to `http://127.0.0.1:8787` (Cloudflare API Worker local dev).
-- Override `BACKEND_ORIGIN` only when intentionally targeting a different backend (for example legacy Supabase Edge Functions).
+- Frontend: `http://localhost:5173`
+- API Worker: `http://127.0.0.1:8787/api`
 
-## Quick checks
+## Local Runtime Notes
 
-- `GET http://127.0.0.1:8787/api/health` returns `{ "ok": true }`
-- Worker dev startup logs show local `TTS_QUEUE`, `R2_REFERENCES`, `R2_GENERATIONS` bindings
+- `workers/api` uses `wrangler dev --local`.
+- Queue and R2 bindings are defined at top level in `workers/api/wrangler.toml`.
+- Wrangler `vars`, `r2_buckets`, and `queues` are non-inheritable. Keep each env explicit.
+- Frontend requests `/api/*` and defaults to the local API Worker origin.
+
+## Quick Checks
+
+- `http://127.0.0.1:8787/api/health` returns `{ "ok": true }`
 - frontend loads at `http://localhost:5173`
-- `/api/languages` resolves via frontend proxy and reports `provider: "qwen"`
+- `GET /api/languages` resolves through the frontend and reports qwen-backed language metadata
 
-## Troubleshooting
+## Verification Commands
 
-- `Missing env var` in API Worker:
-  - ensure `workers/api/.dev.vars` exists and has required keys
-- missing R2 or Queue binding:
-  - confirm `workers/api/wrangler.toml` has top-level local `r2_buckets`/`queues`
-  - do not rely on `--env staging` when running plain local dev
-- CORS failures:
-  - check `CORS_ALLOWED_ORIGIN` in Worker env and request origin
-- signed media URL host mismatch:
-  - verify frontend->API service binding forwarding headers are intact
+```bash
+npm --prefix frontend run ci
+npm --prefix workers/api run typecheck
+npm --prefix workers/api run check
+supabase test db
+npm run test:worker:local
+```
+
+## Read Next
+
+- [backend.md](./backend.md)
+- [database.md](./database.md)
+- [deploy.md](./deploy.md)
