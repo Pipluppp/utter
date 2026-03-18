@@ -44,6 +44,8 @@ Domain cutover note:
 - the `/api/*` proxy path stays on the frontend Worker; no separate public API domain is introduced in this step
 - keep `https://utter.duncanb013.workers.dev` available as a temporary fallback until the branded domain is confirmed live
 - `https://www.uttervoice.com/*` should redirect to `https://uttervoice.com/$1` via a Cloudflare redirect rule
+- Supabase Auth URL config should use `site_url = https://uttervoice.com` and allow
+  `https://uttervoice.com/**` plus the temporary `https://utter.duncanb013.workers.dev/**` fallback.
 
 Optional one-shot:
 
