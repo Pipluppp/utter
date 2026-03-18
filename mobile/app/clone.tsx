@@ -14,6 +14,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -367,7 +369,12 @@ export default function CloneScreen() {
     : 0;
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+    >
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {error && <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>}
 
       {/* Mode toggle */}
@@ -499,6 +506,7 @@ export default function CloneScreen() {
         onChangeText={setName}
         placeholder="e.g. My Voice"
         placeholderTextColor={colors.textTertiary}
+        returnKeyType="done"
       />
 
       <Text style={[styles.label, { color: colors.textSecondary }]}>Language</Text>
@@ -514,6 +522,7 @@ export default function CloneScreen() {
         value={transcript}
         onChangeText={setTranscript}
         multiline
+        blurOnSubmit={false}
         placeholder="What is said in the reference audio..."
         placeholderTextColor={colors.textTertiary}
         textAlignVertical="top"
@@ -548,6 +557,7 @@ export default function CloneScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

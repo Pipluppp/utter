@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   RefreshControl,
   ScrollView,
   Text,
@@ -264,10 +266,16 @@ export default function DesignScreen() {
   }
 
   return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+    >
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
       contentInsetAdjustmentBehavior="automatic"
+      keyboardShouldPersistTaps="handled"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={colors.text} />
       }
@@ -299,6 +307,7 @@ export default function DesignScreen() {
         onChangeText={setName}
         placeholder="Voice name"
         placeholderTextColor={colors.textTertiary}
+        returnKeyType="done"
       />
 
       <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 8 }}>Language</Text>
@@ -314,6 +323,7 @@ export default function DesignScreen() {
         value={instruct}
         onChangeText={setInstruct}
         multiline
+        blurOnSubmit={false}
         placeholder="Describe the voice characteristics..."
         placeholderTextColor={colors.textTertiary}
         textAlignVertical="top"
@@ -328,6 +338,7 @@ export default function DesignScreen() {
         value={text}
         onChangeText={setText}
         multiline
+        blurOnSubmit={false}
         placeholder="Text the voice will speak in the preview..."
         placeholderTextColor={colors.textTertiary}
         textAlignVertical="top"
@@ -452,5 +463,6 @@ export default function DesignScreen() {
         </View>
       )}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

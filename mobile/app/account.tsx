@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   RefreshControl,
   ScrollView,
   Text,
@@ -196,9 +198,15 @@ export default function AccountScreen() {
   const hasProfileChange = displayName.trim() !== (me?.profile?.display_name ?? '');
 
   return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+    >
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
+      keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
     >
       {error && (
@@ -460,5 +468,6 @@ export default function AccountScreen() {
         </TouchableOpacity>
       </>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
