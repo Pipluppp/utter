@@ -1,21 +1,39 @@
 # Frontend Worker
 
-Cloudflare Worker that serves the built SPA from `frontend/dist` and proxies `/api/*`
-requests to the API Worker.
+Cloudflare Worker that serves `frontend/dist` and proxies `/api/*` to the API Worker.
 
-## Deploy
+## Read This When
 
-```bash
-npm run cf:deploy:frontend:staging
-```
+- you are changing frontend delivery or proxy behavior
+- you are debugging asset serving or `/api/*` forwarding
 
-## Required build step
-
-`frontend/dist` must exist before deploy, and Supabase public env vars must be baked at build time:
+## Commands
 
 ```bash
 npm run cf:frontend:build:staging
+npm run cf:deploy:frontend:staging
 ```
 
-Staging mode reads `frontend/.env.staging`, which avoids accidentally baking local `.env.local` values.
-If vars are missing at build time, `/auth` will show the unconfigured Supabase warning.
+## Key Files
+
+- worker entry: `workers/frontend/src/index.ts`
+- config: `workers/frontend/wrangler.toml`
+- built assets: `frontend/dist`
+
+## Behavior
+
+- serves SPA assets from `frontend/dist`
+- falls back to `/` for SPA routes
+- proxies `/api/*` to the API Worker
+- preserves redirect behavior for signed media URLs
+
+## Constraints
+
+- `frontend/dist` must exist before deploy.
+- Build-time frontend env values come from the frontend build, not from this worker alone.
+- Keep proxy headers intact when changing forwarding logic.
+
+## Read Next
+
+- [docs/architecture.md](../../docs/architecture.md)
+- [docs/deploy.md](../../docs/deploy.md)
