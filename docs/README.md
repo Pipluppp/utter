@@ -12,6 +12,7 @@ Canonical docs for the active Cloudflare + Supabase runtime.
 ## Core Docs
 
 - [backend.md](./backend.md): API Worker routes, queue model, storage and billing touchpoints
+- [cloudflare-security.md](./cloudflare-security.md): active zone-level WAF, bot, and rate-limit protections on `uttervoice.com`
 - [database.md](./database.md): tables, RLS, credit ledger, storage policy model
 - [features.md](./features.md): user-facing flows and where they live in code
 
