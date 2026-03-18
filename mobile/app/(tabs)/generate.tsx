@@ -29,7 +29,7 @@ import type {
 import { useTasks } from '../../providers/TaskProvider';
 import { useTheme } from '../../providers/ThemeProvider';
 
-const MAX_TEXT_CHARS = 5000;
+const DEFAULT_MAX_TEXT_CHARS = 5000;
 
 function formatElapsed(startedAt: number): string {
   const secs = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
@@ -62,6 +62,7 @@ export default function GenerateScreen() {
 
   const [voices, setVoices] = useState<Voice[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
+  const [maxTextChars, setMaxTextChars] = useState(DEFAULT_MAX_TEXT_CHARS);
   const [loading, setLoading] = useState(true);
 
   const [voiceId, setVoiceId] = useState('');
@@ -97,6 +98,9 @@ export default function GenerateScreen() {
         ]);
         setVoices(voicesData.voices);
         setLanguages(langsData.languages);
+        if (langsData.capabilities?.max_text_chars) {
+          setMaxTextChars(langsData.capabilities.max_text_chars);
+        }
 
         if (saved) {
           if (saved.voiceId && voicesData.voices.some((v) => v.id === saved.voiceId)) {
@@ -173,8 +177,8 @@ export default function GenerateScreen() {
       Alert.alert('Missing fields', 'Please select a voice and enter text.');
       return;
     }
-    if (text.length > MAX_TEXT_CHARS) {
-      Alert.alert('Text too long', `Text must be ${MAX_TEXT_CHARS.toLocaleString()} characters or less.`);
+    if (text.length > maxTextChars) {
+      Alert.alert('Text too long', `Text must be ${maxTextChars.toLocaleString()} characters or less.`);
       return;
     }
     setSubmitting(true);
@@ -232,7 +236,7 @@ export default function GenerateScreen() {
   }, []);
 
   const charCount = text.length;
-  const charOverLimit = charCount > MAX_TEXT_CHARS;
+  const charOverLimit = charCount > maxTextChars;
 
   if (loading) {
     return (
@@ -298,10 +302,10 @@ export default function GenerateScreen() {
       />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
         <Text style={{ color: charOverLimit ? colors.danger : colors.textTertiary, fontSize: 12 }}>
-          {charCount.toLocaleString()}/{MAX_TEXT_CHARS.toLocaleString()}
+          {charCount.toLocaleString()}/{maxTextChars.toLocaleString()}
         </Text>
         <Text style={{ color: colors.textTertiary, fontSize: 12 }}>
-          Max {MAX_TEXT_CHARS.toLocaleString()} characters
+          Max {maxTextChars.toLocaleString()} characters
         </Text>
       </View>
 
