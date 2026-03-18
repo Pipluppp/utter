@@ -23,6 +23,7 @@ This folder captures the March 18 research and execution plans for the two remai
 5. `auth-rollout/05-oauth-follow-up-plan.md`
 6. `auth-rollout/06-execution-prompts.md`
 7. `stripe-testing-plan.md`
+8. `vulnerability-scan-event.md` — post-mortem of the automated scanner burst after domain attachment
 
 ## Repo context this research assumes
 
