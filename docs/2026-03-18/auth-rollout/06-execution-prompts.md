@@ -59,19 +59,28 @@ After completing all code changes, STOP. Tell me exactly what you changed, then 
 
 **Phase 5 — Verification:** After I confirm all manual steps, walk me through testing all three auth flows (signup, sign-in, magic link) on both the hosted app and local dev.
 
-## Prompt 5: OAuth follow-up
+## Prompt 5: Cloudflare security hardening
 
-Read `docs/2026-03-18/auth-rollout/05-oauth-follow-up-plan.md` and implement the first OAuth provider for this repo, using the current auth architecture and branded app domain assumptions. Inspect the existing auth pages and confirm there is no current `signInWithOAuth(...)` flow before changing anything. Then implement the minimal frontend flow for the first provider, keep redirects consistent with the existing `window.location.origin` pattern, update docs, and stop at the plan's manual checkpoint with the exact Google and Supabase provider settings the user must complete. Continue to verification only after user confirmation.
+Read `docs/2026-03-18/cloudflare-security/execution-prompt.md` and `docs/2026-03-18/cloudflare-security/cloudflare-security-plan.md`, then walk me through implementing the Cloudflare WAF security configuration for `uttervoice.com`.
+
+The full standalone prompt lives in `docs/2026-03-18/cloudflare-security/execution-prompt.md`. See `docs/2026-03-18/cloudflare-security/README.md` for research sources and design decisions.
+
+## Prompt 6: OAuth follow-up (moved to 2026-03-19)
+
+Read `docs/2026-03-19/oauth/oauth-follow-up-plan.md` and implement the first OAuth provider for this repo, using the current auth architecture and branded app domain assumptions. Inspect the existing auth pages and confirm there is no current `signInWithOAuth(...)` flow before changing anything. Then implement the minimal frontend flow for the first provider, keep redirects consistent with the existing `window.location.origin` pattern, update docs, and stop at the plan's manual checkpoint with the exact Google and Supabase provider settings the user must complete. Continue to verification only after user confirmation.
 
 ## Suggested usage order
 
 Run these in this sequence:
 
-1. Prompt 1
-2. Prompt 2
-3. Prompt 3
-4. Prompt 4
-5. Prompt 5
+1. Prompt 1 — App domain cutover ✅ completed
+2. Prompt 2 — Resend SMTP setup
+3. Prompt 3 — Email verification cutover
+4. Prompt 4 — Turnstile abuse protection
+5. Prompt 5 — Cloudflare security hardening (dashboard-only, no code)
 
-Only Prompts 1 through 4 are required for the current goal of "domain now plus
-working signup confirmation with production-safe auth email posture."
+Prompts 1–5 are the critical path for "domain + working signup + production-safe security posture."
+
+6. Prompt 6 — OAuth follow-up (moved to `docs/2026-03-19/oauth/`)
+
+Prompt 6 and Stripe testing (`docs/2026-03-19/stripe-testing/`) can run after or in parallel with the critical path.

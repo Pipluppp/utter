@@ -1,32 +1,36 @@
-# 2026-03-18 Auth + Billing Research Plans
+# 2026-03-18 Auth Rollout + Cloudflare Security
 
-This folder captures the March 18 research and execution plans for the two remaining platform workstreams:
+This folder captures the March 18 research and execution plans for:
 
-1. Domain + auth hardening
-2. Stripe payment workflow testing
+1. Domain + auth hardening (plans 01–04)
+2. Cloudflare WAF security hardening (plan 05)
+3. Vulnerability scan post-mortem
 
-## Scope for today
+OAuth follow-up and Stripe testing have been moved to [2026-03-19](../2026-03-19/README.md) as separate workstreams.
 
-- Separate the remaining work into:
-  - domain, SMTP, signup confirmation, abuse protection, and OAuth
-  - Stripe testing
-- Research the current platform constraints from primary sources
-- Ground the recommendations in the current Utter repo and deployment setup
-- Write plans that are ready to execute later
+## Scope
+
+- Domain cutover, SMTP, signup confirmation, abuse protection (auth critical path)
+- Cloudflare edge security configuration (WAF rules, bot protection, rate limiting)
+- Research grounded in the current Utter repo and deployment setup
 
 ## Outcome
 
-1. `auth-rollout/01-app-domain-cutover-plan.md`
-2. `auth-rollout/02-resend-smtp-setup-plan.md`
-3. `auth-rollout/03-email-verification-cutover-plan.md`
-4. `auth-rollout/04-turnstile-abuse-protection-plan.md`
-5. `auth-rollout/05-oauth-follow-up-plan.md`
-6. `auth-rollout/06-execution-prompts.md`
-7. `stripe-testing-plan.md`
-8. `vulnerability-scan-event.md` — post-mortem of the automated scanner burst after domain attachment
-9. `auth-rollout/04-turnstile-research-verification.md` — research verification for plan 04
-10. `auth-rollout/05-oauth-research-verification.md` — research verification for plan 05
-11. `stripe-testing-research-verification.md` — research verification for Stripe plan
+### Auth rollout (`auth-rollout/`)
+
+1. `01-app-domain-cutover-plan.md`
+2. `02-resend-smtp-setup-plan.md`
+3. `03-email-verification-cutover-plan.md`
+4. `04-turnstile-abuse-protection-plan.md` + `04-turnstile-research-verification.md`
+5. `06-execution-prompts.md` — agent execution prompts for all tasks including Cloudflare
+
+### Cloudflare security (`cloudflare-security/`)
+
+6. `cloudflare-security/README.md` — overview, research sources, design decisions
+7. `cloudflare-security/cloudflare-security-plan.md` — final WAF/bot/rate-limit configuration plan
+8. `cloudflare-security/execution-prompt.md` — standalone agent execution prompt
+9. `cloudflare-security/vulnerability-scan-event.md` — post-mortem of scanner burst that triggered this work
+10. `cloudflare-security/cloudflare-security-hardening-plan.md` — superseded initial draft (kept for reference)
 
 ## Repo context this research assumes
 
@@ -59,14 +63,16 @@ stated otherwise:
 
 Critical path:
 
-1. `auth-rollout/01-app-domain-cutover-plan.md`
+1. `auth-rollout/01-app-domain-cutover-plan.md` ✅ completed 2026-03-19
 2. `auth-rollout/02-resend-smtp-setup-plan.md`
 3. `auth-rollout/03-email-verification-cutover-plan.md`
 4. `auth-rollout/04-turnstile-abuse-protection-plan.md`
+5. `cloudflare-security/cloudflare-security-plan.md` (dashboard-only, no code changes)
 
-Follow-up, not required for the current blocker:
+Follow-up workstreams (moved to [2026-03-19](../2026-03-19/README.md)):
 
-5. `auth-rollout/05-oauth-follow-up-plan.md`
+- OAuth: `../2026-03-19/oauth/oauth-follow-up-plan.md`
+- Stripe testing: `../2026-03-19/stripe-testing/stripe-testing-plan.md`
 
 ## Current execution status
 
@@ -88,8 +94,8 @@ automatically solved by hosted dashboard configuration.
 - Phase 1 should use Supabase's default confirmation and recovery links, not a custom in-app `token_hash` confirmation route.
 - Once custom SMTP is enabled, abuse protection is no longer optional. Turnstile should be part of the rollout before public signup is opened broadly.
 - Password reset is not yet complete in this repo and should not be represented as solved by SMTP plus dashboard changes alone.
-- OAuth is still a separate follow-up task and is not part of the minimum path to "domain now + working email verification."
-- Stripe testing can start in parallel and does not need the Qwen enterprise key.
+- Cloudflare WAF security hardening should follow domain cutover to protect the newly-public domain from automated scanners.
+- OAuth and Stripe testing are separate follow-up workstreams (see [2026-03-19](../2026-03-19/README.md)).
 
 ## Execution model for these plans
 
