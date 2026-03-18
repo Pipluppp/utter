@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef } from 'react';
 
 const KEYS = {
@@ -9,7 +9,7 @@ const KEYS = {
 type FormKey = keyof typeof KEYS;
 
 export async function loadFormState<T>(key: FormKey): Promise<T | null> {
-  const raw = await SecureStore.getItemAsync(KEYS[key]);
+  const raw = await AsyncStorage.getItem(KEYS[key]);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as T;
@@ -19,11 +19,11 @@ export async function loadFormState<T>(key: FormKey): Promise<T | null> {
 }
 
 export async function saveFormState<T extends Record<string, unknown>>(key: FormKey, state: T): Promise<void> {
-  await SecureStore.setItemAsync(KEYS[key], JSON.stringify(state));
+  await AsyncStorage.setItem(KEYS[key], JSON.stringify(state));
 }
 
 export async function clearFormState(key: FormKey): Promise<void> {
-  await SecureStore.deleteItemAsync(KEYS[key]);
+  await AsyncStorage.removeItem(KEYS[key]);
 }
 
 /**
