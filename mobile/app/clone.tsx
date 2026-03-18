@@ -533,6 +533,8 @@ export default function CloneScreen() {
           style={[styles.exampleButton, { backgroundColor: colors.skeletonHighlight }, loadingExample && styles.buttonDisabled]}
           onPress={loadExample}
           disabled={loadingExample || submitting}
+          accessibilityRole="button"
+          accessibilityLabel="Try example voice"
         >
           {loadingExample ? (
             <ActivityIndicator color={colors.text} size="small" />
@@ -548,6 +550,8 @@ export default function CloneScreen() {
           ]}
           onPress={handleClone}
           disabled={submitting || !fileUri || !name.trim() || !transcript.trim()}
+          accessibilityRole="button"
+          accessibilityLabel="Clone voice"
         >
           {submitting ? (
             <ActivityIndicator color={colors.background} />

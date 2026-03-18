@@ -110,6 +110,8 @@ function AudioPlayerBarInner({
         onPress={togglePlayPause}
         style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}
         disabled={!isLoaded}
+        accessibilityRole="button"
+        accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
       >
         <Ionicons
           name={isPlaying ? 'pause' : 'play'}

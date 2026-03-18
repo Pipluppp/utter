@@ -463,6 +463,8 @@ export default function AccountScreen() {
             borderWidth: 1,
             borderColor: isDark ? '#331111' : '#f5c6c6',
           }}
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
         >
           <Text style={{ color: colors.danger, fontSize: 15, fontWeight: '600' }}>Sign Out</Text>
         </TouchableOpacity>

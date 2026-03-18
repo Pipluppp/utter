@@ -309,6 +309,8 @@ export default function GenerateScreen() {
         style={{ backgroundColor: colors.text, borderRadius: 8, borderCurve: 'continuous', paddingVertical: 14, alignItems: 'center', marginTop: 24, opacity: (submitting || !voiceId || !text.trim() || charOverLimit) ? 0.4 : 1 }}
         onPress={handleGenerate}
         disabled={submitting || !voiceId || !text.trim() || charOverLimit}
+        accessibilityRole="button"
+        accessibilityLabel="Generate speech"
       >
         {submitting ? (
           <ActivityIndicator color={colors.background} />
@@ -372,6 +374,8 @@ export default function GenerateScreen() {
                       <TouchableOpacity
                         style={{ backgroundColor: colors.skeletonHighlight, borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
                         onPress={() => playGeneration(task)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Play audio"
                       >
                         <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Play</Text>
                       </TouchableOpacity>
@@ -380,6 +384,8 @@ export default function GenerateScreen() {
                       style={{ backgroundColor: colors.skeletonHighlight, borderRadius: 6, borderCurve: 'continuous', paddingVertical: 8, alignItems: 'center' }}
                       onPress={() => shareGeneration(task)}
                       disabled={sharingTaskId === task.taskId}
+                      accessibilityRole="button"
+                      accessibilityLabel="Share audio"
                     >
                       <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>
                         {sharingTaskId === task.taskId ? 'Sharing...' : 'Share'}

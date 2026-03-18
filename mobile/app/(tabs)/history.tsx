@@ -168,6 +168,8 @@ const GenerationCard = React.memo(function GenerationCard({
           <TouchableOpacity
             onPress={() => onPlay(gen)}
             style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }]}
+            accessibilityRole="button"
+            accessibilityLabel="Play audio"
           >
             <Text style={[styles.actionText, { color: colors.accent }]}>Play</Text>
           </TouchableOpacity>
@@ -177,6 +179,8 @@ const GenerationCard = React.memo(function GenerationCard({
             onPress={() => void onShare(gen)}
             disabled={isSharing}
             style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }, isSharing && styles.disabled]}
+            accessibilityRole="button"
+            accessibilityLabel="Share audio"
           >
             <Text style={[styles.actionText, { color: colors.accent }]}>
               {isSharing ? 'Sharing...' : 'Share'}
@@ -186,6 +190,8 @@ const GenerationCard = React.memo(function GenerationCard({
         <TouchableOpacity
           onPress={() => onRegenerate(gen)}
           style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }]}
+          accessibilityRole="button"
+          accessibilityLabel="Regenerate"
         >
           <Text style={[styles.actionText, { color: colors.text }]}>Regenerate</Text>
         </TouchableOpacity>
@@ -193,6 +199,8 @@ const GenerationCard = React.memo(function GenerationCard({
           onPress={() => onDelete(gen)}
           disabled={isDeleting}
           style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }, isDeleting && styles.disabled]}
+          accessibilityRole="button"
+          accessibilityLabel="Delete generation"
         >
           <Text style={[styles.actionText, { color: colors.danger }]}>
             {isDeleting ? 'Deleting...' : 'Delete'}

@@ -102,6 +102,8 @@ const VoiceCard = React.memo(function VoiceCard({
         <TouchableOpacity
           onPress={() => onGenerate(voice)}
           style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }]}
+          accessibilityRole="button"
+          accessibilityLabel="Generate with this voice"
         >
           <Text style={[styles.actionText, { color: colors.accent }]}>Generate</Text>
         </TouchableOpacity>
@@ -109,6 +111,8 @@ const VoiceCard = React.memo(function VoiceCard({
           onPress={() => onDelete(voice)}
           disabled={isDeleting}
           style={[styles.actionButton, { backgroundColor: colors.skeletonHighlight }, isDeleting && styles.disabled]}
+          accessibilityRole="button"
+          accessibilityLabel="Delete voice"
         >
           <Text style={[styles.actionText, { color: colors.danger }]}>
             {isDeleting ? 'Deleting...' : 'Delete'}

@@ -351,6 +351,8 @@ export default function DesignScreen() {
         style={{ backgroundColor: colors.text, borderRadius: 8, borderCurve: 'continuous', paddingVertical: 14, alignItems: 'center', marginTop: 24, opacity: submitting || instructOverLimit || textOverLimit ? 0.4 : 1 }}
         onPress={handlePreview}
         disabled={submitting || instructOverLimit || textOverLimit}
+        accessibilityRole="button"
+        accessibilityLabel="Preview voice"
       >
         {submitting ? (
           <ActivityIndicator color={colors.background} />
@@ -369,6 +371,8 @@ export default function DesignScreen() {
               onPress={handleSave}
               disabled={saving}
               style={{ flex: 1, backgroundColor: colors.accent, borderRadius: 8, borderCurve: 'continuous', paddingVertical: 10, alignItems: 'center', opacity: saving ? 0.4 : 1 }}
+              accessibilityRole="button"
+              accessibilityLabel="Save voice"
             >
               {saving ? (
                 <ActivityIndicator color={colors.background} />
