@@ -1,59 +1,33 @@
-# Utter docs
+# Utter Docs
 
-Canonical docs index for the active Cloudflare + Supabase runtime.
+Canonical docs for the active Cloudflare + Supabase runtime.
 
-## Start here
+## Start Here
 
-1. `architecture.md` - topology, request/data flow, trust boundaries
-2. `setup.md` - local development runbook
-3. `deploy.md` - staging/prod deploy runbook and release gates
-4. `backend.md` - API Worker route surface and runtime behavior
-5. `database.md` - Postgres schema, RLS, and data invariants
+1. [stack.md](./stack.md)
+2. [architecture.md](./architecture.md)
+3. [setup.md](./setup.md)
+4. [deploy.md](./deploy.md)
 
-## Current stack snapshot (2026-03-03)
+## Core Docs
 
-- Frontend: Cloudflare Worker serving SPA assets
-- API: Cloudflare Worker (`/api/*` contract retained)
-- Storage: R2-only
-- Async: Queue-first via Cloudflare Queues
-- TTS provider: qwen-only
-- System of record: Supabase Postgres/Auth/RLS/credits/billing
+- [backend.md](./backend.md): API Worker routes, queue model, storage and billing touchpoints
+- [database.md](./database.md): tables, RLS, credit ledger, storage policy model
+- [features.md](./features.md): user-facing flows and where they live in code
 
-## Quick local run
+## Package Docs
 
-```bash
-# Terminal 1
-supabase start
+- [frontend/README.md](../frontend/README.md)
+- [workers/api/README.md](../workers/api/README.md)
+- [workers/frontend/README.md](../workers/frontend/README.md)
+- [supabase/README.md](../supabase/README.md)
 
-# Terminal 2
-npm --prefix workers/api install
-cp workers/api/.dev.vars.example workers/api/.dev.vars
-npm --prefix workers/api run dev
+## Canonical vs Historical
 
-# Terminal 3
-cd frontend
-npm install
-test -f .env.local || cp .env.example .env.local
-npm run dev
-```
+- The files listed above are the main onboarding path.
+- Dated folders under `docs/20*/` are historical plans, audits, and execution notes.
+- Top-level supporting notes in `docs/` may still be useful, but they are not the primary read order unless linked from a canonical doc.
 
-Local queue/R2 note:
-- `workers/api/wrangler.toml` defines top-level local `r2_buckets` and `queues` bindings.
-- Use `wrangler dev --local` (not `--remote`) for queue-backed local paths.
+## Update Rule
 
-## Active work
-
-- Current task hub: `tasks.md`
-- 2026-03-02 continuation artifacts: `2026-03-02/`
-- Simplification execution pack: `2026-03-02/remove-modal-supastorage-queue-simplify/`
-- Security sweep planning pack: `2026-03-07/security-sweep-plan-bundle/`
-
-## Core references
-
-- `features.md` - feature and API contract reference
-- `supabase-security.md` - Supabase-layer security controls
-- `security/audits/2026-03-02/` - migration audit artifacts
-
-## Historical docs
-
-Legacy Modal/Supabase-Edge runtime docs are being removed as part of the Cloudflare-only cleanup.
+If you change runtime behavior, routes, bindings, schema, or deploy flow, update the matching canonical doc in the same change.
