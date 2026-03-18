@@ -16,6 +16,7 @@ export type StoredTask = {
   dismissed: boolean;
   modalStatus?: string | null;
   providerStatus?: string | null;
+  generationId?: string | null;
   result?: unknown;
   error?: string | null;
   completedAt?: number;
@@ -32,6 +33,7 @@ export type BackendTask = {
   id: string;
   type: TaskType | string;
   status: TaskStatus;
+  generation_id?: string | null;
   result?: unknown;
   error?: string | null;
   provider?: 'modal' | 'qwen' | string;

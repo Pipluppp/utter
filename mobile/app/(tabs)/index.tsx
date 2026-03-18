@@ -1,5 +1,6 @@
+import * as FileSystemLegacy from 'expo-file-system/legacy';
 import { Ionicons } from '@expo/vector-icons';
-import { type AudioPlayer, useAudioPlayer } from 'expo-audio';
+import { type AudioPlayer, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
@@ -15,7 +16,7 @@ import {
 } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { AudioPlayerBar } from '../../components/AudioPlayerBar';
-import { apiJson, apiRedirectUrl } from '../../lib/api';
+import { apiDownloadToFile, apiJson } from '../../lib/api';
 import { hapticDelete, hapticSuccess } from '../../lib/haptics';
 import type { Voice, VoicesResponse } from '../../lib/types';
 import { useTheme, type ThemeColors } from '../../providers/ThemeProvider';
@@ -166,13 +167,14 @@ export default function VoicesScreen() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [audioUri, setAudioUri] = useState<string | null>(null);
   const player = useAudioPlayer(audioUri ? { uri: audioUri } : null);
+  const playerStatus = useAudioPlayerStatus(player);
 
   // Play when audio source changes
   useEffect(() => {
-    if (audioUri && player) {
+    if (audioUri && playerStatus.isLoaded) {
       player.play();
     }
-  }, [audioUri, player]);
+  }, [audioUri, player, playerStatus.isLoaded]);
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -284,8 +286,9 @@ export default function VoicesScreen() {
   const handlePreview = useCallback(async (voice: Voice) => {
     setPlayingId(voice.id);
     try {
-      const url = await apiRedirectUrl(`/api/voices/${voice.id}/preview`);
-      setAudioUri(url);
+      const localPath = `${FileSystemLegacy.cacheDirectory}voice_preview_${voice.id}.wav`;
+      const localUri = await apiDownloadToFile(`/api/voices/${voice.id}/preview`, localPath);
+      setAudioUri(localUri);
       void hapticSuccess();
     } catch {
       setPlayingId(null);

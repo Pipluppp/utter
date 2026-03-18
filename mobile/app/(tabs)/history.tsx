@@ -1,4 +1,4 @@
-import { type AudioPlayer, useAudioPlayer } from 'expo-audio';
+import { type AudioPlayer, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import * as FileSystemLegacy from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { router } from 'expo-router';
@@ -15,7 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { apiJson, apiRedirectUrl } from '../../lib/api';
+import { apiDownloadToFile, apiJson } from '../../lib/api';
 import { hapticDelete, hapticSuccess } from '../../lib/haptics';
 import { AudioPlayerBar } from '../../components/AudioPlayerBar';
 import type { Generation, GenerationsResponse } from '../../lib/types';
@@ -238,6 +238,7 @@ export default function HistoryScreen() {
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const player = useAudioPlayer(audioUri ? { uri: audioUri } : null);
+  const playerStatus = useAudioPlayerStatus(player);
 
   // Debounce search
   useEffect(() => {
@@ -297,10 +298,10 @@ export default function HistoryScreen() {
 
   // Play when audio source changes
   useEffect(() => {
-    if (audioUri && player) {
+    if (audioUri && playerStatus.isLoaded) {
       player.play();
     }
-  }, [audioUri, player]);
+  }, [audioUri, player, playerStatus.isLoaded]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -317,8 +318,9 @@ export default function HistoryScreen() {
   const handlePlay = useCallback(async (gen: Generation) => {
     setPlayingId(gen.id);
     try {
-      const url = await apiRedirectUrl(`/api/generations/${gen.id}/audio`);
-      setAudioUri(url);
+      const localPath = `${FileSystemLegacy.cacheDirectory}generation_${gen.id}.wav`;
+      const localUri = await apiDownloadToFile(`/api/generations/${gen.id}/audio`, localPath);
+      setAudioUri(localUri);
       void hapticSuccess();
     } catch {
       setPlayingId(null);
@@ -329,10 +331,9 @@ export default function HistoryScreen() {
   const handleShare = useCallback(async (gen: Generation) => {
     setSharingId(gen.id);
     try {
-      const url = await apiRedirectUrl(`/api/generations/${gen.id}/audio`);
       const localPath = `${FileSystemLegacy.cacheDirectory}generation_${gen.id}.wav`;
-      const download = await FileSystemLegacy.downloadAsync(url, localPath);
-      await Sharing.shareAsync(download.uri, { mimeType: 'audio/wav' });
+      const localUri = await apiDownloadToFile(`/api/generations/${gen.id}/audio`, localPath);
+      await Sharing.shareAsync(localUri, { mimeType: 'audio/wav' });
     } catch {
       Alert.alert('Share error', 'Could not share audio.');
     } finally {

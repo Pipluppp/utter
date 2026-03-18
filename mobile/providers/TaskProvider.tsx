@@ -122,6 +122,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           ...current,
           status: data.status,
           providerStatus: data.provider_status ?? current.providerStatus,
+          generationId: data.generation_id ?? current.generationId,
           result: data.result ?? current.result,
           error: data.error ?? current.error,
           completedAt: data.completed_at

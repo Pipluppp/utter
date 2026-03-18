@@ -16,10 +16,11 @@ import {
 } from 'react-native';
 import { AudioPlayerBar } from '../../components/AudioPlayerBar';
 import { Select } from '../../components/Select';
-import { apiJson, apiRedirectUrl } from '../../lib/api';
+import { apiDownloadToFile, apiJson } from '../../lib/api';
 import { clearFormState, loadFormState, useDebouncedFormSave } from '../../lib/formPersistence';
 import { hapticSubmit, hapticSuccess } from '../../lib/haptics';
 import type {
+  BackendTask,
   GenerateResponse,
   LanguagesResponse,
   StoredTask,
@@ -199,41 +200,72 @@ export default function GenerateScreen() {
     }
   }, [voiceId, text, language, startTask]);
 
+  const resolveGenerationAudioPath = useCallback(async (task: StoredTask): Promise<string | null> => {
+    const result = task.result as { generation_id?: string; audio_url?: string } | undefined;
+    if (typeof result?.audio_url === 'string' && result.audio_url.trim()) {
+      return result.audio_url;
+    }
+
+    if (task.generationId) {
+      return `/api/generations/${task.generationId}/audio`;
+    }
+
+    if (result?.generation_id) {
+      return `/api/generations/${result.generation_id}/audio`;
+    }
+
+    const latest = await apiJson<BackendTask>(`/api/tasks/${task.taskId}`);
+    const latestResult = latest.result as { generation_id?: string; audio_url?: string } | undefined;
+    if (typeof latestResult?.audio_url === 'string' && latestResult.audio_url.trim()) {
+      return latestResult.audio_url;
+    }
+    if (latest.generation_id) {
+      return `/api/generations/${latest.generation_id}/audio`;
+    }
+    if (latestResult?.generation_id) {
+      return `/api/generations/${latestResult.generation_id}/audio`;
+    }
+    return null;
+  }, []);
+
   const playGeneration = useCallback(async (task: StoredTask) => {
     try {
-      const result = task.result as { generation_id?: string } | undefined;
-      const genId = result?.generation_id;
-      if (!genId) return;
+      const audioPath = await resolveGenerationAudioPath(task);
+      if (!audioPath) {
+        Alert.alert('Playback error', 'Generation audio is not ready yet.');
+        return;
+      }
 
       setPlayingTaskId(task.taskId);
-      const url = await apiRedirectUrl(`/api/generations/${genId}/audio`);
-      setAudioUri(url);
+      const localPath = `${FileSystemLegacy.cacheDirectory}task_${task.taskId}.wav`;
+      const localUri = await apiDownloadToFile(audioPath, localPath);
+      setAudioUri(localUri);
       void hapticSuccess();
     } catch {
       setPlayingTaskId(null);
       Alert.alert('Playback error', 'Could not play audio.');
     }
-  }, []);
+  }, [resolveGenerationAudioPath]);
 
   const [sharingTaskId, setSharingTaskId] = useState<string | null>(null);
 
   const shareGeneration = useCallback(async (task: StoredTask) => {
-    const result = task.result as { generation_id?: string } | undefined;
-    const genId = result?.generation_id;
-    if (!genId) return;
-
     setSharingTaskId(task.taskId);
     try {
-      const url = await apiRedirectUrl(`/api/generations/${genId}/audio`);
-      const localPath = `${FileSystemLegacy.cacheDirectory}generation_${genId}.wav`;
-      const download = await FileSystemLegacy.downloadAsync(url, localPath);
-      await Sharing.shareAsync(download.uri, { mimeType: 'audio/wav' });
+      const audioPath = await resolveGenerationAudioPath(task);
+      if (!audioPath) {
+        Alert.alert('Share error', 'Generation audio is not ready yet.');
+        return;
+      }
+      const localPath = `${FileSystemLegacy.cacheDirectory}task_${task.taskId}.wav`;
+      const localUri = await apiDownloadToFile(audioPath, localPath);
+      await Sharing.shareAsync(localUri, { mimeType: 'audio/wav' });
     } catch {
       Alert.alert('Share error', 'Could not share audio.');
     } finally {
       setSharingTaskId(null);
     }
-  }, []);
+  }, [resolveGenerationAudioPath]);
 
   const charCount = text.length;
   const charOverLimit = charCount > maxTextChars;

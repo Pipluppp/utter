@@ -1,3 +1,4 @@
+import * as FileSystemLegacy from 'expo-file-system/legacy';
 import { getAccessToken, refreshAccessToken } from './supabase';
 import { API_BASE_URL } from './constants';
 
@@ -80,37 +81,26 @@ export async function apiJson<T>(
   return (await res.json()) as T;
 }
 
-/**
- * Fetch a URL that may redirect (e.g., signed audio URL).
- * Returns the final resolved URL string.
- */
-export async function apiRedirectUrl(path: string): Promise<string> {
+export async function apiDownloadToFile(path: string, fileUri: string): Promise<string> {
   const auth = await authHeaders();
+  const requestUrl = /^https?:\/\//i.test(path) ? path : `${API_BASE_URL}${path}`;
 
-  const doFetch = (h: Record<string, string>) =>
-    fetch(`${API_BASE_URL}${path}`, {
-      method: 'GET',
-      redirect: 'manual',
-      headers: h,
-    });
+  const doDownload = (headers: Record<string, string>) =>
+    FileSystemLegacy.downloadAsync(requestUrl, fileUri, { headers });
 
-  let res = await doFetch(auth);
-  if (res.status === 401) {
+  let result = await doDownload(auth);
+  if (result.status === 401) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
-      res = await doFetch(withToken(auth, refreshed));
+      result = await doDownload(withToken(auth, refreshed));
     }
   }
 
-  if (res.status >= 300 && res.status < 400) {
-    return res.headers.get('Location') || `${API_BASE_URL}${path}`;
+  if (result.status < 200 || result.status >= 300) {
+    throw new ApiError(`Download failed with status ${result.status}`, result.status);
   }
 
-  if (!res.ok) {
-    throw new ApiError(await parseErrorMessage(res), res.status);
-  }
-
-  return `${API_BASE_URL}${path}`;
+  return result.uri;
 }
 
 /**
