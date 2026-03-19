@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import { useAuthState } from "../../app/auth/AuthStateProvider";
 import { getCreditPackById } from "../../content/plans";
 import { getAuthSession, signOut as signOutRequest } from "../../lib/auth";
 import { apiJson } from "../../lib/api";
@@ -194,6 +195,7 @@ export function buildAccountActivity(event: CreditLedgerEvent): AccountActivity 
 }
 
 export function useAccountData(): AccountData {
+  const authState = useAuthState();
   const [authEmail, setAuthEmail] = useState("");
   const [me, setMe] = useState<MeResponse | null>(null);
   const [credits, setCredits] = useState<CreditsUsageResponse | null>(null);
@@ -250,11 +252,12 @@ export function useAccountData(): AccountData {
 
   const signOut = useCallback(async () => {
     await signOutRequest();
+    await authState.refresh();
 
     setAuthEmail("");
     setMe(null);
     setCredits(null);
-  }, []);
+  }, [authState]);
 
   const activity = useMemo(
     () => (credits?.events ?? []).map((event) => buildAccountActivity(event)),
