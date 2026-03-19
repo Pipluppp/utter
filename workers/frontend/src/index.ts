@@ -4,6 +4,17 @@ export interface FrontendEnv {
   API_ORIGIN: string;
 }
 
+function isLocalHostname(hostname: string): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "[::1]" ||
+    hostname === "0.0.0.0" ||
+    hostname.endsWith(".localhost")
+  );
+}
+
 function isSpaRouteRequest(request: Request, url: URL): boolean {
   if (request.method !== "GET" && request.method !== "HEAD") return false;
   if (url.pathname === "/") return true;
@@ -90,14 +101,33 @@ async function serveSpaAsset(request: Request, env: FrontendEnv): Promise<Respon
   return env.ASSETS.fetch(new Request(fallbackUrl.toString(), request));
 }
 
+function missingApiBindingResponse(): Response {
+  return withNoStore(
+    new Response(
+      "Frontend Worker misconfiguration: missing API service binding for hosted /api/* requests.",
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+        },
+      },
+    ),
+  );
+}
+
 export default {
   async fetch(request: Request, env: FrontendEnv): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
-      const proxied = env.API
-        ? await env.API.fetch(buildServiceBindingRequest(request, url.pathname, url.search))
-        : await fetch(buildProxyRequest(request, proxyRequestUrl(request, env.API_ORIGIN)));
+      if (env.API) {
+        const proxied = await env.API.fetch(buildServiceBindingRequest(request, url.pathname, url.search));
+        return withNoStore(proxied);
+      }
+
+      if (!isLocalHostname(url.hostname)) return missingApiBindingResponse();
+
+      const proxied = await fetch(buildProxyRequest(request, proxyRequestUrl(request, env.API_ORIGIN)));
       return withNoStore(proxied);
     }
 
