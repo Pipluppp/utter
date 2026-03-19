@@ -27,6 +27,7 @@ Canonical docs for the active Cloudflare + Supabase runtime.
 
 - The files listed above are the main onboarding path.
 - Dated folders under `docs/20*/` are historical plans, audits, and execution notes.
+- Historical folders may reference public `*.workers.dev` hostnames that existed before the 2026-03-19 API privatization rollout; the current browser API surface is `https://uttervoice.com/api/*`, and the API Worker's public `workers.dev` route is disabled.
 - Top-level supporting notes in `docs/` may still be useful, but they are not the primary read order unless linked from a canonical doc.
 
 ## Update Rule

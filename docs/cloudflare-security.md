@@ -75,12 +75,9 @@ Expected signals:
 
 These protections apply to `uttervoice.com` only.
 
-They do not protect direct public Worker hostnames such as:
+The API Worker's public `workers.dev` hostname was disabled on 2026-03-19, so the main backend bypass path has been removed.
 
-- `https://utter.duncanb013.workers.dev`
-- `https://utter-api-staging.duncanb013.workers.dev`
-
-Those remain a separate exposure surface until hostname policy or Worker deployment changes remove or harden them.
+Any separately exposed Worker hostname still sits outside the `uttervoice.com` zone protections and should be treated as a separate exposure surface until it is disabled or protected independently.
 
 ## Related Docs
 

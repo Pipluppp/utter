@@ -1,8 +1,9 @@
 export interface FrontendEnv {
   ASSETS: Fetcher;
   API?: Fetcher;
-  API_ORIGIN: string;
 }
+
+const LOCAL_API_ORIGIN = "http://127.0.0.1:8787";
 
 function isLocalHostname(hostname: string): boolean {
   return (
@@ -127,7 +128,7 @@ export default {
 
       if (!isLocalHostname(url.hostname)) return missingApiBindingResponse();
 
-      const proxied = await fetch(buildProxyRequest(request, proxyRequestUrl(request, env.API_ORIGIN)));
+      const proxied = await fetch(buildProxyRequest(request, proxyRequestUrl(request, LOCAL_API_ORIGIN)));
       return withNoStore(proxied);
     }
 

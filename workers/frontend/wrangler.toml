@@ -8,9 +8,6 @@ workers_dev = false
 directory = "../../frontend/dist"
 binding = "ASSETS"
 
-[vars]
-API_ORIGIN = "https://utter-api-staging.duncanb013.workers.dev"
-
 [env.staging]
 name = "utter"
 [[env.staging.services]]
@@ -20,6 +17,3 @@ service = "utter-api-staging"
 [[env.staging.routes]]
 pattern = "uttervoice.com"
 custom_domain = true
-
-[env.staging.vars]
-API_ORIGIN = "https://utter-api-staging.duncanb013.workers.dev"

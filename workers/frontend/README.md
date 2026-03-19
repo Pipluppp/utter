@@ -24,7 +24,9 @@ npm run cf:deploy:frontend:staging
 
 - serves SPA assets from `frontend/dist`
 - falls back to `/` for SPA routes
-- proxies `/api/*` to the API Worker
+- proxies hosted `/api/*` to the API Worker service binding
+- fails closed for hosted `/api/*` requests if the `API` binding is missing
+- falls back to `http://127.0.0.1:8787` only for localhost-style frontend worker dev
 - preserves redirect behavior for signed media URLs
 
 ## Constraints
