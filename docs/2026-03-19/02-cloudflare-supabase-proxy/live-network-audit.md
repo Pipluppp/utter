@@ -1,8 +1,8 @@
-# Live Network Audit: Browser-to-Supabase Traffic
+# Live Network Audit: Browser-to-Supabase Traffic (Pre-Fix Baseline)
 
 Date: 2026-03-19
 Method: Chrome DevTools MCP against live authenticated session on `https://uttervoice.com`
-Status: Complete
+Status: Complete — **this is the pre-fix baseline. See `live-network-audit-post-fix.md` for the post-implementation verification.**
 
 ## Summary
 

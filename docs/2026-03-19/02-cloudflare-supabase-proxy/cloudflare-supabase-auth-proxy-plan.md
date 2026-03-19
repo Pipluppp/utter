@@ -1,7 +1,7 @@
 # Cloudflare Supabase Auth Proxy Plan
 
 Date: 2026-03-19
-Status: Planned
+Status: **Implemented and verified** (2026-03-19)
 Scope: Replace direct browser Supabase Auth usage with a Cloudflare Worker-mediated auth flow
 
 ## Goal
