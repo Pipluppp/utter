@@ -23,7 +23,33 @@ function isSpaRouteRequest(request: Request, url: URL): boolean {
 }
 
 function withNoStore(response: Response): Response {
-  const headers = new Headers(response.headers);
+  const headers = new Headers();
+  response.headers.forEach((value, key) => {
+    if (key.toLowerCase() !== "set-cookie") {
+      headers.append(key, value);
+    }
+  });
+  const setCookieHeaders = (
+    response.headers as Headers & {
+      getAll?: (name: string) => string[];
+      getSetCookie?: () => string[];
+    }
+  ).getSetCookie?.() ??
+    (
+      response.headers as Headers & {
+        getAll?: (name: string) => string[];
+      }
+    ).getAll?.("Set-Cookie") ??
+    [];
+  for (const cookie of setCookieHeaders) {
+    headers.append("Set-Cookie", cookie);
+  }
+  if (setCookieHeaders.length === 0) {
+    const combinedSetCookie = response.headers.get("set-cookie");
+    if (combinedSetCookie) {
+      headers.append("Set-Cookie", combinedSetCookie);
+    }
+  }
   headers.set("Cache-Control", "no-store");
   return new Response(response.body, {
     status: response.status,

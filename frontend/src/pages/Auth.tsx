@@ -9,7 +9,13 @@ import { Input } from "../components/ui/Input";
 import { Label } from "../components/ui/Label";
 import { Message } from "../components/ui/Message";
 import { cn } from "../lib/cn";
-import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import {
+  getTurnstileSiteKey,
+  isAuthConfigured,
+  sendMagicLink,
+  signInWithPassword,
+  signUpWithPassword,
+} from "../lib/auth";
 
 type AuthMode = "magic_link" | "password";
 type PasswordIntent = "sign_in" | "sign_up";
@@ -19,10 +25,10 @@ export function AuthPage() {
   const [params] = useSearchParams();
   const authState = useAuthState();
 
-  const supabaseClient = supabase;
-  const configured = Boolean(supabaseClient) && isSupabaseConfigured();
-
+  const configured = isAuthConfigured();
+  const turnstileSiteKey = getTurnstileSiteKey();
   const returnTo = (params.get("returnTo") ?? "").trim();
+  const callbackError = (params.get("error") ?? "").trim();
   const initialIntent: PasswordIntent = params.get("intent") === "sign_up" ? "sign_up" : "sign_in";
   const safeReturnTo = useMemo(() => getSafeReturnTo(returnTo), [returnTo]);
 
@@ -45,41 +51,44 @@ export function AuthPage() {
   }, []);
 
   useEffect(() => {
+    if (!callbackError) return;
+    setStatus({ type: "error", message: callbackError });
+  }, [callbackError]);
+
+  useEffect(() => {
     if (authState.status === "signed_in") {
       navigate(safeReturnTo, { replace: true });
     }
   }, [authState.status, navigate, safeReturnTo]);
 
   async function onSendMagicLink() {
-    if (!supabaseClient) return;
-
     const normalizedEmail = email.trim();
     if (!normalizedEmail) {
       setStatus({ type: "error", message: "Email is required." });
       return;
     }
 
-    setStatus({ type: "loading", label: "Sending magic link..." });
-    const { error } = await supabaseClient.auth.signInWithOtp({
-      email: normalizedEmail,
-      options: {
-        captchaToken: captchaToken ?? undefined,
-        emailRedirectTo: `${window.location.origin}${safeReturnTo}`,
-      },
-    });
-    turnstileRef.current?.reset();
-    setCaptchaToken(null);
-    if (error) {
-      setStatus({ type: "error", message: error.message });
-      return;
+    try {
+      setStatus({ type: "loading", label: "Sending magic link..." });
+      await sendMagicLink({
+        captchaToken,
+        email: normalizedEmail,
+        returnTo: safeReturnTo,
+      });
+      turnstileRef.current?.reset();
+      setCaptchaToken(null);
+      setStatus({ type: "sent" });
+    } catch (error) {
+      turnstileRef.current?.reset();
+      setCaptchaToken(null);
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "Failed to send magic link.",
+      });
     }
-
-    setStatus({ type: "sent" });
   }
 
   async function onPasswordSubmit() {
-    if (!supabaseClient) return;
-
     const normalizedEmail = email.trim();
     if (!normalizedEmail) {
       setStatus({ type: "error", message: "Email is required." });
@@ -99,44 +108,49 @@ export function AuthPage() {
       label: intent === "sign_in" ? "Signing in..." : "Creating account...",
     });
 
-    if (intent === "sign_in") {
-      const { error } = await supabaseClient.auth.signInWithPassword({
-        email: normalizedEmail,
-        password,
-        options: { captchaToken: captchaToken ?? undefined },
-      });
-      turnstileRef.current?.reset();
-      setCaptchaToken(null);
-      if (error) {
-        setStatus({ type: "error", message: error.message });
+    try {
+      if (intent === "sign_in") {
+        await signInWithPassword({
+          captchaToken,
+          email: normalizedEmail,
+          password,
+        });
+        turnstileRef.current?.reset();
+        setCaptchaToken(null);
+        await authState.refresh();
+        setStatus({ type: "ok", message: "Signed in." });
+        navigate(safeReturnTo, { replace: true });
         return;
       }
 
-      setStatus({ type: "ok", message: "Signed in." });
-      navigate(safeReturnTo, { replace: true });
-      return;
-    }
+      const result = await signUpWithPassword({
+        captchaToken,
+        email: normalizedEmail,
+        password,
+        returnTo: safeReturnTo,
+      });
+      turnstileRef.current?.reset();
+      setCaptchaToken(null);
 
-    const { error } = await supabaseClient.auth.signUp({
-      email: normalizedEmail,
-      password,
-      options: {
-        captchaToken: captchaToken ?? undefined,
-        emailRedirectTo: `${window.location.origin}${safeReturnTo}`,
-      },
-    });
-    turnstileRef.current?.reset();
-    setCaptchaToken(null);
-    if (error) {
-      setStatus({ type: "error", message: error.message });
-      return;
-    }
+      if (result.signed_in) {
+        await authState.refresh();
+        setStatus({ type: "ok", message: "Account created." });
+        navigate(safeReturnTo, { replace: true });
+        return;
+      }
 
-    setStatus({
-      type: "ok",
-      message: "Account created. If email confirmation is enabled, check your inbox.",
-    });
-    navigate(safeReturnTo, { replace: true });
+      setStatus({
+        type: "ok",
+        message: "Account created. If email confirmation is enabled, check your inbox.",
+      });
+    } catch (error) {
+      turnstileRef.current?.reset();
+      setCaptchaToken(null);
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "Authentication failed.",
+      });
+    }
   }
 
   function handleSubmit(event: React.FormEvent) {
@@ -167,9 +181,7 @@ export function AuthPage() {
 
           {!configured ? (
             <div className="mt-6">
-              <Message variant="info">
-                Supabase Auth isn't configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
-              </Message>
+              <Message variant="info">Auth isn't configured. Set VITE_TURNSTILE_SITE_KEY.</Message>
             </div>
           ) : null}
 
@@ -269,15 +281,16 @@ export function AuthPage() {
               </div>
             ) : null}
 
-            {/* TODO: resetPasswordForEmail() will also need captchaToken when that flow is built */}
-            <Turnstile
-              ref={turnstileRef}
-              className="w-full"
-              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
-              options={{ theme: "dark", size: "flexible", refreshExpired: "auto" }}
-              onSuccess={setCaptchaToken}
-              onExpire={() => setCaptchaToken(null)}
-            />
+            {configured ? (
+              <Turnstile
+                ref={turnstileRef}
+                className="w-full"
+                siteKey={turnstileSiteKey}
+                options={{ theme: "dark", size: "flexible", refreshExpired: "auto" }}
+                onSuccess={setCaptchaToken}
+                onExpire={() => setCaptchaToken(null)}
+              />
+            ) : null}
 
             <Button
               type="submit"

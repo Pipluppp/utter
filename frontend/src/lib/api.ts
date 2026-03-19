@@ -1,4 +1,4 @@
-import { getAccessToken, refreshAccessToken } from "./supabase";
+import { tryRefreshAuthSession } from "./auth";
 
 export type ApiErrorShape = {
   detail?: string;
@@ -26,24 +26,19 @@ async function parseErrorMessage(res: Response): Promise<string> {
   return text || `${res.status} ${res.statusText}`;
 }
 
-async function getDefaultAuthHeaders(): Promise<Record<string, string>> {
-  const accessToken = await getAccessToken();
-  const headers: Record<string, string> = {};
+async function withRefreshRetry(runRequest: () => Promise<Response>): Promise<Response> {
+  let response = await runRequest();
+  if (response.status !== 401) {
+    return response;
+  }
 
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  const refreshed = await tryRefreshAuthSession();
+  if (!refreshed) {
+    return response;
+  }
 
-  return headers;
-}
-
-function withAuthorization(
-  headers: HeadersInit | undefined,
-  accessToken: string | null,
-): HeadersInit {
-  if (!accessToken) return headers ?? {};
-  return {
-    ...headers,
-    Authorization: `Bearer ${accessToken}`,
-  };
+  response = await runRequest();
+  return response;
 }
 
 export async function apiJson<T>(
@@ -51,28 +46,21 @@ export async function apiJson<T>(
   init: RequestInit & { json?: unknown } = {},
 ): Promise<T> {
   const { json, headers, ...rest } = init;
-  const authHeaders = await getDefaultAuthHeaders();
-
-  const runRequest = async (requestHeaders: HeadersInit) =>
-    fetch(path, {
-      ...rest,
-      headers: requestHeaders,
-      body: json ? JSON.stringify(json) : rest.body,
-    });
-
+  const body = json ? JSON.stringify(json) : rest.body;
   const requestHeaders: HeadersInit = {
-    ...authHeaders,
     ...(json ? { "content-type": "application/json" } : {}),
     ...headers,
   };
 
-  let res = await runRequest(requestHeaders);
-  if (res.status === 401) {
-    const refreshedToken = await refreshAccessToken();
-    if (refreshedToken) {
-      res = await runRequest(withAuthorization(requestHeaders, refreshedToken));
-    }
-  }
+  const runRequest = () =>
+    fetch(path, {
+      ...rest,
+      body,
+      credentials: "same-origin",
+      headers: requestHeaders,
+    });
+
+  const res = await withRefreshRetry(runRequest);
 
   if (!res.ok) {
     throw new ApiError(await parseErrorMessage(res), res.status);
@@ -87,28 +75,20 @@ export async function apiJson<T>(
 }
 
 export async function apiForm<T>(path: string, form: FormData, init: RequestInit = {}): Promise<T> {
-  const authHeaders = await getDefaultAuthHeaders();
+  const requestHeaders: HeadersInit = {
+    ...init.headers,
+  };
 
-  const runRequest = async (requestHeaders: HeadersInit) =>
+  const runRequest = () =>
     fetch(path, {
       ...init,
+      credentials: "same-origin",
       method: init.method ?? "POST",
       headers: requestHeaders,
       body: form,
     });
 
-  const requestHeaders: HeadersInit = {
-    ...authHeaders,
-    ...init.headers,
-  };
-
-  let res = await runRequest(requestHeaders);
-  if (res.status === 401) {
-    const refreshedToken = await refreshAccessToken();
-    if (refreshedToken) {
-      res = await runRequest(withAuthorization(requestHeaders, refreshedToken));
-    }
-  }
+  const res = await withRefreshRetry(runRequest);
 
   if (!res.ok) {
     throw new ApiError(await parseErrorMessage(res), res.status);
@@ -123,29 +103,19 @@ export async function apiForm<T>(path: string, form: FormData, init: RequestInit
 }
 
 export async function apiRedirectUrl(path: string): Promise<string> {
-  const authHeaders = await getDefaultAuthHeaders();
-
-  const runRequest = async (requestHeaders: HeadersInit) =>
+  const runRequest = () =>
     fetch(path, {
+      credentials: "same-origin",
       method: "GET",
       redirect: "follow",
-      headers: requestHeaders,
     });
 
-  let res = await runRequest(authHeaders);
-  if (res.status === 401) {
-    const refreshedToken = await refreshAccessToken();
-    if (refreshedToken) {
-      res = await runRequest(withAuthorization(authHeaders, refreshedToken));
-    }
-  }
+  const res = await withRefreshRetry(runRequest);
 
   if (!res.ok) {
     throw new ApiError(await parseErrorMessage(res), res.status);
   }
 
-  // We only need the final resolved URL (typically a signed Storage URL).
-  // Cancel any body stream so this probe doesn't download audio bytes.
   await res.body?.cancel().catch(() => {});
 
   return res.url || path;

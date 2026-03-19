@@ -1,126 +1,86 @@
-import type { Session, User } from "@supabase/supabase-js";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
-import { supabase } from "../../lib/supabase";
+import { getAuthSession, type AuthUser } from "../../lib/auth";
 
 export type AuthStatus = "loading" | "signed_out" | "signed_in";
 
-export type AuthStateSnapshot = {
+type AuthStateCore = {
   status: AuthStatus;
-  session: Session | null;
-  user: User | null;
+  user: AuthUser | null;
   error: Error | null;
+};
+
+export type AuthStateSnapshot = AuthStateCore & {
+  refresh: () => Promise<void>;
 };
 
 const AuthStateContext = createContext<AuthStateSnapshot | null>(null);
 
-function createSignedOutSnapshot(error: Error | null = null): AuthStateSnapshot {
+function createSignedOutSnapshot(error: Error | null = null): AuthStateCore {
   return {
     status: "signed_out",
-    session: null,
     user: null,
     error,
   };
 }
 
-function createLoadingSnapshot(): AuthStateSnapshot {
+function createLoadingSnapshot(): AuthStateCore {
   return {
     status: "loading",
-    session: null,
     user: null,
     error: null,
   };
 }
 
-async function resolveAuthSnapshot(): Promise<AuthStateSnapshot> {
-  if (!supabase) {
+async function resolveAuthSnapshot(): Promise<AuthStateCore> {
+  const session = await getAuthSession();
+  if (!session.signed_in || !session.user) {
     return createSignedOutSnapshot();
-  }
-
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) {
-    return createSignedOutSnapshot(sessionError);
-  }
-
-  const session = sessionData.session;
-  if (!session) {
-    return createSignedOutSnapshot();
-  }
-
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) {
-    return createSignedOutSnapshot(userError);
-  }
-
-  const user = userData.user;
-  if (!user) {
-    return createSignedOutSnapshot(new Error("Supabase returned a session without a user."));
   }
 
   return {
     status: "signed_in",
-    session,
-    user,
+    user: session.user,
     error: null,
   };
 }
 
 export function AuthStateProvider({ children }: { children: ReactNode }) {
-  const [authState, setAuthState] = useState<AuthStateSnapshot>(() =>
-    supabase ? createLoadingSnapshot() : createSignedOutSnapshot(),
-  );
+  const [authState, setAuthState] = useState<AuthStateCore>(() => createLoadingSnapshot());
   const requestIdRef = useRef(0);
 
-  useEffect(() => {
-    if (!supabase) {
-      setAuthState(createSignedOutSnapshot());
-      return;
-    }
+  const refresh = async () => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
 
-    let cancelled = false;
-
-    const syncAuthState = async () => {
-      const requestId = requestIdRef.current + 1;
-      requestIdRef.current = requestId;
-
+    try {
       const snapshot = await resolveAuthSnapshot();
-      if (cancelled || requestId !== requestIdRef.current) {
+      if (requestId !== requestIdRef.current) {
         return;
-      }
-
-      if (snapshot.error) {
-        console.error("Failed to resolve auth state.", snapshot.error);
       }
 
       setAuthState(snapshot);
-    };
-
-    void syncAuthState();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (cancelled) {
+    } catch (error) {
+      if (requestId !== requestIdRef.current) {
         return;
       }
 
-      requestIdRef.current += 1;
+      setAuthState(
+        createSignedOutSnapshot(
+          error instanceof Error ? error : new Error("Failed to resolve auth state."),
+        ),
+      );
+    }
+  };
 
-      if (!session) {
-        setAuthState(createSignedOutSnapshot());
-        return;
-      }
-
-      setAuthState(createLoadingSnapshot());
-      void syncAuthState();
-    });
-
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-    };
+  useEffect(() => {
+    void refresh();
   }, []);
 
-  return <AuthStateContext.Provider value={authState}>{children}</AuthStateContext.Provider>;
+  return (
+    <AuthStateContext.Provider value={{ ...authState, refresh }}>
+      {children}
+    </AuthStateContext.Provider>
+  );
 }
 
 export function useAuthState() {

@@ -2,6 +2,13 @@ import { Hono } from "hono";
 
 import { corsHeaders } from "./shared/cors";
 import {
+  applyNoStoreHeaders,
+  hasAuthCookies,
+  isAuthRoutePath,
+  isUnsafeMethod,
+  requireAllowedOrigin,
+} from "./_shared/auth_session.ts";
+import {
   type RateLimitTier,
   resolveRateLimitActor,
   resolveRateLimitIdentity,
@@ -13,6 +20,7 @@ import { handleTtsQueueBatch } from "./queues/consumer.ts";
 
 import { billingRoutes } from "./routes/billing.ts";
 import { generationsRoutes } from "./routes/generations.ts";
+import { authRoutes } from "./routes/auth.ts";
 import { cloneRoutes } from "./routes/clone.ts";
 import { creditsRoutes } from "./routes/credits.ts";
 import { designRoutes } from "./routes/design.ts";
@@ -70,10 +78,28 @@ app.use("*", async (c, next) => {
 });
 
 app.use("*", async (c, next) => {
+  if (isUnsafeMethod(c.req.method) && (isAuthRoutePath(c.req.path) || hasAuthCookies(c.req.raw))) {
+    try {
+      requireAllowedOrigin(c.req.raw, c.env);
+    } catch (error) {
+      if (error instanceof Response) {
+        return error;
+      }
+      throw error;
+    }
+  }
+
+  await next();
+});
+
+app.use("*", async (c, next) => {
   await next();
   const origin = c.req.raw.headers.get("Origin");
   for (const [key, value] of Object.entries(corsHeaders(c.env, origin))) {
     c.header(key, value);
+  }
+  if (isAuthRoutePath(c.req.path) || c.res.headers.has("Set-Cookie")) {
+    applyNoStoreHeaders(c.res.headers);
   }
 });
 
@@ -215,6 +241,7 @@ app.use("*", async (c, next) => {
 
 app.get("/health", (c) => c.json({ ok: true }));
 
+app.route("/", authRoutes);
 app.route("/", languagesRoutes);
 app.route("/", meRoutes);
 app.route("/", storageRoutes);

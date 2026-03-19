@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { getCreditPackById } from "../../content/plans";
+import { getAuthSession, signOut as signOutRequest } from "../../lib/auth";
 import { apiJson } from "../../lib/api";
-import { supabase } from "../../lib/supabase";
 import type {
   CreditLedgerEvent,
   CreditsUsageResponse,
@@ -28,15 +28,15 @@ const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
 export type AccountActivityCategory = "purchase" | "usage";
 
 export type AccountActivity = {
-  id: number;
-  category: AccountActivityCategory;
-  title: string;
-  detail: string;
   amountLabel: string;
   balanceLabel: string;
-  createdLabel: string;
+  category: AccountActivityCategory;
   createdAt: string;
+  createdLabel: string;
+  detail: string;
+  id: number;
   raw: CreditLedgerEvent;
+  title: string;
 };
 
 export type AccountFormValues = {
@@ -44,15 +44,15 @@ export type AccountFormValues = {
 };
 
 export type AccountData = {
-  authEmail: string;
-  me: MeResponse | null;
-  credits: CreditsUsageResponse | null;
-  profile: ProfileRecord | null;
   activity: AccountActivity[];
-  loading: boolean;
-  refreshing: boolean;
+  authEmail: string;
+  credits: CreditsUsageResponse | null;
   error: string | null;
+  loading: boolean;
+  me: MeResponse | null;
+  profile: ProfileRecord | null;
   refresh: (options?: { background?: boolean }) => Promise<void>;
+  refreshing: boolean;
   saveProfile: (values: AccountFormValues) => Promise<ProfileRecord>;
   signOut: () => Promise<void>;
 };
@@ -71,16 +71,8 @@ function emptyToNull(value: string) {
 }
 
 async function loadAuthEmail() {
-  if (!supabase) {
-    throw new Error("Supabase Auth is not configured.");
-  }
-
-  const { data, error } = await supabase.auth.getUser();
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data.user?.email ?? "";
+  const session = await getAuthSession();
+  return session.user?.email ?? "";
 }
 
 async function loadAccountSnapshot() {
@@ -189,15 +181,15 @@ export function formatDateTime(value: string) {
 
 export function buildAccountActivity(event: CreditLedgerEvent): AccountActivity {
   return {
-    id: event.id,
-    category: categoryForEvent(event),
-    title: eventTitle(event),
-    detail: eventDetail(event),
     amountLabel: signedCreditsLabel(event),
     balanceLabel: `${formatCredits(event.balance_after)} credits left`,
-    createdLabel: formatDateTime(event.created_at),
+    category: categoryForEvent(event),
     createdAt: event.created_at,
+    createdLabel: formatDateTime(event.created_at),
+    detail: eventDetail(event),
+    id: event.id,
     raw: event,
+    title: eventTitle(event),
   };
 }
 
@@ -257,14 +249,7 @@ export function useAccountData(): AccountData {
   }, []);
 
   const signOut = useCallback(async () => {
-    if (!supabase) {
-      throw new Error("Supabase Auth is not configured.");
-    }
-
-    const { error: authError } = await supabase.auth.signOut();
-    if (authError) {
-      throw new Error(authError.message);
-    }
+    await signOutRequest();
 
     setAuthEmail("");
     setMe(null);
@@ -277,15 +262,15 @@ export function useAccountData(): AccountData {
   );
 
   return {
-    authEmail,
-    me,
-    credits,
-    profile: me?.profile ?? null,
     activity,
-    loading,
-    refreshing,
+    authEmail,
+    credits,
     error,
+    loading,
+    me,
+    profile: me?.profile ?? null,
     refresh,
+    refreshing,
     saveProfile,
     signOut,
   };
