@@ -35,52 +35,16 @@ Remove the public `workers.dev` bypass for the API Worker and keep browser API t
 
 **Depends on:** None strictly, but it complements the grouped surface-hardening work and follows naturally after `01-api-worker-privatization/`.
 
-### 03 Surface Hardening (`03-surface-hardening/`)
+### 03 Surface Hardening — MOVED to [`../2026-03-20/`](../2026-03-20/README.md)
 
-Grouped follow-up hardening package that should run after the two primary perimeter changes.
+Revised and moved on 2026-03-20 after completion of the auth proxy work.
 
-- `README.md` — parent overview and sequencing
-- `api-rate-limit-hardening/` — backend limiter layering and identity fixes
-- `supabase-direct-surface-hardening/` — remaining direct Supabase HTTPS surface review
-- `signed-surface-hardening/` — residual signed/tokenized public surface review
+## Separate Tracks — MOVED to `../2026-03-22/`
 
-**Depends on:** `01-api-worker-privatization/` first, and usually `02-cloudflare-supabase-proxy/` before final tuning.
+### Billing Research — MOVED to [`../2026-03-22/billing-research/`](../2026-03-22/billing-research/README.md)
 
-## Surface Hardening Subtracks
+Evaluate Polar.sh as an alternative to Stripe, then test the chosen provider. Includes the original Stripe testing plan plus new Polar.sh research.
 
-### API Rate-Limit Hardening (`03-surface-hardening/api-rate-limit-hardening/`)
+### OAuth — MOVED to [`../2026-03-22/oauth/`](../2026-03-22/oauth/oauth-follow-up-plan.md)
 
-Refactor backend abuse control so Supabase remains the durable business limiter, but not the first gate every public request hits.
-
-- `README.md` — directory overview, architecture goal, execution prompt
-- `api-rate-limit-hardening-plan.md` — implementation plan
-
-### Supabase Direct Surface Hardening (`03-surface-hardening/supabase-direct-surface-hardening/`)
-
-Harden the parts of the app that still talk directly to `jgmivviwockcwjkvpqra.supabase.co`, especially Auth and any remaining public Data API exposure.
-
-- `README.md` — directory overview, scope, execution prompt
-- `supabase-direct-surface-hardening-plan.md` — implementation plan
-
-### Signed Surface Hardening (`03-surface-hardening/signed-surface-hardening/`)
-
-Review and tighten the remaining bearer-style public surfaces after API privatization, especially signed storage URLs and the Preview URL follow-up.
-
-- `README.md` — directory overview, residual-surface map, execution prompt
-- `signed-surface-hardening-plan.md` — implementation plan
-
-## Separate Tracks
-
-### Stripe Testing (`stripe-testing/`)
-
-Verify Stripe checkout and webhook credit grants in test mode.
-
-- `stripe-testing-plan.md` — full testing plan
-- `stripe-testing-research-verification.md` — research verification notes
-
-### OAuth (`oauth/`)
-
-Add OAuth sign-in (Google first) to the branded app domain.
-
-- `oauth-follow-up-plan.md` — implementation plan
-- `oauth-research-verification.md` — research verification notes
+Add OAuth sign-in (Google first). Plan updated for the Worker auth proxy architecture.

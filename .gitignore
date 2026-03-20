@@ -81,3 +81,5 @@ node_modules/
 workers/api/.wrangler/
 workers/frontend/.wrangler/
 workers/api/.dev.vars
+
+.mcp*

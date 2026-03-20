@@ -67,7 +67,7 @@ The full standalone prompt lives in `docs/2026-03-18/cloudflare-security/executi
 
 ## Prompt 6: OAuth follow-up (moved to 2026-03-19)
 
-Read `docs/2026-03-19/oauth/oauth-follow-up-plan.md` and implement the first OAuth provider for this repo, using the current auth architecture and branded app domain assumptions. Inspect the existing auth pages and confirm there is no current `signInWithOAuth(...)` flow before changing anything. Then implement the minimal frontend flow for the first provider, keep redirects consistent with the existing `window.location.origin` pattern, update docs, and stop at the plan's manual checkpoint with the exact Google and Supabase provider settings the user must complete. Continue to verification only after user confirmation.
+Read `docs/2026-03-22/oauth/oauth-follow-up-plan.md` and implement the first OAuth provider for this repo, using the current auth architecture (Worker-proxied auth at `/api/auth/*`) and branded app domain. Inspect the existing auth pages and confirm there is no current OAuth flow before changing anything. Then implement the minimal Worker route and frontend flow for the first provider, update docs, and stop at the plan's manual checkpoint with the exact Google and Supabase provider settings the user must complete. Continue to verification only after user confirmation.
 
 ## Suggested usage order
 
@@ -81,6 +81,6 @@ Run these in this sequence:
 
 Prompts 1–5 are the critical path for "domain + working signup + production-safe security posture."
 
-6. Prompt 6 — OAuth follow-up (moved to `docs/2026-03-19/oauth/`)
+6. Prompt 6 — OAuth follow-up (moved to `docs/2026-03-22/oauth/`)
 
-Prompt 6 and Stripe testing (`docs/2026-03-19/stripe-testing/`) can run after or in parallel with the critical path.
+Prompt 6 and billing research (`docs/2026-03-22/billing-research/`) can run after or in parallel with the critical path.

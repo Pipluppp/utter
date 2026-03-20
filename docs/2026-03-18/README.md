@@ -68,10 +68,10 @@ Critical path:
 4. `auth-rollout/04-turnstile-abuse-protection-plan.md`
 5. `cloudflare-security/cloudflare-security-plan.md` (dashboard-only, no code changes, implemented 2026-03-19)
 
-Follow-up workstreams (moved to [2026-03-19](../2026-03-19/README.md)):
+Follow-up workstreams (moved to [2026-03-22](../2026-03-22/)):
 
-- OAuth: `../2026-03-19/oauth/oauth-follow-up-plan.md`
-- Stripe testing: `../2026-03-19/stripe-testing/stripe-testing-plan.md`
+- OAuth: `../2026-03-22/oauth/oauth-follow-up-plan.md`
+- Billing research: `../2026-03-22/billing-research/README.md`
 
 ## Current execution status
 

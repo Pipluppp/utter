@@ -43,7 +43,7 @@ This workstream is expected to require user-interrupted dashboard checks for:
 ## Read First
 
 1. `../01-api-worker-privatization/README.md`
-2. `../03-surface-hardening/supabase-direct-surface-hardening/README.md`
+2. `../../2026-03-20/02-grant-revocation.md`
 3. `../../2026-02-23/security-supabase/README.md`
 
 ## Execution Prompt

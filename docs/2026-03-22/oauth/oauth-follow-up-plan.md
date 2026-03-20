@@ -38,20 +38,25 @@ This plan assumes:
 
 - the current rollout goal of "domain now + working email verification"
 
+## Architecture Note (2026-03-22)
+
+Since 2026-03-19, all auth flows are proxied through the Cloudflare Worker at `/api/auth/*`. The OAuth callback no longer goes directly to `*.supabase.co` — it routes through `/api/auth/callback` which exchanges the code server-side. This means:
+
+- The Google consent screen redirect URI should point to `https://uttervoice.com/api/auth/callback`
+- No Supabase custom domain is needed for clean OAuth callback URLs
+- The frontend calls the Worker to initiate OAuth, not `supabase.auth.signInWithOAuth()` directly
+
 ## Scope
 
-1. Configure the provider console for the branded app origin.
-2. Configure Supabase OAuth provider credentials.
-3. Add OAuth buttons and `signInWithOAuth(...)` flows in the SPA.
-4. Test redirect and session restoration.
-5. If a Supabase custom domain is added later, register both callback URLs during the
-   migration window:
-   - `https://<project-ref>.supabase.co/auth/v1/callback`
-   - `https://<supabase-custom-domain>/auth/v1/callback`
+1. Configure the Google provider console for `uttervoice.com`.
+2. Configure Supabase OAuth provider credentials (dashboard).
+3. Add a Worker route to initiate OAuth (generate the Supabase OAuth URL server-side, redirect the browser).
+4. Add OAuth buttons in the frontend auth UI that hit the new Worker route.
+5. Test the full redirect flow: frontend → Worker → Google → Worker callback → cookie set → redirect to app.
 
 ## Current repo gap
 
-There is no `signInWithOAuth(...)` implementation in `frontend/src` today, so OAuth still requires actual product work beyond dashboard configuration.
+There is no OAuth initiation route in the Worker or OAuth UI in the frontend. The `/api/auth/callback` handler already supports code exchange (`exchangeCodeForSession`), so the callback side is partially ready.
 
 ## Recommended first provider
 
@@ -77,11 +82,9 @@ Google Cloud / Google Auth Platform:
 
 1. Create or choose the Google project.
 2. Configure Branding / consent screen details.
-3. Add Authorized JavaScript origins for the app origin.
-4. Add Authorized redirect URIs for the active Supabase callback URL.
-5. If a Supabase custom domain is added later, add both callback URLs during the
-   migration window.
-6. Copy the Google client ID and client secret.
+3. Add Authorized JavaScript origins: `https://uttervoice.com`
+4. Add Authorized redirect URI: `https://uttervoice.com/api/auth/callback`
+5. Copy the Google client ID and client secret.
 
 Supabase dashboard:
 
@@ -99,13 +102,4 @@ The agent should stop before OAuth verification unless the user confirms:
 
 ## Decision note
 
-Treat this as phase 2 auth hardening, not as part of the minimum blocker-clearing
-sequence. If you later decide to buy the Supabase custom-domain add-on, reserve a
-subdomain such as `auth.uttervoice.com` or `api.uttervoice.com` now so the namespace is
-available.
-
-## Source anchors
-
-- Supabase Google auth
-- Supabase redirect URLs
-- Supabase custom domains
+Treat this as phase 2 auth work. The Worker proxy eliminates the need for a Supabase custom domain for OAuth — callback URLs use `uttervoice.com/api/auth/callback` directly.
