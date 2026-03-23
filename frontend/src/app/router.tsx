@@ -1,13 +1,9 @@
 import { lazy } from "react";
 import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
+import { LandingPage } from "../pages/Landing";
 import { Layout } from "./Layout";
 import type { RouteFamily } from "./navigation";
 import { RequireAuth } from "./RequireAuth";
-
-const LandingPage = lazy(async () => {
-  const m = await import("../pages/Landing");
-  return { default: m.LandingPage };
-});
 const ClonePage = lazy(async () => {
   const m = await import("../pages/Clone");
   return { default: m.ClonePage };
