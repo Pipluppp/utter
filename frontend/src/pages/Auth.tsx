@@ -8,16 +8,14 @@ import { GridArt } from "../components/ui/GridArt";
 import { Input } from "../components/ui/Input";
 import { Label } from "../components/ui/Label";
 import { Message } from "../components/ui/Message";
-import { cn } from "../lib/cn";
 import {
   getTurnstileSiteKey,
   isAuthConfigured,
-  sendMagicLink,
   signInWithPassword,
   signUpWithPassword,
 } from "../lib/auth";
+import { cn } from "../lib/cn";
 
-type AuthMode = "magic_link" | "password";
 type PasswordIntent = "sign_in" | "sign_up";
 
 export function AuthPage() {
@@ -32,23 +30,17 @@ export function AuthPage() {
   const initialIntent: PasswordIntent = params.get("intent") === "sign_up" ? "sign_up" : "sign_in";
   const safeReturnTo = useMemo(() => getSafeReturnTo(returnTo), [returnTo]);
 
-  const [mode, setMode] = useState<AuthMode>("password");
   const [intent, setIntent] = useState<PasswordIntent>(initialIntent);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<
     | { type: "idle" }
-    | { type: "sent" }
     | { type: "loading"; label: string }
     | { type: "error"; message: string }
     | { type: "ok"; message: string }
   >({ type: "idle" });
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileInstance>(null);
-  const isLocalHost = useMemo(() => {
-    const host = window.location.hostname;
-    return host === "localhost" || host === "127.0.0.1";
-  }, []);
 
   useEffect(() => {
     if (!callbackError) return;
@@ -60,33 +52,6 @@ export function AuthPage() {
       navigate(safeReturnTo, { replace: true });
     }
   }, [authState.status, navigate, safeReturnTo]);
-
-  async function onSendMagicLink() {
-    const normalizedEmail = email.trim();
-    if (!normalizedEmail) {
-      setStatus({ type: "error", message: "Email is required." });
-      return;
-    }
-
-    try {
-      setStatus({ type: "loading", label: "Sending magic link..." });
-      await sendMagicLink({
-        captchaToken,
-        email: normalizedEmail,
-        returnTo: safeReturnTo,
-      });
-      turnstileRef.current?.reset();
-      setCaptchaToken(null);
-      setStatus({ type: "sent" });
-    } catch (error) {
-      turnstileRef.current?.reset();
-      setCaptchaToken(null);
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Failed to send magic link.",
-      });
-    }
-  }
 
   async function onPasswordSubmit() {
     const normalizedEmail = email.trim();
@@ -155,10 +120,6 @@ export function AuthPage() {
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (mode === "magic_link") {
-      void onSendMagicLink();
-      return;
-    }
     void onPasswordSubmit();
   }
 
@@ -222,41 +183,6 @@ export function AuthPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex gap-0 border border-border">
-            <button
-              type="button"
-              className={cn(
-                "flex-1 px-4 py-2.5 text-[12px] font-medium uppercase tracking-wide transition-colors",
-                mode === "password"
-                  ? "bg-foreground text-background"
-                  : "bg-background text-muted-foreground hover:text-foreground",
-              )}
-              onClick={() => {
-                setMode("password");
-                setStatus({ type: "idle" });
-              }}
-              disabled={!configured || busy}
-            >
-              Password
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "flex-1 border-l border-border px-4 py-2.5 text-[12px] font-medium uppercase tracking-wide transition-colors",
-                mode === "magic_link"
-                  ? "bg-foreground text-background"
-                  : "bg-background text-muted-foreground hover:text-foreground",
-              )}
-              onClick={() => {
-                setMode("magic_link");
-                setStatus({ type: "idle" });
-              }}
-              disabled={!configured || busy}
-            >
-              Magic link
-            </button>
-          </div>
-
           {status.type === "error" ? (
             <div className="mt-4">
               <Message variant="error">{status.message}</Message>
@@ -265,26 +191,6 @@ export function AuthPage() {
           {status.type === "ok" ? (
             <div className="mt-4">
               <Message variant="success">{status.message}</Message>
-            </div>
-          ) : null}
-          {status.type === "sent" ? (
-            <div className="mt-4">
-              <Message variant="success">
-                Magic link sent - check your{" "}
-                {isLocalHost ? (
-                  <a
-                    href="http://localhost:55424"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline underline-offset-4 hover:text-foreground"
-                  >
-                    Inbucket inbox
-                  </a>
-                ) : (
-                  "email"
-                )}
-                .
-              </Message>
             </div>
           ) : null}
 
@@ -303,20 +209,18 @@ export function AuthPage() {
               />
             </div>
 
-            {mode === "password" ? (
-              <div className="space-y-1.5">
-                <Label htmlFor="auth-password">Password</Label>
-                <Input
-                  id="auth-password"
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="6+ characters"
-                  autoComplete={intent === "sign_in" ? "current-password" : "new-password"}
-                  disabled={!configured || busy}
-                />
-              </div>
-            ) : null}
+            <div className="space-y-1.5">
+              <Label htmlFor="auth-password">Password</Label>
+              <Input
+                id="auth-password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="6+ characters"
+                autoComplete={intent === "sign_in" ? "current-password" : "new-password"}
+                disabled={!configured || busy}
+              />
+            </div>
 
             {configured ? (
               <Turnstile
@@ -335,11 +239,7 @@ export function AuthPage() {
               disabled={!configured || busy || !captchaToken}
               loading={busy}
             >
-              {mode === "magic_link"
-                ? "Send magic link"
-                : intent === "sign_in"
-                  ? "Sign in"
-                  : "Create account"}
+              {intent === "sign_in" ? "Sign in" : "Create account"}
             </Button>
           </form>
 

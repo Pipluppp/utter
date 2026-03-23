@@ -1,23 +1,23 @@
-import { Hono, type Context } from "hono";
 import type { Session } from "@supabase/supabase-js";
-import type { AppEnv } from "../env.ts";
+import { Hono, type Context } from "hono";
 import {
-  applyNoStoreHeaders,
-  buildAuthCallbackUrl,
-  buildAuthPageUrl,
-  clearAuthCookies,
-  clearPkceCookie,
-  getAuthCookieSession,
-  getPkceCookie,
-  getRequestOrigin,
-  getSafeReturnTo,
-  isEmailOtpType,
-  serializeAuthUser,
-  setAuthCookies,
-  setPkceCookie,
+    applyNoStoreHeaders,
+    buildAuthCallbackUrl,
+    buildAuthPageUrl,
+    clearAuthCookies,
+    clearPkceCookie,
+    getAuthCookieSession,
+    getPkceCookie,
+    getRequestOrigin,
+    getSafeReturnTo,
+    isEmailOtpType,
+    serializeAuthUser,
+    setAuthCookies,
+    setPkceCookie,
 } from "../_shared/auth_session.ts";
-import { createAuthClient } from "../_shared/supabase.ts";
 import { envRequire } from "../_shared/runtime_env.ts";
+import { createAuthClient } from "../_shared/supabase.ts";
+import type { AppEnv } from "../env.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -205,36 +205,6 @@ authRoutes.post("/auth/sign-up", async (c) => {
   }
 
   return withAuthCookies(response, c.req.raw, data.session);
-});
-
-authRoutes.post("/auth/magic-link", async (c) => {
-  const body = await readJsonObject(c);
-  if (!body) {
-    return jsonDetail("Invalid JSON body.", 400);
-  }
-
-  const email = normalizeNonEmptyString(body.email);
-  const captchaToken = normalizeNonEmptyString(body.captcha_token);
-  const returnTo = getSafeReturnTo(normalizeNonEmptyString(body.return_to));
-
-  if (!email) {
-    return jsonDetail("Email is required.", 400);
-  }
-
-  const supabase = createAuthClient();
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      captchaToken: captchaToken ?? undefined,
-      emailRedirectTo: buildAuthCallbackUrl(c.req.raw, returnTo),
-    },
-  });
-
-  if (error) {
-    return jsonDetail(error.message, authStatus(error, 400));
-  }
-
-  return jsonNoStore({ sent: true });
 });
 
 authRoutes.post("/auth/sign-out", async (c) => {

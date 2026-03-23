@@ -85,21 +85,6 @@ export async function refreshAuthSession(): Promise<AuthSessionResponse> {
   });
 }
 
-export async function sendMagicLink(params: {
-  captchaToken: string | null;
-  email: string;
-  returnTo: string;
-}): Promise<{ sent: true }> {
-  return authJson<{ sent: true }>("/api/auth/magic-link", {
-    json: {
-      captcha_token: params.captchaToken,
-      email: params.email,
-      return_to: params.returnTo,
-    },
-    method: "POST",
-  });
-}
-
 export async function signInWithPassword(params: {
   captchaToken: string | null;
   email: string;
