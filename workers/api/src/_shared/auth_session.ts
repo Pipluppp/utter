@@ -218,6 +218,10 @@ export function serializeAuthUser(user: Pick<User, "email" | "id">): BrowserAuth
   };
 }
 
+export function serializeIdentities(user: Pick<User, "identities">): Array<{ provider: string }> {
+  return (user.identities ?? []).map((identity) => ({ provider: identity.provider }));
+}
+
 export function setAuthCookies(headers: Headers, req: Request, session: Session) {
   const secure = isSecureRequest(req);
   const commonOptions: CookieOptions = {

@@ -1,19 +1,20 @@
 import type { Session } from "@supabase/supabase-js";
 import { Hono, type Context } from "hono";
 import {
-    applyNoStoreHeaders,
-    buildAuthCallbackUrl,
-    buildAuthPageUrl,
-    clearAuthCookies,
-    clearPkceCookie,
-    getAuthCookieSession,
-    getPkceCookie,
-    getRequestOrigin,
-    getSafeReturnTo,
-    isEmailOtpType,
-    serializeAuthUser,
-    setAuthCookies,
-    setPkceCookie,
+  applyNoStoreHeaders,
+  buildAuthCallbackUrl,
+  buildAuthPageUrl,
+  clearAuthCookies,
+  clearPkceCookie,
+  getAuthCookieSession,
+  getPkceCookie,
+  getRequestOrigin,
+  getSafeReturnTo,
+  isEmailOtpType,
+  serializeAuthUser,
+  serializeIdentities,
+  setAuthCookies,
+  setPkceCookie
 } from "../_shared/auth_session.ts";
 import { envRequire } from "../_shared/runtime_env.ts";
 import { createAuthClient } from "../_shared/supabase.ts";
@@ -37,7 +38,7 @@ function jsonNoStore(body: unknown, init?: ResponseInit): Response {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
+      ...init?.headers,
     },
   });
   applyNoStoreHeaders(response.headers);
@@ -244,6 +245,7 @@ authRoutes.get("/auth/session", async (c) => {
       return jsonNoStore({
         signed_in: true,
         user: serializeAuthUser(user),
+        identities: serializeIdentities(user),
       });
     }
   }
@@ -265,6 +267,7 @@ authRoutes.get("/auth/session", async (c) => {
     jsonNoStore({
       signed_in: true,
       user: serializeAuthUser(data.user),
+      identities: serializeIdentities(data.user),
     }),
     c.req.raw,
     data.session,
@@ -322,9 +325,118 @@ authRoutes.get("/auth/oauth/google", async (c) => {
   return response;
 });
 
+authRoutes.post("/auth/forgot-password", async (c) => {
+  const body = await readJsonObject(c);
+  if (!body) {
+    return jsonDetail("Invalid JSON body.", 400);
+  }
+
+  const email = normalizeNonEmptyString(body.email);
+  const captchaToken = normalizeNonEmptyString(body.captcha_token);
+
+  if (!email) {
+    return jsonDetail("Email is required.", 400);
+  }
+
+  const supabase = createAuthClient();
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: buildAuthCallbackUrl(c.req.raw, "/account/update-password"),
+    captchaToken: captchaToken ?? undefined,
+  });
+
+  return jsonDetail("If an account exists for that email, a recovery link has been sent.", 200);
+});
+
+authRoutes.post("/auth/update-password", async (c) => {
+  const { accessToken, refreshToken } = getAuthCookieSession(c.req.raw);
+
+  if (!accessToken && !refreshToken) {
+    return jsonDetail("Authentication required.", 401);
+  }
+
+  const body = await readJsonObject(c);
+  if (!body) {
+    return jsonDetail("Invalid JSON body.", 400);
+  }
+
+  const password = normalizeNonEmptyString(body.password);
+  if (!password) {
+    return jsonDetail("Password is required.", 400);
+  }
+  if (password.length < 6) {
+    return jsonDetail("Password must be at least 6 characters.", 400);
+  }
+
+  // Always refresh the session when a refresh token is available.
+  // Access tokens may be expired even when present in the cookie.
+  let resolvedAccessToken = accessToken;
+  let refreshedSession: Session | null = null;
+
+  if (refreshToken) {
+    const { data, error } = await createAuthClient().auth.refreshSession({
+      refresh_token: refreshToken,
+    });
+    if (error || !data.session) {
+      return withClearedCookies(jsonDetail("Invalid or expired session.", 401), c.req.raw);
+    }
+    resolvedAccessToken = data.session.access_token;
+    refreshedSession = data.session;
+  }
+
+  if (!resolvedAccessToken) {
+    return withClearedCookies(jsonDetail("Invalid or expired session.", 401), c.req.raw);
+  }
+
+  // updateUser requires an active auth session, not just an Authorization header.
+  // Use setSession so the Supabase auth module recognises the session.
+  const userClient = createAuthClient();
+  const { error: sessionError } = await userClient.auth.setSession({
+    access_token: resolvedAccessToken,
+    refresh_token: refreshedSession?.refresh_token ?? refreshToken!,
+  });
+  if (sessionError) {
+    return withClearedCookies(jsonDetail("Invalid or expired session.", 401), c.req.raw);
+  }
+
+  const { data, error } = await userClient.auth.updateUser({ password });
+
+  if (error) {
+    const status = authStatus(error, 400);
+    if (status === 401 || status === 403) {
+      return withClearedCookies(jsonDetail("Invalid or expired session.", 401), c.req.raw);
+    }
+    return jsonDetail(error.message, status);
+  }
+
+  if (!data.user) {
+    return jsonDetail("Password update failed.", 502);
+  }
+
+  // Refresh session to get updated cookies
+  const authClient = createAuthClient();
+  const refreshResult = await authClient.auth.refreshSession({
+    refresh_token: refreshedSession?.refresh_token ?? refreshToken!,
+  });
+
+  if (refreshResult.data.session) {
+    return withAuthCookies(
+      jsonDetail("Password updated.", 200),
+      c.req.raw,
+      refreshResult.data.session,
+    );
+  }
+
+  // Password updated but session refresh failed — still return success
+  const response = jsonDetail("Password updated.", 200);
+  if (refreshedSession) {
+    return withAuthCookies(response, c.req.raw, refreshedSession);
+  }
+  return response;
+});
+
 authRoutes.get("/auth/callback", async (c) => {
   const url = new URL(c.req.url);
-  const returnTo = getSafeReturnTo(url.searchParams.get("returnTo"));
+  const returnTo = getSafeReturnTo(url.searchParams.get("returnTo") ?? url.searchParams.get("next"));
   const code = normalizeNonEmptyString(url.searchParams.get("code"));
   const tokenHash = normalizeNonEmptyString(url.searchParams.get("token_hash"));
   const type = normalizeNonEmptyString(url.searchParams.get("type"));
