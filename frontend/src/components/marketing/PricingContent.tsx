@@ -17,7 +17,7 @@ export function PricingContent() {
 
       <section className="space-y-4">
         <div className="mx-auto w-full max-w-4xl space-y-4">
-          <div className="text-[12px] font-semibold uppercase tracking-[2px]">Credit rates</div>
+          <div className="text-sm font-pixel font-semibold uppercase tracking-[2px]">Credit rates</div>
           <div className="grid gap-4 md:grid-cols-3">
             {creditRates.map((r) => (
               <div
@@ -35,7 +35,7 @@ export function PricingContent() {
 
       <section className="space-y-4">
         <div className="mx-auto w-full max-w-4xl space-y-4">
-          <div className="text-[12px] font-semibold uppercase tracking-[2px]">FAQ</div>
+          <div className="text-sm font-pixel font-semibold uppercase tracking-[2px]">FAQ</div>
           <div className="grid gap-4 md:grid-cols-3">
             <FAQItem
               q="Do credits reset?"

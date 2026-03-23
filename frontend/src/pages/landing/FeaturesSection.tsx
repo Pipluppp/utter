@@ -64,10 +64,10 @@ function FeatureBlock({
     >
       <div data-col="text" className="space-y-4 md:col-span-5">
         <div>
-          <h3 className="text-xl font-pixel font-medium uppercase tracking-[2px]">{title}</h3>
+          <h3 className="text-2xl font-pixel font-medium uppercase tracking-[2px]">{title}</h3>
           <p className="mt-2 text-base text-muted-foreground">{pitch}</p>
         </div>
-        <ul className="space-y-2 text-base text-muted-foreground">
+        <ul className="space-y-2 text-sm text-muted-foreground">
           {bullets.map((bullet) => (
             <Bullet key={bullet}>{bullet}</Bullet>
           ))}
@@ -110,7 +110,7 @@ export function FeaturesSection() {
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-12 md:px-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
+            <h2 className="text-4xl font-pixel font-medium uppercase tracking-[2px] md:text-5xl">
               Features
             </h2>
           </div>
@@ -120,7 +120,7 @@ export function FeaturesSection() {
           <div className="grid items-center gap-5 md:grid-cols-12 md:gap-8">
             <div className="space-y-4 md:col-span-5">
               <div>
-                <h3 className="text-xl font-pixel font-medium uppercase tracking-[2px]">
+                <h3 className="text-2xl font-pixel font-medium uppercase tracking-[2px]">
                   Voice Clone
                 </h3>
                 <p className="mt-2 text-base text-muted-foreground">
@@ -128,7 +128,7 @@ export function FeaturesSection() {
                   generation.
                 </p>
               </div>
-              <ul className="space-y-2 text-base text-muted-foreground">
+              <ul className="space-y-2 text-sm text-muted-foreground">
                 <Bullet>
                   Name your voice, upload reference audio, and add the matching transcript.
                 </Bullet>
@@ -158,14 +158,14 @@ export function FeaturesSection() {
           >
             <div data-col="text" className="space-y-4 md:col-span-5 md:pt-4">
               <div>
-                <h3 className="text-xl font-pixel font-medium uppercase tracking-[2px]">
+                <h3 className="text-2xl font-pixel font-medium uppercase tracking-[2px]">
                   Generate
                 </h3>
                 <p className="mt-2 text-base text-muted-foreground">
                   Pick a saved voice, paste text, and queue speech generation.
                 </p>
               </div>
-              <ul className="space-y-2 text-base text-muted-foreground">
+              <ul className="space-y-2 text-sm text-muted-foreground">
                 <Bullet>The text cap follows the active Qwen runtime settings.</Bullet>
                 <Bullet>Queued jobs keep running in the background until audio is ready.</Bullet>
                 <Bullet>Download finished audio when it sounds right.</Bullet>
@@ -188,14 +188,14 @@ export function FeaturesSection() {
           <div className="grid items-start gap-5 md:grid-cols-12 md:gap-8">
             <div data-col="text" className="space-y-4 md:col-span-5 md:pt-4">
               <div>
-                <h3 className="text-xl font-pixel font-medium uppercase tracking-[2px]">
+                <h3 className="text-2xl font-pixel font-medium uppercase tracking-[2px]">
                   Design
                 </h3>
                 <p className="mt-2 text-base text-muted-foreground">
                   Describe a voice in text, queue a preview, then save the one you want to keep.
                 </p>
               </div>
-              <ul className="space-y-2 text-base text-muted-foreground">
+              <ul className="space-y-2 text-sm text-muted-foreground">
                 <Bullet>No audio upload required.</Bullet>
                 <Bullet>Shape tone, age, style, accent, and texture in plain language.</Bullet>
                 <Bullet>Save a completed preview before using it in Generate.</Bullet>

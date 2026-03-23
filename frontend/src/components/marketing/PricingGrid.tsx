@@ -28,9 +28,9 @@ export function PricingGrid({ compact, className }: { compact?: boolean; classNa
 
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="text-[12px] font-semibold uppercase tracking-wide">{pack.name}</div>
+              <div className="text-sm font-semibold uppercase tracking-wide">{pack.name}</div>
               <div className="mt-3 flex items-baseline gap-2">
-                <div className="text-2xl font-pixel font-medium">${pack.priceUsd}</div>
+                <div className="text-4xl font-pixel font-medium">${pack.priceUsd}</div>
                 <div className="text-sm text-muted-foreground">one-time</div>
               </div>
             </div>
