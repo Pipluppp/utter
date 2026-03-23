@@ -44,6 +44,10 @@ const AuthPage = lazy(async () => {
   const m = await import("../pages/Auth");
   return { default: m.AuthPage };
 });
+const ForgotPasswordPage = lazy(async () => {
+  const m = await import("../pages/ForgotPassword");
+  return { default: m.ForgotPasswordPage };
+});
 const AccountLayoutPage = lazy(async () => {
   const m = await import("../pages/account/AccountLayout");
   return { default: m.AccountLayoutPage };
@@ -59,6 +63,10 @@ const AccountProfilePage = lazy(async () => {
 const AccountCreditsPage = lazy(async () => {
   const m = await import("../pages/account/Credits");
   return { default: m.AccountCreditsPage };
+});
+const UpdatePasswordPage = lazy(async () => {
+  const m = await import("../pages/account/UpdatePassword");
+  return { default: m.UpdatePasswordPage };
 });
 
 function AccountLegacyRedirect() {
@@ -95,7 +103,10 @@ export const router = createBrowserRouter([
       },
       {
         handle: familyHandle("auth"),
-        children: [{ path: "/auth", element: <AuthPage /> }],
+        children: [
+          { path: "/auth", element: <AuthPage /> },
+          { path: "/auth/forgot-password", element: <ForgotPasswordPage /> },
+        ],
       },
       {
         handle: familyHandle("app"),
@@ -160,6 +171,7 @@ export const router = createBrowserRouter([
               { path: "auth", element: <Navigate to="/auth" replace /> },
               { path: "profile", element: <AccountProfilePage /> },
               { path: "credits", element: <AccountCreditsPage /> },
+              { path: "update-password", element: <UpdatePasswordPage /> },
               { path: "usage", element: <AccountLegacyRedirect /> },
               { path: "billing", element: <AccountLegacyRedirect /> },
             ],

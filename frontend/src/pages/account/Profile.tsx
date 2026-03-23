@@ -6,6 +6,7 @@ import { Label } from "../../components/ui/Label";
 import { useAccountPageData } from "./accountData";
 import { AccountProfileSkeleton } from "./accountSkeletons";
 import { AccountNotice, AccountPanel } from "./accountUi";
+import { ChangePasswordSection } from "./ChangePasswordSection";
 
 type FormState = {
   displayName: string;
@@ -32,7 +33,7 @@ function previewInitials(value: string) {
 }
 
 export function AccountProfilePage() {
-  const { authEmail, profile, saveProfile, signOut } = useAccountPageData();
+  const { authEmail, identities, profile, saveProfile, signOut } = useAccountPageData();
   const [form, setForm] = useState<FormState>(() => buildFormState(profile));
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
@@ -159,6 +160,8 @@ export function AccountProfilePage() {
               </Button>
             </div>
           </AccountPanel>
+
+          <ChangePasswordSection identities={identities} />
 
           <AccountPanel title="Sign out">
             <div className="flex flex-wrap gap-3">

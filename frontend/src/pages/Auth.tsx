@@ -222,6 +222,17 @@ export function AuthPage() {
               />
             </div>
 
+            {intent === "sign_in" ? (
+              <div className="text-right">
+                <Link
+                  to="/auth/forgot-password"
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            ) : null}
+
             {configured ? (
               <Turnstile
                 ref={turnstileRef}

@@ -8,6 +8,7 @@ export type AuthUser = {
 export type AuthSessionResponse = {
   signed_in: boolean;
   user: AuthUser | null;
+  identities?: Array<{ provider: string }>;
 };
 
 export type SignUpResponse = AuthSessionResponse & {
@@ -119,6 +120,38 @@ export async function signUpWithPassword(params: {
       email: params.email,
       password: params.password,
       return_to: params.returnTo,
+    },
+    method: "POST",
+  });
+}
+
+export type ForgotPasswordResponse = {
+  detail: string;
+};
+
+export type UpdatePasswordResponse = {
+  detail: string;
+};
+
+export async function forgotPassword(params: {
+  captchaToken: string | null;
+  email: string;
+}): Promise<ForgotPasswordResponse> {
+  return authJson<ForgotPasswordResponse>("/api/auth/forgot-password", {
+    json: {
+      captcha_token: params.captchaToken,
+      email: params.email,
+    },
+    method: "POST",
+  });
+}
+
+export async function updatePassword(params: {
+  password: string;
+}): Promise<UpdatePasswordResponse> {
+  return authJson<UpdatePasswordResponse>("/api/auth/update-password", {
+    json: {
+      password: params.password,
     },
     method: "POST",
   });

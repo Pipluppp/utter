@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useAuthState } from "../../app/auth/AuthStateProvider";
 import { getCreditPackById } from "../../content/plans";
-import { getAuthSession, signOut as signOutRequest } from "../../lib/auth";
 import { apiJson } from "../../lib/api";
+import { getAuthSession, signOut as signOutRequest } from "../../lib/auth";
 import type {
   CreditLedgerEvent,
   CreditsUsageResponse,
@@ -49,6 +49,7 @@ export type AccountData = {
   authEmail: string;
   credits: CreditsUsageResponse | null;
   error: string | null;
+  identities: Array<{ provider: string }>;
   loading: boolean;
   me: MeResponse | null;
   profile: ProfileRecord | null;
@@ -71,19 +72,22 @@ function emptyToNull(value: string) {
   return trimmed ? trimmed : null;
 }
 
-async function loadAuthEmail() {
+async function loadAuthSessionInfo() {
   const session = await getAuthSession();
-  return session.user?.email ?? "";
+  return {
+    email: session.user?.email ?? "",
+    identities: session.identities ?? [],
+  };
 }
 
 async function loadAccountSnapshot() {
-  const [me, credits, authEmail] = await Promise.all([
+  const [me, credits, authSession] = await Promise.all([
     apiJson<MeResponse>("/api/me"),
     apiJson<CreditsUsageResponse>("/api/credits/usage?window_days=90"),
-    loadAuthEmail(),
+    loadAuthSessionInfo(),
   ]);
 
-  return { me, credits, authEmail };
+  return { me, credits, authEmail: authSession.email, identities: authSession.identities };
 }
 
 function packFromEvent(event: CreditLedgerEvent) {
@@ -197,6 +201,7 @@ export function buildAccountActivity(event: CreditLedgerEvent): AccountActivity 
 export function useAccountData(): AccountData {
   const authState = useAuthState();
   const [authEmail, setAuthEmail] = useState("");
+  const [identities, setIdentities] = useState<Array<{ provider: string }>>([]);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [credits, setCredits] = useState<CreditsUsageResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -217,6 +222,7 @@ export function useAccountData(): AccountData {
       setMe(snapshot.me);
       setCredits(snapshot.credits);
       setAuthEmail(snapshot.authEmail);
+      setIdentities(snapshot.identities);
       setError(null);
     } catch (caughtError) {
       setError(errorMessage(caughtError, "Failed to load account details."));
@@ -257,6 +263,7 @@ export function useAccountData(): AccountData {
     setAuthEmail("");
     setMe(null);
     setCredits(null);
+    setIdentities([]);
   }, [authState]);
 
   const activity = useMemo(
@@ -269,6 +276,7 @@ export function useAccountData(): AccountData {
     authEmail,
     credits,
     error,
+    identities,
     loading,
     me,
     profile: me?.profile ?? null,

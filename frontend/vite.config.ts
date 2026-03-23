@@ -1,5 +1,5 @@
-import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 // Active local runtime is the Cloudflare API Worker.
@@ -12,7 +12,14 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
-      '/api': { target: BACKEND_ORIGIN, changeOrigin: true },
+      '/api': {
+        target: BACKEND_ORIGIN,
+        changeOrigin: true,
+        headers: {
+          'x-forwarded-proto': 'http',
+          'x-forwarded-host': '127.0.0.1:5173',
+        },
+      },
     },
   },
 })
