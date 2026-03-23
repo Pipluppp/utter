@@ -4,12 +4,27 @@ compatibility_date = "2026-03-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = false
 
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
 [assets]
 directory = "../../frontend/dist"
 binding = "ASSETS"
 
 [env.staging]
 name = "utter"
+
+[env.staging.observability]
+enabled = true
+
+[env.staging.observability.logs]
+enabled = true
+invocation_logs = true
+
 [[env.staging.services]]
 binding = "API"
 service = "utter-api-staging"

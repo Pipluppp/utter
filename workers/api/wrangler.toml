@@ -4,6 +4,13 @@ main = "src/index.ts"
 compatibility_date = "2026-03-01"
 compatibility_flags = ["nodejs_compat"]
 
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
 [vars]
 # Default local-safe origin. Override per deployment environment.
 CORS_ALLOWED_ORIGIN = "http://localhost:5173"
@@ -36,6 +43,13 @@ max_batch_timeout = 2
 max_retries = 3
 dead_letter_queue = "tts-jobs-dlq-local"
 
+[env.staging.observability]
+enabled = true
+
+[env.staging.observability.logs]
+enabled = true
+invocation_logs = true
+
 [env.staging.vars]
 # Explicit allowlist for local + deployed staging frontend.
 CORS_ALLOWED_ORIGIN = "https://uttervoice.com,http://localhost:5173,https://utter.duncanb013.workers.dev"
@@ -47,6 +61,13 @@ QWEN_MAX_TEXT_CHARS = "100"
 QWEN_ASR_MODEL = "qwen3-asr-flash-2026-02-10"
 QWEN_ASR_BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
 QUEUE_BILLING_ENABLED = "false"
+
+[env.production.observability]
+enabled = true
+
+[env.production.observability.logs]
+enabled = true
+invocation_logs = true
 
 [env.production.vars]
 # Keep explicit and narrow while the branded app domain and legacy hosts coexist.
