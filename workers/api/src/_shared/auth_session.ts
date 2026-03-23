@@ -161,7 +161,7 @@ export function getRequestOrigin(req: Request): string {
 
 export function getSafeReturnTo(value: string | null | undefined): string {
   const candidate = (value ?? "").trim();
-  if (!candidate.startsWith("/")) return "/";
+  if (!candidate.startsWith("/") || candidate.startsWith("//")) return "/";
   return candidate || "/";
 }
 
