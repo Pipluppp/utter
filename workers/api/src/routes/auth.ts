@@ -6,14 +6,18 @@ import {
   buildAuthCallbackUrl,
   buildAuthPageUrl,
   clearAuthCookies,
+  clearPkceCookie,
   getAuthCookieSession,
+  getPkceCookie,
   getRequestOrigin,
   getSafeReturnTo,
   isEmailOtpType,
   serializeAuthUser,
   setAuthCookies,
+  setPkceCookie,
 } from "../_shared/auth_session.ts";
 import { createAuthClient } from "../_shared/supabase.ts";
+import { envRequire } from "../_shared/runtime_env.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -38,6 +42,48 @@ function jsonNoStore(body: unknown, init?: ResponseInit): Response {
   });
   applyNoStoreHeaders(response.headers);
   return response;
+}
+
+function base64UrlEncode(buffer: Uint8Array): string {
+  let str = "";
+  for (const byte of buffer) {
+    str += String.fromCharCode(byte);
+  }
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function generateCodeVerifier(): string {
+  return base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)));
+}
+
+async function generateCodeChallenge(verifier: string): Promise<string> {
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  return base64UrlEncode(new Uint8Array(hash));
+}
+
+async function exchangePkceCode(
+  code: string,
+  codeVerifier: string,
+): Promise<{ session: Session | null; error: string | null }> {
+  const supabaseUrl = envRequire("SUPABASE_URL");
+  const anonKey = envRequire("SUPABASE_ANON_KEY");
+
+  const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=pkce`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: anonKey,
+    },
+    body: JSON.stringify({ auth_code: code, code_verifier: codeVerifier }),
+  });
+
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error_description?: string; msg?: string } | null;
+    return { session: null, error: body?.error_description ?? body?.msg ?? "Token exchange failed." };
+  }
+
+  const data = (await res.json()) as Session & { user: Session["user"] };
+  return { session: data, error: null };
 }
 
 function normalizeNonEmptyString(value: unknown): string | null {
@@ -283,40 +329,71 @@ authRoutes.post("/auth/refresh", async (c) => {
   );
 });
 
+authRoutes.get("/auth/oauth/google", async (c) => {
+  const url = new URL(c.req.url);
+  const returnTo = getSafeReturnTo(url.searchParams.get("returnTo"));
+
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+  const supabaseUrl = envRequire("SUPABASE_URL");
+  const authorizeUrl = new URL(`${supabaseUrl}/auth/v1/authorize`);
+  authorizeUrl.searchParams.set("provider", "google");
+  authorizeUrl.searchParams.set("redirect_to", buildAuthCallbackUrl(c.req.raw, returnTo));
+  authorizeUrl.searchParams.set("code_challenge", codeChallenge);
+  authorizeUrl.searchParams.set("code_challenge_method", "s256");
+  authorizeUrl.searchParams.set("prompt", "select_account");
+
+  const response = new Response(null, {
+    status: 302,
+    headers: { Location: authorizeUrl.toString() },
+  });
+  setPkceCookie(response.headers, c.req.raw, codeVerifier);
+  return response;
+});
+
 authRoutes.get("/auth/callback", async (c) => {
   const url = new URL(c.req.url);
   const returnTo = getSafeReturnTo(url.searchParams.get("returnTo"));
   const code = normalizeNonEmptyString(url.searchParams.get("code"));
   const tokenHash = normalizeNonEmptyString(url.searchParams.get("token_hash"));
   const type = normalizeNonEmptyString(url.searchParams.get("type"));
+  const pkceCookieVerifier = getPkceCookie(c.req.raw);
 
-  const authClient = createAuthClient();
-  const result = code
-    ? await authClient.auth.exchangeCodeForSession(code)
-    : tokenHash && isEmailOtpType(type)
-      ? await authClient.auth.verifyOtp({ token_hash: tokenHash, type })
-      : null;
+  let session: Session | null = null;
+  let error: string | null = null;
 
-  if (!result) {
-    return Response.redirect(
-      buildAuthPageUrl(c.req.raw, returnTo, "Invalid auth callback."),
-      303,
-    );
+  if (code && pkceCookieVerifier) {
+    const result = await exchangePkceCode(code, pkceCookieVerifier);
+    session = result.session;
+    error = result.error;
+  } else if (code) {
+    const authClient = createAuthClient();
+    const result = await authClient.auth.exchangeCodeForSession(code);
+    session = result.data.session;
+    error = result.error?.message ?? null;
+  } else if (tokenHash && isEmailOtpType(type)) {
+    const authClient = createAuthClient();
+    const result = await authClient.auth.verifyOtp({ token_hash: tokenHash, type });
+    session = result.data.session;
+    error = result.error?.message ?? null;
   }
 
-  if (result.error || !result.data.session) {
-    return Response.redirect(
-      buildAuthPageUrl(
-        c.req.raw,
-        returnTo,
-        result.error?.message ?? "Authentication callback failed.",
-      ),
-      303,
-    );
+  if (error || !session) {
+    const errorResponse = new Response(null, {
+      status: 303,
+      headers: { Location: buildAuthPageUrl(c.req.raw, returnTo, error ?? "Invalid auth callback.") },
+    });
+    if (pkceCookieVerifier) clearPkceCookie(errorResponse.headers, c.req.raw);
+    return errorResponse;
   }
 
-  const response = Response.redirect(new URL(returnTo, getRequestOrigin(c.req.raw)).toString(), 303);
-  setAuthCookies(response.headers, c.req.raw, result.data.session);
+  const response = new Response(null, {
+    status: 303,
+    headers: { Location: new URL(returnTo, getRequestOrigin(c.req.raw)).toString() },
+  });
+  setAuthCookies(response.headers, c.req.raw, session);
+  if (pkceCookieVerifier) clearPkceCookie(response.headers, c.req.raw);
   applyNoStoreHeaders(response.headers);
   return response;
 });

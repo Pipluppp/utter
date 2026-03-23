@@ -3,7 +3,9 @@ import { getAllowedOrigins, type WorkerEnv } from "../env.ts";
 
 const ACCESS_COOKIE_NAME = "utter_sb_access_token";
 const REFRESH_COOKIE_NAME = "utter_sb_refresh_token";
+const PKCE_COOKIE_NAME = "utter_pkce_verifier";
 const REFRESH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+const PKCE_COOKIE_MAX_AGE_SECONDS = 600;
 
 type CookieOptions = {
   expires?: Date;
@@ -237,6 +239,37 @@ export function setAuthCookies(headers: Headers, req: Request, session: Session)
     serializeCookie(REFRESH_COOKIE_NAME, session.refresh_token, {
       ...commonOptions,
       maxAge: REFRESH_COOKIE_MAX_AGE_SECONDS,
+    }),
+  );
+}
+
+export function clearPkceCookie(headers: Headers, req: Request) {
+  appendSetCookie(
+    headers,
+    serializeCookie(PKCE_COOKIE_NAME, "", {
+      expires: new Date(0),
+      httpOnly: true,
+      maxAge: 0,
+      path: "/api/auth",
+      sameSite: "Lax",
+      secure: isSecureRequest(req),
+    }),
+  );
+}
+
+export function getPkceCookie(req: Request): string | null {
+  return parseCookies(req).get(PKCE_COOKIE_NAME) ?? null;
+}
+
+export function setPkceCookie(headers: Headers, req: Request, codeVerifier: string) {
+  appendSetCookie(
+    headers,
+    serializeCookie(PKCE_COOKIE_NAME, codeVerifier, {
+      httpOnly: true,
+      maxAge: PKCE_COOKIE_MAX_AGE_SECONDS,
+      path: "/api/auth",
+      sameSite: "Lax",
+      secure: isSecureRequest(req),
     }),
   );
 }
