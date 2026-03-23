@@ -83,3 +83,5 @@ workers/frontend/.wrangler/
 workers/api/.dev.vars
 
 .mcp*
+
+.kiro
