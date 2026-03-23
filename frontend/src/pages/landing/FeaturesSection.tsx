@@ -2,6 +2,7 @@ import { FeatureEntryLink } from "../../app/FeatureEntryLink";
 import { buttonStyles } from "../../components/ui/Button";
 import { SVGBlobs } from "../../components/ui/SVGBlobs";
 import { cn } from "../../lib/cn";
+import { MockCloneFeature } from "./MockCloneFeature";
 
 function Bullet({ children }: { children: React.ReactNode }) {
   return (
@@ -114,19 +115,38 @@ export function FeaturesSection() {
         </div>
 
         <div className="space-y-10">
-          <FeatureBlock
-            title="Voice Clone"
-            pitch="Upload a short clip with its transcript and save a reusable voice for later generation."
-            bullets={[
-              "Name your voice, upload reference audio, and add the matching transcript.",
-              "Keep cloned voices organized in one library.",
-              "Reuse the same saved voice across future generations.",
-            ]}
-            ctaLabel="Open Clone"
-            to="/clone"
-            mediaSrc="/feature-media/voice-clone.png"
-            mediaAlt="Voice Clone UI screenshot"
-          />
+          <div className="grid items-center gap-5 md:grid-cols-12 md:gap-8">
+            <div className="space-y-4 md:col-span-5">
+              <div>
+                <h3 className="text-xl font-pixel font-medium uppercase tracking-[2px]">
+                  Voice Clone
+                </h3>
+                <p className="mt-2 text-base text-muted-foreground">
+                  Upload a short clip with its transcript and save a reusable voice for later
+                  generation.
+                </p>
+              </div>
+              <ul className="space-y-2 text-base text-muted-foreground">
+                <Bullet>
+                  Name your voice, upload reference audio, and add the matching transcript.
+                </Bullet>
+                <Bullet>Keep cloned voices organized in one library.</Bullet>
+                <Bullet>Reuse the same saved voice across future generations.</Bullet>
+              </ul>
+              <div className="pt-1">
+                <FeatureEntryLink
+                  to="/clone"
+                  className={buttonStyles({ variant: "secondary", size: "sm" })}
+                >
+                  {"Open Clone ->"}
+                </FeatureEntryLink>
+              </div>
+            </div>
+
+            <div className="md:col-span-7">
+              <MockCloneFeature />
+            </div>
+          </div>
 
           <FeatureBlock
             title="Generate"

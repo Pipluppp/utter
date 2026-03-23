@@ -6,7 +6,7 @@ import { SVGBlobs } from "../../components/ui/SVGBlobs";
 
 export function LandingHero() {
   return (
-    <section className="relative isolate py-6 md:py-14">
+    <section className="relative isolate overflow-x-clip py-6 md:py-14">
       <div className="pointer-events-none absolute -left-[18%] top-0 -z-10 w-[56%] overflow-hidden opacity-32 [mask-image:linear-gradient(to_right,#000_0%,#000_50%,transparent_100%)] select-none">
         <SVGBlobs density="sparse" className="w-full" />
       </div>

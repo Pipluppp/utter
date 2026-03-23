@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "5e3cd2bb90ee02796d0158fadaa6a1a90ef24b71f86f2abc6d668541010285b1"
     },
+    "web-typography": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "0ee1a0612ba46228dd54eb8a559a955e4f1948513b639a6c956d9772d41d0575"
+    },
     "wrangler": {
       "source": "cloudflare/skills",
       "sourceType": "github",
