@@ -45,7 +45,7 @@ voicesRoutes.get("/voices", async (c) => {
   let q = supabase
     .from("voices")
     .select(
-      "id, name, reference_transcript, language, source, description, created_at, tts_provider, provider_voice_id, provider_target_model, provider_voice_kind",
+      "id, name, reference_transcript, language, source, description, created_at, tts_provider",
       { count: "exact" },
     )
     .is("deleted_at", null)

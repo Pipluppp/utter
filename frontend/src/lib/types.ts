@@ -89,9 +89,6 @@ export type Voice = {
   description: string | null;
   created_at: string | null;
   tts_provider?: "modal" | "qwen" | string;
-  provider_voice_id?: string | null;
-  provider_target_model?: string | null;
-  provider_voice_kind?: "vc" | "vd" | string | null;
 };
 
 export type VoicesResponse = {
