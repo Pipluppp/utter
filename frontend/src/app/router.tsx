@@ -167,9 +167,10 @@ export const router = createBrowserRouter([
               </RequireAuth>
             ),
             children: [
-              { index: true, element: <AccountOverviewPage /> },
+              { index: true, element: <AccountProfilePage /> },
               { path: "auth", element: <Navigate to="/auth" replace /> },
-              { path: "profile", element: <AccountProfilePage /> },
+              { path: "profile", element: <Navigate to="/account" replace /> },
+              { path: "overview", element: <AccountOverviewPage /> },
               { path: "credits", element: <AccountCreditsPage /> },
               { path: "update-password", element: <UpdatePasswordPage /> },
               { path: "usage", element: <AccountLegacyRedirect /> },

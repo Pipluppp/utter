@@ -352,7 +352,7 @@ export function AccountCreditsPage() {
               View history
             </Link>
             <Link
-              to="/account/profile"
+              to="/account"
               className={buttonStyles({ variant: "secondary", size: "sm" })}
             >
               Edit profile

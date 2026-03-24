@@ -92,7 +92,7 @@ export function AccountOverviewPage() {
             </div>
             <div className="mt-4 space-y-2">
               <Link
-                to="/account/profile"
+                to="/account"
                 className={cn(
                   "flex items-center justify-between border border-border px-4 py-3.5 text-[15px] text-foreground transition-colors hover:bg-subtle",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",

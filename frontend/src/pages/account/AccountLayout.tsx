@@ -13,13 +13,13 @@ type AccountNavItem = {
 const navItems: AccountNavItem[] = [
   {
     to: "/account",
-    label: "Overview",
-    desc: "Balance, trials, activity",
-  },
-  {
-    to: "/account/profile",
     label: "Profile",
     desc: "Identity and sign out",
+  },
+  {
+    to: "/account/overview",
+    label: "Overview",
+    desc: "Balance, trials, activity",
   },
   {
     to: "/account/credits",
