@@ -49,6 +49,21 @@ enabled = true
 # sql_paths = ['./seeds/*.sql', '../project-src/seeds/*-load-testing.sql']
 sql_paths = ['./seed.sql']
 
+[db.migrations]
+# Declarative schema files describing the desired end-state of the database.
+# Used by `supabase db diff` to compare against migration state and generate incremental migrations.
+# Paths are relative to the supabase/ directory. Order matches numeric prefix dependency order.
+schema_paths = [
+  "./schemas/00_extensions.sql",
+  "./schemas/01_tables.sql",
+  "./schemas/02_indexes.sql",
+  "./schemas/03_functions.sql",
+  "./schemas/04_triggers.sql",
+  "./schemas/05_rls_policies.sql",
+  "./schemas/06_storage_policies.sql",
+  "./schemas/07_grants.sql"
+]
+
 [realtime]
 enabled = true
 # Bind realtime via either IPv4 or IPv6. (default: IPv4)
