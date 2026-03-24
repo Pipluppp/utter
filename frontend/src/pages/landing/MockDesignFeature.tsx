@@ -258,7 +258,6 @@ export function MockDesignFeature(): ReactNode {
     sweepNonce,
     presetPressed,
     previewStatus,
-    showResult,
     resultOpacity,
   } = useDesignAnimationSequencer(isInView, reducedMotion);
 

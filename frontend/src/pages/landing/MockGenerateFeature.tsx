@@ -238,7 +238,6 @@ export function MockGenerateFeature(): ReactNode {
     text,
     sweepNonce,
     jobStatus,
-    showResult,
     resultOpacity,
   } = useGenerateAnimationSequencer(isInView, reducedMotion);
 
