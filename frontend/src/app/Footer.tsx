@@ -40,6 +40,17 @@ export function AppFooter() {
             <FooterLink to="/privacy">Privacy</FooterLink>
             <FooterLink to="/terms">Terms</FooterLink>
             <FooterLink to="/about">About</FooterLink>
+            <a
+              href="https://steel-gong-714.notion.site/756b59f6379b82168ff001ffed20a47f"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "text-[12px] uppercase tracking-wide text-muted-foreground hover:text-foreground",
+                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              )}
+            >
+              Bug
+            </a>
           </div>
         </div>
 

@@ -161,6 +161,30 @@ export function Layout() {
           <path d="M21 12.8A8.5 8.5 0 0 1 11.2 3 6.5 6.5 0 1 0 21 12.8Z" />
         </svg>
       </button>
+
+      <a
+        href="https://steel-gong-714.notion.site/756b59f6379b82168ff001ffed20a47f"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(
+          "group fixed bottom-4 right-4 z-50 inline-flex items-center gap-2",
+          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full",
+        )}
+      >
+        <span className="text-[10px] font-pixel uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
+          beta
+        </span>
+        <span
+          className={cn(
+            "inline-flex size-7 items-center justify-center rounded-full border border-border bg-background/80 backdrop-blur-sm",
+            "text-[9px] font-pixel uppercase leading-none text-muted-foreground",
+            "group-hover:bg-muted/80 group-hover:text-foreground transition-colors",
+          )}
+          title="bug"
+        >
+          bug
+        </span>
+      </a>
     </div>
   );
 }
