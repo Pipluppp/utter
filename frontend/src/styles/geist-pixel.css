@@ -12,5 +12,5 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("../../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Line.woff2") format("woff2");
+  src: url("/static/fonts/GeistPixel-Line.woff2") format("woff2");
 }

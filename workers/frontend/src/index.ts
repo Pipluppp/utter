@@ -142,6 +142,25 @@ function missingApiBindingResponse(): Response {
   );
 }
 
+function withSecurityHeaders(response: Response, isHtml: boolean): Response {
+  const headers = new Headers(response.headers);
+  headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  headers.set("X-Content-Type-Options", "nosniff");
+  if (isHtml) {
+    headers.set(
+      "Content-Security-Policy",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://challenges.cloudflare.com https://jgmivviwockcwjkvpqra.supabase.co; frame-src https://challenges.cloudflare.com",
+    );
+    headers.set("Cross-Origin-Opener-Policy", "same-origin");
+    headers.set("X-Frame-Options", "DENY");
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(request: Request, env: FrontendEnv): Promise<Response> {
     const url = new URL(request.url);
@@ -149,22 +168,33 @@ export default {
     if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
       if (env.API) {
         const proxied = await env.API.fetch(buildServiceBindingRequest(request, url.pathname, url.search));
-        return withNoStore(proxied);
+        return withSecurityHeaders(withNoStore(proxied), false);
       }
 
-      if (!isLocalHostname(url.hostname)) return missingApiBindingResponse();
+      if (!isLocalHostname(url.hostname)) return withSecurityHeaders(missingApiBindingResponse(), false);
 
       const proxied = await fetch(buildProxyRequest(request, proxyRequestUrl(request, LOCAL_API_ORIGIN)));
-      return withNoStore(proxied);
+      return withSecurityHeaders(withNoStore(proxied), false);
+    }
+
+    if (url.pathname === "/robots.txt") {
+      return withSecurityHeaders(
+        new Response(
+          "User-agent: *\nAllow: /\n\nSitemap: https://uttervoice.com/sitemap.xml\n",
+          { headers: { "Content-Type": "text/plain; charset=utf-8" } },
+        ),
+        false,
+      );
     }
 
     if (isSpaRouteRequest(request, url)) {
       const fallbackUrl = new URL(request.url);
       fallbackUrl.pathname = "/";
       fallbackUrl.search = "";
-      return env.ASSETS.fetch(new Request(fallbackUrl.toString(), request));
+      const spaResponse = await env.ASSETS.fetch(new Request(fallbackUrl.toString(), request));
+      return withSecurityHeaders(spaResponse, true);
     }
 
-    return serveSpaAsset(request, env);
+    return withSecurityHeaders(await serveSpaAsset(request, env), false);
   },
 };

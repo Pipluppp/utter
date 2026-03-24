@@ -5,10 +5,10 @@ import { getCreditPackById } from "../../content/plans";
 import { apiJson } from "../../lib/api";
 import { getAuthSession, signOut as signOutRequest } from "../../lib/auth";
 import type {
-    CreditLedgerEvent,
-    CreditsUsageResponse,
-    MeResponse,
-    ProfileRecord,
+  CreditLedgerEvent,
+  CreditsUsageResponse,
+  MeResponse,
+  ProfileRecord,
 } from "../../lib/types";
 
 const creditsFormat = new Intl.NumberFormat();

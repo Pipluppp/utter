@@ -1,66 +1,77 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <script type="module">
-      if (import.meta.env.DEV) {
-        import("react-grab");
+
+<head>
+  <script type="module">
+    if (import.meta.env.DEV) {
+      import("react-grab");
+    }
+  </script>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Clone a voice and generate speech with Qwen3-TTS" />
+  <meta name="theme-color" content="#ffffff" />
+
+  <!-- LCP image preload -->
+  <link rel="preload" as="image" type="image/webp" href="/static/utter_demo/frieren/still.webp" />
+  <!-- Custom font preload -->
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="/static/fonts/GeistPixel-Line.woff2" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://uttervoice.com" />
+  <meta property="og:title" content="Utter — Voice Cloning & Speech Generation" />
+  <meta property="og:description" content="Clone any voice from audio and generate speech with AI." />
+  <meta property="og:image" content="https://uttervoice.com/static/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Utter — Voice Cloning & Speech Generation" />
+  <meta name="twitter:description" content="Clone any voice from audio and generate speech with AI." />
+  <meta name="twitter:image" content="https://uttervoice.com/static/og-image.png" />
+
+  <script>
+    ; (() => {
+      const STORAGE_KEY = 'utter_theme'
+      const DARK_BG = '#0d0d0d'
+      const LIGHT_BG = '#ffffff'
+
+      let theme = null
+      try {
+        theme = localStorage.getItem(STORAGE_KEY)
+      } catch {
+        // ignore
       }
-    </script>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Clone a voice and generate speech with Qwen3-TTS" />
-    <meta name="theme-color" content="#ffffff" />
+      const resolvedDark = theme === 'dark'
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://uttervoice.com" />
-    <meta property="og:title" content="Utter — Voice Cloning & Speech Generation" />
-    <meta property="og:description" content="Clone any voice from audio and generate speech with AI." />
-    <meta property="og:image" content="https://uttervoice.com/static/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+      const root = document.documentElement
+      root.classList.toggle('dark', resolvedDark)
+      root.style.colorScheme = resolvedDark ? 'dark' : 'light'
 
-    <!-- Twitter / X -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Utter — Voice Cloning & Speech Generation" />
-    <meta name="twitter:description" content="Clone any voice from audio and generate speech with AI." />
-    <meta name="twitter:image" content="https://uttervoice.com/static/og-image.png" />
+      const metaTheme = document.querySelector('meta[name="theme-color"]')
+      if (metaTheme) metaTheme.setAttribute('content', resolvedDark ? DARK_BG : LIGHT_BG)
+    })()
+  </script>
 
-    <script>
-      ;(() => {
-        const STORAGE_KEY = 'utter_theme'
-        const DARK_BG = '#0d0d0d'
-        const LIGHT_BG = '#ffffff'
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+    onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
+  </noscript>
 
-        let theme = null
-        try {
-          theme = localStorage.getItem(STORAGE_KEY)
-        } catch {
-          // ignore
-        }
-        const resolvedDark = theme === 'dark'
+  <title>Utter</title>
+</head>
 
-        const root = document.documentElement
-        root.classList.toggle('dark', resolvedDark)
-        root.style.colorScheme = resolvedDark ? 'dark' : 'light'
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
 
-        const metaTheme = document.querySelector('meta[name="theme-color"]')
-        if (metaTheme) metaTheme.setAttribute('content', resolvedDark ? DARK_BG : LIGHT_BG)
-      })()
-    </script>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
-
-    <title>Utter</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
 </html>

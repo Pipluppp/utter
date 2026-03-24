@@ -385,8 +385,8 @@ export function MockCloneFeature(): ReactNode {
           {/* Upload / Record toggle */}
           <div className="flex items-center justify-center">
             <div className="inline-flex overflow-hidden border border-border bg-background shadow-elevated">
-              <button
-                type="button"
+              <div
+                role="presentation"
                 className={cn(
                   "cursor-pointer px-4 py-2 text-xs font-medium uppercase tracking-wide transition-colors motion-reduce:transition-none",
                   audioMode === "upload"
@@ -396,9 +396,9 @@ export function MockCloneFeature(): ReactNode {
                 onClick={() => setAudioMode("upload")}
               >
                 Upload
-              </button>
-              <button
-                type="button"
+              </div>
+              <div
+                role="presentation"
                 className={cn(
                   "cursor-pointer px-4 py-2 text-xs font-medium uppercase tracking-wide transition-colors motion-reduce:transition-none",
                   audioMode === "record"
@@ -408,7 +408,7 @@ export function MockCloneFeature(): ReactNode {
                 onClick={() => setAudioMode("record")}
               >
                 Record
-              </button>
+              </div>
             </div>
           </div>
 

@@ -5,7 +5,15 @@ import { buttonStyles } from "../../components/ui/Button";
 import type { UtterDemo } from "../../content/utterDemo";
 import { cn } from "../../lib/cn";
 
-export function DemoClipCard({ demo, className }: { demo: UtterDemo; className?: string }) {
+export function DemoClipCard({
+  demo,
+  className,
+  priority,
+}: {
+  demo: UtterDemo;
+  className?: string;
+  priority?: boolean;
+}) {
   const [mode, setMode] = useState<"original" | "clone">("original");
   const canClone = Boolean(demo.outputAudioUrl);
 
@@ -44,7 +52,8 @@ export function DemoClipCard({ demo, className }: { demo: UtterDemo; className?:
               alt=""
               width={560}
               height={224}
-              loading="lazy"
+              loading={priority ? undefined : "lazy"}
+              fetchPriority={priority ? "high" : undefined}
               decoding="async"
               className="h-56 w-full object-cover grayscale"
             />
@@ -88,7 +97,11 @@ export function DemoClipCard({ demo, className }: { demo: UtterDemo; className?:
           </ToggleButtonGroup>
 
           {activeAudioUrl ? (
-            <a href={activeAudioUrl} className={buttonStyles({ variant: "secondary", size: "sm" })}>
+            <a
+              href={activeAudioUrl}
+              aria-label={`Download ${demo.title} ${mode} audio`}
+              className={buttonStyles({ variant: "secondary", size: "sm" })}
+            >
               Download
             </a>
           ) : null}

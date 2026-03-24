@@ -50,6 +50,7 @@ export function DemoWall() {
               <DemoClipCard
                 key={demo.id}
                 demo={demo}
+                priority={demo.id === "frieren"}
                 className={cn("md:col-span-12", LAYOUT[demo.id])}
               />
             ))}

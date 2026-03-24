@@ -2,10 +2,10 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useMatches } from "react-router-dom";
 import { TaskDock } from "../components/tasks/TaskDock";
 import {
-    RouteAccountSkeleton,
-    RouteAppSkeleton,
-    RouteAuthSkeleton,
-    RouteMarketingSkeleton,
+  RouteAccountSkeleton,
+  RouteAppSkeleton,
+  RouteAuthSkeleton,
+  RouteMarketingSkeleton,
 } from "../components/ui/RouteSkeletons";
 import { GlobalToastRegion } from "../components/ui/Toast";
 import { cn } from "../lib/cn";
@@ -101,7 +101,12 @@ export function Layout() {
   }, [menuOpen]);
 
   return (
-    <div className={cn("flex flex-col bg-background text-foreground", isAuthSurface ? "h-dvh" : "min-h-dvh")}>
+    <div
+      className={cn(
+        "flex flex-col bg-background text-foreground",
+        isAuthSurface ? "h-dvh" : "min-h-dvh",
+      )}
+    >
       <a
         href="#main"
         className={cn(
