@@ -3,6 +3,7 @@ import {
   Dialog,
   DropZone,
   FileTrigger,
+  Form,
   Input,
   Label,
   Modal,
@@ -13,14 +14,15 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "react-aria-components";
-import { NavLink, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { WaveformPlayer } from "../components/audio/WaveformPlayer";
 import { Button } from "../components/ui/Button";
 import { GridArtSurface } from "../components/ui/GridArt";
 import { InfoTip } from "../components/ui/InfoTip";
+import { AppLink } from "../components/ui/Link";
 import { Message } from "../components/ui/Message";
 import { ProgressBar } from "../components/ui/ProgressBar";
-import { Select } from "../components/ui/Select";
+import { Select, type SelectItem } from "../components/ui/Select";
 import { getUtterDemo } from "../content/utterDemo";
 import { apiForm, apiJson } from "../lib/api";
 import {
@@ -62,6 +64,10 @@ function contentTypeForFile(file: File): string {
 export function ClonePage() {
   const [params] = useSearchParams();
   const { languages, defaultLanguage, transcription } = useLanguages();
+  const languageItems: SelectItem[] = useMemo(
+    () => languages.map((l) => ({ id: l, label: l })),
+    [languages],
+  );
 
   const loadedDemoRef = useRef<string | null>(null);
   const recordingActiveRef = useRef(false);
@@ -749,8 +755,9 @@ export function ClonePage() {
         </div>
       )}
 
-      <form
+      <Form
         className="space-y-6"
+        validationBehavior="aria"
         onSubmit={(e) => {
           e.preventDefault();
           void onSubmit();
@@ -764,7 +771,7 @@ export function ClonePage() {
             name="name"
             autoComplete="off"
             placeholder="e.g. Duncan (calm, close-mic)..."
-            className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
         </TextField>
 
@@ -775,7 +782,7 @@ export function ClonePage() {
           <TextArea
             name="transcript"
             placeholder="Paste the transcript of the reference audio..."
-            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
           <Text
             slot="description"
@@ -785,23 +792,13 @@ export function ClonePage() {
           </Text>
         </TextField>
 
-        <div>
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Language
-          </Label>
-          <Select
-            id="clone-language"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            name="language"
-          >
-            {languages.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </Select>
-        </div>
+        <Select
+          label="Language"
+          name="language"
+          items={languageItems}
+          selectedKey={language}
+          onSelectionChange={setLanguage}
+        />
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Button variant="secondary" type="button" block onPress={() => void onTryExample()}>
@@ -811,7 +808,7 @@ export function ClonePage() {
             {submitting ? `Cloning... ${elapsedLabel}` : "Clone Voice"}
           </Button>
         </div>
-      </form>
+      </Form>
 
       {submitting ? (
         <div className="border border-border bg-subtle p-4 shadow-elevated">
@@ -847,12 +844,12 @@ export function ClonePage() {
                   Voice <span className="text-foreground">{created.name}</span> is ready.
                 </p>
                 <div className="mt-6 flex flex-col gap-3">
-                  <NavLink
-                    to={`/generate?voice=${created.id}`}
+                  <AppLink
+                    href={`/generate?voice=${created.id}`}
                     className="inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     Go to Generate -&gt;
-                  </NavLink>
+                  </AppLink>
                   <Button variant="secondary" type="button" onPress={reset}>
                     Clone Another Voice
                   </Button>

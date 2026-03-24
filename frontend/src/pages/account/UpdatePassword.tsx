@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { FieldError, Input, Label, TextField } from "react-aria-components";
-import { Link } from "react-router-dom";
+import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
 import { Button } from "../../components/ui/Button";
+import { AppLink } from "../../components/ui/Link";
 import { updatePassword } from "../../lib/auth";
 import { validatePassword } from "../../lib/validation";
 import { AccountNotice, AccountPanel } from "./accountUi";
@@ -56,11 +56,6 @@ export function UpdatePasswordPage() {
     }
   }
 
-  function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    void onSubmit();
-  }
-
   return (
     <div className="space-y-5">
       {status.type === "error" ? (
@@ -69,9 +64,9 @@ export function UpdatePasswordPage() {
       {status.type === "success" ? (
         <AccountNotice tone="success">
           {status.message}{" "}
-          <Link to="/account" className="underline underline-offset-4 hover:opacity-70">
+          <AppLink href="/account" className="underline underline-offset-4 hover:opacity-70">
             Go to profile
-          </Link>
+          </AppLink>
         </AccountNotice>
       ) : null}
 
@@ -80,7 +75,14 @@ export function UpdatePasswordPage() {
         title="Set a new password"
         description="Choose a new password for your account. Must be at least 6 characters."
       >
-        <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
+        <Form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void onSubmit();
+          }}
+          validationBehavior="aria"
+          className="max-w-sm space-y-4"
+        >
           <TextField
             value={password}
             onChange={setPassword}
@@ -95,7 +97,7 @@ export function UpdatePasswordPage() {
             <Input
               placeholder="At least 6 characters"
               autoComplete="new-password"
-              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
             {passwordError ? (
               <FieldError className="text-sm text-red-500">{passwordError}</FieldError>
@@ -115,7 +117,7 @@ export function UpdatePasswordPage() {
             <Input
               placeholder="Re-enter your new password"
               autoComplete="new-password"
-              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
             {mismatchError ? (
               <FieldError className="text-sm text-red-500">{mismatchError}</FieldError>
@@ -125,7 +127,7 @@ export function UpdatePasswordPage() {
           <Button type="submit" size="sm" isDisabled={!canSubmit} isPending={busy}>
             Update password
           </Button>
-        </form>
+        </Form>
       </AccountPanel>
     </div>
   );

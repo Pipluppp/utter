@@ -1,12 +1,14 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Input, Label, TextField } from "react-aria-components";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Form, Input, Label, TextField } from "react-aria-components";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthState } from "../app/auth/AuthStateProvider";
 import { getSafeReturnTo } from "../app/navigation";
 import { Button } from "../components/ui/Button";
 import { GridArt } from "../components/ui/GridArt";
+import { AppLink } from "../components/ui/Link";
 import { Message } from "../components/ui/Message";
+import { Separator } from "../components/ui/Separator";
 import {
   getTurnstileSiteKey,
   isAuthConfigured,
@@ -117,11 +119,6 @@ export function AuthPage() {
     }
   }
 
-  function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    void onPasswordSubmit();
-  }
-
   const busy = status.type === "loading";
 
   return (
@@ -175,7 +172,7 @@ export function AuthPage() {
 
           <div className="relative mt-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
+              <Separator />
             </div>
             <div className="relative flex justify-center text-xs">
               <span className="bg-background px-3 text-muted-foreground">or</span>
@@ -193,7 +190,14 @@ export function AuthPage() {
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+          <Form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void onPasswordSubmit();
+            }}
+            validationBehavior="aria"
+            className="mt-6 space-y-5"
+          >
             <TextField
               value={email}
               onChange={setEmail}
@@ -207,7 +211,7 @@ export function AuthPage() {
               <Input
                 placeholder="you@example.com"
                 autoComplete="email"
-                className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               />
             </TextField>
 
@@ -223,18 +227,18 @@ export function AuthPage() {
               <Input
                 placeholder="6+ characters"
                 autoComplete={intent === "sign_in" ? "current-password" : "new-password"}
-                className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               />
             </TextField>
 
             {intent === "sign_in" ? (
               <div className="text-right">
-                <Link
-                  to="/auth/forgot-password"
+                <AppLink
+                  href="/auth/forgot-password"
                   className="text-sm text-muted-foreground hover:text-foreground"
                 >
                   Forgot password?
-                </Link>
+                </AppLink>
               </div>
             ) : null}
 
@@ -257,7 +261,7 @@ export function AuthPage() {
             >
               {intent === "sign_in" ? "Sign in" : "Create account"}
             </Button>
-          </form>
+          </Form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {intent === "sign_in" ? (
@@ -288,12 +292,12 @@ export function AuthPage() {
 
         <div className="flex items-center justify-between text-[11px] text-faint">
           <div className="flex gap-4">
-            <Link to="/terms" className="hover:text-foreground">
+            <AppLink href="/terms" className="hover:text-foreground">
               Terms
-            </Link>
-            <Link to="/privacy" className="hover:text-foreground">
+            </AppLink>
+            <AppLink href="/privacy" className="hover:text-foreground">
               Privacy
-            </Link>
+            </AppLink>
           </div>
           {returnTo ? (
             <span className="text-faint">

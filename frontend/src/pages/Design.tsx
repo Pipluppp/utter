@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Form,
   Input,
   Label,
   ListBox,
@@ -15,7 +16,7 @@ import { Button } from "../components/ui/Button";
 import { GridArtSurface } from "../components/ui/GridArt";
 import { InfoTip } from "../components/ui/InfoTip";
 import { Message } from "../components/ui/Message";
-import { Select } from "../components/ui/Select";
+import { Select, type SelectItem } from "../components/ui/Select";
 import { apiForm, apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
 import { formatElapsed } from "../lib/time";
@@ -53,6 +54,10 @@ const EXAMPLES: Array<{ title: string; name: string; instruct: string }> = [
 export function DesignPage() {
   const navigate = useNavigate();
   const { languages } = useLanguages();
+  const languageItems: SelectItem[] = useMemo(
+    () => languages.map((l) => ({ id: l, label: l })),
+    [languages],
+  );
   const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
 
   const designTasks = getTasksByType("design_preview");
@@ -333,8 +338,9 @@ export function DesignPage() {
       {error ? <Message variant="error">{error}</Message> : null}
       {success ? <Message variant="success">{success}</Message> : null}
 
-      <form
+      <Form
         className="space-y-6"
+        validationBehavior="aria"
         onSubmit={(e) => {
           e.preventDefault();
           void onPreview();
@@ -347,7 +353,7 @@ export function DesignPage() {
           <Input
             name="name"
             autoComplete="off"
-            className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
         </TextField>
 
@@ -358,7 +364,7 @@ export function DesignPage() {
           <TextArea
             name="instruct"
             placeholder="Describe the voice (tone, pacing, timbre, vibe)..."
-            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
           <Text
             slot="description"
@@ -390,30 +396,20 @@ export function DesignPage() {
           <TextArea
             name="text"
             placeholder="A short line to preview the voice..."
-            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
           <Text slot="description" className="mt-2 text-xs text-faint">
             {text.length}/500
           </Text>
         </TextField>
 
-        <div>
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Language
-          </Label>
-          <Select
-            id="design-language"
-            name="language"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-          >
-            {languages.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </Select>
-        </div>
+        <Select
+          label="Language"
+          name="language"
+          items={languageItems}
+          selectedKey={language}
+          onSelectionChange={setLanguage}
+        />
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Button type="submit" block isDisabled={isSubmittingPreview}>
@@ -432,7 +428,7 @@ export function DesignPage() {
             Use Voice
           </Button>
         </div>
-      </form>
+      </Form>
 
       {selectedTask ? (
         <div className="space-y-4 border border-border bg-subtle p-4 shadow-elevated">

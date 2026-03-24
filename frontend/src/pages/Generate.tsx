@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Button as AriaButton,
   Select as AriaSelect,
+  Form,
   Label,
   ListBox,
   ListBoxItem,
@@ -19,7 +20,7 @@ import { Button } from "../components/ui/Button";
 import { GridArtSurface } from "../components/ui/GridArt";
 import { InfoTip } from "../components/ui/InfoTip";
 import { Message } from "../components/ui/Message";
-import { Select } from "../components/ui/Select";
+import { Select, type SelectItem } from "../components/ui/Select";
 import { getUtterDemo } from "../content/utterDemo";
 import { apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
@@ -38,6 +39,10 @@ type GenerateFormState = {
 export function GeneratePage() {
   const [params] = useSearchParams();
   const { languages, defaultLanguage, provider, capabilities } = useLanguages();
+  const languageItems: SelectItem[] = useMemo(
+    () => languages.map((l) => ({ id: l, label: l })),
+    [languages],
+  );
   const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
 
   const generateTasks = getTasksByType("generate");
@@ -280,8 +285,9 @@ export function GeneratePage() {
 
       {error ? <Message variant="error">{error}</Message> : null}
 
-      <form
+      <Form
         className="space-y-6"
+        validationBehavior="aria"
         onSubmit={(e) => {
           e.preventDefault();
           void onGenerate();
@@ -362,23 +368,13 @@ export function GeneratePage() {
           </Popover>
         </AriaSelect>
 
-        <div>
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Language
-          </Label>
-          <Select
-            id="generate-language"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            name="language"
-          >
-            {languages.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </Select>
-        </div>
+        <Select
+          label="Language"
+          name="language"
+          items={languageItems}
+          selectedKey={language}
+          onSelectionChange={setLanguage}
+        />
 
         <TextField value={text} onChange={setText}>
           <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -387,7 +383,7 @@ export function GeneratePage() {
           <TextArea
             name="text"
             placeholder="Type what you want the voice to say..."
-            className="min-h-44 min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="min-h-44 min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
           <Text
             slot="description"
@@ -403,7 +399,7 @@ export function GeneratePage() {
         <Button type="submit" block isDisabled={!canSubmit}>
           {isSubmitting ? "Starting generation..." : "Generate Speech"}
         </Button>
-      </form>
+      </Form>
 
       {selectedTask ? (
         <div className="space-y-4 border border-border bg-subtle p-4 shadow-elevated">

@@ -1,9 +1,9 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { useRef, useState } from "react";
-import { Input, Label, TextField } from "react-aria-components";
-import { Link } from "react-router-dom";
+import { Form, Input, Label, TextField } from "react-aria-components";
 import { Button } from "../components/ui/Button";
 import { GridArt } from "../components/ui/GridArt";
+import { AppLink } from "../components/ui/Link";
 import { Message } from "../components/ui/Message";
 import { forgotPassword, getTurnstileSiteKey, isAuthConfigured } from "../lib/auth";
 
@@ -48,11 +48,6 @@ export function ForgotPasswordPage() {
     }
   }
 
-  function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    void onSubmit();
-  }
-
   return (
     <div className="flex min-h-full w-full bg-background">
       <div className="relative flex w-full flex-col justify-between overflow-y-auto px-6 py-8 sm:px-12 lg:w-1/2 lg:px-20">
@@ -81,7 +76,14 @@ export function ForgotPasswordPage() {
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+          <Form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void onSubmit();
+            }}
+            validationBehavior="aria"
+            className="mt-6 space-y-5"
+          >
             <TextField
               value={email}
               onChange={setEmail}
@@ -95,7 +97,7 @@ export function ForgotPasswordPage() {
               <Input
                 placeholder="you@example.com"
                 autoComplete="email"
-                className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               />
             </TextField>
 
@@ -113,26 +115,26 @@ export function ForgotPasswordPage() {
             <Button type="submit" block isDisabled={!canSubmit} isPending={busy}>
               Send recovery link
             </Button>
-          </form>
+          </Form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <Link
-              to="/auth"
+            <AppLink
+              href="/auth"
               className="text-foreground underline underline-offset-4 hover:opacity-70"
             >
               Back to sign in
-            </Link>
+            </AppLink>
           </div>
         </div>
 
         <div className="flex items-center justify-between text-[11px] text-faint">
           <div className="flex gap-4">
-            <Link to="/terms" className="hover:text-foreground">
+            <AppLink href="/terms" className="hover:text-foreground">
               Terms
-            </Link>
-            <Link to="/privacy" className="hover:text-foreground">
+            </AppLink>
+            <AppLink href="/privacy" className="hover:text-foreground">
               Privacy
-            </Link>
+            </AppLink>
           </div>
         </div>
       </div>

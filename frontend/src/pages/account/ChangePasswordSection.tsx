@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FieldError, Input, Label, TextField } from "react-aria-components";
+import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
 import { Button } from "../../components/ui/Button";
 import { updatePassword } from "../../lib/auth";
 import { validatePassword } from "../../lib/validation";
@@ -68,11 +68,6 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
     }
   }
 
-  function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    void onSubmit();
-  }
-
   return (
     <div className="space-y-5">
       {status.type === "error" ? (
@@ -87,7 +82,14 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
         title="Change password"
         description="Update the password for your account. Must be at least 6 characters."
       >
-        <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
+        <Form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void onSubmit();
+          }}
+          validationBehavior="aria"
+          className="max-w-sm space-y-4"
+        >
           <TextField
             value={password}
             onChange={(value) => {
@@ -104,7 +106,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
             <Input
               placeholder="At least 6 characters"
               autoComplete="new-password"
-              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
             {passwordError ? (
               <FieldError className="text-sm text-red-500">{passwordError}</FieldError>
@@ -124,7 +126,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
             <Input
               placeholder="Re-enter your new password"
               autoComplete="new-password"
-              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
             {mismatchError ? (
               <FieldError className="text-sm text-red-500">{mismatchError}</FieldError>
@@ -134,7 +136,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
           <Button type="submit" size="sm" isDisabled={!canSubmit} isPending={busy}>
             Change password
           </Button>
-        </form>
+        </Form>
       </AccountPanel>
     </div>
   );
