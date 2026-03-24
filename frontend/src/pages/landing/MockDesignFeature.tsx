@@ -19,6 +19,7 @@ interface DesignSequencerState {
   presetPressed: boolean;
   previewStatus: "hidden" | "pending" | "completed";
   showResult: boolean;
+  resultOpacity: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,6 +58,7 @@ const IDLE_STATE: DesignSequencerState = {
   presetPressed: false,
   previewStatus: "hidden",
   showResult: false,
+  resultOpacity: 0.2,
 };
 
 function completedState(): DesignSequencerState {
@@ -70,6 +72,7 @@ function completedState(): DesignSequencerState {
     presetPressed: true,
     previewStatus: "completed",
     showResult: true,
+    resultOpacity: 1,
   };
 }
 
@@ -185,7 +188,7 @@ function useDesignAnimationSequencer(
 
     // Step 4 – button press
     schedule(() => {
-      setState((s) => ({ ...s, step: 4 }));
+      setState((s) => ({ ...s, step: 4, resultOpacity: 0.4 }));
     }, elapsed);
     elapsed += DESIGN_TIMING[4].duration + DESIGN_TIMING[4].pause;
 
@@ -196,6 +199,7 @@ function useDesignAnimationSequencer(
         step: 5,
         sweepNonce: s.sweepNonce + 1,
         previewStatus: "pending",
+        resultOpacity: 1,
       }));
       schedule(() => {
         setState((s) => ({ ...s, previewStatus: "completed" }));
@@ -255,6 +259,7 @@ export function MockDesignFeature(): ReactNode {
     presetPressed,
     previewStatus,
     showResult,
+    resultOpacity,
   } = useDesignAnimationSequencer(isInView, reducedMotion);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -388,10 +393,8 @@ export function MockDesignFeature(): ReactNode {
 
           {/* Tracked preview row */}
           <div
-            className={cn(
-              "border border-border bg-subtle px-4 py-3 transition-opacity motion-reduce:transition-none",
-              previewStatus !== "hidden" ? "opacity-100" : "opacity-0",
-            )}
+            className="border border-border bg-subtle px-4 py-3 transition-[opacity] duration-600 ease-in-out motion-reduce:transition-none"
+            style={{ opacity: resultOpacity }}
           >
             <div className="flex items-center justify-between text-sm">
               <span className="text-foreground">Voice Preview</span>
@@ -408,10 +411,8 @@ export function MockDesignFeature(): ReactNode {
 
           {/* Waveform preview area */}
           <div
-            className={cn(
-              "space-y-3 border border-border bg-background p-4 transition-opacity motion-reduce:transition-none",
-              showResult ? "opacity-100" : "opacity-0",
-            )}
+            className="space-y-3 border border-border bg-background p-4 transition-[opacity] duration-600 ease-in-out motion-reduce:transition-none"
+            style={{ opacity: resultOpacity }}
           >
             <MockWaveform />
             <div className="inline-flex items-center justify-center border border-border bg-background px-4 py-2 text-[12px] font-medium uppercase tracking-wide text-foreground">
