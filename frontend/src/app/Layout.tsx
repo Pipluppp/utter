@@ -2,10 +2,10 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useMatches } from "react-router-dom";
 import { TaskDock } from "../components/tasks/TaskDock";
 import {
-  RouteAccountSkeleton,
-  RouteAppSkeleton,
-  RouteAuthSkeleton,
-  RouteMarketingSkeleton,
+    RouteAccountSkeleton,
+    RouteAppSkeleton,
+    RouteAuthSkeleton,
+    RouteMarketingSkeleton,
 } from "../components/ui/RouteSkeletons";
 import { GlobalToastRegion } from "../components/ui/Toast";
 import { cn } from "../lib/cn";
@@ -101,7 +101,7 @@ export function Layout() {
   }, [menuOpen]);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background text-foreground">
+    <div className={cn("flex flex-col bg-background text-foreground", isAuthSurface ? "h-dvh" : "min-h-dvh")}>
       <a
         href="#main"
         className={cn(
@@ -126,7 +126,7 @@ export function Layout() {
         tabIndex={-1}
         className={cn(
           "w-full flex-1",
-          isAuthSurface ? "flex" : "mx-auto max-w-5xl px-4 py-12 md:px-6",
+          isAuthSurface ? "flex overflow-hidden" : "mx-auto max-w-5xl px-4 py-12 md:px-6",
         )}
       >
         <Suspense fallback={suspenseFallback}>

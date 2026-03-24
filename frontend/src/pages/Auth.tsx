@@ -1,6 +1,6 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Input, Label, Tab, TabList, TabPanel, Tabs, TextField } from "react-aria-components";
+import { Input, Label, TextField } from "react-aria-components";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthState } from "../app/auth/AuthStateProvider";
 import { getSafeReturnTo } from "../app/navigation";
@@ -125,13 +125,9 @@ export function AuthPage() {
   const busy = status.type === "loading";
 
   return (
-    <div className="flex min-h-full w-full bg-background">
-      <div className="relative flex w-full flex-col justify-between overflow-y-auto px-6 py-8 sm:px-12 lg:w-1/2 lg:px-20">
-        <Tabs
-          selectedKey={intent}
-          onSelectionChange={(key) => setIntent(key as PasswordIntent)}
-          className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-12"
-        >
+    <div className="flex w-full flex-1 bg-background">
+      <div className="relative flex w-full flex-col justify-between overflow-y-auto px-6 py-4 sm:px-12 lg:w-1/2 lg:px-20">
+        <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-4">
           <div>
             <h1 className="font-pixel text-2xl uppercase tracking-[2px]">
               {intent === "sign_in" ? "Sign in" : "Create account"}
@@ -142,33 +138,6 @@ export function AuthPage() {
                 : "Get started with Utter."}
             </p>
           </div>
-
-          <TabList aria-label="Authentication method" className="mt-6 flex gap-2">
-            <Tab
-              id="sign_in"
-              className={cn(
-                "flex-1 border border-border px-4 py-2.5 text-center text-sm font-medium transition-colors",
-                "hover:bg-subtle",
-                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                "selected:border-border-strong selected:bg-subtle",
-                "cursor-pointer outline-none",
-              )}
-            >
-              Sign in
-            </Tab>
-            <Tab
-              id="sign_up"
-              className={cn(
-                "flex-1 border border-border px-4 py-2.5 text-center text-sm font-medium transition-colors",
-                "hover:bg-subtle",
-                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                "selected:border-border-strong selected:bg-subtle",
-                "cursor-pointer outline-none",
-              )}
-            >
-              Sign up
-            </Tab>
-          </TabList>
 
           {!configured ? (
             <div className="mt-6">
@@ -224,41 +193,41 @@ export function AuthPage() {
             </div>
           ) : null}
 
-          <TabPanel id="sign_in">
-            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-              <TextField
-                value={email}
-                onChange={setEmail}
-                type="email"
-                isDisabled={!configured || busy}
-                autoFocus
-              >
-                <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Email
-                </Label>
-                <Input
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                />
-              </TextField>
+          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+            <TextField
+              value={email}
+              onChange={setEmail}
+              type="email"
+              isDisabled={!configured || busy}
+              autoFocus
+            >
+              <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+                Email
+              </Label>
+              <Input
+                placeholder="you@example.com"
+                autoComplete="email"
+                className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              />
+            </TextField>
 
-              <TextField
-                value={password}
-                onChange={setPassword}
-                type="password"
-                isDisabled={!configured || busy}
-              >
-                <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Password
-                </Label>
-                <Input
-                  placeholder="6+ characters"
-                  autoComplete="current-password"
-                  className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                />
-              </TextField>
+            <TextField
+              value={password}
+              onChange={setPassword}
+              type="password"
+              isDisabled={!configured || busy}
+            >
+              <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+                Password
+              </Label>
+              <Input
+                placeholder="6+ characters"
+                autoComplete={intent === "sign_in" ? "current-password" : "new-password"}
+                className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              />
+            </TextField>
 
+            {intent === "sign_in" ? (
               <div className="text-right">
                 <Link
                   to="/auth/forgot-password"
@@ -267,86 +236,55 @@ export function AuthPage() {
                   Forgot password?
                 </Link>
               </div>
+            ) : null}
 
-              {configured ? (
-                <Turnstile
-                  ref={turnstileRef}
-                  className="w-full"
-                  siteKey={turnstileSiteKey}
-                  options={{ theme: "dark", size: "flexible", refreshExpired: "auto" }}
-                  onSuccess={setCaptchaToken}
-                  onExpire={() => setCaptchaToken(null)}
-                />
-              ) : null}
+            {configured ? (
+              <Turnstile
+                ref={turnstileRef}
+                className="w-full"
+                siteKey={turnstileSiteKey}
+                options={{ theme: "dark", size: "flexible", refreshExpired: "auto" }}
+                onSuccess={setCaptchaToken}
+                onExpire={() => setCaptchaToken(null)}
+              />
+            ) : null}
 
-              <Button
-                type="submit"
-                block
-                isDisabled={!configured || busy || !captchaToken}
-                isPending={busy}
-              >
-                Sign in
-              </Button>
-            </form>
-          </TabPanel>
+            <Button
+              type="submit"
+              block
+              isDisabled={!configured || busy || !captchaToken}
+              isPending={busy}
+            >
+              {intent === "sign_in" ? "Sign in" : "Create account"}
+            </Button>
+          </form>
 
-          <TabPanel id="sign_up">
-            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-              <TextField
-                value={email}
-                onChange={setEmail}
-                type="email"
-                isDisabled={!configured || busy}
-                autoFocus
-              >
-                <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Email
-                </Label>
-                <Input
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                />
-              </TextField>
-
-              <TextField
-                value={password}
-                onChange={setPassword}
-                type="password"
-                isDisabled={!configured || busy}
-              >
-                <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Password
-                </Label>
-                <Input
-                  placeholder="6+ characters"
-                  autoComplete="new-password"
-                  className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                />
-              </TextField>
-
-              {configured ? (
-                <Turnstile
-                  ref={turnstileRef}
-                  className="w-full"
-                  siteKey={turnstileSiteKey}
-                  options={{ theme: "dark", size: "flexible", refreshExpired: "auto" }}
-                  onSuccess={setCaptchaToken}
-                  onExpire={() => setCaptchaToken(null)}
-                />
-              ) : null}
-
-              <Button
-                type="submit"
-                block
-                isDisabled={!configured || busy || !captchaToken}
-                isPending={busy}
-              >
-                Create account
-              </Button>
-            </form>
-          </TabPanel>
-        </Tabs>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            {intent === "sign_in" ? (
+              <>
+                Don&apos;t have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setIntent("sign_up")}
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  Sign up
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setIntent("sign_in")}
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  Sign in
+                </button>
+              </>
+            )}
+          </p>
+        </div>
 
         <div className="flex items-center justify-between text-[11px] text-faint">
           <div className="flex gap-4">
