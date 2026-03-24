@@ -65,7 +65,7 @@ export function _FeatureBlock({
     >
       <div data-col="text" className="space-y-4 md:col-span-5">
         <div>
-          <h3 className="text-2xl font-pixel font-medium uppercase tracking-[2px]">{title}</h3>
+          <h3 className="text-3xl font-pixel font-medium uppercase tracking-[2px]">{title}</h3>
           <p className="mt-2 text-base text-muted-foreground">{pitch}</p>
         </div>
         <ul className="space-y-2 text-sm text-muted-foreground">
@@ -121,7 +121,7 @@ export function FeaturesSection() {
           <div className="grid items-center gap-5 md:grid-cols-12 md:gap-8">
             <div className="space-y-4 md:col-span-5">
               <div>
-                <h3 className="text-2xl font-pixel font-medium uppercase tracking-[2px]">
+                <h3 className="text-3xl font-pixel font-medium uppercase tracking-[2px]">
                   Voice Clone
                 </h3>
                 <p className="mt-2 text-base text-muted-foreground">
@@ -159,7 +159,7 @@ export function FeaturesSection() {
           >
             <div data-col="text" className="space-y-4 md:col-span-5 md:pt-24">
               <div>
-                <h3 className="text-2xl font-pixel font-medium uppercase tracking-[2px]">
+                <h3 className="text-3xl font-pixel font-medium uppercase tracking-[2px]">
                   Generate
                 </h3>
                 <p className="mt-2 text-base text-muted-foreground">
@@ -189,7 +189,7 @@ export function FeaturesSection() {
           <div className="grid items-start gap-5 md:grid-cols-12 md:gap-8">
             <div data-col="text" className="space-y-4 md:col-span-5 md:pt-24">
               <div>
-                <h3 className="text-2xl font-pixel font-medium uppercase tracking-[2px]">Design</h3>
+                <h3 className="text-3xl font-pixel font-medium uppercase tracking-[2px]">Design</h3>
                 <p className="mt-2 text-base text-muted-foreground">
                   Describe a voice in text, queue a preview, then save the one you want to keep.
                 </p>
