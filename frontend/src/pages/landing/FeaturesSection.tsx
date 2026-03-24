@@ -188,9 +188,7 @@ export function FeaturesSection() {
           <div className="grid items-start gap-5 md:grid-cols-12 md:gap-8">
             <div data-col="text" className="space-y-4 md:col-span-5 md:pt-4">
               <div>
-                <h3 className="text-2xl font-pixel font-medium uppercase tracking-[2px]">
-                  Design
-                </h3>
+                <h3 className="text-2xl font-pixel font-medium uppercase tracking-[2px]">Design</h3>
                 <p className="mt-2 text-base text-muted-foreground">
                   Describe a voice in text, queue a preview, then save the one you want to keep.
                 </p>
