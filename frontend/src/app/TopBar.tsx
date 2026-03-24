@@ -1,7 +1,10 @@
-import { Link, NavLink, type To } from "react-router-dom";
+import type { To } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { TaskBadge } from "../components/tasks/TaskBadge";
 import { Kbd } from "../components/ui/Kbd";
+import { AppLink, NavAppLink } from "../components/ui/Link";
 import { HeaderPendingAuthSkeleton } from "../components/ui/RouteSkeletons";
+import { Separator } from "../components/ui/Separator";
 import { cn } from "../lib/cn";
 import type { NavSectionItem, NavVariant } from "./navigation";
 
@@ -48,6 +51,20 @@ function hashItem(label: string, hash: "#demos" | "#features" | "#pricing") {
     label,
     hash,
   };
+}
+
+function toHref(to: To): string {
+  if (typeof to === "string") return to;
+  const path = to.pathname ?? "";
+  const search = to.search ?? "";
+  const hash = to.hash ?? "";
+  return `${path}${search}${hash}`;
+}
+
+function isPathCurrent(pathname: string, to: To): boolean {
+  const href = typeof to === "string" ? to : (to.pathname ?? "/");
+  if (href === "/") return pathname === "/";
+  return pathname.startsWith(href);
 }
 
 function getSectionKey(section: NavSectionItem[]) {
@@ -134,21 +151,31 @@ function NavItemContent({
   );
 }
 
-function DesktopNavItem({ item, currentHash }: { item: NavSectionItem; currentHash: string }) {
+function DesktopNavItem({
+  item,
+  currentHash,
+  pathname,
+}: {
+  item: NavSectionItem;
+  currentHash: string;
+  pathname: string;
+}) {
   if (item.kind === "hash") {
     const active = currentHash === item.hash;
     return (
-      <Link to={{ pathname: "/", hash: item.hash }} className={baseNavItemClassName(active)}>
+      <AppLink href={`/#${item.hash.slice(1)}`} className={baseNavItemClassName(active)}>
         {item.label}
-      </Link>
+      </AppLink>
     );
   }
 
+  const isCurrent = isPathCurrent(pathname, item.to);
   return (
-    <NavLink
-      to={item.to}
+    <NavAppLink
+      href={toHref(item.to)}
+      isCurrent={isCurrent}
       aria-keyshortcuts={item.shortcut ? item.shortcut.toUpperCase() : undefined}
-      className={({ isActive }) => baseNavItemClassName(isActive)}
+      className={baseNavItemClassName(isCurrent)}
     >
       <NavItemContent
         label={item.label}
@@ -156,20 +183,22 @@ function DesktopNavItem({ item, currentHash }: { item: NavSectionItem; currentHa
         showTaskBadge={item.showTaskBadge}
         showProfileIcon={item.showProfileIcon}
       />
-    </NavLink>
+    </NavAppLink>
   );
 }
 
 function MobileNavItem({
   item,
   currentHash,
-  onClick,
+  pathname,
+  onPress,
 }: {
   item: NavSectionItem;
   currentHash: string;
-  onClick: () => void;
+  pathname: string;
+  onPress: () => void;
 }) {
-  const className = (active: boolean) =>
+  const itemClassName = (active: boolean) =>
     cn(
       "flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground",
       "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
@@ -179,19 +208,21 @@ function MobileNavItem({
   if (item.kind === "hash") {
     const active = currentHash === item.hash;
     return (
-      <Link to={{ pathname: "/", hash: item.hash }} onClick={onClick} className={className(active)}>
+      <AppLink href={`/#${item.hash.slice(1)}`} onPress={onPress} className={itemClassName(active)}>
         <span>{item.label}</span>
         <span />
-      </Link>
+      </AppLink>
     );
   }
 
+  const isCurrent = isPathCurrent(pathname, item.to);
   return (
-    <NavLink
-      to={item.to}
-      onClick={onClick}
+    <NavAppLink
+      href={toHref(item.to)}
+      isCurrent={isCurrent}
+      onPress={onPress}
       aria-keyshortcuts={item.shortcut ? item.shortcut.toUpperCase() : undefined}
-      className={({ isActive }) => className(isActive)}
+      className={itemClassName(isCurrent)}
     >
       <NavItemContent
         label={item.label}
@@ -199,7 +230,7 @@ function MobileNavItem({
         showTaskBadge={item.showTaskBadge}
         showProfileIcon={item.showProfileIcon}
       />
-    </NavLink>
+    </NavAppLink>
   );
 }
 
@@ -219,24 +250,29 @@ export function TopBar({
   onCloseMenu: () => void;
 }) {
   const sections = getSections(variant, signInHref);
+  const { pathname } = useLocation();
   const showMenuToggle =
     variant === "marketing_public" || variant === "marketing_member" || variant === "app_member";
 
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-background">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 md:px-6">
-        <NavLink
-          to="/"
+        <AppLink
+          href="/"
           className="text-[16px] font-pixel font-medium tracking-[2px] uppercase focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           UTTER
-        </NavLink>
+        </AppLink>
 
         {variant === "auth_minimal" ? (
           <nav className="flex items-center gap-1">
-            <NavLink to="/" className={({ isActive }) => baseNavItemClassName(isActive)}>
+            <NavAppLink
+              href="/"
+              isCurrent={pathname === "/"}
+              className={baseNavItemClassName(pathname === "/")}
+            >
               Back to home
-            </NavLink>
+            </NavAppLink>
           </nav>
         ) : variant === "app_pending_auth" ? (
           <HeaderPendingAuthSkeleton />
@@ -244,12 +280,13 @@ export function TopBar({
           <nav className="hidden items-center gap-1 md:flex">
             {sections.map((section, index) => (
               <div key={getSectionKey(section)} className="contents">
-                {index > 0 ? <span className="mx-2 h-4 w-px bg-border" aria-hidden="true" /> : null}
+                {index > 0 ? <Separator orientation="vertical" className="mx-2 h-4" /> : null}
                 {section.map((item) => (
                   <DesktopNavItem
                     key={item.kind === "hash" ? item.hash : `${String(item.to)}:${item.label}`}
                     item={item}
                     currentHash={currentHash}
+                    pathname={pathname}
                   />
                 ))}
               </div>
@@ -296,13 +333,14 @@ export function TopBar({
             <div className="space-y-1">
               {sections.map((section, index) => (
                 <div key={getSectionKey(section)}>
-                  {index > 0 ? <div className="my-2 h-px bg-border" /> : null}
+                  {index > 0 ? <Separator className="my-2" /> : null}
                   {section.map((item) => (
                     <MobileNavItem
                       key={item.kind === "hash" ? item.hash : `${String(item.to)}:${item.label}`}
                       item={item}
                       currentHash={currentHash}
-                      onClick={onCloseMenu}
+                      pathname={pathname}
+                      onPress={onCloseMenu}
                     />
                   ))}
                 </div>

@@ -1,19 +1,20 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { AppLink } from "../components/ui/Link";
+import { Separator } from "../components/ui/Separator";
 import { cn } from "../lib/cn";
 import { useAuthState } from "./auth/AuthStateProvider";
 import { buildAuthHref, buildReturnTo } from "./navigation";
 
-function FooterLink({ to, children }: { to: string; children: React.ReactNode }) {
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <NavLink
-      to={to}
+    <AppLink
+      href={href}
       className={cn(
         "text-[12px] uppercase tracking-wide text-muted-foreground hover:text-foreground",
-        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       )}
     >
       {children}
-    </NavLink>
+    </AppLink>
   );
 }
 
@@ -24,7 +25,8 @@ export function AppFooter() {
     authState.status === "signed_in" ? "/account" : buildAuthHref(buildReturnTo(location));
 
   return (
-    <footer className="border-t border-border bg-background">
+    <footer className="bg-background">
+      <Separator />
       <div className="mx-auto w-full max-w-5xl px-4 py-10 md:px-6">
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
           <div className="space-y-2">
@@ -33,24 +35,23 @@ export function AppFooter() {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <FooterLink to="/#pricing">Pricing</FooterLink>
-            <FooterLink to={accountHref}>
+            <FooterLink href="/#pricing">Pricing</FooterLink>
+            <FooterLink href={accountHref}>
               {authState.status === "signed_in" ? "Account" : "Sign in"}
             </FooterLink>
-            <FooterLink to="/privacy">Privacy</FooterLink>
-            <FooterLink to="/terms">Terms</FooterLink>
-            <FooterLink to="/about">About</FooterLink>
-            <a
+            <FooterLink href="/privacy">Privacy</FooterLink>
+            <FooterLink href="/terms">Terms</FooterLink>
+            <FooterLink href="/about">About</FooterLink>
+            <AppLink
               href="https://steel-gong-714.notion.site/756b59f6379b82168ff001ffed20a47f"
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
                 "text-[12px] uppercase tracking-wide text-muted-foreground hover:text-foreground",
-                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               )}
             >
               Bug
-            </a>
+            </AppLink>
           </div>
         </div>
 

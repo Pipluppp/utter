@@ -1,3 +1,4 @@
+import { Separator } from "./Separator";
 import { Skeleton } from "./Skeleton";
 
 const SKELETON_LINE_KEYS = ["line-a", "line-b", "line-c", "line-d", "line-e", "line-f"] as const;
@@ -18,7 +19,7 @@ function SkeletonParagraph({ lines, widths }: { lines: number; widths?: string[]
 }
 
 function SkeletonSectionDivider() {
-  return <div className="mx-2 hidden h-4 w-px bg-border md:block" />;
+  return <Separator orientation="vertical" className="mx-2 hidden h-4 md:block" />;
 }
 
 export function HeaderPendingAuthSkeleton() {

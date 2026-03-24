@@ -1,6 +1,7 @@
 import { Tab, TabList, Tabs } from "react-aria-components";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
+import { Separator } from "../../components/ui/Separator";
 import { cn } from "../../lib/cn";
 import { useAccountData } from "./accountData";
 import { AccountNotice } from "./accountUi";
@@ -80,7 +81,7 @@ export function AccountLayoutPage() {
       <Tabs selectedKey={selectedTab} onSelectionChange={(key) => navigate(key as string)}>
         <TabList
           aria-label="Account sections"
-          className="flex min-w-max gap-2 overflow-x-auto border-b border-border pb-2"
+          className="flex min-w-max gap-2 overflow-x-auto pb-2"
         >
           {navItems.map((item) => (
             <Tab
@@ -101,6 +102,7 @@ export function AccountLayoutPage() {
             </Tab>
           ))}
         </TabList>
+        <Separator />
       </Tabs>
 
       <section className="min-w-0">
