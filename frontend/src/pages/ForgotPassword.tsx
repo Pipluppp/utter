@@ -1,17 +1,19 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { useRef, useState } from "react";
-import { Form, Input, Label, TextField } from "react-aria-components";
+import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
 import { Button } from "../components/ui/Button";
 import { GridArt } from "../components/ui/GridArt";
 import { AppLink } from "../components/ui/Link";
 import { Message } from "../components/ui/Message";
 import { forgotPassword, getTurnstileSiteKey, isAuthConfigured } from "../lib/auth";
+import { validateEmail } from "../lib/validation";
 
 export function ForgotPasswordPage() {
   const configured = isAuthConfigured();
   const turnstileSiteKey = getTurnstileSiteKey();
 
   const [email, setEmail] = useState("");
+  const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<
     | { type: "idle" }
     | { type: "loading" }
@@ -23,16 +25,12 @@ export function ForgotPasswordPage() {
 
   const busy = status.type === "loading";
   const submitted = status.type === "success";
-  const canSubmit =
-    configured && !busy && !submitted && email.trim().length > 0 && captchaToken !== null;
+  const canSubmit = configured && !busy && !submitted && captchaToken !== null;
 
   async function onSubmit() {
     const normalizedEmail = email.trim();
-    if (!normalizedEmail) {
-      setStatus({ type: "error", message: "Email is required." });
-      return;
-    }
 
+    setServerErrors({});
     setStatus({ type: "loading" });
 
     try {
@@ -41,9 +39,11 @@ export function ForgotPasswordPage() {
     } catch (error) {
       turnstileRef.current?.reset();
       setCaptchaToken(null);
+      const message = error instanceof Error ? error.message : "Request failed.";
+      setServerErrors({ email: message });
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "Request failed.",
+        message,
       });
     }
   }
@@ -82,12 +82,15 @@ export function ForgotPasswordPage() {
               void onSubmit();
             }}
             validationBehavior="aria"
+            validationErrors={serverErrors}
             className="mt-6 space-y-5"
           >
             <TextField
+              name="email"
               value={email}
               onChange={setEmail}
               type="email"
+              validate={(v) => (v.length > 0 ? validateEmail(v) : null)}
               isDisabled={!configured || busy || submitted}
               autoFocus
             >
@@ -99,6 +102,9 @@ export function ForgotPasswordPage() {
                 autoComplete="email"
                 className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               />
+              <div className="min-h-[20px]">
+                <FieldError className="block text-xs text-red-500" />
+              </div>
             </TextField>
 
             {configured ? (

@@ -1,20 +1,20 @@
 import type { Session } from "@supabase/supabase-js";
 import { Hono, type Context } from "hono";
 import {
-  applyNoStoreHeaders,
-  buildAuthCallbackUrl,
-  buildAuthPageUrl,
-  clearAuthCookies,
-  clearPkceCookie,
-  getAuthCookieSession,
-  getPkceCookie,
-  getRequestOrigin,
-  getSafeReturnTo,
-  isEmailOtpType,
-  serializeAuthUser,
-  serializeIdentities,
-  setAuthCookies,
-  setPkceCookie
+    applyNoStoreHeaders,
+    buildAuthCallbackUrl,
+    buildAuthPageUrl,
+    clearAuthCookies,
+    clearPkceCookie,
+    getAuthCookieSession,
+    getPkceCookie,
+    getRequestOrigin,
+    getSafeReturnTo,
+    isEmailOtpType,
+    serializeAuthUser,
+    serializeIdentities,
+    setAuthCookies,
+    setPkceCookie
 } from "../_shared/auth_session.ts";
 import { envRequire } from "../_shared/runtime_env.ts";
 import { createAuthClient } from "../_shared/supabase.ts";
@@ -85,6 +85,14 @@ async function exchangePkceCode(
 
   const data = (await res.json()) as Session & { user: Session["user"] };
   return { session: data, error: null };
+}
+
+function validatePasswordServer(password: string): string | null {
+  if (password.length < 8) return "Password must be 8 characters or more.";
+  if (!/[A-Z]/.test(password)) return "Must include at least one uppercase letter.";
+  if (!/\d/.test(password)) return "Must include at least one number.";
+  if (!/[^a-zA-Z0-9]/.test(password)) return "Must include at least one special character.";
+  return null;
 }
 
 function normalizeNonEmptyString(value: unknown): string | null {
@@ -179,6 +187,11 @@ authRoutes.post("/auth/sign-up", async (c) => {
   }
   if (!password) {
     return jsonDetail("Password is required.", 400);
+  }
+
+  const passwordError = validatePasswordServer(password);
+  if (passwordError) {
+    return jsonDetail(passwordError, 400);
   }
 
   const supabase = createAuthClient();
@@ -363,8 +376,10 @@ authRoutes.post("/auth/update-password", async (c) => {
   if (!password) {
     return jsonDetail("Password is required.", 400);
   }
-  if (password.length < 6) {
-    return jsonDetail("Password must be at least 6 characters.", 400);
+
+  const passwordError = validatePasswordServer(password);
+  if (passwordError) {
+    return jsonDetail(passwordError, 400);
   }
 
   // Always refresh the session when a refresh token is available.

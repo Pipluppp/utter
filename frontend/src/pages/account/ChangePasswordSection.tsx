@@ -19,6 +19,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<Status>({ type: "idle" });
+  const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
 
   if (!hasEmailIdentity(identities)) {
     return (
@@ -30,10 +31,6 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
   }
 
   const busy = status.type === "loading";
-
-  const passwordError = password.length > 0 ? validatePassword(password) : null;
-  const mismatchError =
-    confirmPassword.length > 0 && password !== confirmPassword ? "Passwords do not match." : null;
 
   const canSubmit =
     !busy &&
@@ -54,6 +51,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
     }
 
     setStatus({ type: "loading" });
+    setServerErrors({});
 
     try {
       const result = await updatePassword({ password });
@@ -61,10 +59,20 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
       setPassword("");
       setConfirmPassword("");
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Failed to update password.",
-      });
+      const message = error instanceof Error ? error.message : "Failed to update password.";
+      const lowerMessage = message.toLowerCase();
+
+      if (
+        lowerMessage.includes("password") ||
+        lowerMessage.includes("characters") ||
+        lowerMessage.includes("uppercase") ||
+        lowerMessage.includes("digit") ||
+        lowerMessage.includes("special character")
+      ) {
+        setServerErrors({ password: message });
+      } else {
+        setStatus({ type: "error", message });
+      }
     }
   }
 
@@ -80,7 +88,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
       <AccountPanel
         kicker="Security"
         title="Change password"
-        description="Update the password for your account. Must be at least 6 characters."
+        description="Update the password for your account. 8+ characters, uppercase, number, special character."
       >
         <Form
           onSubmit={(e) => {
@@ -88,36 +96,39 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
             void onSubmit();
           }}
           validationBehavior="aria"
+          validationErrors={serverErrors}
           className="max-w-sm space-y-4"
         >
           <TextField
+            name="password"
             value={password}
             onChange={(value) => {
               setPassword(value);
               if (status.type === "success") setStatus({ type: "idle" });
             }}
             type="password"
-            isInvalid={!!passwordError}
+            validate={(v) => (v.length > 0 ? validatePassword(v) : null)}
             isDisabled={busy}
           >
             <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
               New password
             </Label>
             <Input
-              placeholder="At least 6 characters"
+              placeholder="8+ chars, uppercase, number, special"
               autoComplete="new-password"
               className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
-            {passwordError ? (
-              <FieldError className="text-sm text-red-500">{passwordError}</FieldError>
-            ) : null}
+            <div className="min-h-[20px]">
+              <FieldError className="block text-xs text-red-500" />
+            </div>
           </TextField>
 
           <TextField
+            name="confirmPassword"
             value={confirmPassword}
             onChange={setConfirmPassword}
             type="password"
-            isInvalid={!!mismatchError}
+            validate={(v) => (v.length > 0 && v !== password ? "Passwords do not match." : null)}
             isDisabled={busy}
           >
             <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -128,9 +139,9 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
               autoComplete="new-password"
               className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
-            {mismatchError ? (
-              <FieldError className="text-sm text-red-500">{mismatchError}</FieldError>
-            ) : null}
+            <div className="min-h-[20px]">
+              <FieldError className="block text-xs text-red-500" />
+            </div>
           </TextField>
 
           <Button type="submit" size="sm" isDisabled={!canSubmit} isPending={busy}>

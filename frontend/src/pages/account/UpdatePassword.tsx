@@ -16,13 +16,10 @@ export function UpdatePasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<Status>({ type: "idle" });
+  const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
 
   const busy = status.type === "loading";
   const succeeded = status.type === "success";
-
-  const passwordError = password.length > 0 ? validatePassword(password) : null;
-  const mismatchError =
-    confirmPassword.length > 0 && password !== confirmPassword ? "Passwords do not match." : null;
 
   const canSubmit =
     !busy &&
@@ -44,15 +41,26 @@ export function UpdatePasswordPage() {
     }
 
     setStatus({ type: "loading" });
+    setServerErrors({});
 
     try {
       const result = await updatePassword({ password });
       setStatus({ type: "success", message: result.detail });
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Failed to update password.",
-      });
+      const message = error instanceof Error ? error.message : "Failed to update password.";
+      const lowerMessage = message.toLowerCase();
+
+      if (
+        lowerMessage.includes("password") ||
+        lowerMessage.includes("characters") ||
+        lowerMessage.includes("uppercase") ||
+        lowerMessage.includes("digit") ||
+        lowerMessage.includes("special character")
+      ) {
+        setServerErrors({ password: message });
+      } else {
+        setStatus({ type: "error", message });
+      }
     }
   }
 
@@ -73,7 +81,7 @@ export function UpdatePasswordPage() {
       <AccountPanel
         kicker="Security"
         title="Set a new password"
-        description="Choose a new password for your account. Must be at least 6 characters."
+        description="Choose a new password for your account. 8+ characters, uppercase, number, special character."
       >
         <Form
           onSubmit={(e) => {
@@ -81,13 +89,15 @@ export function UpdatePasswordPage() {
             void onSubmit();
           }}
           validationBehavior="aria"
+          validationErrors={serverErrors}
           className="max-w-sm space-y-4"
         >
           <TextField
+            name="password"
             value={password}
             onChange={setPassword}
             type="password"
-            isInvalid={!!passwordError}
+            validate={(v) => (v.length > 0 ? validatePassword(v) : null)}
             isDisabled={busy || succeeded}
             autoFocus
           >
@@ -95,20 +105,21 @@ export function UpdatePasswordPage() {
               New password
             </Label>
             <Input
-              placeholder="At least 6 characters"
+              placeholder="8+ chars, uppercase, number, special"
               autoComplete="new-password"
               className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
-            {passwordError ? (
-              <FieldError className="text-sm text-red-500">{passwordError}</FieldError>
-            ) : null}
+            <div className="min-h-[20px]">
+              <FieldError className="block text-xs text-red-500" />
+            </div>
           </TextField>
 
           <TextField
+            name="confirmPassword"
             value={confirmPassword}
             onChange={setConfirmPassword}
             type="password"
-            isInvalid={!!mismatchError}
+            validate={(v) => (v.length > 0 && v !== password ? "Passwords do not match." : null)}
             isDisabled={busy || succeeded}
           >
             <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -119,9 +130,9 @@ export function UpdatePasswordPage() {
               autoComplete="new-password"
               className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
-            {mismatchError ? (
-              <FieldError className="text-sm text-red-500">{mismatchError}</FieldError>
-            ) : null}
+            <div className="min-h-[20px]">
+              <FieldError className="block text-xs text-red-500" />
+            </div>
           </TextField>
 
           <Button type="submit" size="sm" isDisabled={!canSubmit} isPending={busy}>

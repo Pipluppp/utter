@@ -1,6 +1,6 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Form, Input, Label, TextField } from "react-aria-components";
+import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthState } from "../app/auth/AuthStateProvider";
 import { getSafeReturnTo } from "../app/navigation";
@@ -16,6 +16,7 @@ import {
   signUpWithPassword,
 } from "../lib/auth";
 import { cn } from "../lib/cn";
+import { validateEmail, validatePassword } from "../lib/validation";
 
 type PasswordIntent = "sign_in" | "sign_up";
 
@@ -41,6 +42,7 @@ export function AuthPage() {
     | { type: "ok"; message: string }
   >({ type: "idle" });
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
   const turnstileRef = useRef<TurnstileInstance>(null);
 
   useEffect(() => {
@@ -56,18 +58,7 @@ export function AuthPage() {
 
   async function onPasswordSubmit() {
     const normalizedEmail = email.trim();
-    if (!normalizedEmail) {
-      setStatus({ type: "error", message: "Email is required." });
-      return;
-    }
-    if (!password) {
-      setStatus({ type: "error", message: "Password is required." });
-      return;
-    }
-    if (password.length < 6) {
-      setStatus({ type: "error", message: "Password must be 6+ characters." });
-      return;
-    }
+    setServerErrors({});
 
     setStatus({
       type: "loading",
@@ -112,10 +103,26 @@ export function AuthPage() {
     } catch (error) {
       turnstileRef.current?.reset();
       setCaptchaToken(null);
-      setStatus({
-        type: "error",
-        message: error instanceof Error ? error.message : "Authentication failed.",
-      });
+      const message = error instanceof Error ? error.message : "Authentication failed.";
+      const lowerMessage = message.toLowerCase();
+
+      if (
+        lowerMessage.includes("password") ||
+        lowerMessage.includes("characters") ||
+        lowerMessage.includes("uppercase") ||
+        lowerMessage.includes("digit") ||
+        lowerMessage.includes("special character")
+      ) {
+        setServerErrors({ password: message });
+      } else if (
+        lowerMessage.includes("email") ||
+        lowerMessage.includes("user not found") ||
+        lowerMessage.includes("already registered")
+      ) {
+        setServerErrors({ email: message });
+      } else {
+        setStatus({ type: "error", message });
+      }
     }
   }
 
@@ -196,12 +203,15 @@ export function AuthPage() {
               void onPasswordSubmit();
             }}
             validationBehavior="aria"
+            validationErrors={serverErrors}
             className="mt-6 space-y-5"
           >
             <TextField
+              name="email"
               value={email}
               onChange={setEmail}
               type="email"
+              validate={(v) => (v.length > 0 ? validateEmail(v) : null)}
               isDisabled={!configured || busy}
               autoFocus
             >
@@ -213,22 +223,36 @@ export function AuthPage() {
                 autoComplete="email"
                 className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               />
+              <div className="min-h-[20px]">
+                <FieldError className="block text-xs text-red-500" />
+              </div>
             </TextField>
 
             <TextField
+              name="password"
               value={password}
               onChange={setPassword}
               type="password"
               isDisabled={!configured || busy}
+              {...(intent === "sign_in"
+                ? { isRequired: true }
+                : { validate: (v: string) => (v.length > 0 ? validatePassword(v) : null) })}
             >
               <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
                 Password
               </Label>
               <Input
-                placeholder="6+ characters"
+                placeholder={
+                  intent === "sign_in"
+                    ? "Enter your password"
+                    : "8+ chars, uppercase, number, special"
+                }
                 autoComplete={intent === "sign_in" ? "current-password" : "new-password"}
                 className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               />
+              <div className="min-h-[20px]">
+                <FieldError className="block text-xs text-red-500" />
+              </div>
             </TextField>
 
             {intent === "sign_in" ? (
