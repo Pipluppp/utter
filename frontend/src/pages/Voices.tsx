@@ -2,9 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
 import { NavLink, useSearchParams } from "react-router-dom";
 import { useWaveformListPlayer } from "../components/audio/useWaveformListPlayer";
+import {
+  AutocompleteSelect,
+  type AutocompleteSelectItem,
+} from "../components/ui/AutocompleteSelect";
 import { Button, buttonStyles } from "../components/ui/Button";
 import { Message } from "../components/ui/Message";
-import { Select, type SelectItem } from "../components/ui/Select";
 import { Skeleton } from "../components/ui/Skeleton";
 import { apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
@@ -63,7 +66,7 @@ function snippet(value: string | null, maxLen: number, fallback: string) {
 type PlayState = "idle" | "loading" | "playing" | "paused" | "stopped";
 
 const PER_PAGE = 20;
-const SOURCE_ITEMS: SelectItem[] = [
+const SOURCE_ITEMS: AutocompleteSelectItem[] = [
   { id: "all", label: "All" },
   { id: "uploaded", label: "Clone" },
   { id: "designed", label: "Designed" },
@@ -265,13 +268,16 @@ export function VoicesPage() {
             ×
           </AriaButton>
         </SearchField>
-        <Select
+        <AutocompleteSelect
           label="Source"
-          name="source"
           items={SOURCE_ITEMS}
           selectedKey={source}
           onSelectionChange={(key) => setSource(key as "all" | "uploaded" | "designed")}
-        />
+          searchLabel="Search sources"
+          searchPlaceholder="Search..."
+        >
+          {(item) => item.label}
+        </AutocompleteSelect>
       </div>
 
       {loading && !data ? <VoicesSkeleton /> : null}

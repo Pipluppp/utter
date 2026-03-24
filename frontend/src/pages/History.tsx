@@ -2,9 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useWaveformListPlayer } from "../components/audio/useWaveformListPlayer";
+import {
+  AutocompleteSelect,
+  type AutocompleteSelectItem,
+} from "../components/ui/AutocompleteSelect";
 import { Button, buttonStyles } from "../components/ui/Button";
 import { Message } from "../components/ui/Message";
-import { Select, type SelectItem } from "../components/ui/Select";
 import { Skeleton } from "../components/ui/Skeleton";
 import { apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
@@ -17,7 +20,7 @@ function tokenize(query: string) {
 }
 
 const PER_PAGE = 20;
-const STATUS_ITEMS: SelectItem[] = [
+const STATUS_ITEMS: AutocompleteSelectItem[] = [
   { id: "all", label: "All" },
   { id: "pending", label: "Pending" },
   { id: "processing", label: "Processing" },
@@ -296,13 +299,16 @@ export function HistoryPage() {
             ×
           </AriaButton>
         </SearchField>
-        <Select
+        <AutocompleteSelect
           label="Status"
-          name="status"
           items={STATUS_ITEMS}
           selectedKey={status}
           onSelectionChange={setStatus}
-        />
+          searchLabel="Search statuses"
+          searchPlaceholder="Search..."
+        >
+          {(item) => item.label}
+        </AutocompleteSelect>
       </div>
 
       {loading && !data ? <HistorySkeleton /> : null}

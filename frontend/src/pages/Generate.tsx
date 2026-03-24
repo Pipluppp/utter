@@ -1,13 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Button as AriaButton,
-  Select as AriaSelect,
   Form,
   Label,
   ListBox,
   ListBoxItem,
-  Popover,
-  SelectValue,
   Text,
   TextArea,
   TextField,
@@ -16,11 +12,14 @@ import { useSearchParams } from "react-router-dom";
 import { WaveformPlayer } from "../components/audio/WaveformPlayer";
 import { taskLabel } from "../components/tasks/taskKeys";
 import { useTasks } from "../components/tasks/TaskProvider";
+import {
+  AutocompleteSelect,
+  type AutocompleteSelectItem,
+} from "../components/ui/AutocompleteSelect";
 import { Button } from "../components/ui/Button";
 import { GridArtSurface } from "../components/ui/GridArt";
 import { InfoTip } from "../components/ui/InfoTip";
 import { Message } from "../components/ui/Message";
-import { Select, type SelectItem } from "../components/ui/Select";
 import { getUtterDemo } from "../content/utterDemo";
 import { apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
@@ -39,10 +38,11 @@ type GenerateFormState = {
 export function GeneratePage() {
   const [params] = useSearchParams();
   const { languages, defaultLanguage, provider, capabilities } = useLanguages();
-  const languageItems: SelectItem[] = useMemo(
+  const languageItems: AutocompleteSelectItem[] = useMemo(
     () => languages.map((l) => ({ id: l, label: l })),
     [languages],
   );
+
   const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
 
   const generateTasks = getTasksByType("generate");
@@ -50,6 +50,11 @@ export function GeneratePage() {
 
   const [voices, setVoices] = useState<VoicesResponse | null>(null);
   const [loadingVoices, setLoadingVoices] = useState(true);
+
+  const voiceItems = useMemo(
+    () => (voices?.voices ?? []).map((v) => ({ ...v, label: v.name })),
+    [voices],
+  );
 
   const [voiceId, setVoiceId] = useState("");
   const [language, setLanguage] = useState(defaultLanguage);
@@ -200,6 +205,13 @@ export function GeneratePage() {
 
   const charCount = text.length;
   const maxTextChars = capabilities?.max_text_chars ?? 10000;
+  const voicePlaceholder = loadingVoices
+    ? "Loading voices..."
+    : !voices
+      ? "Unable to load voices"
+      : voices.voices.length === 0
+        ? "No voices available"
+        : "Select a voice";
   const selectedVoice = voices?.voices.find((v) => v.id === voiceId) ?? null;
   const selectedVoiceProvider = selectedVoice?.tts_provider ?? "qwen";
   const selectedVoiceCompatible =
@@ -293,88 +305,50 @@ export function GeneratePage() {
           void onGenerate();
         }}
       >
-        <AriaSelect
+        <AutocompleteSelect
+          label="Voice"
+          items={voiceItems}
           selectedKey={voiceId || null}
-          onSelectionChange={(key) => setVoiceId(key as string)}
+          onSelectionChange={(key) => setVoiceId(key)}
           isDisabled={loadingVoices || !voices || voices.voices.length === 0}
-          placeholder={
-            loadingVoices
-              ? "Loading voices..."
-              : !voices
-                ? "Unable to load voices"
-                : voices.voices.length === 0
-                  ? "No voices available"
-                  : "Select a voice"
-          }
+          placeholder={voicePlaceholder}
+          filterKey="name"
+          searchLabel="Search voices"
+          searchPlaceholder="Search..."
         >
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Voice
-          </Label>
-          <AriaButton
-            className={cn(
-              "flex w-full items-center justify-between border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated",
-              "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              "disabled:cursor-not-allowed disabled:opacity-50",
-            )}
-          >
-            <SelectValue className="truncate data-[placeholder]:text-faint" />
-            <svg
-              className="size-4 shrink-0 text-muted-foreground"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d="M8 11L3 6h10l-5 5z" />
-            </svg>
-          </AriaButton>
-          <Popover
-            shouldFlip
-            className="w-[var(--trigger-width)] overflow-y-auto border border-border bg-background shadow-elevated entering:animate-in entering:fade-in-0 entering:zoom-in-95 exiting:animate-out exiting:fade-out-0 exiting:zoom-out-95"
-          >
-            <ListBox className="max-h-60 overflow-y-auto p-1">
-              {voices?.voices.map((v) => {
-                const voiceProvider = v.tts_provider ?? "qwen";
-                const incompatible = voiceProvider !== provider;
-                return (
-                  <ListBoxItem
-                    key={v.id}
-                    id={v.id}
-                    textValue={v.name}
-                    isDisabled={incompatible}
-                    className={cn(
-                      "flex cursor-pointer flex-col gap-0.5 px-3 py-2 text-sm text-foreground outline-none",
-                      "hover:bg-muted focus-visible:bg-muted",
-                      "selected:bg-subtle selected:font-medium",
-                      "disabled:cursor-not-allowed disabled:opacity-50",
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="truncate">{v.name}</span>
-                      {v.language ? (
-                        <span className="shrink-0 border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                          {v.language}
-                        </span>
-                      ) : null}
-                    </div>
-                    {incompatible ? (
-                      <span className="text-xs text-faint">Not available in this runtime</span>
-                    ) : v.description ? (
-                      <span className="truncate text-xs text-faint">{v.description}</span>
-                    ) : null}
-                  </ListBoxItem>
-                );
-              })}
-            </ListBox>
-          </Popover>
-        </AriaSelect>
+          {(v) => {
+            const voiceProvider = v.tts_provider ?? "qwen";
+            const incompatible = voiceProvider !== provider;
+            return (
+              <div className={cn("flex flex-col gap-0.5", incompatible && "opacity-50")}>
+                <div className="flex items-center gap-2">
+                  <span className="truncate">{v.name}</span>
+                  {v.language ? (
+                    <span className="shrink-0 border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {v.language}
+                    </span>
+                  ) : null}
+                </div>
+                {incompatible ? (
+                  <span className="text-xs text-faint">Not available in this runtime</span>
+                ) : v.description ? (
+                  <span className="truncate text-xs text-faint">{v.description}</span>
+                ) : null}
+              </div>
+            );
+          }}
+        </AutocompleteSelect>
 
-        <Select
+        <AutocompleteSelect
           label="Language"
-          name="language"
           items={languageItems}
           selectedKey={language}
           onSelectionChange={setLanguage}
-        />
+          searchLabel="Search languages"
+          searchPlaceholder="Search..."
+        >
+          {(item) => item.label}
+        </AutocompleteSelect>
 
         <TextField value={text} onChange={setText}>
           <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
