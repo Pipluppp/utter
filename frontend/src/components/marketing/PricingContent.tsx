@@ -45,7 +45,7 @@ export function PricingContent() {
             />
             <FAQItem
               q="How are credits measured?"
-              a="Generate is 1 credit = 1 character. Design preview and clone each include 2 free trials, then switch to flat credit pricing."
+              a="Generate is 1 credit = 1 character. Design preview costs 2,400 credits and clone finalization costs 200 credits."
             />
             <FAQItem
               q="Where do purchases appear?"

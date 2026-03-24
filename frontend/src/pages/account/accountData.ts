@@ -5,10 +5,10 @@ import { getCreditPackById } from "../../content/plans";
 import { apiJson } from "../../lib/api";
 import { getAuthSession, signOut as signOutRequest } from "../../lib/auth";
 import type {
-  CreditLedgerEvent,
-  CreditsUsageResponse,
-  MeResponse,
-  ProfileRecord,
+    CreditLedgerEvent,
+    CreditsUsageResponse,
+    MeResponse,
+    ProfileRecord,
 } from "../../lib/types";
 
 const creditsFormat = new Intl.NumberFormat();
@@ -100,9 +100,9 @@ function eventTitle(event: CreditLedgerEvent) {
     case "generate":
       return "Generated speech";
     case "design_preview":
-      return event.amount > 0 ? "Used design preview" : "Used design trial";
+      return "Used design preview";
     case "clone":
-      return event.amount > 0 ? "Finalized voice clone" : "Used clone trial";
+      return "Finalized voice clone";
     case "monthly_allocation":
       return "Received starting credits";
     case "manual_adjustment":
@@ -133,13 +133,9 @@ function eventDetail(event: CreditLedgerEvent) {
     case "generate":
       return `${credits} used from submitted text length.`;
     case "design_preview":
-      return event.amount > 0
-        ? `${credits} used for voice design preview.`
-        : "Covered by a free design trial.";
+      return `${credits} used for voice design preview.`;
     case "clone":
-      return event.amount > 0
-        ? `${credits} used to finalize a voice clone.`
-        : "Covered by a free clone trial.";
+      return `${credits} used to finalize a voice clone.`;
     case "monthly_allocation":
       return `${credits} added to your starting balance.`;
     case "manual_adjustment":

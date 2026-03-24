@@ -43,7 +43,7 @@ export function AccountOverviewSkeleton() {
       <AccountPanel
         kicker="Overview"
         title="Balance and recent account activity"
-        description="See available credits, free trial status, and the latest account activity."
+        description="See available credits, pricing, and the latest account activity."
       >
         <div className="grid gap-4 lg:grid-cols-[1.4fr_0.9fr]">
           <div className="border border-border bg-subtle p-5 shadow-elevated">
@@ -70,9 +70,9 @@ export function AccountOverviewSkeleton() {
       </AccountPanel>
 
       <AccountPanel
-        kicker="Trials"
-        title="Free trial status"
-        description="Trial counters stay visible while you still have them."
+        kicker="Pricing"
+        title="Voice action pricing"
+        description="Flat credit costs for design previews and clone finalization."
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <Skeleton className="h-32 w-full" />

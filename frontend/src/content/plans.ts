@@ -52,12 +52,12 @@ export const creditRates: CreditRate[] = [
   },
   {
     action: "Voice design preview",
-    cost: "First 2 free, then 2,400 credits",
-    note: "Flat price after design trials are used.",
+    cost: "2,400 credits",
+    note: "Flat price per design preview.",
   },
   {
     action: "Voice clone finalize",
-    cost: "First 2 free, then 200 credits",
-    note: "Flat price after clone trials are used.",
+    cost: "200 credits",
+    note: "Flat price per clone finalization.",
   },
 ];

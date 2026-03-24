@@ -5,41 +5,25 @@ import { formatCredits, useAccountPageData } from "./accountData";
 import { AccountOverviewSkeleton } from "./accountSkeletons";
 import { AccountEmptyState, AccountPanel } from "./accountUi";
 
-function TrialSummary({
-  designRemaining,
-  cloneRemaining,
-}: {
-  designRemaining: number;
-  cloneRemaining: number;
-}) {
-  if (designRemaining <= 0 && cloneRemaining <= 0) {
-    return (
-      <div className="border border-border bg-subtle px-4 py-3 text-[15px] leading-6 text-foreground/68 shadow-elevated">
-        Free trials used. Future previews and clone finalization will use credits.
-      </div>
-    );
-  }
-
+function PricingSummary() {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="border border-border bg-subtle px-4 py-4 shadow-elevated">
         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground/65">
-          Design trials
+          Design preview
         </div>
-        <div className="mt-2 text-3xl font-pixel font-medium text-foreground">
-          {designRemaining}
-        </div>
+        <div className="mt-2 text-3xl font-pixel font-medium text-foreground">2,400</div>
         <div className="mt-2 text-[15px] leading-6 text-foreground/68">
-          Free voice design previews left.
+          Credits per voice design preview.
         </div>
       </div>
       <div className="border border-border bg-subtle px-4 py-4 shadow-elevated">
         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground/65">
-          Clone trials
+          Clone finalize
         </div>
-        <div className="mt-2 text-3xl font-pixel font-medium text-foreground">{cloneRemaining}</div>
+        <div className="mt-2 text-3xl font-pixel font-medium text-foreground">200</div>
         <div className="mt-2 text-[15px] leading-6 text-foreground/68">
-          Free clone finalizations left.
+          Credits per voice clone finalization.
         </div>
       </div>
     </div>
@@ -55,15 +39,13 @@ export function AccountOverviewPage() {
 
   const recentActivity = activity.slice(0, 4);
   const balance = credits.balance;
-  const designTrials = credits.trials.design_remaining;
-  const cloneTrials = credits.trials.clone_remaining;
 
   return (
     <div className="space-y-5">
       <AccountPanel
         kicker="Overview"
         title="Balance and recent account activity"
-        description="See available credits, free trial status, and the latest account activity."
+        description="See available credits, pricing, and the latest account activity."
       >
         <div className="grid gap-4 lg:grid-cols-[1.4fr_0.9fr]">
           <div className="border border-border bg-subtle p-5 shadow-elevated">
@@ -127,11 +109,11 @@ export function AccountOverviewPage() {
       </AccountPanel>
 
       <AccountPanel
-        kicker="Trials"
-        title="Free trial status"
-        description="Trial counters stay visible while you still have them."
+        kicker="Pricing"
+        title="Voice action pricing"
+        description="Flat credit costs for design previews and clone finalization."
       >
-        <TrialSummary designRemaining={designTrials} cloneRemaining={cloneTrials} />
+        <PricingSummary />
       </AccountPanel>
 
       <AccountPanel
