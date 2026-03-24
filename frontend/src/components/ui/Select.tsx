@@ -61,7 +61,7 @@ export function Select({
         className={cn(
           "flex w-full cursor-pointer items-center justify-between border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated",
           "hovered:bg-muted",
-          "focused:border-ring focused:ring-2 focused:ring-ring focused:ring-offset-2 focused:ring-offset-background",
+          "data-[focused]:border-ring data-[focused]:ring-2 data-[focused]:ring-ring data-[focused]:ring-offset-2 data-[focused]:ring-offset-background",
           "disabled:cursor-not-allowed disabled:opacity-50",
         )}
       >
@@ -90,7 +90,7 @@ export function Select({
               textValue={item.label}
               className={cn(
                 "cursor-pointer px-3 py-2 text-sm text-foreground outline-none",
-                "hover:bg-subtle hovered:bg-subtle focused:bg-subtle",
+                "hover:bg-subtle hovered:bg-subtle data-[focused]:bg-subtle",
                 "selected:bg-muted selected:font-medium",
               )}
             >
