@@ -13,7 +13,7 @@ Current runtime stack (as of 2026-03-03):
 
 - `frontend/`: React 19 + Vite + TypeScript + Tailwind v4 SPA
 - `workers/`: Cloudflare Workers (frontend and API)
-- `supabase/`: Postgres migrations and SQL tests (system-of-record schema/RLS)
+- `supabase/`: Postgres migrations and SQL tests (system-of-record schema/RLS). Declarative schemas in `supabase/schemas/` are the DDL authoring source of truth.
 - `docs/`: project documentation (start at `docs/README.md`)
 
 ## Current deployed surfaces

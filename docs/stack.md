@@ -11,7 +11,7 @@ Read this when you need the current runtime shape without the full architecture 
 | API runtime | Cloudflare Worker + Hono under `/api` | `workers/api/src/index.ts`, `workers/api/package.json` |
 | Async orchestration | Cloudflare Queues | `workers/api/src/queues`, `workers/api/wrangler.toml` |
 | Object storage | Cloudflare R2 | `workers/api/wrangler.toml`, `workers/api/src/_shared/storage.ts` |
-| Data / auth | Supabase Postgres + Auth + RLS | `supabase/migrations`, `supabase/tests` |
+| Data / auth | Supabase Postgres + Auth + RLS | `supabase/schemas`, `supabase/migrations`, `supabase/tests` |
 | TTS provider | Qwen | `workers/api/src/_shared/tts` |
 | Payments | Stripe webhook + checkout | `workers/api/src/routes/billing.ts` |
 

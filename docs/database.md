@@ -4,10 +4,15 @@ Read this when you need schema, RLS, credit ledger, or migration context.
 
 ## Source Of Truth
 
-- Migrations: `supabase/migrations`
+- Declarative schemas (DDL authoring): `supabase/schemas/`
+- Migrations (deployment history): `supabase/migrations/`
 - Tests: `supabase/tests/database`
 
-This doc is a map. The SQL files are the real source of truth.
+This project uses a hybrid model. Schema files in `supabase/schemas/` describe the desired end-state of the database and are the authoring source of truth for DDL changes. Migrations in `supabase/migrations/` are the deployment source of truth — they're what gets applied to production.
+
+To make a DDL change: edit the schema file → run `supabase db diff -f <name>` → review the generated migration → commit both. See `supabase/schemas/README.md` for detailed workflows and caveats.
+
+DML (INSERT/UPDATE/DELETE) still goes in imperative migrations only.
 
 ## Core Tables
 

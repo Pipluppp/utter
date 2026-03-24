@@ -8,7 +8,7 @@ Read this when you are shipping the current Cloudflare stack.
 2. Frontend assets from `frontend/dist`
 3. Frontend Worker in `workers/frontend`
 4. Cloudflare queue and R2 bindings
-5. Supabase migrations if schema changed
+5. Supabase migrations if schema changed (use `supabase db diff` against declarative schemas)
 
 ## Key Files
 

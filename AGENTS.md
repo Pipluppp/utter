@@ -17,7 +17,8 @@ Tight error handling: No broad catches or silent defaults: do not add broad try/
 - `frontend/`: React 19 + Vite + TypeScript + Tailwind v4 SPA
 - `workers/frontend/`: Cloudflare frontend Worker (assets + SPA + `/api/*` proxy)
 - `workers/api/`: Cloudflare API Worker (`/api/*`)
-- `supabase/`: Postgres migrations, SQL tests
+- `supabase/`: Postgres migrations, declarative schemas, SQL tests
+- `supabase/schemas/`: Declarative DDL files (authoring source of truth for schema changes — see `supabase/schemas/README.md`)
 - `docs/`: documentation (start with `docs/README.md`)
 
 ## Current deployed surfaces
