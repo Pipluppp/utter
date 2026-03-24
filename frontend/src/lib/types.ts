@@ -31,12 +31,9 @@ export type BackendTask = {
   status: TaskStatus;
   result?: unknown;
   error?: string | null;
-  provider?: "modal" | "qwen" | string;
+  provider?: "qwen" | string;
   provider_status?: string | null;
   provider_poll_count?: number | null;
-  modal_status?: string | null;
-  modal_elapsed_seconds?: number | null;
-  modal_poll_count?: number | null;
   created_at?: string | null;
   completed_at?: string | null;
   title?: string | null;
@@ -58,7 +55,7 @@ export type BackendTaskListItem = {
   status: TaskStatus;
   created_at: string | null;
   completed_at: string | null;
-  provider: "modal" | "qwen" | string;
+  provider: "qwen" | string;
   provider_status: string | null;
   generation_id: string | null;
   title: string;
@@ -88,7 +85,7 @@ export type Voice = {
   source: "uploaded" | "designed";
   description: string | null;
   created_at: string | null;
-  tts_provider?: "modal" | "qwen" | string;
+  tts_provider?: "qwen" | string;
 };
 
 export type VoicesResponse = {
@@ -138,7 +135,7 @@ export type GenerationsResponse = {
 export type LanguagesResponse = {
   languages: string[];
   default: string;
-  provider: "modal" | "qwen" | string;
+  provider: "qwen" | string;
   capabilities?: {
     supports_generate: boolean;
     supports_generate_stream: boolean;
@@ -194,9 +191,6 @@ export type CreditLedgerEvent = {
 
 export type ProfileRecord = {
   id: string;
-  handle: string | null;
-  display_name: string | null;
-  avatar_url: string | null;
   subscription_tier: string;
   credits_remaining: number;
   created_at: string;

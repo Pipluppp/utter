@@ -1,6 +1,6 @@
 -- Phase 08b: Schema validation — tables, columns, types, constraints
 BEGIN;
-SELECT plan(101);
+SELECT plan(104);
 
 -- ============================================================
 -- PROFILES
@@ -9,9 +9,9 @@ SELECT has_table('public', 'profiles', 'profiles table exists');
 SELECT has_column('public', 'profiles', 'id', 'profiles.id exists');
 SELECT col_type_is('public', 'profiles', 'id', 'uuid', 'profiles.id is uuid');
 SELECT col_is_pk('public', 'profiles', 'id', 'profiles PK is id');
-SELECT has_column('public', 'profiles', 'handle', 'profiles.handle exists');
-SELECT has_column('public', 'profiles', 'display_name', 'profiles.display_name exists');
-SELECT has_column('public', 'profiles', 'avatar_url', 'profiles.avatar_url exists');
+SELECT hasnt_column('public', 'profiles', 'handle', 'profiles.handle was dropped');
+SELECT hasnt_column('public', 'profiles', 'display_name', 'profiles.display_name was dropped');
+SELECT hasnt_column('public', 'profiles', 'avatar_url', 'profiles.avatar_url was dropped');
 SELECT has_column('public', 'profiles', 'subscription_tier', 'profiles.subscription_tier exists');
 SELECT col_not_null('public', 'profiles', 'subscription_tier', 'subscription_tier is NOT NULL');
 SELECT col_default_is('public', 'profiles', 'subscription_tier', 'free', 'subscription_tier defaults to free');
@@ -45,7 +45,7 @@ SELECT col_not_null('public', 'voices', 'source', 'voices.source is NOT NULL');
 SELECT has_column('public', 'voices', 'description', 'voices.description exists');
 SELECT has_column('public', 'voices', 'tts_provider', 'voices.tts_provider exists');
 SELECT col_not_null('public', 'voices', 'tts_provider', 'voices.tts_provider is NOT NULL');
-SELECT col_default_is('public', 'voices', 'tts_provider', 'modal', 'voices.tts_provider defaults to modal');
+SELECT col_default_is('public', 'voices', 'tts_provider', 'qwen', 'voices.tts_provider defaults to qwen');
 SELECT has_column('public', 'voices', 'provider_voice_id', 'voices.provider_voice_id exists');
 SELECT has_column('public', 'voices', 'provider_target_model', 'voices.provider_target_model exists');
 SELECT has_column('public', 'voices', 'provider_voice_kind', 'voices.provider_voice_kind exists');
@@ -68,7 +68,7 @@ SELECT has_column('public', 'generations', 'status', 'generations.status exists'
 SELECT col_default_is('public', 'generations', 'status', 'pending', 'generations.status defaults to pending');
 SELECT has_column('public', 'generations', 'tts_provider', 'generations.tts_provider exists');
 SELECT col_not_null('public', 'generations', 'tts_provider', 'generations.tts_provider is NOT NULL');
-SELECT col_default_is('public', 'generations', 'tts_provider', 'modal', 'generations.tts_provider defaults to modal');
+SELECT col_default_is('public', 'generations', 'tts_provider', 'qwen', 'generations.tts_provider defaults to qwen');
 SELECT has_column('public', 'generations', 'provider_model', 'generations.provider_model exists');
 SELECT has_column('public', 'generations', 'output_format', 'generations.output_format exists');
 SELECT has_column('public', 'generations', 'provider_metadata', 'generations.provider_metadata exists');
@@ -85,11 +85,11 @@ SELECT has_column('public', 'tasks', 'type', 'tasks.type exists');
 SELECT col_not_null('public', 'tasks', 'type', 'tasks.type is NOT NULL');
 SELECT has_column('public', 'tasks', 'status', 'tasks.status exists');
 SELECT col_default_is('public', 'tasks', 'status', 'pending', 'tasks.status defaults to pending');
-SELECT has_column('public', 'tasks', 'modal_poll_count', 'tasks.modal_poll_count exists');
-SELECT col_default_is('public', 'tasks', 'modal_poll_count', '0', 'modal_poll_count defaults to 0');
+SELECT hasnt_column('public', 'tasks', 'modal_job_id', 'tasks.modal_job_id was dropped');
+SELECT hasnt_column('public', 'tasks', 'modal_poll_count', 'tasks.modal_poll_count was dropped');
 SELECT has_column('public', 'tasks', 'provider', 'tasks.provider exists');
 SELECT col_not_null('public', 'tasks', 'provider', 'tasks.provider is NOT NULL');
-SELECT col_default_is('public', 'tasks', 'provider', 'modal', 'tasks.provider defaults to modal');
+SELECT col_default_is('public', 'tasks', 'provider', 'qwen', 'tasks.provider defaults to qwen');
 SELECT has_column('public', 'tasks', 'provider_status', 'tasks.provider_status exists');
 SELECT has_column('public', 'tasks', 'provider_poll_count', 'tasks.provider_poll_count exists');
 SELECT col_default_is('public', 'tasks', 'provider_poll_count', '0', 'tasks.provider_poll_count defaults to 0');
@@ -128,6 +128,17 @@ SELECT has_column('public', 'rate_limit_counters', 'tier', 'rate_limit_counters.
 SELECT has_column('public', 'rate_limit_counters', 'window_start', 'rate_limit_counters.window_start exists');
 SELECT has_column('public', 'rate_limit_counters', 'request_count', 'rate_limit_counters.request_count exists');
 SELECT col_default_is('public', 'rate_limit_counters', 'request_count', '0', 'rate_limit_counters.request_count defaults to 0');
+
+-- ============================================================
+-- CONSTRAINT REJECTION: modal provider value must be rejected
+-- ============================================================
+SELECT throws_ok(
+  $$INSERT INTO public.voices (user_id, name, source, tts_provider)
+    VALUES ('00000000-0000-0000-0000-000000000000', 'test', 'upload', 'modal')$$,
+  '23514',
+  NULL,
+  'voices rejects tts_provider = modal'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

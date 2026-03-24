@@ -5,10 +5,10 @@ import { applyCreditEvent, trialRestore } from "../_shared/credits.ts";
 import { createStorageProvider } from "../_shared/storage.ts";
 import { createAdminClient, createUserClient } from "../_shared/supabase.ts";
 import {
-  ACTIVE_TASK_STATUSES,
-  describeTaskDisplay,
-  originPageForTaskType,
-  QUEUE_BACKED_TASK_TYPES,
+    ACTIVE_TASK_STATUSES,
+    describeTaskDisplay,
+    originPageForTaskType,
+    QUEUE_BACKED_TASK_TYPES,
 } from "../_shared/tasks.ts";
 
 function jsonDetail(detail: string, status: number) {
@@ -276,7 +276,7 @@ tasksRoutes.get("/tasks/:id", async (c) => {
   const { data: task, error } = await supabase
     .from("tasks")
     .select(
-      "id, type, status, result, error, provider, provider_status, provider_poll_count, modal_poll_count, generation_id, created_at, completed_at, metadata",
+      "id, type, status, result, error, provider, provider_status, provider_poll_count, generation_id, created_at, completed_at, metadata",
     )
     .eq("id", taskId)
     .maybeSingle();
@@ -293,7 +293,6 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     provider: string | null;
     provider_status: string | null;
     provider_poll_count: number | null;
-    modal_poll_count: number | null;
     generation_id: string | null;
     created_at: string | null;
     completed_at: string | null;
@@ -311,9 +310,6 @@ tasksRoutes.get("/tasks/:id", async (c) => {
     provider: taskRow.provider ?? "qwen",
     provider_status: taskRow.provider_status ?? null,
     provider_poll_count: taskRow.provider_poll_count ?? 0,
-    modal_status: null as string | null,
-    modal_elapsed_seconds: null as number | null,
-    modal_poll_count: taskRow.modal_poll_count ?? 0,
     created_at: taskRow.created_at,
     completed_at: taskRow.completed_at,
     title: display.title,

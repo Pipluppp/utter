@@ -1,7 +1,7 @@
 -- Phase 08b: Grant revocations — PostgREST surface hardening
 -- Ref: supabase-security.md §4
 BEGIN;
-SELECT plan(36);
+SELECT plan(33);
 
 -- Create test user
 INSERT INTO auth.users (id, instance_id, role, aud, email, encrypted_password, email_confirmed_at, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change)
@@ -23,7 +23,7 @@ SET LOCAL request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","r
 
 -- Profiles: UPDATE revoked
 SELECT throws_ok(
-  $$UPDATE public.profiles SET display_name = 'Updated' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
+  $$UPDATE public.profiles SET subscription_tier = 'pro' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
   '42501', NULL, 'authenticated: UPDATE revoked on profiles'
 );
 
@@ -118,7 +118,7 @@ SELECT throws_ok(
   '42501', NULL, 'anon: INSERT revoked on credit_ledger'
 );
 SELECT throws_ok(
-  $$UPDATE public.profiles SET display_name = 'x' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
+  $$UPDATE public.profiles SET subscription_tier = 'pro' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
   '42501', NULL, 'anon: UPDATE revoked on profiles'
 );
 SELECT throws_ok(
@@ -165,16 +165,6 @@ SELECT results_eq(
      AND r.data_type <> 'trigger'$$,
   ARRAY[0],
   'authenticated: no EXECUTE on callable public functions'
-);
-
-SELECT ok(
-  not has_function_privilege('anon', 'public.increment_task_modal_poll_count(uuid,uuid)', 'EXECUTE'),
-  'anon: EXECUTE revoked on increment_task_modal_poll_count'
-);
-
-SELECT ok(
-  not has_function_privilege('authenticated', 'public.increment_task_modal_poll_count(uuid,uuid)', 'EXECUTE'),
-  'authenticated: EXECUTE revoked on increment_task_modal_poll_count'
 );
 
 SELECT ok(
@@ -229,11 +219,6 @@ SELECT ok(
     'EXECUTE'
   ),
   'authenticated: EXECUTE revoked on credit_usage_window_totals'
-);
-
-SELECT ok(
-  has_function_privilege('service_role', 'public.increment_task_modal_poll_count(uuid,uuid)', 'EXECUTE'),
-  'service_role: EXECUTE granted on increment_task_modal_poll_count'
 );
 
 SELECT ok(

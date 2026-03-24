@@ -1,7 +1,7 @@
 -- Phase 08b: Supabase Postgres best practices + security doc regression guards
 -- Sources: supabase-postgres-best-practices skill, docs/supabase-security.md
 BEGIN;
-SELECT plan(26);
+SELECT plan(25);
 
 -- ============================================================
 -- 1. RLS ENABLED ON ALL PUBLIC TABLES (4 tests)
@@ -188,11 +188,6 @@ SELECT results_eq(
 SELECT ok(
   (SELECT prosecdef FROM pg_proc WHERE proname = 'handle_new_user' AND pronamespace = 'public'::regnamespace),
   'handle_new_user is SECURITY DEFINER'
-);
-
-SELECT ok(
-  (SELECT prosecdef FROM pg_proc WHERE proname = 'increment_task_modal_poll_count' AND pronamespace = 'public'::regnamespace),
-  'increment_task_modal_poll_count is SECURITY DEFINER'
 );
 
 -- ============================================================

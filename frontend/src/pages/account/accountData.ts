@@ -40,10 +40,6 @@ export type AccountActivity = {
   title: string;
 };
 
-export type AccountFormValues = {
-  displayName: string;
-};
-
 export type AccountData = {
   activity: AccountActivity[];
   authEmail: string;
@@ -55,7 +51,6 @@ export type AccountData = {
   profile: ProfileRecord | null;
   refresh: (options?: { background?: boolean }) => Promise<void>;
   refreshing: boolean;
-  saveProfile: (values: AccountFormValues) => Promise<ProfileRecord>;
   signOut: () => Promise<void>;
 };
 
@@ -65,11 +60,6 @@ function errorMessage(error: unknown, fallback: string) {
   }
 
   return fallback;
-}
-
-function emptyToNull(value: string) {
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
 }
 
 async function loadAuthSessionInfo() {
@@ -239,23 +229,6 @@ export function useAccountData(): AccountData {
     void refresh();
   }, [refresh]);
 
-  const saveProfile = useCallback(async (values: AccountFormValues) => {
-    const response = await apiJson<{ profile: ProfileRecord }>("/api/profile", {
-      method: "PATCH",
-      json: {
-        display_name: emptyToNull(values.displayName),
-      },
-    });
-
-    setMe((current) => ({
-      signed_in: true,
-      user: current?.user ?? { id: response.profile.id },
-      profile: response.profile,
-    }));
-
-    return response.profile;
-  }, []);
-
   const signOut = useCallback(async () => {
     await signOutRequest();
     await authState.refresh();
@@ -282,7 +255,6 @@ export function useAccountData(): AccountData {
     profile: me?.profile ?? null,
     refresh,
     refreshing,
-    saveProfile,
     signOut,
   };
 }

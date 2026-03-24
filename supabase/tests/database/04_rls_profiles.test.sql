@@ -23,7 +23,7 @@ SELECT results_eq(
 
 -- Test 2: User A cannot update own profile (grant revoked)
 SELECT throws_ok(
-  $$UPDATE public.profiles SET display_name = 'User A' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
+  $$UPDATE public.profiles SET subscription_tier = 'pro' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
   '42501',
   NULL,
   'User A cannot update own profile (UPDATE revoked from authenticated)'
@@ -38,7 +38,7 @@ SELECT results_eq(
 
 -- Test 4: User A cannot update User B profile (grant revoked)
 SELECT throws_ok(
-  $$UPDATE public.profiles SET display_name = 'Hacked' WHERE id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'$$,
+  $$UPDATE public.profiles SET subscription_tier = 'pro' WHERE id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'$$,
   '42501',
   NULL,
   'User A cannot update User B profile (UPDATE revoked from authenticated)'
@@ -58,11 +58,11 @@ SELECT results_eq(
   'User B sees exactly 1 profile'
 );
 
--- Test 6: User B display_name was NOT modified by User A
+-- Test 6: User B subscription_tier was NOT modified by User A
 SELECT results_eq(
-  $$SELECT display_name FROM public.profiles WHERE id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'$$,
-  $$VALUES (NULL::text)$$,
-  'User B display_name was not modified by User A'
+  $$SELECT subscription_tier FROM public.profiles WHERE id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'$$,
+  ARRAY['free'::text],
+  'User B subscription_tier was not modified by User A'
 );
 
 -- ============================================================

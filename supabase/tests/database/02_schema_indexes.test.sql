@@ -1,6 +1,6 @@
 -- Phase 08b: Index validation + FK index invariant
 BEGIN;
-SELECT plan(19);
+SELECT plan(18);
 
 -- Custom indexes
 SELECT has_index('public', 'voices', 'idx_voices_user_id_created', 'voices user_id+created_at index exists');
@@ -13,7 +13,6 @@ SELECT has_index('public', 'tasks', 'idx_tasks_generation_id', 'tasks generation
 SELECT has_index('public', 'tasks', 'idx_tasks_voice_id', 'tasks voice_id FK index exists');
 
 -- Partial indexes
-SELECT has_index('public', 'tasks', 'idx_tasks_modal_job_id', 'tasks modal_job_id partial index exists');
 SELECT has_index('public', 'tasks', 'idx_tasks_active', 'tasks active partial index exists');
 SELECT has_index('public', 'voices', 'idx_voices_user_provider_created', 'voices provider index exists');
 SELECT has_index('public', 'voices', 'idx_voices_user_active_provider_created', 'voices active provider partial index exists');
@@ -25,8 +24,8 @@ SELECT has_index('public', 'credit_ledger', 'idx_credit_ledger_user_created', 'c
 SELECT has_index('public', 'credit_ledger', 'idx_credit_ledger_reference', 'credit_ledger reference lookup index exists');
 SELECT has_index('public', 'credit_ledger', 'credit_ledger_user_id_idempotency_key_key', 'credit_ledger idempotency unique index exists');
 
--- Profiles handle uniqueness
-SELECT index_is_unique('public', 'profiles', 'profiles_handle_key', 'profiles.handle has unique index');
+-- Dropped indexes (schema cleanup)
+SELECT hasnt_index('public', 'tasks', 'idx_tasks_modal_job_id', 'tasks modal_job_id index was dropped');
 
 -- FK INDEX INVARIANT: no FK columns missing indexes (best practice guard)
 SELECT results_eq(

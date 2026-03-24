@@ -1,6 +1,6 @@
 -- Phase 08b: Triggers + database functions
 BEGIN;
-SELECT plan(15);
+SELECT plan(12);
 
 -- ============================================================
 -- 1. handle_new_user trigger: auto-creates profile on auth.users insert
@@ -41,7 +41,7 @@ SELECT has_trigger('public', 'profiles', 'set_updated_at', 'profiles has set_upd
 
 -- Verify trigger overwrites updated_at to now() even if we try to set a custom value
 -- (the trigger fires BEFORE UPDATE, so our manual value gets replaced)
-UPDATE public.profiles SET display_name = 'Trigger Test', updated_at = '2020-01-01T00:00:00Z'
+UPDATE public.profiles SET subscription_tier = 'pro', updated_at = '2020-01-01T00:00:00Z'
 WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 
 SELECT results_eq(
@@ -51,26 +51,7 @@ SELECT results_eq(
 );
 
 -- ============================================================
--- 3. increment_task_modal_poll_count: RPC function
--- ============================================================
-INSERT INTO public.tasks (id, user_id, type, status, modal_poll_count)
-VALUES ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'generate', 'processing', 0);
-
--- Test increment returns new count
-SELECT results_eq(
-  $$SELECT public.increment_task_modal_poll_count('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')$$,
-  ARRAY[1],
-  'increment_task_modal_poll_count returns 1 after first call'
-);
-
-SELECT results_eq(
-  $$SELECT public.increment_task_modal_poll_count('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')$$,
-  ARRAY[2],
-  'increment_task_modal_poll_count returns 2 after second call'
-);
-
--- ============================================================
--- 4. credit_apply_event + credit_usage_window_totals RPCs
+-- 3. credit_apply_event + credit_usage_window_totals RPCs
 -- ============================================================
 UPDATE public.profiles
 SET credits_remaining = 100

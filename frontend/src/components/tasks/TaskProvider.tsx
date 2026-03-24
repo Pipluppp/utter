@@ -274,7 +274,7 @@ function taskFromBackend(
     startedAt,
     status: backendTask.status,
     dismissed: false,
-    modalStatus: backendTask.modal_status ?? existingTask?.modalStatus ?? null,
+    modalStatus: existingTask?.modalStatus ?? null,
     providerStatus: backendTask.provider_status ?? existingTask?.providerStatus ?? null,
     result: backendTask.result ?? existingTask?.result,
     error: backendTask.error ?? existingTask?.error ?? null,
