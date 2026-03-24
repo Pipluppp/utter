@@ -4,7 +4,7 @@ import { NavLink, useSearchParams } from "react-router-dom";
 import { useWaveformListPlayer } from "../components/audio/useWaveformListPlayer";
 import { Button, buttonStyles } from "../components/ui/Button";
 import { Message } from "../components/ui/Message";
-import { Select } from "../components/ui/Select";
+import { Select, type SelectItem } from "../components/ui/Select";
 import { Skeleton } from "../components/ui/Skeleton";
 import { apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
@@ -63,6 +63,11 @@ function snippet(value: string | null, maxLen: number, fallback: string) {
 type PlayState = "idle" | "loading" | "playing" | "paused" | "stopped";
 
 const PER_PAGE = 20;
+const SOURCE_ITEMS: SelectItem[] = [
+  { id: "all", label: "All" },
+  { id: "uploaded", label: "Clone" },
+  { id: "designed", label: "Designed" },
+];
 const VOICE_SKELETON_VARIANTS = [
   { id: "designed-a", showPrompt: true },
   { id: "clone-a", showPrompt: false },
@@ -250,32 +255,23 @@ export function VoicesPage() {
             autoComplete="off"
             placeholder="Search voices..."
             className={cn(
-              "w-full border border-border bg-background px-4 py-3 pr-9 text-sm text-foreground shadow-elevated placeholder:text-faint",
+              "w-full border border-border bg-background px-4 py-3 pr-9 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors",
+              "hover:border-border-strong focus:border-border-strong",
               "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              "[&::-webkit-search-cancel-button]:hidden",
             )}
           />
           <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground hovered:text-foreground group-data-[empty]:hidden">
             ×
           </AriaButton>
         </SearchField>
-        <div>
-          <Label
-            htmlFor="voices-source"
-            className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground"
-          >
-            Source
-          </Label>
-          <Select
-            id="voices-source"
-            name="source"
-            value={source}
-            onChange={(e) => setSource(e.target.value as "all" | "uploaded" | "designed")}
-          >
-            <option value="all">All</option>
-            <option value="uploaded">Clone</option>
-            <option value="designed">Designed</option>
-          </Select>
-        </div>
+        <Select
+          label="Source"
+          name="source"
+          items={SOURCE_ITEMS}
+          selectedKey={source}
+          onSelectionChange={(key) => setSource(key as "all" | "uploaded" | "designed")}
+        />
       </div>
 
       {loading && !data ? <VoicesSkeleton /> : null}

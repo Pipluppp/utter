@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useWaveformListPlayer } from "../components/audio/useWaveformListPlayer";
 import { Button, buttonStyles } from "../components/ui/Button";
 import { Message } from "../components/ui/Message";
-import { Select } from "../components/ui/Select";
+import { Select, type SelectItem } from "../components/ui/Select";
 import { Skeleton } from "../components/ui/Skeleton";
 import { apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
@@ -17,6 +17,14 @@ function tokenize(query: string) {
 }
 
 const PER_PAGE = 20;
+const STATUS_ITEMS: SelectItem[] = [
+  { id: "all", label: "All" },
+  { id: "pending", label: "Pending" },
+  { id: "processing", label: "Processing" },
+  { id: "completed", label: "Completed" },
+  { id: "failed", label: "Failed" },
+  { id: "cancelled", label: "Cancelled" },
+];
 const HISTORY_SKELETON_VARIANTS = [
   { id: "ready-a", showMeta: true },
   { id: "active-a", showMeta: false },
@@ -278,35 +286,23 @@ export function HistoryPage() {
             autoComplete="off"
             placeholder="Search history..."
             className={cn(
-              "w-full border border-border bg-background px-4 py-3 pr-9 text-sm text-foreground shadow-elevated placeholder:text-faint",
+              "w-full border border-border bg-background px-4 py-3 pr-9 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors",
+              "hover:border-border-strong focus:border-border-strong",
               "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              "[&::-webkit-search-cancel-button]:hidden",
             )}
           />
           <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground hovered:text-foreground group-data-[empty]:hidden">
             ×
           </AriaButton>
         </SearchField>
-        <div>
-          <Label
-            htmlFor="history-status"
-            className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground"
-          >
-            Status
-          </Label>
-          <Select
-            id="history-status"
-            name="status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="completed">Completed</option>
-            <option value="failed">Failed</option>
-            <option value="cancelled">Cancelled</option>
-          </Select>
-        </div>
+        <Select
+          label="Status"
+          name="status"
+          items={STATUS_ITEMS}
+          selectedKey={status}
+          onSelectionChange={setStatus}
+        />
       </div>
 
       {loading && !data ? <HistorySkeleton /> : null}
