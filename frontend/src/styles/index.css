@@ -79,9 +79,6 @@
 
   :where(a, button, input, select, textarea):focus-visible {
     outline: none;
-    --tw-ring-offset-shadow: 0 0 #0000;
-    --tw-ring-shadow: 0 0 0 2px var(--color-ring);
-    box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
   }
 
   :where(button, a) {

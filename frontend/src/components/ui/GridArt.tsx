@@ -191,7 +191,7 @@ export function GridArtSurface({
   contentClassName,
 }: GridArtSurfaceProps) {
   return (
-    <div className={cn("relative isolate overflow-x-clip", className)}>
+    <div className={cn("relative isolate", className)}>
       <GridSweepBackdrop sweepNonce={sweepNonce} />
       <div className={cn("relative z-10", contentClassName)}>{children}</div>
     </div>
