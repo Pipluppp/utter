@@ -1,69 +1,59 @@
 /**
  * /tasks endpoint tests.
  */
-import { assertEquals } from "@std/assert";
-import {
-  apiFetch,
-  createTestUser,
-  deleteTestUser,
-  SERVICE_ROLE_KEY,
-  SUPABASE_URL,
-  type TestUser,
-} from "./_helpers/setup.ts";
+import { createClient } from "@supabase/supabase-js";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { createUserWithBalance } from "./_helpers/factories.ts";
 import { TEST_USER_A, TEST_USER_B } from "./_helpers/fixtures.ts";
+import {
+    apiFetch,
+    deleteTestUser,
+    SERVICE_ROLE_KEY,
+    SUPABASE_URL,
+    type TestUser,
+} from "./_helpers/setup.ts";
 
 let userA: TestUser;
 let userB: TestUser;
 
-// Supabase JS client leaks intervals (realtime), so all tests using admin need sanitizers off.
-const noLeaks = { sanitizeResources: false, sanitizeOps: false };
-
 // Admin Supabase client for seeding
-async function getAdmin() {
-  const mod = await import("npm:@supabase/supabase-js@2");
-  return mod.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+function getAdmin() {
+  return createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 }
 
-Deno.test({
-  name: "tasks: setup",
-  ...noLeaks,
-  fn: async () => {
-    userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
-    userB = await createTestUser(TEST_USER_B.email, TEST_USER_B.password);
-    const admin = await getAdmin();
-    await admin
-      .from("profiles")
-      .upsert(
-        {
-          id: userA.userId,
-          credits_remaining: 250000,
-          design_trials_remaining: 2,
-          clone_trials_remaining: 2,
-          subscription_tier: "pro",
-        },
-        { onConflict: "id" },
-      );
-    await admin
-      .from("profiles")
-      .upsert(
-        {
-          id: userB.userId,
-          credits_remaining: 250000,
-          design_trials_remaining: 2,
-          clone_trials_remaining: 2,
-          subscription_tier: "pro",
-        },
-        { onConflict: "id" },
-      );
-  },
-});
+describe("tasks", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
-// --- GET /tasks/:id ---
-Deno.test({
-  name: "GET /tasks/:id returns task for owner",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdmin();
+  beforeAll(async () => {
+    userA = await createUserWithBalance({
+      email: TEST_USER_A.email,
+      password: TEST_USER_A.password,
+      credits: 250000,
+      designTrials: 2,
+      cloneTrials: 2,
+      tier: "pro",
+    });
+    userB = await createUserWithBalance({
+      email: TEST_USER_B.email,
+      password: TEST_USER_B.password,
+      credits: 250000,
+      designTrials: 2,
+      cloneTrials: 2,
+      tier: "pro",
+    });
+  });
+
+  afterAll(async () => {
+    await deleteTestUser(userA.userId);
+    await deleteTestUser(userB.userId);
+  });
+
+  // --- task retrieval ---
+  describe("task retrieval", () => {
+  it("owner can retrieve their own task", async () => {
+    const admin = getAdmin();
     const taskId = crypto.randomUUID();
 
     await admin.from("tasks").insert({
@@ -75,21 +65,17 @@ Deno.test({
     });
 
     const res = await apiFetch(`/tasks/${taskId}`, userA.accessToken);
-    assertEquals(res.status, 200);
+    expect(res.status).toBe(200);
     const body = await res.json();
-    assertEquals(body.id, taskId);
-    assertEquals(body.type, "generate");
-    assertEquals(body.status, "completed");
+    expect(body.id).toBe(taskId);
+    expect(body.type).toBe("generate");
+    expect(body.status).toBe("completed");
 
     await admin.from("tasks").delete().eq("id", taskId);
-  },
-});
+  });
 
-Deno.test({
-  name: "GET /tasks/:id denies access to other user's task",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdmin();
+  it("users cannot access another user's tasks", async () => {
+    const admin = getAdmin();
     const taskId = crypto.randomUUID();
 
     await admin.from("tasks").insert({
@@ -100,28 +86,24 @@ Deno.test({
     });
 
     const res = await apiFetch(`/tasks/${taskId}`, userB.accessToken);
-    assertEquals(res.status, 404);
+    expect(res.status).toBe(404);
     await res.body?.cancel();
 
     await admin.from("tasks").delete().eq("id", taskId);
-  },
-});
+  });
 
-Deno.test("GET /tasks/:id returns 404 for non-existent", async () => {
-  const res = await apiFetch(
-    "/tasks/00000000-0000-0000-0000-000000000099",
-    userA.accessToken,
-  );
-  assertEquals(res.status, 404);
-  await res.body?.cancel();
-});
+  it("returns 404 for non-existent task", async () => {
+    const res = await apiFetch(
+      "/tasks/00000000-0000-0000-0000-000000000099",
+      userA.accessToken,
+    );
+    expect(res.status).toBe(404);
+    await res.body?.cancel();
+  });
 
-// --- GET /tasks/:id read-only behavior ---
-Deno.test({
-  name: "GET /tasks/:id does not mutate an in-flight task",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdmin();
+  // --- task retrieval: read-only behavior ---
+  it("reading a processing task does not mutate its state", async () => {
+    const admin = getAdmin();
     const taskId = crypto.randomUUID();
 
     await admin.from("tasks").insert({
@@ -135,32 +117,28 @@ Deno.test({
     });
 
     const res = await apiFetch(`/tasks/${taskId}`, userA.accessToken);
-    assertEquals(res.status, 200);
+    expect(res.status).toBe(200);
     const body = await res.json();
-    assertEquals(body.id, taskId);
-    assertEquals(body.type, "generate");
-    assertEquals(body.status, "processing");
-    assertEquals(body.provider_status, "provider_queued");
+    expect(body.id).toBe(taskId);
+    expect(body.type).toBe("generate");
+    expect(body.status).toBe("processing");
+    expect(body.provider_status).toBe("provider_queued");
 
     const task = await admin
       .from("tasks")
       .select("status, provider_status, provider_poll_count")
       .eq("id", taskId)
       .single();
-    assertEquals(task.error, null);
-    assertEquals(task.data?.status, "processing");
-    assertEquals(task.data?.provider_status, "provider_queued");
-    assertEquals(task.data?.provider_poll_count, 0);
+    expect(task.error).toBe(null);
+    expect(task.data?.status).toBe("processing");
+    expect(task.data?.provider_status).toBe("provider_queued");
+    expect(task.data?.provider_poll_count).toBe(0);
 
     await admin.from("tasks").delete().eq("id", taskId);
-  },
-});
+  });
 
-Deno.test({
-  name: "GET /tasks returns active and recent queue-backed jobs with display metadata",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdmin();
+  it("task feed returns active and recent jobs with display metadata", async () => {
+    const admin = getAdmin();
     const generateTaskId = crypto.randomUUID();
     const designTaskId = crypto.randomUUID();
 
@@ -197,34 +175,32 @@ Deno.test({
 
     try {
       const activeRes = await apiFetch("/tasks?status=active&type=all&limit=10", userA.accessToken);
-      assertEquals(activeRes.status, 200);
+      expect(activeRes.status).toBe(200);
       const activeBody = await activeRes.json();
-      assertEquals(Array.isArray(activeBody.tasks), true);
-      assertEquals(activeBody.tasks.length, 1);
-      assertEquals(activeBody.tasks[0].id, generateTaskId);
-      assertEquals(activeBody.tasks[0].title, "Generate with Test Voice");
-      assertEquals(activeBody.tasks[0].origin_page, "/generate");
+      expect(Array.isArray(activeBody.tasks)).toBe(true);
+      expect(activeBody.tasks.length).toBe(1);
+      expect(activeBody.tasks[0].id).toBe(generateTaskId);
+      expect(activeBody.tasks[0].title).toBe("Generate with Test Voice");
+      expect(activeBody.tasks[0].origin_page).toBe("/generate");
 
       const recentRes = await apiFetch("/tasks?status=terminal&type=design_preview&limit=10", userA.accessToken);
-      assertEquals(recentRes.status, 200);
+      expect(recentRes.status).toBe(200);
       const recentBody = await recentRes.json();
-      assertEquals(Array.isArray(recentBody.tasks), true);
-      assertEquals(recentBody.tasks.length, 1);
-      assertEquals(recentBody.tasks[0].id, designTaskId);
-      assertEquals(recentBody.tasks[0].title, "Design preview: Neon Host");
-      assertEquals(recentBody.tasks[0].origin_page, "/design");
+      expect(Array.isArray(recentBody.tasks)).toBe(true);
+      expect(recentBody.tasks.length).toBe(1);
+      expect(recentBody.tasks[0].id).toBe(designTaskId);
+      expect(recentBody.tasks[0].title).toBe("Design preview: Neon Host");
+      expect(recentBody.tasks[0].origin_page).toBe("/design");
     } finally {
       await admin.from("tasks").delete().in("id", [generateTaskId, designTaskId]);
     }
-  },
-});
+  });
+  }); // end task retrieval
 
-// --- DELETE /tasks/:id ---
-Deno.test({
-  name: "DELETE /tasks/:id deletes own task",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdmin();
+  // --- task deletion ---
+  describe("task deletion", () => {
+  it("owner can delete their own task", async () => {
+    const admin = getAdmin();
     const taskId = crypto.randomUUID();
 
     await admin.from("tasks").insert({
@@ -237,17 +213,13 @@ Deno.test({
     const res = await apiFetch(`/tasks/${taskId}`, userA.accessToken, {
       method: "DELETE",
     });
-    assertEquals(res.status, 200);
+    expect(res.status).toBe(200);
     const body = await res.json();
-    assertEquals(body.ok, true);
-  },
-});
+    expect(body.ok).toBe(true);
+  });
 
-Deno.test({
-  name: "DELETE /tasks/:id denies other user's task",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdmin();
+  it("users cannot delete another user's tasks", async () => {
+    const admin = getAdmin();
     const taskId = crypto.randomUUID();
 
     await admin.from("tasks").insert({
@@ -260,19 +232,17 @@ Deno.test({
     const res = await apiFetch(`/tasks/${taskId}`, userB.accessToken, {
       method: "DELETE",
     });
-    assertEquals(res.status, 404);
+    expect(res.status).toBe(404);
     await res.body?.cancel();
 
     await admin.from("tasks").delete().eq("id", taskId);
-  },
-});
+  });
+  }); // end task deletion
 
-// --- POST /tasks/:id/cancel ---
-Deno.test({
-  name: "POST /tasks/:id/cancel cancels a processing task",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdmin();
+  // --- task cancellation ---
+  describe("task cancellation", () => {
+  it("cancels a processing task", async () => {
+    const admin = getAdmin();
     const taskId = crypto.randomUUID();
 
     await admin.from("tasks").insert({
@@ -286,20 +256,16 @@ Deno.test({
     const res = await apiFetch(`/tasks/${taskId}/cancel`, userA.accessToken, {
       method: "POST",
     });
-    assertEquals(res.status, 200);
+    expect(res.status).toBe(200);
     const body = await res.json();
-    assertEquals(body.cancelled, true);
-    assertEquals(body.task_id, taskId);
+    expect(body.cancelled).toBe(true);
+    expect(body.task_id).toBe(taskId);
 
     await admin.from("tasks").delete().eq("id", taskId);
-  },
-});
+  });
 
-Deno.test({
-  name: "POST /tasks/:id/cancel rejects already completed task",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdmin();
+  it("rejects cancellation of already completed task", async () => {
+    const admin = getAdmin();
     const taskId = crypto.randomUUID();
 
     await admin.from("tasks").insert({
@@ -312,18 +278,14 @@ Deno.test({
     const res = await apiFetch(`/tasks/${taskId}/cancel`, userA.accessToken, {
       method: "POST",
     });
-    assertEquals(res.status, 400);
+    expect(res.status).toBe(400);
     await res.body?.cancel();
 
     await admin.from("tasks").delete().eq("id", taskId);
-  },
-});
+  });
 
-Deno.test({
-  name: "POST /tasks/:id/cancel denies other user's task",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdmin();
+  it("users cannot cancel another user's tasks", async () => {
+    const admin = getAdmin();
     const taskId = crypto.randomUUID();
 
     await admin.from("tasks").insert({
@@ -336,18 +298,14 @@ Deno.test({
     const res = await apiFetch(`/tasks/${taskId}/cancel`, userB.accessToken, {
       method: "POST",
     });
-    assertEquals(res.status, 404);
+    expect(res.status).toBe(404);
     await res.body?.cancel();
 
     await admin.from("tasks").delete().eq("id", taskId);
-  },
-});
+  });
 
-Deno.test({
-  name: "POST /tasks/:id/cancel restores consumed design trial exactly once",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdmin();
+  it("cancellation restores consumed design trial exactly once", async () => {
+    const admin = getAdmin();
     const taskId = crypto.randomUUID();
     const trialKey = `design-preview:${taskId}:charge`;
 
@@ -385,7 +343,7 @@ Deno.test({
         method: "POST",
       },
     );
-    assertEquals(cancelRes.status, 200);
+    expect(cancelRes.status).toBe(200);
     await cancelRes.body?.cancel();
 
     const profile = await admin
@@ -393,8 +351,8 @@ Deno.test({
       .select("design_trials_remaining")
       .eq("id", userA.userId)
       .single();
-    assertEquals(profile.error, null);
-    assertEquals(profile.data?.design_trials_remaining, 2);
+    expect(profile.error).toBe(null);
+    expect(profile.data?.design_trials_remaining).toBe(2);
 
     const trial = await admin
       .from("trial_consumption")
@@ -402,9 +360,9 @@ Deno.test({
       .eq("user_id", userA.userId)
       .eq("idempotency_key", trialKey)
       .single();
-    assertEquals(trial.error, null);
-    assertEquals(trial.data?.status, "restored");
-    assertEquals(typeof trial.data?.restored_at, "string");
+    expect(trial.error).toBe(null);
+    expect(trial.data?.status).toBe("restored");
+    expect(typeof trial.data?.restored_at).toBe("string");
 
     await admin.from("tasks").delete().eq("id", taskId);
     await admin
@@ -412,14 +370,6 @@ Deno.test({
       .delete()
       .eq("user_id", userA.userId)
       .eq("idempotency_key", trialKey);
-  },
-});
-
-Deno.test({
-  name: "tasks: teardown",
-  ...noLeaks,
-  fn: async () => {
-    await deleteTestUser(userA.userId);
-    await deleteTestUser(userB.userId);
-  },
+  });
+  }); // end task cancellation
 });

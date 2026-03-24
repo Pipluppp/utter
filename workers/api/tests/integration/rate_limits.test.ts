@@ -1,10 +1,10 @@
-import { assertEquals } from "@std/assert";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
-  apiFetch,
-  createTestUser,
-  deleteTestUser,
-  type TestUser,
+    apiFetch,
+    createTestUser,
+    deleteTestUser,
+    type TestUser,
 } from "./_helpers/setup.ts";
 
 let userA: TestUser;
@@ -34,21 +34,22 @@ async function postCloneUploadUrl(
   });
 }
 
-Deno.test({
-  name: "rate-limits: setup",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
+describe("rate_limits", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  beforeAll(async () => {
     userA = await createTestUser(randomEmail("rate_user_a"), "password123");
     userB = await createTestUser(randomEmail("rate_user_b"), "password123");
-  },
-});
+  });
 
-Deno.test({
-  name: "Tier1 route returns 429 with retry_after_seconds at threshold",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
+  afterAll(async () => {
+    await deleteTestUser(userA.userId);
+    await deleteTestUser(userB.userId);
+  });
+
+  it("Tier1 route returns 429 with retry_after_seconds at threshold", async () => {
     let saw429 = false;
     let seenRetryAfter = 0;
 
@@ -73,32 +74,17 @@ Deno.test({
       await res.body?.cancel();
     }
 
-    assertEquals(saw429, true);
-    assertEquals(seenRetryAfter > 0, true);
-  },
-});
+    expect(saw429).toBe(true);
+    expect(seenRetryAfter > 0).toBe(true);
+  });
 
-Deno.test({
-  name: "Tier1 counters are independent between source IPs",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
+  it("Tier1 counters are independent between source IPs", async () => {
     const res = await postCloneUploadUrl(
       userB.accessToken,
       "Independent Counter",
       "198.51.100.11",
     );
-    assertEquals(res.status, 200);
+    expect(res.status).toBe(200);
     await res.body?.cancel();
-  },
-});
-
-Deno.test({
-  name: "rate-limits: teardown",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
-    await deleteTestUser(userA.userId);
-    await deleteTestUser(userB.userId);
-  },
+  });
 });

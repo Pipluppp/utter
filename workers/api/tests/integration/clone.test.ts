@@ -1,32 +1,31 @@
 /**
  * /clone endpoint tests.
  */
-import { assertEquals, assertExists } from "@std/assert";
+import { createClient } from "@supabase/supabase-js";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { createUserWithBalance } from "./_helpers/factories.ts";
 import {
-  apiFetch,
-  createTestUser,
-  deleteTestUser,
-  SERVICE_ROLE_KEY,
-  SUPABASE_URL,
-  type TestUser,
-} from "./_helpers/setup.ts";
-import {
-  MINIMAL_WAV,
-  TEST_USER_A,
-  VALID_VOICE_PAYLOAD,
+    MINIMAL_WAV,
+    TEST_USER_A,
+    VALID_VOICE_PAYLOAD,
 } from "./_helpers/fixtures.ts";
+import {
+    apiFetch,
+    deleteTestUser,
+    SERVICE_ROLE_KEY,
+    SUPABASE_URL,
+    type TestUser,
+} from "./_helpers/setup.ts";
 
 let userA: TestUser;
-const noLeaks = { sanitizeResources: false, sanitizeOps: false };
 const MAX_REFERENCE_BYTES = 10 * 1024 * 1024;
 
-async function getAdminClient() {
-  const admin = await import("npm:@supabase/supabase-js@2");
-  return admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+function getAdminClient() {
+  return createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 }
 
 async function waitForReferenceSize(
-  admin: Awaited<ReturnType<typeof getAdminClient>>,
+  admin: ReturnType<typeof getAdminClient>,
   userId: string,
   voiceId: string,
   minBytes: number,
@@ -60,122 +59,120 @@ async function waitForReferenceSize(
   return false;
 }
 
-Deno.test({
-  name: "clone: setup",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
-    userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
-    const admin = await getAdminClient();
-    await admin
-      .from("profiles")
-      .upsert(
-        {
-          id: userA.userId,
-          credits_remaining: 250000,
-          design_trials_remaining: 2,
-          clone_trials_remaining: 2,
-          subscription_tier: "pro",
-        },
-        { onConflict: "id" },
-      );
-  },
-});
-
-// --- POST /clone/upload-url ---
-Deno.test("POST /clone/upload-url returns upload URL + voice_id", async () => {
-  const res = await apiFetch("/clone/upload-url", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(VALID_VOICE_PAYLOAD),
+describe("clone", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
-  assertEquals(res.status, 200);
-  const body = await res.json();
-  assertExists(body.voice_id);
-  assertExists(body.upload_url);
-  assertExists(body.object_key);
-});
 
-Deno.test("POST /clone/upload-url rejects missing name", async () => {
-  const res = await apiFetch("/clone/upload-url", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ language: "English", transcript: "hello" }),
+  beforeAll(async () => {
+    userA = await createUserWithBalance({
+      email: TEST_USER_A.email,
+      password: TEST_USER_A.password,
+      credits: 250000,
+      designTrials: 2,
+      cloneTrials: 2,
+      tier: "pro",
+    });
   });
-  assertEquals(res.status, 400);
-  await res.body?.cancel();
-});
 
-Deno.test("POST /clone/upload-url rejects missing language", async () => {
-  const res = await apiFetch("/clone/upload-url", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: "Test", transcript: "hello" }),
+  afterAll(async () => {
+    await deleteTestUser(userA.userId);
   });
-  assertEquals(res.status, 400);
-  await res.body?.cancel();
-});
 
-Deno.test("POST /clone/upload-url rejects missing transcript", async () => {
-  const res = await apiFetch("/clone/upload-url", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: "Test", language: "English" }),
+  // --- clone upload ---
+  describe("clone upload", () => {
+  it("returns signed upload URL and voice ID", async () => {
+    const res = await apiFetch("/clone/upload-url", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(VALID_VOICE_PAYLOAD),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.voice_id).toBeDefined();
+    expect(body.upload_url).toBeDefined();
+    expect(body.object_key).toBeDefined();
   });
-  assertEquals(res.status, 400);
-  await res.body?.cancel();
-});
 
-Deno.test("POST /clone/upload-url rejects name > 100 chars", async () => {
-  const res = await apiFetch("/clone/upload-url", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: "x".repeat(101),
-      language: "English",
-      transcript: "hello",
-    }),
+  it("rejects missing voice name", async () => {
+    const res = await apiFetch("/clone/upload-url", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: "English", transcript: "hello" }),
+    });
+    expect(res.status).toBe(400);
+    await res.body?.cancel();
   });
-  assertEquals(res.status, 400);
-  await res.body?.cancel();
-});
 
-// --- POST /clone/finalize ---
-Deno.test("POST /clone/finalize rejects when audio not uploaded", async () => {
-  const res = await apiFetch("/clone/finalize", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      voice_id: crypto.randomUUID(),
-      name: "Test",
-      language: "English",
-      transcript: "hello",
-    }),
+  it("rejects missing language", async () => {
+    const res = await apiFetch("/clone/upload-url", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Test", transcript: "hello" }),
+    });
+    expect(res.status).toBe(400);
+    await res.body?.cancel();
   });
-  // Should fail because no audio file was uploaded
-  assertEquals(res.status, 400);
-  await res.body?.cancel();
-});
 
-Deno.test("POST /clone/finalize rejects missing voice_id", async () => {
-  const res = await apiFetch("/clone/finalize", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: "Test",
-      language: "English",
-      transcript: "hello",
-    }),
+  it("rejects missing transcript", async () => {
+    const res = await apiFetch("/clone/upload-url", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Test", language: "English" }),
+    });
+    expect(res.status).toBe(400);
+    await res.body?.cancel();
   });
-  assertEquals(res.status, 400);
-  await res.body?.cancel();
-});
 
-Deno.test({
-  name: "POST /clone/finalize uses clone trial before debit path",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdminClient();
+  it("rejects voice name exceeding 100 characters", async () => {
+    const res = await apiFetch("/clone/upload-url", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "x".repeat(101),
+        language: "English",
+        transcript: "hello",
+      }),
+    });
+    expect(res.status).toBe(400);
+    await res.body?.cancel();
+  });
+  }); // end clone upload
+
+  // --- clone finalize ---
+  describe("clone finalize", () => {
+  it("rejects finalize when no audio was uploaded", async () => {
+    const res = await apiFetch("/clone/finalize", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        voice_id: crypto.randomUUID(),
+        name: "Test",
+        language: "English",
+        transcript: "hello",
+      }),
+    });
+    // Should fail because no audio file was uploaded
+    expect(res.status).toBe(400);
+    await res.body?.cancel();
+  });
+
+  it("rejects finalize without voice ID", async () => {
+    const res = await apiFetch("/clone/finalize", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Test",
+        language: "English",
+        transcript: "hello",
+      }),
+    });
+    expect(res.status).toBe(400);
+    await res.body?.cancel();
+  });
+
+  it("uses trial balance before debiting credits", async () => {
+    const admin = getAdminClient();
     await admin
       .from("profiles")
       .update({ credits_remaining: 400, clone_trials_remaining: 2 })
@@ -189,7 +186,7 @@ Deno.test({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(VALID_VOICE_PAYLOAD),
       });
-      assertEquals(urlRes.status, 200);
+      expect(urlRes.status).toBe(200);
       const uploadPayload = await urlRes.json();
       voiceId = uploadPayload.voice_id as string;
       objectKey = uploadPayload.object_key as string;
@@ -199,7 +196,7 @@ Deno.test({
         headers: { "Content-Type": "audio/wav" },
         body: MINIMAL_WAV,
       });
-      assertEquals(uploadRes.status, 200);
+      expect(uploadRes.status).toBe(200);
       await uploadRes.body?.cancel();
 
       const finalizeRes = await apiFetch("/clone/finalize", userA.accessToken, {
@@ -210,7 +207,7 @@ Deno.test({
           ...VALID_VOICE_PAYLOAD,
         }),
       });
-      assertEquals(finalizeRes.status, 200);
+      expect(finalizeRes.status).toBe(200);
       await finalizeRes.body?.cancel();
 
       const profile = await admin
@@ -218,9 +215,9 @@ Deno.test({
         .select("credits_remaining, clone_trials_remaining")
         .eq("id", userA.userId)
         .single();
-      assertEquals(profile.error, null);
-      assertEquals(profile.data?.credits_remaining, 400);
-      assertEquals(profile.data?.clone_trials_remaining, 1);
+      expect(profile.error).toBe(null);
+      expect(profile.data?.credits_remaining).toBe(400);
+      expect(profile.data?.clone_trials_remaining).toBe(1);
     } finally {
       if (voiceId) {
         await admin.from("voices").delete().eq("id", voiceId).eq(
@@ -236,15 +233,10 @@ Deno.test({
         .update({ credits_remaining: 250000, clone_trials_remaining: 2 })
         .eq("id", userA.userId);
     }
-  },
-});
+  });
 
-Deno.test({
-  name:
-    "POST /clone/finalize duplicate submit is idempotent and does not restore trial",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdminClient();
+  it("duplicate finalize is idempotent and does not double-consume trial", async () => {
+    const admin = getAdminClient();
     await admin
       .from("profiles")
       .update({ credits_remaining: 250000, clone_trials_remaining: 2 })
@@ -258,7 +250,7 @@ Deno.test({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(VALID_VOICE_PAYLOAD),
       });
-      assertEquals(urlRes.status, 200);
+      expect(urlRes.status).toBe(200);
       const uploadPayload = await urlRes.json();
       voiceId = uploadPayload.voice_id as string;
       objectKey = uploadPayload.object_key as string;
@@ -268,7 +260,7 @@ Deno.test({
         headers: { "Content-Type": "audio/wav" },
         body: MINIMAL_WAV,
       });
-      assertEquals(uploadRes.status, 200);
+      expect(uploadRes.status).toBe(200);
       await uploadRes.body?.cancel();
 
       const finalizePayload = {
@@ -281,17 +273,17 @@ Deno.test({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalizePayload),
       });
-      assertEquals(finalizeFirst.status, 200);
+      expect(finalizeFirst.status).toBe(200);
       const firstBody = await finalizeFirst.json();
-      assertEquals(firstBody.id, voiceId);
+      expect(firstBody.id).toBe(voiceId);
 
       const firstProfile = await admin
         .from("profiles")
         .select("clone_trials_remaining")
         .eq("id", userA.userId)
         .single();
-      assertEquals(firstProfile.error, null);
-      assertEquals(firstProfile.data?.clone_trials_remaining, 1);
+      expect(firstProfile.error).toBe(null);
+      expect(firstProfile.data?.clone_trials_remaining).toBe(1);
 
       const finalizeSecond = await apiFetch(
         "/clone/finalize",
@@ -302,17 +294,17 @@ Deno.test({
           body: JSON.stringify(finalizePayload),
         },
       );
-      assertEquals(finalizeSecond.status, 200);
+      expect(finalizeSecond.status).toBe(200);
       const secondBody = await finalizeSecond.json();
-      assertEquals(secondBody.id, voiceId);
+      expect(secondBody.id).toBe(voiceId);
 
       const secondProfile = await admin
         .from("profiles")
         .select("clone_trials_remaining")
         .eq("id", userA.userId)
         .single();
-      assertEquals(secondProfile.error, null);
-      assertEquals(secondProfile.data?.clone_trials_remaining, 1);
+      expect(secondProfile.error).toBe(null);
+      expect(secondProfile.data?.clone_trials_remaining).toBe(1);
     } finally {
       if (voiceId) {
         await admin.from("voices").delete().eq("id", voiceId).eq(
@@ -328,15 +320,10 @@ Deno.test({
         .update({ credits_remaining: 250000, clone_trials_remaining: 2 })
         .eq("id", userA.userId);
     }
-  },
-});
+  });
 
-Deno.test({
-  name:
-    "POST /clone/finalize debits 1000 credits when clone trials are exhausted",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdminClient();
+  it("debits 200 credits when clone trials are exhausted", async () => {
+    const admin = getAdminClient();
     await admin
       .from("profiles")
       .update({ credits_remaining: 1500, clone_trials_remaining: 0 })
@@ -350,7 +337,7 @@ Deno.test({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(VALID_VOICE_PAYLOAD),
       });
-      assertEquals(urlRes.status, 200);
+      expect(urlRes.status).toBe(200);
       const uploadPayload = await urlRes.json();
       voiceId = uploadPayload.voice_id as string;
       objectKey = uploadPayload.object_key as string;
@@ -360,7 +347,7 @@ Deno.test({
         headers: { "Content-Type": "audio/wav" },
         body: MINIMAL_WAV,
       });
-      assertEquals(uploadRes.status, 200);
+      expect(uploadRes.status).toBe(200);
       await uploadRes.body?.cancel();
 
       const finalizeRes = await apiFetch("/clone/finalize", userA.accessToken, {
@@ -371,7 +358,7 @@ Deno.test({
           ...VALID_VOICE_PAYLOAD,
         }),
       });
-      assertEquals(finalizeRes.status, 200);
+      expect(finalizeRes.status).toBe(200);
       await finalizeRes.body?.cancel();
 
       const profile = await admin
@@ -379,9 +366,9 @@ Deno.test({
         .select("credits_remaining, clone_trials_remaining")
         .eq("id", userA.userId)
         .single();
-      assertEquals(profile.error, null);
-      assertEquals(profile.data?.credits_remaining, 500);
-      assertEquals(profile.data?.clone_trials_remaining, 0);
+      expect(profile.error).toBe(null);
+      expect(profile.data?.credits_remaining).toBe(1300);
+      expect(profile.data?.clone_trials_remaining).toBe(0);
     } finally {
       if (voiceId) {
         await admin.from("voices").delete().eq("id", voiceId).eq(
@@ -397,14 +384,10 @@ Deno.test({
         .update({ credits_remaining: 250000, clone_trials_remaining: 2 })
         .eq("id", userA.userId);
     }
-  },
-});
+  });
 
-Deno.test({
-  name: "POST /clone/finalize returns 402 when credits are insufficient",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdminClient();
+  it("returns 402 when credits insufficient and no trials remain", async () => {
+    const admin = getAdminClient();
     await admin
       .from("profiles")
       .update({ credits_remaining: 2, clone_trials_remaining: 0 })
@@ -419,7 +402,7 @@ Deno.test({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(VALID_VOICE_PAYLOAD),
       });
-      assertEquals(urlRes.status, 200);
+      expect(urlRes.status).toBe(200);
       const uploadPayload = await urlRes.json();
       voiceId = uploadPayload.voice_id as string;
       objectKey = uploadPayload.object_key as string;
@@ -429,7 +412,7 @@ Deno.test({
         headers: { "Content-Type": "audio/wav" },
         body: MINIMAL_WAV,
       });
-      assertEquals(uploadRes.status, 200);
+      expect(uploadRes.status).toBe(200);
       await uploadRes.body?.cancel();
 
       const finalizeRes = await apiFetch("/clone/finalize", userA.accessToken, {
@@ -440,9 +423,9 @@ Deno.test({
           ...VALID_VOICE_PAYLOAD,
         }),
       });
-      assertEquals(finalizeRes.status, 402);
+      expect(finalizeRes.status).toBe(402);
       const body = await finalizeRes.json();
-      assertEquals(typeof body.detail, "string");
+      expect(typeof body.detail).toBe("string");
     } finally {
       await admin
         .from("profiles")
@@ -458,14 +441,10 @@ Deno.test({
         await admin.storage.from("references").remove([objectKey]);
       }
     }
-  },
-});
+  });
 
-Deno.test({
-  name: "POST /clone/finalize rejects oversized reference audio",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdminClient();
+  it("rejects reference audio exceeding size limit", async () => {
+    const admin = getAdminClient();
     const voiceId = crypto.randomUUID();
     const objectKey = `${userA.userId}/${voiceId}/reference.wav`;
     const oversizedAudio = new Uint8Array(MAX_REFERENCE_BYTES + 1);
@@ -481,7 +460,7 @@ Deno.test({
       );
 
       if (upload.error) {
-        assertEquals(typeof upload.error.message, "string");
+        expect(typeof upload.error.message).toBe("string");
         return;
       }
 
@@ -504,9 +483,9 @@ Deno.test({
         }),
       });
 
-      assertEquals(res.status, 400);
+      expect(res.status).toBe(400);
       const body = await res.json();
-      assertEquals(typeof body.detail, "string");
+      expect(typeof body.detail).toBe("string");
     } finally {
       await admin.storage.from("references").remove([objectKey]);
       await admin.from("voices").delete().eq("id", voiceId).eq(
@@ -514,14 +493,10 @@ Deno.test({
         userA.userId,
       );
     }
-  },
-});
+  });
 
-Deno.test({
-  name: "POST /clone/finalize cleans orphaned upload when voice insert fails",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdminClient();
+  it("cleans up orphaned storage when voice insert fails", async () => {
+    const admin = getAdminClient();
     let voiceId = "";
     let objectKey = "";
 
@@ -531,7 +506,7 @@ Deno.test({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(VALID_VOICE_PAYLOAD),
       });
-      assertEquals(urlRes.status, 200);
+      expect(urlRes.status).toBe(200);
       const uploadPayload = await urlRes.json();
       voiceId = uploadPayload.voice_id as string;
       objectKey = uploadPayload.object_key as string;
@@ -541,7 +516,7 @@ Deno.test({
         headers: { "Content-Type": "audio/wav" },
         body: MINIMAL_WAV,
       });
-      assertEquals(uploadRes.status, 200);
+      expect(uploadRes.status).toBe(200);
       await uploadRes.body?.cancel();
 
       const seed = await admin.from("voices").insert({
@@ -563,7 +538,7 @@ Deno.test({
           ...VALID_VOICE_PAYLOAD,
         }),
       });
-      assertEquals(res.status, 500);
+      expect(res.status).toBe(500);
       await res.body?.cancel();
 
       const listing = await admin.storage.from("references").list(
@@ -576,7 +551,7 @@ Deno.test({
       const hasReference = (listing.data ?? []).some((obj) =>
         obj.name === "reference.wav"
       );
-      assertEquals(hasReference, false);
+      expect(hasReference).toBe(false);
     } finally {
       await admin.from("voices").delete().eq("id", voiceId).eq(
         "user_id",
@@ -584,49 +559,43 @@ Deno.test({
       );
       await admin.storage.from("references").remove([objectKey]);
     }
-  },
-});
-
-// --- Full clone flow: upload-url → upload → finalize ---
-Deno.test("Full clone flow: upload-url → upload WAV → finalize", async () => {
-  // Step 1: Get signed upload URL
-  const urlRes = await apiFetch("/clone/upload-url", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(VALID_VOICE_PAYLOAD),
   });
-  assertEquals(urlRes.status, 200);
-  const { voice_id, upload_url } = await urlRes.json();
+  }); // end clone finalize
 
-  // Step 2: Upload WAV to the signed URL
-  const uploadRes = await fetch(upload_url, {
-    method: "PUT",
-    headers: { "Content-Type": "audio/wav" },
-    body: MINIMAL_WAV,
+  // --- clone flow ---
+  describe("clone flow", () => {
+  it("full clone flow: upload → finalize creates voice", async () => {
+    // Step 1: Get signed upload URL
+    const urlRes = await apiFetch("/clone/upload-url", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(VALID_VOICE_PAYLOAD),
+    });
+    expect(urlRes.status).toBe(200);
+    const { voice_id, upload_url } = await urlRes.json();
+
+    // Step 2: Upload WAV to the signed URL
+    const uploadRes = await fetch(upload_url, {
+      method: "PUT",
+      headers: { "Content-Type": "audio/wav" },
+      body: MINIMAL_WAV,
+    });
+    expect(uploadRes.status).toBe(200);
+    await uploadRes.body?.cancel();
+
+    // Step 3: Finalize the clone
+    const finalRes = await apiFetch("/clone/finalize", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        voice_id,
+        ...VALID_VOICE_PAYLOAD,
+      }),
+    });
+    expect(finalRes.status).toBe(200);
+    const finalBody = await finalRes.json();
+    expect(finalBody.id).toBe(voice_id);
+    expect(finalBody.name).toBeDefined();
   });
-  assertEquals(uploadRes.status, 200);
-  await uploadRes.body?.cancel();
-
-  // Step 3: Finalize the clone
-  const finalRes = await apiFetch("/clone/finalize", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      voice_id,
-      ...VALID_VOICE_PAYLOAD,
-    }),
-  });
-  assertEquals(finalRes.status, 200);
-  const finalBody = await finalRes.json();
-  assertEquals(finalBody.id, voice_id);
-  assertExists(finalBody.name);
-});
-
-Deno.test({
-  name: "clone: teardown",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
-    await deleteTestUser(userA.userId);
-  },
+  }); // end clone flow
 });

@@ -1,14 +1,9 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { setRuntimeEnv } from "../../src/_shared/runtime_env.ts";
 import {
-  assertEquals,
-  assertRejects,
-  assertStringIncludes,
-} from "@std/assert";
-import {
-  getTranscriptionConfig,
-  TranscriptionUpstreamError,
-  transcribeAudioFile,
-} from "../src/_shared/transcription/provider.ts";
-import { setRuntimeEnv } from "../src/_shared/runtime_env.ts";
+    getTranscriptionConfig,
+    transcribeAudioFile
+} from "../../src/_shared/transcription/provider.ts";
 
 function withMockedFetch(
   handler: typeof fetch,
@@ -22,29 +17,29 @@ function withMockedFetch(
   });
 }
 
-Deno.test("transcription provider exposes Qwen config defaults", () => {
-  setRuntimeEnv({
-    DASHSCOPE_API_KEY: "test-key",
-    TRANSCRIPTION_ENABLED: "true",
+describe("transcription_provider", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  const config = getTranscriptionConfig();
-  assertEquals(config.enabled, true);
-  assertEquals(config.provider, "qwen");
-  assertEquals(config.model, "qwen3-asr-flash-2026-02-10");
-  assertEquals(
-    config.baseUrl,
-    "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-  );
+  it("exposes Qwen config defaults", () => {
+    setRuntimeEnv({
+      DASHSCOPE_API_KEY: "test-key",
+      TRANSCRIPTION_ENABLED: "true",
+    });
 
-  setRuntimeEnv({});
-});
+    const config = getTranscriptionConfig();
+    expect(config.enabled).toBe(true);
+    expect(config.provider).toBe("qwen");
+    expect(config.model).toBe("qwen3-asr-flash-2026-02-10");
+    expect(config.baseUrl).toBe(
+      "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    );
 
-Deno.test({
-  name: "transcription provider sends OpenAI-compatible Qwen payload with language hint",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
+    setRuntimeEnv({});
+  });
+
+  it("sends OpenAI-compatible Qwen payload with language hint", async () => {
     setRuntimeEnv({
       DASHSCOPE_API_KEY: "test-key",
       TRANSCRIPTION_ENABLED: "true",
@@ -86,33 +81,27 @@ Deno.test({
           "English",
         );
 
-        assertEquals(result.text, "hello from qwen");
-        assertEquals(result.model, "qwen3-asr-flash-2026-02-10");
-        assertEquals(result.language, "en");
-        assertEquals(requestUrl, "https://example.com/compatible-mode/v1/chat/completions");
+        expect(result.text).toBe("hello from qwen");
+        expect(result.model).toBe("qwen3-asr-flash-2026-02-10");
+        expect(result.language).toBe("en");
+        expect(requestUrl).toBe("https://example.com/compatible-mode/v1/chat/completions");
 
         const body = JSON.parse(requestBody);
-        assertEquals(body.model, "qwen3-asr-flash-2026-02-10");
-        assertEquals(body.stream, false);
-        assertEquals(body.asr_options.enable_itn, false);
-        assertEquals(body.asr_options.language, "en");
-        assertEquals(body.messages.length, 1);
-        assertEquals(body.messages[0].role, "user");
-        assertEquals(body.messages[0].content[0].type, "input_audio");
-        assertStringIncludes(
-          body.messages[0].content[0].input_audio.data,
+        expect(body.model).toBe("qwen3-asr-flash-2026-02-10");
+        expect(body.stream).toBe(false);
+        expect(body.asr_options.enable_itn).toBe(false);
+        expect(body.asr_options.language).toBe("en");
+        expect(body.messages.length).toBe(1);
+        expect(body.messages[0].role).toBe("user");
+        expect(body.messages[0].content[0].type).toBe("input_audio");
+        expect(body.messages[0].content[0].input_audio.data).toContain(
           "data:audio/wav;base64,",
         );
       },
     );
-  },
-});
+  });
 
-Deno.test({
-  name: "transcription provider omits unknown language hint and parses content arrays",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
+  it("omits unknown language hint and parses content arrays", async () => {
     setRuntimeEnv({
       DASHSCOPE_API_KEY: "test-key",
       TRANSCRIPTION_ENABLED: "true",
@@ -146,22 +135,17 @@ Deno.test({
           "Auto",
         );
 
-        assertEquals(result.text, "array transcript");
-        assertEquals(result.model, "qwen3-asr-flash-2026-02-10");
-        assertEquals(result.language, null);
+        expect(result.text).toBe("array transcript");
+        expect(result.model).toBe("qwen3-asr-flash-2026-02-10");
+        expect(result.language).toBe(null);
 
         const body = JSON.parse(requestBody);
-        assertEquals("language" in body.asr_options, false);
+        expect("language" in body.asr_options).toBe(false);
       },
     );
-  },
-});
+  });
 
-Deno.test({
-  name: "transcription provider surfaces upstream failures as TranscriptionUpstreamError",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
+  it("surfaces upstream failures as TranscriptionUpstreamError", async () => {
     setRuntimeEnv({
       DASHSCOPE_API_KEY: "test-key",
       TRANSCRIPTION_ENABLED: "true",
@@ -180,7 +164,7 @@ Deno.test({
           },
         )) as typeof fetch,
       async () => {
-        await assertRejects(
+        await expect(
           () =>
             transcribeAudioFile(
               new File([new Uint8Array([1, 2, 3])], "sample.wav", {
@@ -188,10 +172,8 @@ Deno.test({
               }),
               "English",
             ),
-          TranscriptionUpstreamError,
-          "Qwen transcription failed (400): bad audio payload",
-        );
+        ).rejects.toThrow("Qwen transcription failed (400): bad audio payload");
       },
     );
-  },
+  });
 });

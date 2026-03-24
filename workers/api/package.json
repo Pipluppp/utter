@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "wrangler dev --local --port 8787",
     "check": "wrangler deploy --dry-run --env staging",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
     "typecheck": "tsc --noEmit",
     "types": "wrangler types",
     "deploy:dry": "wrangler deploy --dry-run"
@@ -16,7 +19,9 @@
   },
   "devDependencies": {
     "@types/node": "^24.6.1",
+    "fast-check": "^4.6.0",
     "typescript": "^5.9.3",
+    "vitest": "^4.1.1",
     "wrangler": "^4.70.0"
   }
 }

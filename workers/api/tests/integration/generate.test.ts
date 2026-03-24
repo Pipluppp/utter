@@ -1,35 +1,36 @@
 /**
  * /generate endpoint tests.
  */
-import { assertEquals, assertExists } from "@std/assert";
+import { createClient } from "@supabase/supabase-js";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
-  apiFetch,
-  createTestUser,
-  deleteTestUser,
-  SERVICE_ROLE_KEY,
-  SUPABASE_URL,
-  type TestUser,
-} from "./_helpers/setup.ts";
-import {
-  MINIMAL_WAV,
-  TEST_USER_A,
-  TEST_USER_B,
-  VALID_GENERATE_PAYLOAD,
+    MINIMAL_WAV,
+    TEST_USER_A,
+    TEST_USER_B,
+    VALID_GENERATE_PAYLOAD,
 } from "./_helpers/fixtures.ts";
+import {
+    apiFetch,
+    createTestUser,
+    deleteTestUser,
+    SERVICE_ROLE_KEY,
+    SUPABASE_URL,
+    type TestUser,
+} from "./_helpers/setup.ts";
+
+const HAS_QWEN_KEY = !!process.env.DASHSCOPE_API_KEY;
 
 let userA: TestUser;
 let userB: TestUser;
 let voiceId: string;
-const noLeaks = { sanitizeResources: false, sanitizeOps: false };
 const MAX_REFERENCE_BYTES = 10 * 1024 * 1024;
 
-async function getAdminClient() {
-  const admin = await import("npm:@supabase/supabase-js@2");
-  return admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+function getAdminClient() {
+  return createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 }
 
 async function cleanupActiveQueueTaskRows(userId: string): Promise<void> {
-  const client = await getAdminClient();
+  const client = getAdminClient();
   const { data: activeTasks, error: activeTasksError } = await client
     .from("tasks")
     .select("id, generation_id")
@@ -77,7 +78,7 @@ async function cleanupActiveQueueTaskRows(userId: string): Promise<void> {
 }
 
 async function waitForReferenceSize(
-  client: Awaited<ReturnType<typeof getAdminClient>>,
+  client: ReturnType<typeof getAdminClient>,
   userId: string,
   voiceId: string,
   minBytes: number,
@@ -112,17 +113,17 @@ async function waitForReferenceSize(
   return false;
 }
 
-Deno.test({
-  name: "generate: setup",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
+describe.skipIf(!HAS_QWEN_KEY)("generate", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  beforeAll(async () => {
     userA = await createTestUser(TEST_USER_A.email, TEST_USER_A.password);
     userB = await createTestUser(TEST_USER_B.email, TEST_USER_B.password);
 
     // Seed a voice with reference audio so /generate can find it
-    const admin = await import("npm:@supabase/supabase-js@2");
-    const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const client = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     await client
       .from("profiles")
@@ -168,14 +169,18 @@ Deno.test({
       provider_target_model: "qwen3-tts-vc-2026-01-22",
       provider_voice_kind: "vc",
     });
-  },
-});
+  });
 
-// --- POST /generate ---
-Deno.test({
-  name: "POST /generate creates task + generation",
-  ...noLeaks,
-  fn: async () => {
+  afterAll(async () => {
+    // Clean up via admin (cascade will handle tasks/generations)
+    const client = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    await client.from("voices").delete().eq("id", voiceId);
+    await deleteTestUser(userA.userId);
+    await deleteTestUser(userB.userId);
+  });
+
+  // --- POST /generate ---
+  it("POST /generate creates task + generation", async () => {
     try {
       const res = await apiFetch("/generate", userA.accessToken, {
         method: "POST",
@@ -186,92 +191,88 @@ Deno.test({
         }),
       });
       const body = await res.json();
-      assertEquals(res.status, 200);
-      assertExists(body.task_id);
-      assertExists(body.generation_id);
-      assertEquals(body.status, "processing");
-      assertEquals(body.is_long_running, true);
+      expect(res.status).toBe(200);
+      expect(body.task_id).toBeDefined();
+      expect(body.generation_id).toBeDefined();
+      expect(body.status).toBe("processing");
+      expect(body.is_long_running).toBe(true);
     } finally {
       await cleanupActiveQueueTaskRows(userA.userId);
     }
-  },
-});
-
-Deno.test("POST /generate rejects missing voice_id", async () => {
-  const res = await apiFetch("/generate", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: "hello", language: "English" }),
   });
-  assertEquals(res.status, 400);
-  await res.body?.cancel();
-});
 
-Deno.test("POST /generate rejects missing text", async () => {
-  const res = await apiFetch("/generate", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ voice_id: voiceId, language: "English" }),
+  it("POST /generate rejects missing voice_id", async () => {
+    const res = await apiFetch("/generate", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: "hello", language: "English" }),
+    });
+    expect(res.status).toBe(400);
+    await res.body?.cancel();
   });
-  assertEquals(res.status, 400);
-  await res.body?.cancel();
-});
 
-Deno.test("POST /generate rejects invalid voice_id format", async () => {
-  const res = await apiFetch("/generate", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ voice_id: "not-a-uuid", text: "hello" }),
+  it("POST /generate rejects missing text", async () => {
+    const res = await apiFetch("/generate", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ voice_id: voiceId, language: "English" }),
+    });
+    expect(res.status).toBe(400);
+    await res.body?.cancel();
   });
-  assertEquals(res.status, 400);
-  await res.body?.cancel();
-});
 
-Deno.test("POST /generate rejects non-existent voice_id", async () => {
-  const res = await apiFetch("/generate", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      voice_id: "00000000-0000-0000-0000-000000000099",
-      text: "hello",
-    }),
+  it("POST /generate rejects invalid voice_id format", async () => {
+    const res = await apiFetch("/generate", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ voice_id: "not-a-uuid", text: "hello" }),
+    });
+    expect(res.status).toBe(400);
+    await res.body?.cancel();
   });
-  assertEquals(res.status, 404);
-  await res.body?.cancel();
-});
 
-Deno.test("POST /generate denies cross-user voice access", async () => {
-  const res = await apiFetch("/generate", userB.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      voice_id: voiceId,
-      text: "cross-user probe",
-      language: "English",
-    }),
+  it("POST /generate rejects non-existent voice_id", async () => {
+    const res = await apiFetch("/generate", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        voice_id: "00000000-0000-0000-0000-000000000099",
+        text: "hello",
+      }),
+    });
+    expect(res.status).toBe(404);
+    await res.body?.cancel();
   });
-  assertEquals(res.status, 404);
-  await res.body?.cancel();
-});
 
-Deno.test("POST /generate rejects text > 100 chars", async () => {
-  const res = await apiFetch("/generate", userA.accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      voice_id: voiceId,
-      text: "x".repeat(101),
-    }),
+  it("POST /generate denies cross-user voice access", async () => {
+    const res = await apiFetch("/generate", userB.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        voice_id: voiceId,
+        text: "cross-user probe",
+        language: "English",
+      }),
+    });
+    expect(res.status).toBe(404);
+    await res.body?.cancel();
   });
-  assertEquals(res.status, 400);
-  await res.body?.cancel();
-});
 
-Deno.test({
-  name: "POST /generate returns 402 when credits are insufficient",
-  ...noLeaks,
-  fn: async () => {
-    const admin = await getAdminClient();
+  it("POST /generate rejects text > 100 chars", async () => {
+    const res = await apiFetch("/generate", userA.accessToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        voice_id: voiceId,
+        text: "x".repeat(101),
+      }),
+    });
+    expect(res.status).toBe(400);
+    await res.body?.cancel();
+  });
+
+  it("POST /generate returns 402 when credits are insufficient", async () => {
+    const admin = getAdminClient();
     await admin
       .from("profiles")
       .update({ credits_remaining: 3 })
@@ -287,9 +288,9 @@ Deno.test({
           language: "English",
         }),
       });
-      assertEquals(res.status, 402);
+      expect(res.status).toBe(402);
       const body = await res.json();
-      assertEquals(typeof body.detail, "string");
+      expect(typeof body.detail).toBe("string");
     } finally {
       await admin
         .from("profiles")
@@ -297,14 +298,10 @@ Deno.test({
         .eq("id", userA.userId);
       await cleanupActiveQueueTaskRows(userA.userId);
     }
-  },
-});
+  });
 
-Deno.test({
-  name: "POST /generate rejects oversized reference audio before download",
-  ...noLeaks,
-  fn: async () => {
-    const client = await getAdminClient();
+  it("POST /generate rejects oversized reference audio before download", async () => {
+    const client = getAdminClient();
     const oversizedVoiceId = crypto.randomUUID();
     const objectKey = `${userA.userId}/${oversizedVoiceId}/reference.wav`;
     const oversizedAudio = new Uint8Array(MAX_REFERENCE_BYTES + 1);
@@ -320,7 +317,7 @@ Deno.test({
       );
 
       if (upload.error) {
-        assertEquals(typeof upload.error.message, "string");
+        expect(typeof upload.error.message).toBe("string");
         return;
       }
 
@@ -358,9 +355,9 @@ Deno.test({
         }),
       });
 
-      assertEquals(res.status, 400);
+      expect(res.status).toBe(400);
       const body = await res.json();
-      assertEquals(typeof body.detail, "string");
+      expect(typeof body.detail).toBe("string");
     } finally {
       await client.from("voices").delete().eq("id", oversizedVoiceId).eq(
         "user_id",
@@ -368,16 +365,10 @@ Deno.test({
       );
       await client.storage.from("references").remove([objectKey]);
     }
-  },
-});
+  });
 
-Deno.test({
-  name: "POST /generate succeeds while total active queue-backed jobs stay under the cap",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
-    const admin = await import("npm:@supabase/supabase-js@2");
-    const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  it("POST /generate succeeds while total active queue-backed jobs stay under the cap", async () => {
+    const client = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     const seededGenerationIds: string[] = [];
     const seededTaskIds: string[] = [];
@@ -431,10 +422,10 @@ Deno.test({
         }),
       });
 
-      assertEquals(res.status, 200);
+      expect(res.status).toBe(200);
       const body = await res.json();
-      assertEquals(typeof body.task_id, "string");
-      assertEquals(typeof body.generation_id, "string");
+      expect(typeof body.task_id).toBe("string");
+      expect(typeof body.generation_id).toBe("string");
     } finally {
       await cleanupActiveQueueTaskRows(userA.userId);
       if (seededTaskIds.length > 0) {
@@ -444,16 +435,10 @@ Deno.test({
         await client.from("generations").delete().in("id", seededGenerationIds);
       }
     }
-  },
-});
+  });
 
-Deno.test({
-  name: "POST /generate rejects once the active queue-backed cap is exceeded",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
-    const admin = await import("npm:@supabase/supabase-js@2");
-    const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  it("POST /generate rejects once the active queue-backed cap is exceeded", async () => {
+    const client = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     const seededGenerationIds: string[] = [];
     const seededTaskIds: string[] = [];
@@ -506,9 +491,9 @@ Deno.test({
           voice_id: voiceId,
         }),
       });
-      assertEquals(res.status, 409);
+      expect(res.status).toBe(409);
       const body = await res.json();
-      assertEquals(typeof body.detail, "string");
+      expect(typeof body.detail).toBe("string");
     } finally {
       await cleanupActiveQueueTaskRows(userA.userId);
       if (seededTaskIds.length > 0) {
@@ -518,19 +503,5 @@ Deno.test({
         await client.from("generations").delete().in("id", seededGenerationIds);
       }
     }
-  },
-});
-
-Deno.test({
-  name: "generate: teardown",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: async () => {
-    // Clean up via admin (cascade will handle tasks/generations)
-    const admin = await import("npm:@supabase/supabase-js@2");
-    const client = admin.createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    await client.from("voices").delete().eq("id", voiceId);
-    await deleteTestUser(userA.userId);
-    await deleteTestUser(userB.userId);
-  },
+  });
 });
