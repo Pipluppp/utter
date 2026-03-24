@@ -1,27 +1,104 @@
-import type { SelectHTMLAttributes } from "react";
+import type { Key } from "react-aria-components";
+import {
+  Select as AriaSelect,
+  Button,
+  Label,
+  ListBox,
+  ListBoxItem,
+  Popover,
+  SelectValue,
+} from "react-aria-components";
 import { cn } from "../../lib/cn";
 
-export function Select({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+export interface SelectItem {
+  id: string;
+  label: string;
+}
+
+export interface SelectProps {
+  label?: string;
+  items: SelectItem[];
+  selectedKey: string | null;
+  onSelectionChange: (key: string) => void;
+  isDisabled?: boolean;
+  isRequired?: boolean;
+  name?: string;
+  placeholder?: string;
+  className?: string;
+}
+
+export function Select({
+  label,
+  items,
+  selectedKey,
+  onSelectionChange,
+  isDisabled,
+  isRequired,
+  name,
+  placeholder = "Select an option",
+  className,
+}: SelectProps) {
+  const empty = items.length === 0;
+
   return (
-    <div className="relative">
-      <select
+    <AriaSelect
+      selectedKey={selectedKey}
+      onSelectionChange={(key: Key | null) => {
+        if (key !== null) onSelectionChange(key as string);
+      }}
+      isDisabled={isDisabled || empty}
+      isRequired={isRequired}
+      name={name}
+      placeholder={empty ? "No options available" : placeholder}
+      className={cn("group", className)}
+    >
+      {label ? (
+        <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </Label>
+      ) : null}
+      <Button
         className={cn(
-          "w-full appearance-none border border-border bg-background px-4 py-3 pr-10 text-sm text-foreground shadow-elevated",
-          "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          className,
+          "flex w-full cursor-pointer items-center justify-between border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated",
+          "hovered:bg-muted",
+          "focused:border-ring focused:ring-2 focused:ring-ring focused:ring-offset-2 focused:ring-offset-background",
+          "disabled:cursor-not-allowed disabled:opacity-50",
         )}
-        {...props}
       >
-        {children}
-      </select>
-      <svg
-        className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-        viewBox="0 0 16 16"
-        fill="currentColor"
-        aria-hidden="true"
+        <SelectValue className="truncate data-[placeholder]:text-faint" />
+        <svg
+          className="size-4 shrink-0 text-muted-foreground"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M8 11L3 6h10l-5 5z" />
+        </svg>
+      </Button>
+      <Popover
+        shouldFlip
+        className={cn(
+          "w-[var(--trigger-width)] overflow-y-auto border border-border bg-background shadow-elevated",
+          "entering:animate-in entering:fade-in-0 entering:zoom-in-95",
+          "exiting:animate-out exiting:fade-out-0 exiting:zoom-out-95",
+        )}
       >
-        <path d="M8 11L3 6h10l-5 5z" />
-      </svg>
-    </div>
+        <ListBox items={items} className="max-h-60 overflow-y-auto p-1">
+          {(item) => (
+            <ListBoxItem
+              id={item.id}
+              textValue={item.label}
+              className={cn(
+                "cursor-pointer px-3 py-2 text-sm text-foreground outline-none",
+                "hover:bg-subtle hovered:bg-subtle focused:bg-subtle",
+                "selected:bg-muted selected:font-medium",
+              )}
+            >
+              {item.label}
+            </ListBoxItem>
+          )}
+        </ListBox>
+      </Popover>
+    </AriaSelect>
   );
 }
