@@ -16,7 +16,7 @@
     "cf:worker:dev": "npm --prefix workers/api run dev",
     "cf:worker:check": "npm --prefix workers/api run check",
     "cf:worker:types": "npm --prefix workers/api run types",
-    "test:worker:local": "cd workers/api/tests && cross-env API_URL=http://127.0.0.1:8787/api deno test --allow-net --allow-env --allow-read .",
+    "test:worker:local": "cross-env API_URL=http://127.0.0.1:8787/api npm --prefix workers/api test",
     "test:db": "supabase test db",
     "test:all": "npm run test:db && npm run test:worker:local"
   },
