@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
 import { NavLink, useSearchParams } from "react-router-dom";
 import { useWaveformListPlayer } from "../components/audio/useWaveformListPlayer";
 import { Button, buttonStyles } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { Label } from "../components/ui/Label";
 import { Message } from "../components/ui/Message";
 import { Select } from "../components/ui/Select";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -238,20 +237,34 @@ export function VoicesPage() {
       {error ? <Message variant="error">{error}</Message> : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="voices-search">Search</Label>
+        <SearchField
+          value={query}
+          onChange={setQuery}
+          aria-label="Search voices"
+          className="group relative"
+        >
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Search
+          </Label>
           <Input
-            id="voices-search"
-            type="search"
-            name="search"
             autoComplete="off"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
             placeholder="Search voices..."
+            className={cn(
+              "w-full border border-border bg-background px-4 py-3 pr-9 text-sm text-foreground shadow-elevated placeholder:text-faint",
+              "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            )}
           />
-        </div>
+          <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground hovered:text-foreground group-data-[empty]:hidden">
+            ×
+          </AriaButton>
+        </SearchField>
         <div>
-          <Label htmlFor="voices-source">Source</Label>
+          <Label
+            htmlFor="voices-source"
+            className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground"
+          >
+            Source
+          </Label>
           <Select
             id="voices-source"
             name="source"
@@ -358,8 +371,8 @@ export function VoicesPage() {
                       type="button"
                       variant="secondary"
                       size="sm"
-                      disabled={busyDelete === v.id}
-                      onClick={() => void onDelete(v)}
+                      isDisabled={busyDelete === v.id}
+                      onPress={() => void onDelete(v)}
                     >
                       Delete
                     </Button>

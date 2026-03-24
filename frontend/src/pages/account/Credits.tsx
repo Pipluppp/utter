@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button, buttonStyles } from "../../components/ui/Button";
 import { creditPacks } from "../../content/plans";
@@ -9,33 +10,6 @@ import { AccountCreditsSkeleton } from "./accountSkeletons";
 import { AccountEmptyState, AccountNotice, AccountPanel } from "./accountUi";
 
 type ActivityFilter = "all" | "purchases" | "usage";
-
-function FilterButton({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "border px-3 py-2 text-[12px] font-medium uppercase tracking-wide transition-colors",
-        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        selected
-          ? "border-border-strong bg-foreground text-background"
-          : "border-border bg-background text-foreground hover:bg-subtle",
-      )}
-      aria-pressed={selected}
-    >
-      {children}
-    </button>
-  );
-}
 
 export function AccountCreditsPage() {
   const navigate = useNavigate();
@@ -161,8 +135,8 @@ export function AccountCreditsPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => void refresh({ background: true })}
-                    loading={refreshing}
+                    onPress={() => void refresh({ background: true })}
+                    isPending={refreshing}
                   >
                     Refresh
                   </Button>
@@ -232,9 +206,9 @@ export function AccountCreditsPage() {
                     </div>
                     <Button
                       size="sm"
-                      onClick={() => void startCheckout(pack.id)}
-                      loading={activePackId === pack.id}
-                      disabled={Boolean(activePackId)}
+                      onPress={() => void startCheckout(pack.id)}
+                      isPending={activePackId === pack.id}
+                      isDisabled={Boolean(activePackId)}
                     >
                       Buy
                     </Button>
@@ -264,26 +238,35 @@ export function AccountCreditsPage() {
             title="Recent credit activity"
             description="Purchases and usage are grouped in one timeline."
           >
-            <div className="flex flex-wrap gap-2">
-              <FilterButton
-                selected={activityFilter === "all"}
-                onClick={() => setActivityFilter("all")}
+            <ToggleButtonGroup
+              selectionMode="single"
+              disallowEmptySelection
+              selectedKeys={new Set([activityFilter])}
+              onSelectionChange={(keys) => {
+                const next = [...keys][0] as ActivityFilter;
+                if (next) setActivityFilter(next);
+              }}
+              className="flex flex-wrap gap-2"
+            >
+              <ToggleButton
+                id="all"
+                className="cursor-pointer border px-3 py-2 text-[12px] font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
               >
                 All
-              </FilterButton>
-              <FilterButton
-                selected={activityFilter === "purchases"}
-                onClick={() => setActivityFilter("purchases")}
+              </ToggleButton>
+              <ToggleButton
+                id="purchases"
+                className="cursor-pointer border px-3 py-2 text-[12px] font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
               >
                 Purchases
-              </FilterButton>
-              <FilterButton
-                selected={activityFilter === "usage"}
-                onClick={() => setActivityFilter("usage")}
+              </ToggleButton>
+              <ToggleButton
+                id="usage"
+                className="cursor-pointer border px-3 py-2 text-[12px] font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
               >
                 Usage
-              </FilterButton>
-            </div>
+              </ToggleButton>
+            </ToggleButtonGroup>
 
             <div className="mt-4">
               {filteredActivity.length === 0 ? (
@@ -351,10 +334,7 @@ export function AccountCreditsPage() {
             <Link to="/history" className={buttonStyles({ variant: "secondary", size: "sm" })}>
               View history
             </Link>
-            <Link
-              to="/account"
-              className={buttonStyles({ variant: "secondary", size: "sm" })}
-            >
+            <Link to="/account" className={buttonStyles({ variant: "secondary", size: "sm" })}>
               Edit profile
             </Link>
           </div>

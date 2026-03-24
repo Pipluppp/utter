@@ -36,7 +36,8 @@ function MediaFrame({ src, alt, className }: { src: string; alt: string; classNa
   );
 }
 
-function FeatureBlock({
+// eslint-disable-next-line -- reserved for future use
+export function _FeatureBlock({
   title,
   pitch,
   bullets,

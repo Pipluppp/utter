@@ -1,14 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Dialog,
+  DropZone,
+  FileTrigger,
+  Input,
+  Label,
+  Modal,
+  ModalOverlay,
+  Text,
+  TextArea,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "react-aria-components";
 import { NavLink, useSearchParams } from "react-router-dom";
 import { WaveformPlayer } from "../components/audio/WaveformPlayer";
 import { Button } from "../components/ui/Button";
 import { GridArtSurface } from "../components/ui/GridArt";
 import { InfoTip } from "../components/ui/InfoTip";
-import { Input } from "../components/ui/Input";
-import { Label } from "../components/ui/Label";
 import { Message } from "../components/ui/Message";
+import { ProgressBar } from "../components/ui/ProgressBar";
 import { Select } from "../components/ui/Select";
-import { Textarea } from "../components/ui/Textarea";
 import { getUtterDemo } from "../content/utterDemo";
 import { apiForm, apiJson } from "../lib/api";
 import {
@@ -51,8 +63,6 @@ export function ClonePage() {
   const [params] = useSearchParams();
   const { languages, defaultLanguage, transcription } = useLanguages();
 
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const firstModalActionRef = useRef<HTMLAnchorElement | null>(null);
   const loadedDemoRef = useRef<string | null>(null);
   const recordingActiveRef = useRef(false);
   const [file, setFile] = useState<File | null>(null);
@@ -547,21 +557,7 @@ export function ClonePage() {
     setName("");
     setTranscript("");
     setFile(null);
-    if (inputRef.current) inputRef.current.value = "";
   }, []);
-
-  useEffect(() => {
-    if (!created) return;
-    firstModalActionRef.current?.focus();
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        reset();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [created, reset]);
 
   return (
     <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
@@ -599,38 +595,32 @@ export function ClonePage() {
       {recordingError ? <Message variant="error">{recordingError}</Message> : null}
 
       <div className="flex items-center justify-center">
-        <div className="inline-flex overflow-hidden border border-border bg-background shadow-elevated">
-          <button
-            type="button"
-            className={cn(
-              "px-4 py-2 text-xs font-medium uppercase tracking-wide",
-              audioMode === "upload"
-                ? "bg-foreground text-background"
-                : "bg-background text-foreground hover:bg-subtle",
-            )}
-            aria-pressed={audioMode === "upload"}
-            onClick={() => setAudioMode("upload")}
-            disabled={recording}
+        <ToggleButtonGroup
+          selectionMode="single"
+          disallowEmptySelection
+          selectedKeys={new Set([audioMode])}
+          onSelectionChange={(keys) => {
+            const next = [...keys][0] as "upload" | "record";
+            if (next) setAudioMode(next);
+          }}
+          isDisabled={recording}
+          className="inline-flex overflow-hidden border border-border bg-background shadow-elevated"
+        >
+          <ToggleButton
+            id="upload"
+            className="cursor-pointer px-4 py-2 text-xs font-medium uppercase tracking-wide bg-background text-foreground hover:bg-subtle selected:bg-foreground selected:text-background"
           >
             Upload
-          </button>
+          </ToggleButton>
           {transcriptionEnabled ? (
-            <button
-              type="button"
-              className={cn(
-                "px-4 py-2 text-xs font-medium uppercase tracking-wide",
-                audioMode === "record"
-                  ? "bg-foreground text-background"
-                  : "bg-background text-foreground hover:bg-subtle",
-              )}
-              aria-pressed={audioMode === "record"}
-              onClick={() => setAudioMode("record")}
-              disabled={recording}
+            <ToggleButton
+              id="record"
+              className="cursor-pointer px-4 py-2 text-xs font-medium uppercase tracking-wide bg-background text-foreground hover:bg-subtle selected:bg-foreground selected:text-background"
             >
               Record
-            </button>
+            </ToggleButton>
           ) : null}
-        </div>
+        </ToggleButtonGroup>
       </div>
 
       {audioMode === "record" && transcriptionEnabled ? (
@@ -658,8 +648,8 @@ export function ClonePage() {
             <Button
               type="button"
               size="sm"
-              onClick={() => void startRecording()}
-              disabled={recording || submitting || transcribing}
+              onPress={() => void startRecording()}
+              isDisabled={recording || submitting || transcribing}
             >
               {recording ? "Recording..." : "Start"}
             </Button>
@@ -667,8 +657,8 @@ export function ClonePage() {
               type="button"
               size="sm"
               variant="secondary"
-              onClick={() => void stopRecording()}
-              disabled={!recording}
+              onPress={() => void stopRecording()}
+              isDisabled={!recording}
             >
               Stop
             </Button>
@@ -676,7 +666,7 @@ export function ClonePage() {
               type="button"
               size="sm"
               variant="secondary"
-              onClick={() => {
+              onPress={() => {
                 void cleanupRecording();
                 recordingActiveRef.current = false;
                 setRecording(false);
@@ -685,7 +675,7 @@ export function ClonePage() {
                 setRecordSeconds(0);
                 setFile(null);
               }}
-              disabled={recording || transcribing}
+              isDisabled={recording || transcribing}
             >
               Clear
             </Button>
@@ -705,30 +695,35 @@ export function ClonePage() {
         </div>
       ) : (
         <div className="relative">
-          <button
-            type="button"
+          <DropZone
             className={cn(
-              "w-full cursor-pointer border border-dashed border-border bg-background p-6 text-center shadow-elevated hover:bg-subtle",
+              "w-full border border-dashed border-border bg-background p-6 text-center shadow-elevated",
               "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              "drop-target:border-ring drop-target:bg-subtle",
             )}
-            onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
-              e.preventDefault();
-              void validateAndSetFile(e.dataTransfer.files?.[0] ?? null);
+              const fileItem = e.items.find((item) => item.kind === "file");
+              if (fileItem && fileItem.kind === "file") {
+                void fileItem.getFile().then((f) => validateAndSetFile(f));
+              }
             }}
-            onClick={() => inputRef.current?.click()}
-            aria-label="Select audio file"
           >
-            <input
-              ref={inputRef}
-              type="file"
-              className="hidden"
-              accept=".wav,.mp3,.m4a"
-              onChange={(e) => {
-                void validateAndSetFile(e.target.files?.[0] ?? null);
+            <FileTrigger
+              acceptedFileTypes={[".wav", ".mp3", ".m4a"]}
+              onSelect={(files) => {
+                void validateAndSetFile(files?.[0] ?? null);
               }}
-            />
-            <div className="text-sm text-muted-foreground">
+            >
+              <Button
+                variant="secondary"
+                type="button"
+                className="cursor-pointer"
+                aria-label="Select audio file"
+              >
+                Browse Files
+              </Button>
+            </FileTrigger>
+            <div className="mt-3 text-sm text-muted-foreground">
               Drag &amp; drop audio here, or click to browse.
             </div>
             <div className="mt-2 text-xs text-faint">WAV / MP3 / M4A - max 10MB - 60s max</div>
@@ -736,7 +731,7 @@ export function ClonePage() {
             {fileError ? (
               <div className="mt-3 text-xs text-red-700 dark:text-red-400">{fileError}</div>
             ) : null}
-          </button>
+          </DropZone>
 
           {transcriptionEnabled && file ? (
             <Button
@@ -744,9 +739,9 @@ export function ClonePage() {
               variant="secondary"
               size="sm"
               type="button"
-              loading={transcribing}
-              disabled={submitting}
-              onClick={() => void onTranscribeAudio()}
+              isPending={transcribing}
+              isDisabled={submitting}
+              onPress={() => void onTranscribeAudio()}
             >
               {transcribing ? "Transcribing..." : "Transcribe"}
             </Button>
@@ -761,34 +756,39 @@ export function ClonePage() {
           void onSubmit();
         }}
       >
-        <div>
-          <Label htmlFor="clone-voice-name">Voice Name</Label>
+        <TextField value={name} onChange={setName}>
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Voice Name
+          </Label>
           <Input
-            id="clone-voice-name"
             name="name"
             autoComplete="off"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Duncan (calm, close-mic)..."
+            className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
-        </div>
+        </TextField>
 
-        <div>
-          <Label htmlFor="clone-transcript">Transcript</Label>
-          <Textarea
-            id="clone-transcript"
+        <TextField value={transcript} onChange={setTranscript}>
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Transcript
+          </Label>
+          <TextArea
             name="transcript"
-            value={transcript}
-            onChange={(e) => setTranscript(e.target.value)}
             placeholder="Paste the transcript of the reference audio..."
+            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
-          <div className="mt-2 flex items-center justify-between text-xs text-faint">
-            <span>{transcript.length} chars</span>
-          </div>
-        </div>
+          <Text
+            slot="description"
+            className="mt-2 flex items-center justify-between text-xs text-faint"
+          >
+            {transcript.length} chars
+          </Text>
+        </TextField>
 
         <div>
-          <Label htmlFor="clone-language">Language</Label>
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Language
+          </Label>
           <Select
             id="clone-language"
             value={language}
@@ -804,10 +804,10 @@ export function ClonePage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Button variant="secondary" type="button" block onClick={() => void onTryExample()}>
+          <Button variant="secondary" type="button" block onPress={() => void onTryExample()}>
             Try Example Voice
           </Button>
-          <Button type="submit" block disabled={submitting}>
+          <Button type="submit" block isDisabled={submitting}>
             {submitting ? `Cloning... ${elapsedLabel}` : "Clone Voice"}
           </Button>
         </div>
@@ -822,37 +822,46 @@ export function ClonePage() {
             </div>
             <div className="text-xs text-faint">{elapsedLabel}</div>
           </div>
+          <ProgressBar label="Cloning voice" isIndeterminate className="mt-3" />
         </div>
       ) : null}
-      {created ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overscroll-contain backdrop-blur-sm">
-          <div
-            className="w-full max-w-md border border-border bg-background p-6 shadow-elevated"
-            role="dialog"
-            aria-modal="true"
+      <ModalOverlay
+        isOpen={!!created}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) reset();
+        }}
+        isDismissable
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overscroll-contain backdrop-blur-sm data-[entering]:animate-in data-[entering]:fade-in data-[exiting]:animate-out data-[exiting]:fade-out"
+      >
+        <Modal className="w-full max-w-md">
+          <Dialog
+            className="border border-border bg-background p-6 shadow-elevated outline-none"
             aria-labelledby="clone-success-title"
           >
             <h3 id="clone-success-title" className="text-sm font-semibold uppercase tracking-wide">
               Clone Success
             </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Voice <span className="text-foreground">{created.name}</span> is ready.
-            </p>
-            <div className="mt-6 flex flex-col gap-3">
-              <NavLink
-                ref={firstModalActionRef}
-                to={`/generate?voice=${created.id}`}
-                className="inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                Go to Generate -&gt;
-              </NavLink>
-              <Button variant="secondary" type="button" onClick={reset}>
-                Clone Another Voice
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+            {created ? (
+              <>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Voice <span className="text-foreground">{created.name}</span> is ready.
+                </p>
+                <div className="mt-6 flex flex-col gap-3">
+                  <NavLink
+                    to={`/generate?voice=${created.id}`}
+                    className="inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    Go to Generate -&gt;
+                  </NavLink>
+                  <Button variant="secondary" type="button" onPress={reset}>
+                    Clone Another Voice
+                  </Button>
+                </div>
+              </>
+            ) : null}
+          </Dialog>
+        </Modal>
+      </ModalOverlay>
     </GridArtSurface>
   );
 }

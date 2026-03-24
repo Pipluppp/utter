@@ -62,7 +62,7 @@ export function AccountProfilePage() {
 
           <AccountPanel title="Sign out">
             <div className="flex flex-wrap gap-3">
-              <Button variant="secondary" size="sm" onClick={() => void onSignOut()}>
+              <Button variant="secondary" size="sm" onPress={() => void onSignOut()}>
                 Sign out
               </Button>
             </div>

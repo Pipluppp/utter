@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { Button, Dialog, DialogTrigger, Popover } from "react-aria-components";
 import { cn } from "../../lib/cn";
 
 export function InfoTip({
@@ -10,64 +10,34 @@ export function InfoTip({
   label?: string;
   children: React.ReactNode;
 }) {
-  const id = useId();
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLSpanElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const onPointerDown = (e: PointerEvent) => {
-      const root = rootRef.current;
-      if (!root) return;
-      if (e.target instanceof Node && root.contains(e.target)) return;
-      setOpen(false);
-    };
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      e.preventDefault();
-      setOpen(false);
-    };
-
-    window.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  const placement = align === "end" ? "bottom end" : "bottom start";
 
   return (
-    <span ref={rootRef} className="relative inline-flex">
-      <button
-        type="button"
+    <DialogTrigger>
+      <Button
+        aria-label={label}
         className={cn(
           "inline-flex size-6 items-center justify-center rounded-full border border-border bg-background text-[12px] font-semibold text-muted-foreground",
-          "hover:bg-muted hover:text-foreground",
+          "hovered:bg-muted hovered:text-foreground",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         )}
-        aria-label={label}
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={() => setOpen((v) => !v)}
       >
         i
-      </button>
-
-      {open ? (
-        <span
-          id={id}
-          role="dialog"
-          aria-label={label}
-          className={cn(
-            "absolute top-full z-20 mt-2 w-[min(320px,calc(100vw-2rem))] border border-border bg-background p-3 text-sm text-muted-foreground shadow-lg",
-            align === "start" ? "left-0" : "right-0",
-          )}
-        >
+      </Button>
+      <Popover
+        placement={placement}
+        offset={8}
+        shouldFlip
+        className={cn(
+          "w-[min(320px,calc(100vw-2rem))] border border-border bg-background p-3 text-sm text-muted-foreground shadow-lg",
+          "entering:animate-in entering:fade-in entering:zoom-in-95",
+          "exiting:animate-out exiting:fade-out exiting:zoom-out-95",
+        )}
+      >
+        <Dialog aria-label={label} className="outline-none">
           {children}
-        </span>
-      ) : null}
-    </span>
+        </Dialog>
+      </Popover>
+    </DialogTrigger>
   );
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { WaveformPlayer } from "../../components/audio/WaveformPlayer";
 import { buttonStyles } from "../../components/ui/Button";
 import type { UtterDemo } from "../../content/utterDemo";
@@ -55,39 +56,36 @@ export function DemoClipCard({ demo, className }: { demo: UtterDemo; className?:
         )}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex overflow-hidden border border-border bg-background">
-            <button
-              type="button"
-              className={cn(
-                "px-3 py-2 text-[12px] uppercase tracking-wide transition-colors",
-                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                mode === "original"
-                  ? "bg-foreground text-background"
-                  : "bg-background text-foreground hover:bg-subtle",
-              )}
-              aria-pressed={mode === "original"}
-              onClick={() => setMode("original")}
+          <ToggleButtonGroup
+            selectionMode="single"
+            disallowEmptySelection
+            selectedKeys={new Set([mode])}
+            onSelectionChange={(keys) => {
+              const next = [...keys][0] as "original" | "clone";
+              if (next) setMode(next);
+            }}
+            className="inline-flex overflow-hidden border border-border bg-background"
+          >
+            <ToggleButton
+              id="original"
+              className="cursor-pointer px-3 py-2 text-[12px] uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-background text-foreground hover:bg-subtle selected:bg-foreground selected:text-background"
             >
               Original
-            </button>
-            <button
-              type="button"
+            </ToggleButton>
+            <ToggleButton
+              id="clone"
+              isDisabled={!canClone}
               className={cn(
-                "px-3 py-2 text-[12px] uppercase tracking-wide transition-colors",
+                "cursor-pointer px-3 py-2 text-[12px] uppercase tracking-wide transition-colors",
                 "border-l border-border",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                mode === "clone"
-                  ? "bg-foreground text-background"
-                  : "bg-background text-foreground hover:bg-subtle",
-                !canClone && "cursor-not-allowed bg-muted text-faint hover:bg-muted",
+                "bg-background text-foreground hover:bg-subtle selected:bg-foreground selected:text-background",
+                "disabled:cursor-not-allowed disabled:bg-muted disabled:text-faint disabled:hover:bg-muted",
               )}
-              disabled={!canClone}
-              aria-pressed={mode === "clone"}
-              onClick={() => setMode("clone")}
             >
               Clone
-            </button>
-          </div>
+            </ToggleButton>
+          </ToggleButtonGroup>
 
           {activeAudioUrl ? (
             <a href={activeAudioUrl} className={buttonStyles({ variant: "secondary", size: "sm" })}>

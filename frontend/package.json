@@ -15,6 +15,7 @@
     "format:check": "oxfmt --config .oxfmtrc.jsonc --check ./src",
     "check": "npm run format:check && npm run lint",
     "check:write": "npm run format && npm run lint:fix",
+    "test": "vitest --run",
     "ci": "npm run check"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "clsx": "^2.1.1",
     "geist": "^1.7.0",
     "react": "^19.0.0",
+    "react-aria-components": "^1.16.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.2.0",
     "tailwind-merge": "^3.3.1",
@@ -29,14 +31,21 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^6.0.1",
+    "fast-check": "^4.6.0",
+    "jsdom": "^29.0.1",
     "oxfmt": "^0.41.0",
     "oxlint": "^1.56.0",
     "react-grab": "^0.1.13",
     "tailwindcss": "^4.2.2",
+    "tailwindcss-react-aria-components": "^2.0.1",
     "typescript": "~5.9.3",
-    "vite": "^8.0.0"
+    "vite": "^8.0.0",
+    "vitest": "^4.1.1"
   }
 }

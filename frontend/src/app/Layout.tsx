@@ -7,6 +7,7 @@ import {
   RouteAuthSkeleton,
   RouteMarketingSkeleton,
 } from "../components/ui/RouteSkeletons";
+import { GlobalToastRegion } from "../components/ui/Toast";
 import { cn } from "../lib/cn";
 import { useAuthState } from "./auth/AuthStateProvider";
 import { AppFooter } from "./Footer";
@@ -185,6 +186,8 @@ export function Layout() {
           bug
         </span>
       </a>
+
+      <GlobalToastRegion />
     </div>
   );
 }

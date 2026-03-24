@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Input,
+  Label,
+  ListBox,
+  ListBoxItem,
+  Text,
+  TextArea,
+  TextField,
+} from "react-aria-components";
 import { useNavigate } from "react-router-dom";
 import { WaveformPlayer } from "../components/audio/WaveformPlayer";
 import { useTasks } from "../components/tasks/TaskProvider";
 import { Button } from "../components/ui/Button";
 import { GridArtSurface } from "../components/ui/GridArt";
 import { InfoTip } from "../components/ui/InfoTip";
-import { Input } from "../components/ui/Input";
-import { Label } from "../components/ui/Label";
 import { Message } from "../components/ui/Message";
 import { Select } from "../components/ui/Select";
-import { Textarea } from "../components/ui/Textarea";
 import { apiForm, apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
 import { formatElapsed } from "../lib/time";
@@ -43,46 +49,6 @@ const EXAMPLES: Array<{ title: string; name: string; instruct: string }> = [
       "A low, cinematic voice with a restrained intensity. Slow pacing, rich timbre, and subtle breathiness.",
   },
 ];
-
-function TaskSummaryRow({
-  task,
-  selected,
-  statusText,
-  onSelect,
-}: {
-  task: StoredTask;
-  selected: boolean;
-  statusText: string;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        "flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left hover:bg-muted",
-        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        selected && "bg-subtle",
-      )}
-      onClick={onSelect}
-    >
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium uppercase tracking-wide">
-          {task.description}
-        </div>
-        <div className="mt-1 text-xs text-muted-foreground">{statusText}</div>
-      </div>
-      <div className="shrink-0 text-xs text-faint">
-        {task.status === "pending" || task.status === "processing"
-          ? formatElapsed(task.startedAt)
-          : task.status === "completed"
-            ? "Ready"
-            : task.status === "cancelled"
-              ? "Cancelled"
-              : "Failed"}
-      </div>
-    </button>
-  );
-}
 
 export function DesignPage() {
   const navigate = useNavigate();
@@ -374,27 +340,30 @@ export function DesignPage() {
           void onPreview();
         }}
       >
-        <div>
-          <Label htmlFor="design-voice-name">Voice Name</Label>
+        <TextField value={name} onChange={setName}>
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Voice Name
+          </Label>
           <Input
-            id="design-voice-name"
             name="name"
             autoComplete="off"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
-        </div>
+        </TextField>
 
-        <div>
-          <Label htmlFor="design-instruct">Voice Description</Label>
-          <Textarea
-            id="design-instruct"
+        <TextField value={instruct} onChange={setInstruct}>
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Voice Description
+          </Label>
+          <TextArea
             name="instruct"
-            value={instruct}
-            onChange={(e) => setInstruct(e.target.value)}
             placeholder="Describe the voice (tone, pacing, timbre, vibe)..."
+            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-faint">
+          <Text
+            slot="description"
+            className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-faint"
+          >
             <span>{instruct.length}/500</span>
             <div className="flex flex-wrap gap-2">
               {EXAMPLES.map((ex) => (
@@ -411,23 +380,27 @@ export function DesignPage() {
                 </button>
               ))}
             </div>
-          </div>
-        </div>
+          </Text>
+        </TextField>
 
-        <div>
-          <Label htmlFor="design-text">Preview Text</Label>
-          <Textarea
-            id="design-text"
+        <TextField value={text} onChange={setText}>
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Preview Text
+          </Label>
+          <TextArea
             name="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
             placeholder="A short line to preview the voice..."
+            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
-          <div className="mt-2 text-xs text-faint">{text.length}/500</div>
-        </div>
+          <Text slot="description" className="mt-2 text-xs text-faint">
+            {text.length}/500
+          </Text>
+        </TextField>
 
         <div>
-          <Label htmlFor="design-language">Language</Label>
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Language
+          </Label>
           <Select
             id="design-language"
             name="language"
@@ -443,18 +416,18 @@ export function DesignPage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Button type="submit" block disabled={isSubmittingPreview}>
+          <Button type="submit" block isDisabled={isSubmittingPreview}>
             {isSubmittingPreview ? "Starting preview..." : "Generate Preview"}
           </Button>
           <Button
             type="button"
             variant="secondary"
             block
-            onClick={() => {
+            onPress={() => {
               if (!savedVoiceId) return;
               void navigate(`/generate?voice=${encodeURIComponent(savedVoiceId)}`);
             }}
-            disabled={!savedVoiceId || isSavingVoice}
+            isDisabled={!savedVoiceId || isSavingVoice}
           >
             Use Voice
           </Button>
@@ -492,21 +465,51 @@ export function DesignPage() {
       {designTasks.length > 0 ? (
         <div className="space-y-3">
           <div className="text-sm font-medium uppercase tracking-wide">Tracked Previews</div>
-          <div className="space-y-2">
+          <ListBox
+            aria-label="Tracked Previews"
+            selectionMode="single"
+            selectedKeys={selectedTaskId ? new Set([selectedTaskId]) : new Set<string>()}
+            onSelectionChange={(keys) => {
+              const selected = [...keys][0];
+              if (typeof selected === "string") setSelectedTaskId(selected);
+            }}
+            className="space-y-2"
+          >
             {designTasks.map((task) => (
-              <TaskSummaryRow
+              <ListBoxItem
                 key={task.taskId}
-                task={task}
-                selected={task.taskId === selectedTaskId}
-                statusText={getStatusText(
-                  task.status,
-                  task.modalStatus ?? null,
-                  task.providerStatus ?? null,
+                id={task.taskId}
+                textValue={task.description}
+                className={cn(
+                  "flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left hover:bg-muted",
+                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  "selected:bg-subtle",
                 )}
-                onSelect={() => setSelectedTaskId(task.taskId)}
-              />
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium uppercase tracking-wide">
+                    {task.description}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {getStatusText(
+                      task.status,
+                      task.modalStatus ?? null,
+                      task.providerStatus ?? null,
+                    )}
+                  </div>
+                </div>
+                <div className="shrink-0 text-xs text-faint">
+                  {task.status === "pending" || task.status === "processing"
+                    ? formatElapsed(task.startedAt)
+                    : task.status === "completed"
+                      ? "Ready"
+                      : task.status === "cancelled"
+                        ? "Cancelled"
+                        : "Failed"}
+                </div>
+              </ListBoxItem>
             ))}
-          </div>
+          </ListBox>
         </div>
       ) : null}
 
@@ -522,8 +525,8 @@ export function DesignPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => void onSaveSelectedPreview()}
-              disabled={
+              onPress={() => void onSaveSelectedPreview()}
+              isDisabled={
                 !selectedTask ||
                 selectedTask.status !== "completed" ||
                 !previewBlobRef.current ||

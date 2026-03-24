@@ -1,4 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Button as AriaButton,
+  Select as AriaSelect,
+  Label,
+  ListBox,
+  ListBoxItem,
+  Popover,
+  SelectValue,
+  Text,
+  TextArea,
+  TextField,
+} from "react-aria-components";
 import { useSearchParams } from "react-router-dom";
 import { WaveformPlayer } from "../components/audio/WaveformPlayer";
 import { taskLabel } from "../components/tasks/taskKeys";
@@ -6,10 +18,8 @@ import { useTasks } from "../components/tasks/TaskProvider";
 import { Button } from "../components/ui/Button";
 import { GridArtSurface } from "../components/ui/GridArt";
 import { InfoTip } from "../components/ui/InfoTip";
-import { Label } from "../components/ui/Label";
 import { Message } from "../components/ui/Message";
 import { Select } from "../components/ui/Select";
-import { Textarea } from "../components/ui/Textarea";
 import { getUtterDemo } from "../content/utterDemo";
 import { apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
@@ -24,46 +34,6 @@ type GenerateFormState = {
   language: string;
   text: string;
 };
-
-function TaskSummaryRow({
-  task,
-  selected,
-  onSelect,
-  statusText,
-}: {
-  task: StoredTask;
-  selected: boolean;
-  onSelect: () => void;
-  statusText: string;
-}) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        "flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left hover:bg-muted",
-        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        selected && "bg-subtle",
-      )}
-      onClick={onSelect}
-    >
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium uppercase tracking-wide">
-          {task.description}
-        </div>
-        <div className="mt-1 text-xs text-muted-foreground">{statusText}</div>
-      </div>
-      <div className="shrink-0 text-xs text-faint">
-        {task.status === "pending" || task.status === "processing"
-          ? formatElapsed(task.startedAt)
-          : task.status === "completed"
-            ? "Ready"
-            : task.status === "cancelled"
-              ? "Cancelled"
-              : "Failed"}
-      </div>
-    </button>
-  );
-}
 
 export function GeneratePage() {
   const [params] = useSearchParams();
@@ -317,39 +287,85 @@ export function GeneratePage() {
           void onGenerate();
         }}
       >
-        <div>
-          <Label htmlFor="generate-voice">Voice</Label>
-          <Select
-            id="generate-voice"
-            value={voiceId}
-            onChange={(e) => setVoiceId(e.target.value)}
-            disabled={loadingVoices || !voices}
-            name="voice_id"
-          >
-            {loadingVoices ? (
-              <option value="">Loading voices...</option>
-            ) : !voices ? (
-              <option value="">Unable to load voices</option>
-            ) : voices.voices.length === 0 ? (
-              <option value="">No voices available</option>
-            ) : (
-              <option value="">Select a voice</option>
+        <AriaSelect
+          selectedKey={voiceId || null}
+          onSelectionChange={(key) => setVoiceId(key as string)}
+          isDisabled={loadingVoices || !voices || voices.voices.length === 0}
+          placeholder={
+            loadingVoices
+              ? "Loading voices..."
+              : !voices
+                ? "Unable to load voices"
+                : voices.voices.length === 0
+                  ? "No voices available"
+                  : "Select a voice"
+          }
+        >
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Voice
+          </Label>
+          <AriaButton
+            className={cn(
+              "flex w-full items-center justify-between border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated",
+              "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              "disabled:cursor-not-allowed disabled:opacity-50",
             )}
-            {voices?.voices.map((v) => {
-              const voiceProvider = v.tts_provider ?? "qwen";
-              const incompatible = voiceProvider !== provider;
-              return (
-                <option key={v.id} value={v.id} disabled={incompatible}>
-                  {v.name}
-                  {incompatible ? " (not available in this runtime)" : ""}
-                </option>
-              );
-            })}
-          </Select>
-        </div>
+          >
+            <SelectValue className="truncate data-[placeholder]:text-faint" />
+            <svg
+              className="size-4 shrink-0 text-muted-foreground"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M8 11L3 6h10l-5 5z" />
+            </svg>
+          </AriaButton>
+          <Popover
+            shouldFlip
+            className="w-[var(--trigger-width)] overflow-y-auto border border-border bg-background shadow-elevated entering:animate-in entering:fade-in-0 entering:zoom-in-95 exiting:animate-out exiting:fade-out-0 exiting:zoom-out-95"
+          >
+            <ListBox className="max-h-60 overflow-y-auto p-1">
+              {voices?.voices.map((v) => {
+                const voiceProvider = v.tts_provider ?? "qwen";
+                const incompatible = voiceProvider !== provider;
+                return (
+                  <ListBoxItem
+                    key={v.id}
+                    id={v.id}
+                    textValue={v.name}
+                    isDisabled={incompatible}
+                    className={cn(
+                      "flex cursor-pointer flex-col gap-0.5 px-3 py-2 text-sm text-foreground outline-none",
+                      "hover:bg-muted focus-visible:bg-muted",
+                      "selected:bg-subtle selected:font-medium",
+                      "disabled:cursor-not-allowed disabled:opacity-50",
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="truncate">{v.name}</span>
+                      {v.language ? (
+                        <span className="shrink-0 border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                          {v.language}
+                        </span>
+                      ) : null}
+                    </div>
+                    {incompatible ? (
+                      <span className="text-xs text-faint">Not available in this runtime</span>
+                    ) : v.description ? (
+                      <span className="truncate text-xs text-faint">{v.description}</span>
+                    ) : null}
+                  </ListBoxItem>
+                );
+              })}
+            </ListBox>
+          </Popover>
+        </AriaSelect>
 
         <div>
-          <Label htmlFor="generate-language">Language</Label>
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Language
+          </Label>
           <Select
             id="generate-language"
             value={language}
@@ -364,25 +380,27 @@ export function GeneratePage() {
           </Select>
         </div>
 
-        <div>
-          <Label htmlFor="generate-text">Text</Label>
-          <Textarea
-            id="generate-text"
+        <TextField value={text} onChange={setText}>
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Text
+          </Label>
+          <TextArea
             name="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
             placeholder="Type what you want the voice to say..."
-            className="min-h-44"
+            className="min-h-44 min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
-          <div className="mt-2 flex items-center justify-between text-xs text-faint">
+          <Text
+            slot="description"
+            className="mt-2 flex items-center justify-between text-xs text-faint"
+          >
             <span className={cn(charCount > maxTextChars && "text-red-700 dark:text-red-400")}>
               {charCount}/{maxTextChars}
             </span>
             <span>Max {maxTextChars.toLocaleString()} characters</span>
-          </div>
-        </div>
+          </Text>
+        </TextField>
 
-        <Button type="submit" block disabled={!canSubmit}>
+        <Button type="submit" block isDisabled={!canSubmit}>
           {isSubmitting ? "Starting generation..." : "Generate Speech"}
         </Button>
       </form>
@@ -416,21 +434,51 @@ export function GeneratePage() {
       {generateTasks.length > 0 ? (
         <div className="space-y-3">
           <div className="text-sm font-medium uppercase tracking-wide">Tracked Jobs</div>
-          <div className="space-y-2">
+          <ListBox
+            aria-label="Tracked Jobs"
+            selectionMode="single"
+            selectedKeys={selectedTaskId ? new Set([selectedTaskId]) : new Set<string>()}
+            onSelectionChange={(keys) => {
+              const selected = [...keys][0];
+              if (typeof selected === "string") setSelectedTaskId(selected);
+            }}
+            className="space-y-2"
+          >
             {generateTasks.map((task) => (
-              <TaskSummaryRow
+              <ListBoxItem
                 key={task.taskId}
-                task={task}
-                selected={task.taskId === selectedTaskId}
-                onSelect={() => setSelectedTaskId(task.taskId)}
-                statusText={getStatusText(
-                  task.status,
-                  task.modalStatus ?? null,
-                  task.providerStatus ?? null,
+                id={task.taskId}
+                textValue={task.description}
+                className={cn(
+                  "flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left hover:bg-muted",
+                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  "selected:bg-subtle",
                 )}
-              />
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium uppercase tracking-wide">
+                    {task.description}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {getStatusText(
+                      task.status,
+                      task.modalStatus ?? null,
+                      task.providerStatus ?? null,
+                    )}
+                  </div>
+                </div>
+                <div className="shrink-0 text-xs text-faint">
+                  {task.status === "pending" || task.status === "processing"
+                    ? formatElapsed(task.startedAt)
+                    : task.status === "completed"
+                      ? "Ready"
+                      : task.status === "cancelled"
+                        ? "Cancelled"
+                        : "Failed"}
+                </div>
+              </ListBoxItem>
             ))}
-          </div>
+          </ListBox>
         </div>
       ) : null}
 

@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Tab, TabList, Tabs } from "react-aria-components";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
 import { cn } from "../../lib/cn";
 import { useAccountData } from "./accountData";
@@ -28,30 +29,19 @@ const navItems: AccountNavItem[] = [
   },
 ];
 
-function AccountNavLink({ item }: { item: AccountNavItem }) {
-  return (
-    <NavLink
-      to={item.to}
-      end={item.to === "/account"}
-      className={({ isActive }) =>
-        cn(
-          "min-w-[190px] border border-border bg-background px-4 py-3.5 transition-colors",
-          "hover:bg-subtle",
-          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          isActive && "border-border-strong bg-subtle",
-        )
-      }
-    >
-      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground">
-        {item.label}
-      </div>
-      <div className="mt-1.5 text-[13px] leading-5 text-foreground/68">{item.desc}</div>
-    </NavLink>
-  );
-}
-
 export function AccountLayoutPage() {
   const account = useAccountData();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Determine selected tab from current path.
+  // Exact match for "/account" (Profile), prefix match for sub-routes.
+  const selectedTab =
+    navItems.find((item) =>
+      item.to === "/account"
+        ? location.pathname === "/account"
+        : location.pathname.startsWith(item.to),
+    )?.to ?? "/account";
 
   return (
     <div className="space-y-6">
@@ -78,8 +68,8 @@ export function AccountLayoutPage() {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => void account.refresh({ background: true })}
-              loading={account.refreshing}
+              onPress={() => void account.refresh({ background: true })}
+              isPending={account.refreshing}
             >
               Retry
             </Button>
@@ -87,13 +77,31 @@ export function AccountLayoutPage() {
         </AccountNotice>
       ) : null}
 
-      <nav aria-label="Account sections" className="overflow-x-auto border-b border-border pb-2">
-        <div className="flex min-w-max gap-2">
+      <Tabs selectedKey={selectedTab} onSelectionChange={(key) => navigate(key as string)}>
+        <TabList
+          aria-label="Account sections"
+          className="flex min-w-max gap-2 overflow-x-auto border-b border-border pb-2"
+        >
           {navItems.map((item) => (
-            <AccountNavLink key={item.to} item={item} />
+            <Tab
+              key={item.to}
+              id={item.to}
+              className={cn(
+                "min-w-[190px] border border-border bg-background px-4 py-3.5 transition-colors",
+                "hover:bg-subtle",
+                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "selected:border-border-strong selected:bg-subtle",
+                "cursor-pointer outline-none",
+              )}
+            >
+              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground">
+                {item.label}
+              </div>
+              <div className="mt-1.5 text-[13px] leading-5 text-foreground/68">{item.desc}</div>
+            </Tab>
           ))}
-        </div>
-      </nav>
+        </TabList>
+      </Tabs>
 
       <section className="min-w-0">
         <Outlet context={account} />

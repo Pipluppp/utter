@@ -1,7 +1,6 @@
 import { useState } from "react";
+import { FieldError, Input, Label, TextField } from "react-aria-components";
 import { Button } from "../../components/ui/Button";
-import { Input } from "../../components/ui/Input";
-import { Label } from "../../components/ui/Label";
 import { updatePassword } from "../../lib/auth";
 import { validatePassword } from "../../lib/validation";
 import { AccountNotice, AccountPanel } from "./accountUi";
@@ -89,38 +88,50 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
         description="Update the password for your account. Must be at least 6 characters."
       >
         <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="change-new-password">New password</Label>
+          <TextField
+            value={password}
+            onChange={(value) => {
+              setPassword(value);
+              if (status.type === "success") setStatus({ type: "idle" });
+            }}
+            type="password"
+            isInvalid={!!passwordError}
+            isDisabled={busy}
+          >
+            <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+              New password
+            </Label>
             <Input
-              id="change-new-password"
-              type="password"
-              value={password}
-              onChange={(event) => {
-                setPassword(event.target.value);
-                if (status.type === "success") setStatus({ type: "idle" });
-              }}
               placeholder="At least 6 characters"
               autoComplete="new-password"
-              disabled={busy}
+              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
-            {passwordError ? <p className="text-sm text-red-500">{passwordError}</p> : null}
-          </div>
+            {passwordError ? (
+              <FieldError className="text-sm text-red-500">{passwordError}</FieldError>
+            ) : null}
+          </TextField>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="change-confirm-password">Confirm password</Label>
+          <TextField
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            type="password"
+            isInvalid={!!mismatchError}
+            isDisabled={busy}
+          >
+            <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+              Confirm password
+            </Label>
             <Input
-              id="change-confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
               placeholder="Re-enter your new password"
               autoComplete="new-password"
-              disabled={busy}
+              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
-            {mismatchError ? <p className="text-sm text-red-500">{mismatchError}</p> : null}
-          </div>
+            {mismatchError ? (
+              <FieldError className="text-sm text-red-500">{mismatchError}</FieldError>
+            ) : null}
+          </TextField>
 
-          <Button type="submit" size="sm" disabled={!canSubmit} loading={busy}>
+          <Button type="submit" size="sm" isDisabled={!canSubmit} isPending={busy}>
             Change password
           </Button>
         </form>

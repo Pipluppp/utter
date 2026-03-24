@@ -1,10 +1,9 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { useRef, useState } from "react";
+import { Input, Label, TextField } from "react-aria-components";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { GridArt } from "../components/ui/GridArt";
-import { Input } from "../components/ui/Input";
-import { Label } from "../components/ui/Label";
 import { Message } from "../components/ui/Message";
 import { forgotPassword, getTurnstileSiteKey, isAuthConfigured } from "../lib/auth";
 
@@ -83,19 +82,22 @@ export function ForgotPasswordPage() {
           ) : null}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-            <div className="space-y-1.5">
-              <Label htmlFor="forgot-email">Email</Label>
+            <TextField
+              value={email}
+              onChange={setEmail}
+              type="email"
+              isDisabled={!configured || busy || submitted}
+              autoFocus
+            >
+              <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+                Email
+              </Label>
               <Input
-                id="forgot-email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@example.com"
                 autoComplete="email"
-                disabled={!configured || busy || submitted}
-                autoFocus
+                className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               />
-            </div>
+            </TextField>
 
             {configured ? (
               <Turnstile
@@ -108,7 +110,7 @@ export function ForgotPasswordPage() {
               />
             ) : null}
 
-            <Button type="submit" block disabled={!canSubmit} loading={busy}>
+            <Button type="submit" block isDisabled={!canSubmit} isPending={busy}>
               Send recovery link
             </Button>
           </form>

@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useWaveformListPlayer } from "../components/audio/useWaveformListPlayer";
 import { Button, buttonStyles } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { Label } from "../components/ui/Label";
 import { Message } from "../components/ui/Message";
 import { Select } from "../components/ui/Select";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -266,20 +265,34 @@ export function HistoryPage() {
       {error ? <Message variant="error">{error}</Message> : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="history-search">Search</Label>
+        <SearchField
+          value={query}
+          onChange={setQuery}
+          aria-label="Search history"
+          className="group relative"
+        >
+          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+            Search
+          </Label>
           <Input
-            id="history-search"
-            type="search"
-            name="search"
             autoComplete="off"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
             placeholder="Search history..."
+            className={cn(
+              "w-full border border-border bg-background px-4 py-3 pr-9 text-sm text-foreground shadow-elevated placeholder:text-faint",
+              "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            )}
           />
-        </div>
+          <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground hovered:text-foreground group-data-[empty]:hidden">
+            ×
+          </AriaButton>
+        </SearchField>
         <div>
-          <Label htmlFor="history-status">Status</Label>
+          <Label
+            htmlFor="history-status"
+            className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground"
+          >
+            Status
+          </Label>
           <Select
             id="history-status"
             name="status"
@@ -399,7 +412,7 @@ export function HistoryPage() {
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onClick={() => void onRegenerate(g)}
+                      onPress={() => void onRegenerate(g)}
                     >
                       Regenerate
                     </Button>
@@ -407,7 +420,7 @@ export function HistoryPage() {
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onClick={() => void onDelete(g)}
+                      onPress={() => void onDelete(g)}
                     >
                       Delete
                     </Button>

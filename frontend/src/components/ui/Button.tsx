@@ -1,4 +1,5 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ReactNode } from "react";
+import { Button as AriaButton, type ButtonProps as AriaButtonProps } from "react-aria-components";
 import { cn } from "../../lib/cn";
 
 export type ButtonVariant = "primary" | "secondary";
@@ -8,13 +9,13 @@ export function buttonStyles({
   variant = "primary",
   size = "md",
   block,
-  loading,
+  isPending,
   className,
 }: {
   variant?: ButtonVariant;
   size?: ButtonSize;
   block?: boolean;
-  loading?: boolean;
+  isPending?: boolean;
   className?: string;
 }) {
   return cn(
@@ -26,37 +27,38 @@ export function buttonStyles({
       "border-foreground bg-foreground text-background hover:bg-foreground/80 hover:border-foreground/80",
     variant === "secondary" && "border-border bg-background text-foreground hover:bg-subtle",
     block && "w-full",
-    loading && "text-transparent",
+    isPending && "text-transparent",
     className,
   );
 }
 
-type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
+interface ButtonProps extends Omit<AriaButtonProps, "children"> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   block?: boolean;
-  loading?: boolean;
-};
+  className?: string;
+  children?: ReactNode;
+}
 
 export function Button({
   className,
   variant = "primary",
   size = "md",
   block,
-  loading,
-  disabled,
+  isPending,
+  isDisabled,
   children,
   ...props
-}: Props) {
+}: ButtonProps) {
   return (
-    <button
-      className={buttonStyles({ variant, size, block, loading, className })}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
+    <AriaButton
+      className={buttonStyles({ variant, size, block, isPending, className })}
+      isDisabled={isDisabled || isPending}
+      isPending={isPending}
       {...props}
     >
       {children}
-      {loading ? (
+      {isPending ? (
         <span
           className={cn(
             "pointer-events-none absolute inset-0 m-auto size-4 animate-spin rounded-full border-2 border-r-transparent",
@@ -64,6 +66,6 @@ export function Button({
           )}
         />
       ) : null}
-    </button>
+    </AriaButton>
   );
 }

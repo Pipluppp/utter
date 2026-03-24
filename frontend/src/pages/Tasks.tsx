@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Link } from "react-router-dom";
 import { taskLabel } from "../components/tasks/taskKeys";
 import { useTasks } from "../components/tasks/TaskProvider";
 import { Button } from "../components/ui/Button";
 import { Message } from "../components/ui/Message";
 import { apiJson } from "../lib/api";
-import { cn } from "../lib/cn";
 import type {
   BackendTaskListItem,
   TaskListResponse,
@@ -139,29 +139,42 @@ export function TasksPage() {
 
       {error ? <Message variant="error">{error}</Message> : null}
 
-      <div className="flex flex-wrap gap-3">
+      <ToggleButtonGroup
+        selectionMode="single"
+        disallowEmptySelection
+        selectedKeys={new Set([statusFilter])}
+        onSelectionChange={(keys) => {
+          const next = [...keys][0] as TaskListStatus;
+          if (next) setStatusFilter(next);
+        }}
+        className="flex flex-wrap gap-3"
+      >
         {(
           [
             ["active", "Active"],
             ["terminal", "Recent"],
           ] as const
         ).map(([value, label]) => (
-          <button
+          <ToggleButton
             key={value}
-            type="button"
-            className={cn(
-              "border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted",
-              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              statusFilter === value && "bg-subtle",
-            )}
-            onClick={() => setStatusFilter(value)}
+            id={value}
+            className="cursor-pointer border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background selected:bg-subtle"
           >
             {label}
-          </button>
+          </ToggleButton>
         ))}
-      </div>
+      </ToggleButtonGroup>
 
-      <div className="flex flex-wrap gap-3">
+      <ToggleButtonGroup
+        selectionMode="single"
+        disallowEmptySelection
+        selectedKeys={new Set([typeFilter])}
+        onSelectionChange={(keys) => {
+          const next = [...keys][0] as TaskListType;
+          if (next) setTypeFilter(next);
+        }}
+        className="flex flex-wrap gap-3"
+      >
         {(
           [
             ["all", "All"],
@@ -169,20 +182,15 @@ export function TasksPage() {
             ["design_preview", "Design"],
           ] as const
         ).map(([value, label]) => (
-          <button
+          <ToggleButton
             key={value}
-            type="button"
-            className={cn(
-              "border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted",
-              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              typeFilter === value && "bg-subtle",
-            )}
-            onClick={() => setTypeFilter(value)}
+            id={value}
+            className="cursor-pointer border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background selected:bg-subtle"
           >
             {label}
-          </button>
+          </ToggleButton>
         ))}
-      </div>
+      </ToggleButtonGroup>
 
       {loading ? (
         <div className="border border-border bg-background p-4 text-sm text-muted-foreground shadow-elevated">
@@ -235,11 +243,11 @@ export function TasksPage() {
                   Open Source Page
                 </Link>
                 {task.supports_cancel ? (
-                  <Button type="button" variant="secondary" onClick={() => void onCancel(task.id)}>
+                  <Button type="button" variant="secondary" onPress={() => void onCancel(task.id)}>
                     Cancel
                   </Button>
                 ) : (
-                  <Button type="button" variant="secondary" onClick={() => void onDismiss(task.id)}>
+                  <Button type="button" variant="secondary" onPress={() => void onDismiss(task.id)}>
                     Dismiss
                   </Button>
                 )}
@@ -252,8 +260,8 @@ export function TasksPage() {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => void loadMore()}
-                disabled={loadingMore}
+                onPress={() => void loadMore()}
+                isDisabled={loadingMore}
               >
                 {loadingMore ? "Loading more..." : "Load Older Jobs"}
               </Button>

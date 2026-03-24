@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "tailwindcss-react-aria-components";
 @import "./geist-pixel.css";
 
 @theme {
@@ -99,6 +100,16 @@
 @utility font-pixel {
   font-family: var(--font-pixel);
   font-synthesis: none;
+}
+
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(400%);
+  }
 }
 
 @keyframes utter-grid-sweep {
