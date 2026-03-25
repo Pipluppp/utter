@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
-import { useTheme } from "../../app/theme/ThemeProvider";
-import { resolveProtectedMediaUrl } from "../../lib/protectedMedia";
+import { useTheme } from "../app/theme/ThemeProvider";
+import { resolveProtectedMediaUrl } from "../lib/protectedMedia";
 
 type Active = { id: string; container: HTMLElement };
 

@@ -8,10 +8,10 @@ import {
   useReducer,
   useRef,
 } from "react";
-import { ApiError, apiJson } from "../../lib/api";
-import { readJson, writeJson } from "../../lib/storage";
-import { formatElapsed } from "../../lib/time";
-import type { BackendTask, StoredTask, TaskStatus, TaskType } from "../../lib/types";
+import { ApiError, apiJson } from "../lib/api";
+import { readJson, writeJson } from "../lib/storage";
+import { formatElapsed } from "../lib/time";
+import type { BackendTask, StoredTask, TaskStatus, TaskType } from "../lib/types";
 import {
   coerceTaskType,
   LEGACY_TASK_KEY,

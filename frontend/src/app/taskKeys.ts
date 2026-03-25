@@ -1,4 +1,4 @@
-import type { TaskType } from "../../lib/types";
+import type { TaskType } from "../lib/types";
 
 export const TASK_STORAGE_KEY = "utter_tasks_v2";
 export const TASK_STORAGE_PREFIX = "utter_task_";
