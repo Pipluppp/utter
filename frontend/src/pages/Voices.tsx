@@ -251,9 +251,7 @@ export function VoicesPage() {
           aria-label="Search voices"
           className="group relative"
         >
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Search
-          </Label>
+          <Label className="mb-2 block label-style">Search</Label>
           <Input
             autoComplete="off"
             placeholder="Search voices..."

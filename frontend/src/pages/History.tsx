@@ -282,9 +282,7 @@ export function HistoryPage() {
           aria-label="Search history"
           className="group relative"
         >
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Search
-          </Label>
+          <Label className="mb-2 block label-style">Search</Label>
           <Input
             autoComplete="off"
             placeholder="Search history..."
@@ -342,7 +340,7 @@ export function HistoryPage() {
                           (g.status === "pending" || g.status === "processing") &&
                             "border-border bg-muted text-muted-foreground",
                           g.status === "failed" &&
-                            "border-red-500/40 bg-red-500/10 text-red-700 dark:border-red-400/40 dark:bg-red-400/10 dark:text-red-300",
+                            "border-status-error-border bg-status-error-bg text-status-error",
                           g.status === "cancelled" &&
                             "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200",
                         )}
@@ -362,7 +360,7 @@ export function HistoryPage() {
                     </div>
 
                     {g.error_message ? (
-                      <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                      <div className="mt-2 text-sm text-status-error">
                         {g.error_message.slice(0, 160)}
                         {g.error_message.length > 160 ? "..." : ""}
                       </div>

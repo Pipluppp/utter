@@ -4,7 +4,7 @@ import { PricingGrid } from "./PricingGrid";
 function FAQItem({ q, a }: { q: string; a: string }) {
   return (
     <div className="border border-border bg-subtle p-4 shadow-elevated">
-      <div className="text-[12px] font-semibold uppercase tracking-wide">{q}</div>
+      <div className="text-caption font-semibold uppercase tracking-wide">{q}</div>
       <div className="mt-2 text-sm text-muted-foreground">{a}</div>
     </div>
   );
@@ -26,7 +26,7 @@ export function PricingContent() {
                 key={r.action}
                 className="border border-border bg-background p-4 shadow-elevated"
               >
-                <div className="text-[12px] font-semibold uppercase tracking-wide">{r.action}</div>
+                <div className="text-caption font-semibold uppercase tracking-wide">{r.action}</div>
                 <div className="mt-2 text-xl font-semibold">{r.cost}</div>
                 <div className="mt-1 text-sm text-muted-foreground">{r.note}</div>
               </div>

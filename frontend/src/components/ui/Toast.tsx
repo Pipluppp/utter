@@ -22,8 +22,8 @@ const variantIcon: Record<NonNullable<ToastContent["variant"]>, string> = {
 };
 
 const variantColor: Record<NonNullable<ToastContent["variant"]>, string> = {
-  success: "text-green-600 dark:text-green-400",
-  error: "text-red-600 dark:text-red-400",
+  success: "text-status-success",
+  error: "text-status-error",
   info: "text-blue-600 dark:text-blue-400",
 };
 

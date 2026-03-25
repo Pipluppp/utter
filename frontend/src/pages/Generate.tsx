@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Form,
-  Label,
-  ListBox,
-  ListBoxItem,
-  Text,
-  TextArea,
-  TextField,
+    Form,
+    Label,
+    ListBox,
+    ListBoxItem,
+    Text,
+    TextArea,
+    TextField,
 } from "react-aria-components";
 import { useSearchParams } from "react-router-dom";
 import { WaveformPlayer } from "../components/audio/WaveformPlayer";
 import { taskLabel } from "../components/tasks/taskKeys";
 import { useTasks } from "../components/tasks/TaskProvider";
 import {
-  AutocompleteSelect,
-  type AutocompleteSelectItem,
+    AutocompleteSelect,
+    type AutocompleteSelectItem,
 } from "../components/ui/AutocompleteSelect";
 import { Button } from "../components/ui/Button";
 import { GridArtSurface } from "../components/ui/GridArt";
@@ -290,7 +290,7 @@ export function GeneratePage() {
         <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Generate
         </h2>
-        <InfoTip label="Generate tips" tips={GENERATE_TIPS} halftoneImage="grass" />
+        <InfoTip label="Generate tips" tips={GENERATE_TIPS} halftoneImage="lilac" />
       </div>
 
       {error ? <Message variant="error">{error}</Message> : null}
@@ -349,9 +349,7 @@ export function GeneratePage() {
         </AutocompleteSelect>
 
         <TextField value={text} onChange={setText}>
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Text
-          </Label>
+          <Label className="mb-2 block label-style">Text</Label>
           <TextArea
             name="text"
             placeholder="Type what you want the voice to say..."
@@ -361,7 +359,7 @@ export function GeneratePage() {
             slot="description"
             className="mt-2 flex items-center justify-between text-xs text-faint"
           >
-            <span className={cn(charCount > maxTextChars && "text-red-700 dark:text-red-400")}>
+            <span className={cn(charCount > maxTextChars && "text-status-error")}>
               {charCount}/{maxTextChars}
             </span>
             <span>Max {maxTextChars.toLocaleString()} characters</span>
@@ -457,7 +455,7 @@ export function GeneratePage() {
             {downloadUrl ? (
               <button
                 type="button"
-                className="border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 onClick={() => void onDownload()}
               >
                 Download

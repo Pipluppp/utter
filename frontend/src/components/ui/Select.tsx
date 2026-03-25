@@ -52,11 +52,7 @@ export function Select({
       placeholder={empty ? "No options available" : placeholder}
       className={cn("group", className)}
     >
-      {label ? (
-        <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
-        </Label>
-      ) : null}
+      {label ? <Label className="mb-2 block label-style">{label}</Label> : null}
       <Button
         className={cn(
           "flex w-full cursor-pointer items-center justify-between border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated",

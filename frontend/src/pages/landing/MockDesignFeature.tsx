@@ -295,9 +295,7 @@ export function MockDesignFeature(): ReactNode {
         <div aria-hidden="true" className="space-y-6 p-6">
           {/* Voice name input */}
           <div>
-            <span className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-              Voice Name
-            </span>
+            <span className="mb-2 block label-style">Voice Name</span>
             <div className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated">
               {voiceName || <span className="text-faint">Name your voice...</span>}
             </div>
@@ -306,10 +304,8 @@ export function MockDesignFeature(): ReactNode {
           {/* Voice description + presets */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                Voice Description
-              </span>
-              <span className="text-[12px] text-faint">{instruct.length} / 1000</span>
+              <span className="label-style">Voice Description</span>
+              <span className="text-caption text-faint">{instruct.length} / 1000</span>
             </div>
             <div className="min-h-20 w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated">
               {instruct || (
@@ -321,7 +317,7 @@ export function MockDesignFeature(): ReactNode {
                 <div
                   key={label}
                   className={cn(
-                    "border border-border bg-background px-3 py-1.5 text-[12px] font-medium uppercase tracking-wide text-foreground transition-transform motion-reduce:transition-none",
+                    "border border-border bg-background px-3 py-1.5 text-caption font-medium uppercase tracking-wide text-foreground transition-transform motion-reduce:transition-none",
                     presetPressed && label === "Warm & steady" ? "scale-95" : "scale-100",
                   )}
                 >
@@ -334,10 +330,8 @@ export function MockDesignFeature(): ReactNode {
           {/* Preview text */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                Preview Text
-              </span>
-              <span className="text-[12px] text-faint">{previewText.length} / 500</span>
+              <span className="label-style">Preview Text</span>
+              <span className="text-caption text-faint">{previewText.length} / 500</span>
             </div>
             <div className="min-h-16 w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated">
               {previewText || (
@@ -348,9 +342,7 @@ export function MockDesignFeature(): ReactNode {
 
           {/* Language selector */}
           <div>
-            <span className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-              Language
-            </span>
+            <span className="mb-2 block label-style">Language</span>
             <div className="relative">
               <div className="w-full appearance-none border border-border bg-background px-4 py-3 pr-10 text-sm text-foreground shadow-elevated">
                 English
@@ -399,7 +391,7 @@ export function MockDesignFeature(): ReactNode {
               <span className="text-foreground">Voice Preview</span>
               <span
                 className={cn(
-                  "text-[12px] font-medium uppercase tracking-wide",
+                  "text-caption font-medium uppercase tracking-wide",
                   previewStatus === "completed" ? "text-foreground" : "text-muted-foreground",
                 )}
               >
@@ -414,7 +406,7 @@ export function MockDesignFeature(): ReactNode {
             style={{ opacity: resultOpacity }}
           >
             <MockWaveform />
-            <div className="inline-flex items-center justify-center border border-border bg-background px-4 py-2 text-[12px] font-medium uppercase tracking-wide text-foreground">
+            <div className="inline-flex items-center justify-center border border-border bg-background px-4 py-2 text-caption font-medium uppercase tracking-wide text-foreground">
               Save This Preview
             </div>
           </div>

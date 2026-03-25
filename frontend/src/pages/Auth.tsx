@@ -215,9 +215,7 @@ export function AuthPage() {
               isDisabled={!configured || busy}
               autoFocus
             >
-              <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                Email
-              </Label>
+              <Label className="mb-2 block label-style">Email</Label>
               <Input
                 placeholder="you@example.com"
                 autoComplete="email"
@@ -238,9 +236,7 @@ export function AuthPage() {
                 ? { isRequired: true }
                 : { validate: (v: string) => (v.length > 0 ? validatePassword(v) : null) })}
             >
-              <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                Password
-              </Label>
+              <Label className="mb-2 block label-style">Password</Label>
               <Input
                 placeholder={
                   intent === "sign_in"

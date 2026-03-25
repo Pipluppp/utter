@@ -572,7 +572,7 @@ export function ClonePage() {
         <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Clone
         </h2>
-        <InfoTip label="Clone tips" tips={CLONE_TIPS} halftoneImage="fire" />
+        <InfoTip label="Clone tips" tips={CLONE_TIPS} halftoneImage="grass" />
       </div>
 
       {error ? <Message variant="error">{error}</Message> : null}
@@ -712,9 +712,7 @@ export function ClonePage() {
             </div>
             <div className="mt-2 text-xs text-faint">WAV / MP3 / M4A - max 10MB - 60s max</div>
             {fileInfo ? <div className="mt-3 text-xs text-foreground">{fileInfo}</div> : null}
-            {fileError ? (
-              <div className="mt-3 text-xs text-red-700 dark:text-red-400">{fileError}</div>
-            ) : null}
+            {fileError ? <div className="mt-3 text-xs text-status-error">{fileError}</div> : null}
           </DropZone>
 
           {transcriptionEnabled && file ? (
@@ -742,9 +740,7 @@ export function ClonePage() {
         }}
       >
         <TextField value={name} onChange={setName}>
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Voice Name
-          </Label>
+          <Label className="mb-2 block label-style">Voice Name</Label>
           <Input
             name="name"
             autoComplete="off"
@@ -754,9 +750,7 @@ export function ClonePage() {
         </TextField>
 
         <TextField value={transcript} onChange={setTranscript}>
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Transcript
-          </Label>
+          <Label className="mb-2 block label-style">Transcript</Label>
           <TextArea
             name="transcript"
             placeholder="Paste the transcript of the reference audio..."

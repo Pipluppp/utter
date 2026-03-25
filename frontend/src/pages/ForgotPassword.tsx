@@ -94,9 +94,7 @@ export function ForgotPasswordPage() {
               isDisabled={!configured || busy || submitted}
               autoFocus
             >
-              <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                Email
-              </Label>
+              <Label className="mb-2 block label-style">Email</Label>
               <Input
                 placeholder="you@example.com"
                 autoComplete="email"

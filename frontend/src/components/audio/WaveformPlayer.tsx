@@ -164,7 +164,7 @@ export function WaveformPlayer({
         <button
           type="button"
           className={cn(
-            "border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-surface-hover",
+            "border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-surface-hover",
             "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             !isReady && "cursor-not-allowed opacity-50",
           )}
@@ -185,7 +185,7 @@ export function WaveformPlayer({
         <span className="text-xs text-faint">{timeLabel}</span>
       </div>
 
-      {loadError ? <div className="text-xs text-red-700 dark:text-red-400">{loadError}</div> : null}
+      {loadError ? <div className="text-xs text-status-error">{loadError}</div> : null}
 
       <div ref={containerRef} />
 

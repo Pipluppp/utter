@@ -469,7 +469,7 @@ export function MockCloneFeature(): ReactNode {
                 <div className="flex flex-wrap gap-2">
                   <div
                     className={cn(
-                      "inline-flex items-center justify-center border px-3 py-2 text-[12px] font-medium uppercase tracking-wide transition-transform duration-100 motion-reduce:transition-none",
+                      "inline-flex items-center justify-center border px-3 py-2 text-caption font-medium uppercase tracking-wide transition-transform duration-100 motion-reduce:transition-none",
                       step >= 1
                         ? "border-border bg-muted text-faint"
                         : "border-foreground bg-foreground text-background",
@@ -478,10 +478,10 @@ export function MockCloneFeature(): ReactNode {
                   >
                     {step >= 1 ? "Recording..." : "Start"}
                   </div>
-                  <div className="inline-flex items-center justify-center border border-border bg-background px-3 py-2 text-[12px] font-medium uppercase tracking-wide text-foreground">
+                  <div className="inline-flex items-center justify-center border border-border bg-background px-3 py-2 text-caption font-medium uppercase tracking-wide text-foreground">
                     Stop
                   </div>
-                  <div className="inline-flex items-center justify-center border border-border bg-background px-3 py-2 text-[12px] font-medium uppercase tracking-wide text-foreground">
+                  <div className="inline-flex items-center justify-center border border-border bg-background px-3 py-2 text-caption font-medium uppercase tracking-wide text-foreground">
                     Clear
                   </div>
                 </div>
@@ -492,18 +492,14 @@ export function MockCloneFeature(): ReactNode {
           {/* Form fields */}
           <div className="space-y-6">
             <div>
-              <span className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                Voice Name
-              </span>
+              <span className="mb-2 block label-style">Voice Name</span>
               <div className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated">
                 {voiceName || <span className="text-faint">e.g. Duncan (calm, close-mic)...</span>}
               </div>
             </div>
 
             <div>
-              <span className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                Transcript
-              </span>
+              <span className="mb-2 block label-style">Transcript</span>
               <div className="min-h-20 w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated">
                 {transcript || (
                   <span className="text-faint">Paste the transcript of the reference audio...</span>
@@ -512,9 +508,7 @@ export function MockCloneFeature(): ReactNode {
             </div>
 
             <div>
-              <span className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                Language
-              </span>
+              <span className="mb-2 block label-style">Language</span>
               <div className="relative">
                 <div className="w-full appearance-none border border-border bg-background px-4 py-3 pr-10 text-sm text-foreground shadow-elevated">
                   English

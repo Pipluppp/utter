@@ -1,7 +1,7 @@
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2 border border-border bg-background p-5 shadow-elevated">
-      <h3 className="text-[12px] font-semibold uppercase tracking-wide">{title}</h3>
+      <h3 className="text-caption font-semibold uppercase tracking-wide">{title}</h3>
       <div className="text-sm text-muted-foreground">{children}</div>
     </section>
   );

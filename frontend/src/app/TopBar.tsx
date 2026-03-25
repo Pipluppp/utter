@@ -200,7 +200,7 @@ function MobileNavItem({
 }) {
   const itemClassName = (active: boolean) =>
     cn(
-      "flex w-full items-center justify-between px-3 py-3 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground",
+      "flex w-full items-center justify-between px-3 py-3 text-caption font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground",
       "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       active && "bg-muted text-foreground",
     );

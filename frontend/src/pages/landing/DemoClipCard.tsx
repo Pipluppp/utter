@@ -77,7 +77,7 @@ export function DemoClipCard({
           >
             <ToggleButton
               id="original"
-              className="cursor-pointer px-3 py-2 text-[12px] uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-background text-foreground hover:bg-subtle selected:bg-foreground selected:text-background"
+              className="cursor-pointer px-3 py-2 text-caption uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-background text-foreground hover:bg-subtle selected:bg-foreground selected:text-background"
             >
               Original
             </ToggleButton>
@@ -85,7 +85,7 @@ export function DemoClipCard({
               id="clone"
               isDisabled={!canClone}
               className={cn(
-                "cursor-pointer px-3 py-2 text-[12px] uppercase tracking-wide transition-colors",
+                "cursor-pointer px-3 py-2 text-caption uppercase tracking-wide transition-colors",
                 "border-l border-border",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 "bg-background text-foreground hover:bg-subtle selected:bg-foreground selected:text-background",

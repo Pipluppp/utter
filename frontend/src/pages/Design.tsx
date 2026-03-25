@@ -330,7 +330,7 @@ export function DesignPage() {
         <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Design
         </h2>
-        <InfoTip label="Design tips" tips={DESIGN_TIPS} halftoneImage="grass" />
+        <InfoTip label="Design tips" tips={DESIGN_TIPS} halftoneImage="fire" />
       </div>
 
       {error ? <Message variant="error">{error}</Message> : null}
@@ -345,9 +345,7 @@ export function DesignPage() {
         }}
       >
         <TextField value={name} onChange={setName}>
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Voice Name
-          </Label>
+          <Label className="mb-2 block label-style">Voice Name</Label>
           <Input
             name="name"
             autoComplete="off"
@@ -356,9 +354,7 @@ export function DesignPage() {
         </TextField>
 
         <TextField value={instruct} onChange={setInstruct}>
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Voice Description
-          </Label>
+          <Label className="mb-2 block label-style">Voice Description</Label>
           <TextArea
             name="instruct"
             placeholder="Describe the voice (tone, pacing, timbre, vibe)..."
@@ -388,9 +384,7 @@ export function DesignPage() {
         </TextField>
 
         <TextField value={text} onChange={setText}>
-          <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-            Preview Text
-          </Label>
+          <Label className="mb-2 block label-style">Preview Text</Label>
           <TextArea
             name="text"
             placeholder="A short line to preview the voice..."

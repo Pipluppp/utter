@@ -250,19 +250,19 @@ export function AccountCreditsPage() {
             >
               <ToggleButton
                 id="all"
-                className="cursor-pointer border px-3 py-2 text-[12px] font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
+                className="cursor-pointer border px-3 py-2 text-caption font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
               >
                 All
               </ToggleButton>
               <ToggleButton
                 id="purchases"
-                className="cursor-pointer border px-3 py-2 text-[12px] font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
+                className="cursor-pointer border px-3 py-2 text-caption font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
               >
                 Purchases
               </ToggleButton>
               <ToggleButton
                 id="usage"
-                className="cursor-pointer border px-3 py-2 text-[12px] font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
+                className="cursor-pointer border px-3 py-2 text-caption font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
               >
                 Usage
               </ToggleButton>

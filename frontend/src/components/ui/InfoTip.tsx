@@ -31,7 +31,7 @@ type InfoTipProps = {
   /** Array of tip strings to display in the carousel */
   tips: string[];
   /** Which halftone image to use as the modal background */
-  halftoneImage?: "fire" | "grass";
+  halftoneImage?: "fire" | "grass" | "lilac";
 };
 
 export function InfoTip({ label = "Information", tips, halftoneImage = "fire" }: InfoTipProps) {
@@ -46,7 +46,7 @@ export function InfoTip({ label = "Information", tips, halftoneImage = "fire" }:
         onHoverStart={() => prefetchImage(imageUrl)}
         onFocus={() => prefetchImage(imageUrl)}
         className={cn(
-          "inline-flex size-6 items-center justify-center rounded-full border border-border bg-background text-[12px] font-semibold text-muted-foreground",
+          "inline-flex size-6 items-center justify-center rounded-full border border-border bg-background text-caption font-semibold text-muted-foreground",
           "hovered:bg-surface-hover hovered:text-foreground",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         )}

@@ -28,20 +28,20 @@ export function AboutPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="border border-border bg-background p-4 shadow-elevated">
-          <div className="text-[12px] font-semibold uppercase tracking-wide">Clone</div>
+          <div className="text-caption font-semibold uppercase tracking-wide">Clone</div>
           <p className="mt-2 text-sm text-muted-foreground">
             Upload reference audio with a matching transcript to create a reusable voice.
           </p>
         </div>
         <div className="border border-border bg-background p-4 shadow-elevated">
-          <div className="text-[12px] font-semibold uppercase tracking-wide">Design</div>
+          <div className="text-caption font-semibold uppercase tracking-wide">Design</div>
           <p className="mt-2 text-sm text-muted-foreground">
             Describe a voice in plain language, queue a preview, then save the version you want to
             keep.
           </p>
         </div>
         <div className="border border-border bg-background p-4 shadow-elevated">
-          <div className="text-[12px] font-semibold uppercase tracking-wide">Generate</div>
+          <div className="text-caption font-semibold uppercase tracking-wide">Generate</div>
           <p className="mt-2 text-sm text-muted-foreground">
             Type text and queue speech in any of your saved voices. Finished audio is stored in
             History.
@@ -50,7 +50,7 @@ export function AboutPage() {
       </div>
 
       <div className="space-y-3 border border-border bg-subtle p-4 shadow-elevated">
-        <div className="text-[12px] font-semibold uppercase tracking-wide">Constraints & tips</div>
+        <div className="text-caption font-semibold uppercase tracking-wide">Constraints & tips</div>
         <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
           <li>Reference audio: WAV/MP3/M4A, max 50MB, 3 seconds to ~5 minutes.</li>
           <li>
@@ -63,7 +63,7 @@ export function AboutPage() {
       </div>
 
       <div className="space-y-2 text-sm text-muted-foreground">
-        <div className="text-[12px] font-semibold uppercase tracking-wide text-foreground">
+        <div className="text-caption font-semibold uppercase tracking-wide text-foreground">
           Supported languages
         </div>
         <div className="leading-relaxed">

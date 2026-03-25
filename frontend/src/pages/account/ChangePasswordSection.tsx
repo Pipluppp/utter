@@ -110,9 +110,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
             validate={(v) => (v.length > 0 ? validatePassword(v) : null)}
             isDisabled={busy}
           >
-            <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-              New password
-            </Label>
+            <Label className="mb-2 block label-style">New password</Label>
             <Input
               placeholder="8+ chars, uppercase, number, special"
               autoComplete="new-password"
@@ -131,9 +129,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
             validate={(v) => (v.length > 0 && v !== password ? "Passwords do not match." : null)}
             isDisabled={busy}
           >
-            <Label className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-              Confirm password
-            </Label>
+            <Label className="mb-2 block label-style">Confirm password</Label>
             <Input
               placeholder="Re-enter your new password"
               autoComplete="new-password"
