@@ -21,6 +21,7 @@ import { GridArtSurface } from "../components/ui/GridArt";
 import { InfoTip } from "../components/ui/InfoTip";
 import { Message } from "../components/ui/Message";
 import { getUtterDemo } from "../content/utterDemo";
+import { useElapsedTick } from "../hooks/useElapsedTick";
 import { apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
 import { fetchTextUtf8 } from "../lib/fetchTextUtf8";
@@ -47,6 +48,11 @@ export function GeneratePage() {
 
   const generateTasks = getTasksByType("generate");
   const latestTask = getLatestTask("generate");
+
+  const hasActiveGenerate = generateTasks.some(
+    (t) => t.status === "pending" || t.status === "processing",
+  );
+  const nowMs = useElapsedTick(hasActiveGenerate);
 
   const [voices, setVoices] = useState<VoicesResponse | null>(null);
   const [loadingVoices, setLoadingVoices] = useState(true);
@@ -386,7 +392,7 @@ export function GeneratePage() {
             </div>
             <div className="text-xs text-faint">
               {selectedTask.status === "pending" || selectedTask.status === "processing"
-                ? formatElapsed(selectedTask.startedAt)
+                ? formatElapsed(selectedTask.startedAt, nowMs)
                 : taskLabel(selectedTask.type)}
             </div>
           </div>
@@ -439,7 +445,7 @@ export function GeneratePage() {
                 </div>
                 <div className="shrink-0 text-xs text-faint">
                   {task.status === "pending" || task.status === "processing"
-                    ? formatElapsed(task.startedAt)
+                    ? formatElapsed(task.startedAt, nowMs)
                     : task.status === "completed"
                       ? "Ready"
                       : task.status === "cancelled"

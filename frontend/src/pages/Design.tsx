@@ -17,6 +17,7 @@ import { GridArtSurface } from "../components/ui/GridArt";
 import { InfoTip } from "../components/ui/InfoTip";
 import { Message } from "../components/ui/Message";
 import { Select, type SelectItem } from "../components/ui/Select";
+import { useElapsedTick } from "../hooks/useElapsedTick";
 import { apiForm, apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
 import { formatElapsed } from "../lib/time";
@@ -62,6 +63,11 @@ export function DesignPage() {
 
   const designTasks = getTasksByType("design_preview");
   const latestTask = getLatestTask("design_preview");
+
+  const hasActiveDesign = designTasks.some(
+    (t) => t.status === "pending" || t.status === "processing",
+  );
+  const nowMs = useElapsedTick(hasActiveDesign);
 
   const [name, setName] = useState("");
   const [language, setLanguage] = useState("English");
@@ -441,7 +447,7 @@ export function DesignPage() {
             </div>
             <div className="text-xs text-faint">
               {selectedTask.status === "pending" || selectedTask.status === "processing"
-                ? formatElapsed(selectedTask.startedAt)
+                ? formatElapsed(selectedTask.startedAt, nowMs)
                 : selectedTask.status === "completed"
                   ? "Ready to save"
                   : "Not usable"}
@@ -496,7 +502,7 @@ export function DesignPage() {
                 </div>
                 <div className="shrink-0 text-xs text-faint">
                   {task.status === "pending" || task.status === "processing"
-                    ? formatElapsed(task.startedAt)
+                    ? formatElapsed(task.startedAt, nowMs)
                     : task.status === "completed"
                       ? "Ready"
                       : task.status === "cancelled"

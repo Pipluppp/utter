@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useElapsedTick } from "../../hooks/useElapsedTick";
 import { cn } from "../../lib/cn";
+import { formatElapsed } from "../../lib/time";
 import type { StoredTask, TaskType } from "../../lib/types";
 import { useTasks } from "./TaskProvider";
 
@@ -121,6 +123,11 @@ export function TaskDock() {
     return tasks;
   }, [location.pathname, tasks]);
 
+  const hasActive = visible.some(
+    (t) => t.status !== "completed" && t.status !== "failed" && t.status !== "cancelled",
+  );
+  const nowMs = useElapsedTick(hasActive);
+
   if (visible.length === 0) return null;
 
   return (
@@ -129,7 +136,11 @@ export function TaskDock() {
         <TaskRow
           key={task.taskId}
           task={task}
-          elapsed={formatTaskElapsed(task)}
+          elapsed={
+            task.status === "completed" || task.status === "failed" || task.status === "cancelled"
+              ? formatTaskElapsed(task)
+              : formatElapsed(task.startedAt, nowMs)
+          }
           onDismiss={() => void dismissTask(task.taskId)}
           onCancel={() => void cancelTask(task.taskId)}
         />

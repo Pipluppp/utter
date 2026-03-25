@@ -415,6 +415,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const getStatusText = useCallback(
     (status: TaskStatus, modalStatus?: string | null, providerStatus?: string | null) => {
+      if (status === "completed") return "Completed";
+      if (status === "failed") return "Failed";
+      if (status === "cancelled") return "Cancelled";
       const effectiveStatus = (providerStatus ?? modalStatus ?? "").toLowerCase();
       if (effectiveStatus === "provider_submitting") return "Submitting...";
       if (effectiveStatus === "provider_queued" || effectiveStatus === "queued")
@@ -532,7 +535,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       };
 
       void poll();
-      pollIntervalsRef.current[taskId] = window.setInterval(poll, 1000);
+      pollIntervalsRef.current[taskId] = window.setInterval(poll, 3000);
     };
 
     for (const task of tasks) {
