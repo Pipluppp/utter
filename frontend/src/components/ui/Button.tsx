@@ -25,7 +25,7 @@ export function buttonStyles({
     "disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-faint",
     variant === "primary" &&
       "border-foreground bg-foreground text-background hover:bg-foreground/80 hover:border-foreground/80",
-    variant === "secondary" && "border-border bg-background text-foreground hover:bg-subtle",
+    variant === "secondary" && "border-border bg-background text-foreground hover:bg-surface-hover",
     block && "w-full",
     isPending && "text-transparent",
     className,

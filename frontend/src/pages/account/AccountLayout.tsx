@@ -89,9 +89,9 @@ export function AccountLayoutPage() {
               id={item.to}
               className={cn(
                 "min-w-[190px] border border-border bg-background px-4 py-3.5 transition-colors",
-                "hover:bg-subtle",
+                "hover:bg-surface-hover",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                "selected:border-border-strong selected:bg-subtle",
+                "selected:border-border-strong selected:bg-surface-selected",
                 "cursor-pointer outline-none",
               )}
             >

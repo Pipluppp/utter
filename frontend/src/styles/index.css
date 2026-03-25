@@ -32,6 +32,9 @@
 
   --shadow-elevated: 0 1px 0 rgb(0 0 0 / 0.03), 0 8px 20px rgb(0 0 0 / 0.06);
 
+  --color-surface-hover: #ebebeb;
+  --color-surface-selected: #e0e0e0;
+
   --color-popover: #f0f0f0;
   --color-popover-hover: #e6e6e6;
   --color-popover-selected: #dbdbdb;
@@ -65,6 +68,9 @@
   --shadow-elevated:
     0 0 0 1px rgb(255 255 255 / 0.1), 0 10px 26px rgb(255 255 255 / 0.06),
     0 24px 54px rgb(0 0 0 / 0.75);
+
+  --color-surface-hover: #1a1a1a;
+  --color-surface-selected: #222222;
 
   --color-popover: #161616;
   --color-popover-hover: #1e1e1e;

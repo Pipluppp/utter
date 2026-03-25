@@ -164,7 +164,7 @@ export function WaveformPlayer({
         <button
           type="button"
           className={cn(
-            "border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-muted",
+            "border border-border bg-background px-3 py-2 text-[12px] uppercase tracking-wide hover:bg-surface-hover",
             "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             !isReady && "cursor-not-allowed opacity-50",
           )}

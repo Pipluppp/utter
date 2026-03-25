@@ -18,7 +18,7 @@ export function InfoTip({
         aria-label={label}
         className={cn(
           "inline-flex size-6 items-center justify-center rounded-full border border-border bg-background text-[12px] font-semibold text-muted-foreground",
-          "hovered:bg-muted hovered:text-foreground",
+          "hovered:bg-surface-hover hovered:text-foreground",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         )}
       >

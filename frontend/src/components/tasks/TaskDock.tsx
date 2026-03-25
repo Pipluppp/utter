@@ -68,7 +68,7 @@ function TaskRow({
     <div
       className={cn(
         "group flex w-full items-center gap-2 border border-border bg-background px-2 py-2 text-sm shadow-elevated",
-        "hover:bg-subtle",
+        "hover:bg-surface-hover",
       )}
       title={raw}
     >
@@ -89,7 +89,7 @@ function TaskRow({
       {showCancel ? (
         <button
           type="button"
-          className="border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           onClick={(e) => {
             e.stopPropagation();
             onCancel();
