@@ -2,6 +2,16 @@ import { type KeyboardEvent, useState } from "react";
 import { Button, Dialog, DialogTrigger, Modal, ModalOverlay } from "react-aria-components";
 import { cn } from "../../lib/cn";
 
+/** Module-level Set to deduplicate prefetch requests across all InfoTip instances */
+const prefetchedUrls = new Set<string>();
+
+/** Fire-and-forget image prefetch — triggers a browser cache fetch if not already done */
+function prefetchImage(url: string): void {
+  if (prefetchedUrls.has(url)) return;
+  prefetchedUrls.add(url);
+  new Image().src = url;
+}
+
 /** Pure navigation helpers (exported for testing) */
 export function advance(index: number, length: number): number {
   return (index + 1) % length;
@@ -27,10 +37,14 @@ type InfoTipProps = {
 export function InfoTip({ label = "Information", tips, halftoneImage = "fire" }: InfoTipProps) {
   if (tips.length === 0) return null;
 
+  const imageUrl = `/static/${halftoneImage}.jpg`;
+
   return (
     <DialogTrigger>
       <Button
         aria-label={label}
+        onHoverStart={() => prefetchImage(imageUrl)}
+        onFocus={() => prefetchImage(imageUrl)}
         className={cn(
           "inline-flex size-6 items-center justify-center rounded-full border border-border bg-background text-[12px] font-semibold text-muted-foreground",
           "hovered:bg-surface-hover hovered:text-foreground",
@@ -218,3 +232,9 @@ function TipsDialog({
     </Dialog>
   );
 }
+
+/** Exported for testing only — allows tests to inspect and reset the prefetch cache */
+export const _testUtils = {
+  prefetchedUrls,
+  resetPrefetchCache: () => prefetchedUrls.clear(),
+};
