@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @plugin "tailwindcss-react-aria-components";
+@plugin "tailwindcss-animate";
 @import "./geist-pixel.css";
 
 @theme {
@@ -13,6 +14,10 @@
 
   --font-pixel:
     "Geist Pixel Line", "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+
+  --font-pixel-square:
+    "Geist Pixel Square", "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 
   --color-background: #ffffff;

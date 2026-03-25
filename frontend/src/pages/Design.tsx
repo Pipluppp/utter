@@ -17,6 +17,7 @@ import { GridArtSurface } from "../components/ui/GridArt";
 import { InfoTip } from "../components/ui/InfoTip";
 import { Message } from "../components/ui/Message";
 import { Select, type SelectItem } from "../components/ui/Select";
+import { DESIGN_TIPS } from "../data/tips";
 import { useElapsedTick } from "../hooks/useElapsedTick";
 import { apiForm, apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
@@ -329,16 +330,7 @@ export function DesignPage() {
         <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Design
         </h2>
-        <InfoTip align="end" label="Design tips">
-          <div className="space-y-2">
-            <div>No reference audio needed. Describe the voice you want.</div>
-            <div>
-              Preview runs as a background job. Save the completed preview you want to keep in your
-              voice library.
-            </div>
-            <div>Preview text and description are limited to 500 chars.</div>
-          </div>
-        </InfoTip>
+        <InfoTip label="Design tips" tips={DESIGN_TIPS} halftoneImage="grass" />
       </div>
 
       {error ? <Message variant="error">{error}</Message> : null}

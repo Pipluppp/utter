@@ -1,16 +1,31 @@
-import { Button, Dialog, DialogTrigger, Popover } from "react-aria-components";
+import { type KeyboardEvent, useState } from "react";
+import { Button, Dialog, DialogTrigger, Modal, ModalOverlay } from "react-aria-components";
 import { cn } from "../../lib/cn";
 
-export function InfoTip({
-  align = "start",
-  label = "Information",
-  children,
-}: {
-  align?: "start" | "end";
+/** Pure navigation helpers (exported for testing) */
+export function advance(index: number, length: number): number {
+  return (index + 1) % length;
+}
+
+export function retreat(index: number, length: number): number {
+  return (index - 1 + length) % length;
+}
+
+export function formatIndicator(index: number, length: number): string {
+  return `${index + 1} / ${length}`;
+}
+
+type InfoTipProps = {
+  /** Accessible label for the dialog (e.g., "Clone tips") */
   label?: string;
-  children: React.ReactNode;
-}) {
-  const placement = align === "end" ? "bottom end" : "bottom start";
+  /** Array of tip strings to display in the carousel */
+  tips: string[];
+  /** Which halftone image to use as the modal background */
+  halftoneImage?: "fire" | "grass";
+};
+
+export function InfoTip({ label = "Information", tips, halftoneImage = "fire" }: InfoTipProps) {
+  if (tips.length === 0) return null;
 
   return (
     <DialogTrigger>
@@ -24,20 +39,182 @@ export function InfoTip({
       >
         i
       </Button>
-      <Popover
-        placement={placement}
-        offset={8}
-        shouldFlip
+      <ModalOverlay
+        isDismissable
         className={cn(
-          "w-[min(320px,calc(100vw-2rem))] border border-border bg-background p-3 text-sm text-muted-foreground shadow-lg",
-          "entering:animate-in entering:fade-in entering:zoom-in-95",
-          "exiting:animate-out exiting:fade-out exiting:zoom-out-95",
+          "fixed inset-0 z-50 flex items-center justify-center bg-black/[50%] p-4 overscroll-contain backdrop-blur-lg",
+          "entering:animate-in entering:fade-in entering:duration-200 entering:ease-out",
+          "exiting:animate-out exiting:fade-out exiting:duration-150 exiting:ease-in",
+          "motion-reduce:duration-0",
         )}
       >
-        <Dialog aria-label={label} className="outline-none">
-          {children}
-        </Dialog>
-      </Popover>
+        <Modal
+          className={cn(
+            "w-[min(600px,calc(100vw-2rem))] overflow-hidden rounded-2xl shadow-2xl bg-clip-padding",
+            "entering:animate-in entering:zoom-in-105 entering:ease-out entering:duration-200",
+            "exiting:animate-out exiting:zoom-out-95 exiting:ease-in exiting:duration-150",
+            "motion-reduce:duration-0",
+          )}
+        >
+          <TipsDialog label={label} tips={tips} halftoneImage={halftoneImage} />
+        </Modal>
+      </ModalOverlay>
     </DialogTrigger>
+  );
+}
+
+function TipsDialog({
+  label,
+  tips,
+  halftoneImage,
+}: {
+  label: string;
+  tips: string[];
+  halftoneImage: string;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState<"left" | "right">("right");
+
+  function goNext() {
+    setDirection("right");
+    setCurrentIndex((i) => advance(i, tips.length));
+  }
+
+  function goPrev() {
+    setDirection("left");
+    setCurrentIndex((i) => retreat(i, tips.length));
+  }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      goNext();
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      goPrev();
+    }
+  }
+
+  return (
+    <Dialog aria-label={label} className="relative outline-none">
+      {/* Image-dominant layout: square ratio, content centered */}
+      <div onKeyDown={handleKeyDown} className="relative aspect-[5/4] w-full">
+        {/* Halftone background image — fills entire modal */}
+        <div className="absolute inset-0 bg-neutral-800 dark:bg-neutral-200">
+          <img
+            src={`/static/${halftoneImage}.jpg`}
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full object-cover"
+          />
+        </div>
+
+        {/* Content block — centered in the image */}
+        <div className="absolute inset-0 flex items-center justify-center px-14 sm:px-16">
+          <div
+            className={cn(
+              "w-full rounded-2xl px-6 py-5 sm:px-8 sm:py-6",
+              "bg-black text-white",
+              "dark:bg-white dark:text-black",
+            )}
+          >
+            <div
+              aria-live="polite"
+              aria-atomic="true"
+              className="relative min-h-[4rem] overflow-hidden font-[family-name:var(--font-pixel-square)] text-base leading-relaxed sm:text-lg"
+            >
+              <p
+                key={currentIndex}
+                className={cn(
+                  "animate-in fade-in duration-200",
+                  direction === "right" ? "slide-in-from-right-4" : "slide-in-from-left-4",
+                  "motion-reduce:duration-0 motion-reduce:animate-none",
+                )}
+              >
+                {tips[currentIndex]}
+              </p>
+            </div>
+
+            {/* Dot indicators — each is a pressable Button for direct navigation */}
+            <div className="mt-4 flex items-center justify-center gap-0.5" role="tablist">
+              {tips.map((_, i) => (
+                <Button
+                  key={i}
+                  aria-label={`Tip ${i + 1} of ${tips.length}`}
+                  onPress={() => {
+                    setDirection(i > currentIndex ? "right" : "left");
+                    setCurrentIndex(i);
+                  }}
+                  className="group flex items-center justify-center p-2 focus-visible:outline-none"
+                >
+                  <span
+                    className={cn(
+                      "block size-2 rounded-full transition-all duration-200",
+                      "group-focus-visible:ring-2 group-focus-visible:ring-white/50 dark:group-focus-visible:ring-black/50",
+                      i === currentIndex
+                        ? "scale-110 bg-white dark:bg-black"
+                        : "bg-white/30 group-hovered:bg-white/50 dark:bg-black/30 dark:group-hovered:bg-black/50",
+                    )}
+                  />
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation arrows — SVG chevrons on the sides */}
+        <Button
+          aria-label="Previous tip"
+          onPress={goPrev}
+          className={cn(
+            "absolute left-2 top-1/2 -translate-y-1/2",
+            "inline-flex size-10 items-center justify-center rounded-full",
+            "text-black/70 hovered:text-black hovered:bg-black/10",
+            "dark:text-black/70 dark:hovered:text-black dark:hovered:bg-black/10",
+            "focus-visible:ring-2 focus-visible:ring-black/30",
+            "transition-colors duration-150",
+          )}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </Button>
+
+        <Button
+          aria-label="Next tip"
+          onPress={goNext}
+          className={cn(
+            "absolute right-2 top-1/2 -translate-y-1/2",
+            "inline-flex size-10 items-center justify-center rounded-full",
+            "text-black/70 hovered:text-black hovered:bg-black/10",
+            "dark:text-black/70 dark:hovered:text-black dark:hovered:bg-black/10",
+            "focus-visible:ring-2 focus-visible:ring-black/30",
+            "transition-colors duration-150",
+          )}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </Button>
+      </div>
+    </Dialog>
   );
 }

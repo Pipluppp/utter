@@ -24,6 +24,7 @@ import { Message } from "../components/ui/Message";
 import { ProgressBar } from "../components/ui/ProgressBar";
 import { Select, type SelectItem } from "../components/ui/Select";
 import { getUtterDemo } from "../content/utterDemo";
+import { CLONE_TIPS } from "../data/tips";
 import { apiForm, apiJson } from "../lib/api";
 import {
   concatFloat32Chunks,
@@ -571,30 +572,7 @@ export function ClonePage() {
         <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Clone
         </h2>
-        <InfoTip align="end" label="Clone tips">
-          <div className="space-y-2">
-            <div>Upload WAV/MP3/M4A or record a short, clean, single-speaker sample.</div>
-            <div>
-              Best results come from about {RECOMMENDED_REFERENCE_SECONDS} seconds. The hard cap is{" "}
-              {MAX_REFERENCE_SECONDS} seconds and 10MB.
-            </div>
-            {transcriptionEnabled ? (
-              <div>Record mode saves a clone-quality WAV and auto-transcribes after you stop.</div>
-            ) : (
-              <div>Recording and transcription are disabled on this server.</div>
-            )}
-            <div>
-              {transcriptionEnabled
-                ? 'Upload mode: use "Transcribe" to create a draft transcript, then edit it until it matches the speech exactly.'
-                : "Upload mode: type or paste the transcript manually."}
-            </div>
-            <div>
-              {transcriptRequired
-                ? "Transcript is required for Qwen voice cloning."
-                : "Transcript is required."}
-            </div>
-          </div>
-        </InfoTip>
+        <InfoTip label="Clone tips" tips={CLONE_TIPS} halftoneImage="fire" />
       </div>
 
       {error ? <Message variant="error">{error}</Message> : null}

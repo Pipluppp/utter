@@ -21,6 +21,7 @@ import { GridArtSurface } from "../components/ui/GridArt";
 import { InfoTip } from "../components/ui/InfoTip";
 import { Message } from "../components/ui/Message";
 import { getUtterDemo } from "../content/utterDemo";
+import { GENERATE_TIPS } from "../data/tips";
 import { useElapsedTick } from "../hooks/useElapsedTick";
 import { apiJson } from "../lib/api";
 import { cn } from "../lib/cn";
@@ -289,16 +290,7 @@ export function GeneratePage() {
         <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
           Generate
         </h2>
-        <InfoTip align="end" label="Generate tips">
-          <div className="space-y-2">
-            <div>Pick a voice, enter text, then start generation.</div>
-            <div>
-              Generate runs as a background job, so queued or processing work keeps moving even if
-              you leave the page.
-            </div>
-            <div>Max input: {maxTextChars.toLocaleString()} characters.</div>
-          </div>
-        </InfoTip>
+        <InfoTip label="Generate tips" tips={GENERATE_TIPS} halftoneImage="grass" />
       </div>
 
       {error ? <Message variant="error">{error}</Message> : null}
