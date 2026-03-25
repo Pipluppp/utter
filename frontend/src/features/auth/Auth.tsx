@@ -2,21 +2,21 @@ import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuthState } from "../app/auth/AuthStateProvider";
-import { getSafeReturnTo } from "../app/navigation";
-import { Button } from "../components/ui/Button";
-import { GridArt } from "../components/ui/GridArt";
-import { AppLink } from "../components/ui/Link";
-import { Message } from "../components/ui/Message";
-import { Separator } from "../components/ui/Separator";
+import { useAuthState } from "../../app/auth/AuthStateProvider";
+import { getSafeReturnTo } from "../../app/navigation";
+import { Button } from "../../components/atoms/Button";
+import { AppLink } from "../../components/atoms/Link";
+import { Message } from "../../components/atoms/Message";
+import { Separator } from "../../components/atoms/Separator";
+import { GridArt } from "../../components/molecules/GridArt";
 import {
   getTurnstileSiteKey,
   isAuthConfigured,
   signInWithPassword,
   signUpWithPassword,
-} from "../lib/auth";
-import { cn } from "../lib/cn";
-import { validateEmail, validatePassword } from "../lib/validation";
+} from "../../lib/auth";
+import { cn } from "../../lib/cn";
+import { validateEmail, validatePassword } from "../../lib/validation";
 
 type PasswordIntent = "sign_in" | "sign_up";
 

@@ -15,17 +15,17 @@ import {
   ToggleButtonGroup,
 } from "react-aria-components";
 import { useSearchParams } from "react-router-dom";
-import { WaveformPlayer } from "../components/audio/WaveformPlayer";
-import { Button } from "../components/ui/Button";
-import { GridArtSurface } from "../components/ui/GridArt";
-import { InfoTip } from "../components/ui/InfoTip";
-import { AppLink } from "../components/ui/Link";
-import { Message } from "../components/ui/Message";
-import { ProgressBar } from "../components/ui/ProgressBar";
-import { Select, type SelectItem } from "../components/ui/Select";
-import { getUtterDemo } from "../content/utterDemo";
-import { CLONE_TIPS } from "../data/tips";
-import { apiForm, apiJson } from "../lib/api";
+import { Button } from "../../components/atoms/Button";
+import { AppLink } from "../../components/atoms/Link";
+import { Message } from "../../components/atoms/Message";
+import { ProgressBar } from "../../components/atoms/ProgressBar";
+import { GridArtSurface } from "../../components/molecules/GridArt";
+import { InfoTip } from "../../components/molecules/InfoTip";
+import { Select, type SelectItem } from "../../components/molecules/Select";
+import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
+import { getUtterDemo } from "../../content/utterDemo";
+import { CLONE_TIPS } from "../../data/tips";
+import { apiForm, apiJson } from "../../lib/api";
 import {
   concatFloat32Chunks,
   createWavHeaderPcm16Mono,
@@ -34,12 +34,12 @@ import {
   getTargetRecordingSampleRate,
   resampleFloat32Linear,
   rmsLevel,
-} from "../lib/audio";
-import { cn } from "../lib/cn";
-import { fetchTextUtf8 } from "../lib/fetchTextUtf8";
-import { formatElapsed } from "../lib/time";
-import type { CloneResponse } from "../lib/types";
-import { useLanguages } from "./hooks";
+} from "../../lib/audio";
+import { cn } from "../../lib/cn";
+import { fetchTextUtf8 } from "../../lib/fetchTextUtf8";
+import { formatElapsed } from "../../lib/time";
+import type { CloneResponse } from "../../lib/types";
+import { useLanguages } from "../shared/hooks";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_REFERENCE_SECONDS = 60;

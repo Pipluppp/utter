@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Link } from "react-router-dom";
-import { taskLabel } from "../components/tasks/taskKeys";
-import { useTasks } from "../components/tasks/TaskProvider";
-import { Button } from "../components/ui/Button";
-import { Message } from "../components/ui/Message";
-import { apiJson } from "../lib/api";
+import { taskLabel } from "../../app/taskKeys";
+import { useTasks } from "../../app/TaskProvider";
+import { Button } from "../../components/atoms/Button";
+import { Message } from "../../components/atoms/Message";
+import { apiJson } from "../../lib/api";
 import type {
   BackendTaskListItem,
   TaskListResponse,
   TaskListStatus,
   TaskListType,
-} from "../lib/types";
+} from "../../lib/types";
 
 const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
   dateStyle: "medium",

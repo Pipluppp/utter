@@ -1,12 +1,12 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { useRef, useState } from "react";
 import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
-import { Button } from "../components/ui/Button";
-import { GridArt } from "../components/ui/GridArt";
-import { AppLink } from "../components/ui/Link";
-import { Message } from "../components/ui/Message";
-import { forgotPassword, getTurnstileSiteKey, isAuthConfigured } from "../lib/auth";
-import { validateEmail } from "../lib/validation";
+import { Button } from "../../components/atoms/Button";
+import { AppLink } from "../../components/atoms/Link";
+import { Message } from "../../components/atoms/Message";
+import { GridArt } from "../../components/molecules/GridArt";
+import { forgotPassword, getTurnstileSiteKey, isAuthConfigured } from "../../lib/auth";
+import { validateEmail } from "../../lib/validation";
 
 export function ForgotPasswordPage() {
   const configured = isAuthConfigured();

@@ -10,20 +10,20 @@ import {
   TextField,
 } from "react-aria-components";
 import { useNavigate } from "react-router-dom";
-import { WaveformPlayer } from "../components/audio/WaveformPlayer";
-import { useTasks } from "../components/tasks/TaskProvider";
-import { Button } from "../components/ui/Button";
-import { GridArtSurface } from "../components/ui/GridArt";
-import { InfoTip } from "../components/ui/InfoTip";
-import { Message } from "../components/ui/Message";
-import { Select, type SelectItem } from "../components/ui/Select";
-import { DESIGN_TIPS } from "../data/tips";
-import { useElapsedTick } from "../hooks/useElapsedTick";
-import { apiForm, apiJson } from "../lib/api";
-import { cn } from "../lib/cn";
-import { formatElapsed } from "../lib/time";
-import type { DesignPreviewResponse, DesignSaveResponse, StoredTask } from "../lib/types";
-import { useLanguages } from "./hooks";
+import { useTasks } from "../../app/TaskProvider";
+import { Button } from "../../components/atoms/Button";
+import { Message } from "../../components/atoms/Message";
+import { GridArtSurface } from "../../components/molecules/GridArt";
+import { InfoTip } from "../../components/molecules/InfoTip";
+import { Select, type SelectItem } from "../../components/molecules/Select";
+import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
+import { DESIGN_TIPS } from "../../data/tips";
+import { useElapsedTick } from "../../hooks/useElapsedTick";
+import { apiForm, apiJson } from "../../lib/api";
+import { cn } from "../../lib/cn";
+import { formatElapsed } from "../../lib/time";
+import type { DesignPreviewResponse, DesignSaveResponse, StoredTask } from "../../lib/types";
+import { useLanguages } from "../shared/hooks";
 
 type DesignFormState = {
   name: string;

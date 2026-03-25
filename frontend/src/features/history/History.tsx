@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useWaveformListPlayer } from "../components/audio/useWaveformListPlayer";
+import { Button, buttonStyles } from "../../components/atoms/Button";
+import { Message } from "../../components/atoms/Message";
+import { Skeleton } from "../../components/atoms/Skeleton";
 import {
   AutocompleteSelect,
   type AutocompleteSelectItem,
-} from "../components/ui/AutocompleteSelect";
-import { Button, buttonStyles } from "../components/ui/Button";
-import { Message } from "../components/ui/Message";
-import { Skeleton } from "../components/ui/Skeleton";
-import { apiJson } from "../lib/api";
-import { cn } from "../lib/cn";
-import { resolveProtectedMediaUrl, triggerDownload } from "../lib/protectedMedia";
-import type { Generation, GenerationsResponse, RegenerateResponse } from "../lib/types";
-import { useDebouncedValue } from "./hooks";
+} from "../../components/molecules/AutocompleteSelect";
+import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
+import { apiJson } from "../../lib/api";
+import { cn } from "../../lib/cn";
+import { resolveProtectedMediaUrl, triggerDownload } from "../../lib/protectedMedia";
+import type { Generation, GenerationsResponse, RegenerateResponse } from "../../lib/types";
+import { useDebouncedValue } from "../shared/hooks";
 
 function tokenize(query: string) {
   return query.trim().split(/\s+/).filter(Boolean);

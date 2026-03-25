@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { apiJson } from "../lib/api";
-import type { CreditsUsageResponse, LanguagesResponse } from "../lib/types";
+import { apiJson } from "../../lib/api";
+import type { CreditsUsageResponse, LanguagesResponse } from "../../lib/types";
 
 let languagesCache: LanguagesResponse | null = null;
 let languagesInFlight: Promise<LanguagesResponse> | null = null;

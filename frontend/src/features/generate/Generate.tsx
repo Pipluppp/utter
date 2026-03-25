@@ -1,35 +1,35 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-    Form,
-    Label,
-    ListBox,
-    ListBoxItem,
-    Text,
-    TextArea,
-    TextField,
+  Form,
+  Label,
+  ListBox,
+  ListBoxItem,
+  Text,
+  TextArea,
+  TextField,
 } from "react-aria-components";
 import { useSearchParams } from "react-router-dom";
-import { WaveformPlayer } from "../components/audio/WaveformPlayer";
-import { taskLabel } from "../components/tasks/taskKeys";
-import { useTasks } from "../components/tasks/TaskProvider";
+import { taskLabel } from "../../app/taskKeys";
+import { useTasks } from "../../app/TaskProvider";
+import { Button } from "../../components/atoms/Button";
+import { Message } from "../../components/atoms/Message";
 import {
-    AutocompleteSelect,
-    type AutocompleteSelectItem,
-} from "../components/ui/AutocompleteSelect";
-import { Button } from "../components/ui/Button";
-import { GridArtSurface } from "../components/ui/GridArt";
-import { InfoTip } from "../components/ui/InfoTip";
-import { Message } from "../components/ui/Message";
-import { getUtterDemo } from "../content/utterDemo";
-import { GENERATE_TIPS } from "../data/tips";
-import { useElapsedTick } from "../hooks/useElapsedTick";
-import { apiJson } from "../lib/api";
-import { cn } from "../lib/cn";
-import { fetchTextUtf8 } from "../lib/fetchTextUtf8";
-import { resolveProtectedMediaUrl, triggerDownload } from "../lib/protectedMedia";
-import { formatElapsed } from "../lib/time";
-import type { GenerateResponse, StoredTask, VoicesResponse } from "../lib/types";
-import { useLanguages } from "./hooks";
+  AutocompleteSelect,
+  type AutocompleteSelectItem,
+} from "../../components/molecules/AutocompleteSelect";
+import { GridArtSurface } from "../../components/molecules/GridArt";
+import { InfoTip } from "../../components/molecules/InfoTip";
+import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
+import { getUtterDemo } from "../../content/utterDemo";
+import { GENERATE_TIPS } from "../../data/tips";
+import { useElapsedTick } from "../../hooks/useElapsedTick";
+import { apiJson } from "../../lib/api";
+import { cn } from "../../lib/cn";
+import { fetchTextUtf8 } from "../../lib/fetchTextUtf8";
+import { resolveProtectedMediaUrl, triggerDownload } from "../../lib/protectedMedia";
+import { formatElapsed } from "../../lib/time";
+import type { GenerateResponse, StoredTask, VoicesResponse } from "../../lib/types";
+import { useLanguages } from "../shared/hooks";
 
 type GenerateFormState = {
   voiceId: string;

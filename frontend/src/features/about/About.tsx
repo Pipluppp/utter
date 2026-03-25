@@ -1,5 +1,5 @@
-import { Skeleton } from "../components/ui/Skeleton";
-import { useLanguages } from "./hooks";
+import { Skeleton } from "../../components/atoms/Skeleton";
+import { useLanguages } from "../shared/hooks";
 
 function AboutLanguagesSkeleton() {
   return (
