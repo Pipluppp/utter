@@ -78,7 +78,8 @@ export function Select({
       <Popover
         shouldFlip
         className={cn(
-          "w-[var(--trigger-width)] overflow-y-auto border border-border bg-background shadow-elevated",
+          "w-[var(--trigger-width)] overflow-y-auto border border-border bg-popover shadow-popover",
+          "data-[placement=bottom]:origin-top data-[placement=top]:origin-bottom",
           "entering:animate-in entering:fade-in-0 entering:zoom-in-95",
           "exiting:animate-out exiting:fade-out-0 exiting:zoom-out-95",
         )}
@@ -90,8 +91,8 @@ export function Select({
               textValue={item.label}
               className={cn(
                 "cursor-pointer px-3 py-2 text-sm text-foreground outline-none",
-                "hover:bg-subtle hovered:bg-subtle data-[focused]:bg-subtle",
-                "selected:bg-muted selected:font-medium",
+                "hover:bg-popover-hover hovered:bg-popover-hover data-[focused]:bg-popover-hover",
+                "selected:bg-popover-selected selected:font-medium",
               )}
             >
               {item.label}
