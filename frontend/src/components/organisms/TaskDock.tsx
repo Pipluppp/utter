@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useTasks } from "../../app/TaskProvider";
 import { useElapsedTick } from "../../hooks/useElapsedTick";
 import { cn } from "../../lib/cn";
 import { formatElapsed } from "../../lib/time";
 import type { StoredTask, TaskType } from "../../lib/types";
-import { useTasks } from "./TaskProvider";
 
 function Icon({ type }: { type: TaskType }) {
   if (type === "clone") {

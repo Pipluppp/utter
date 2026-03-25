@@ -1,4 +1,4 @@
-import { useTasks } from "./TaskProvider";
+import { useTasks } from "../../app/TaskProvider";
 
 export function TaskBadge() {
   const { activeCount } = useTasks();

@@ -1,5 +1,5 @@
-import { Separator } from "./Separator";
-import { Skeleton } from "./Skeleton";
+import { Separator } from "../atoms/Separator";
+import { Skeleton } from "../atoms/Skeleton";
 
 const SKELETON_LINE_KEYS = ["line-a", "line-b", "line-c", "line-d", "line-e", "line-f"] as const;
 const MARKETING_CARD_SKELETONS = [
