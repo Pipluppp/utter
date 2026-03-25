@@ -149,7 +149,7 @@ function withSecurityHeaders(response: Response, isHtml: boolean): Response {
   if (isHtml) {
     headers.set(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://challenges.cloudflare.com https://jgmivviwockcwjkvpqra.supabase.co; frame-src https://challenges.cloudflare.com",
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com",
     );
     headers.set("Cross-Origin-Opener-Policy", "same-origin");
     headers.set("X-Frame-Options", "DENY");
