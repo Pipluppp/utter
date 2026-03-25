@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "../../components/ui/Button";
+import { Button } from "../../components/atoms/Button";
 import { useAccountPageData } from "./accountData";
 import { AccountProfileSkeleton } from "./accountSkeletons";
 import { AccountNotice, AccountPanel } from "./accountUi";

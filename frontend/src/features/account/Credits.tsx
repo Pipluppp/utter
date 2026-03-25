@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Button, buttonStyles } from "../../components/ui/Button";
+import { Button, buttonStyles } from "../../components/atoms/Button";
 import { creditPacks } from "../../content/plans";
 import { apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";

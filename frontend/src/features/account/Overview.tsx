@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { buttonStyles } from "../../components/ui/Button";
+import { buttonStyles } from "../../components/atoms/Button";
 import { cn } from "../../lib/cn";
 import { formatCredits, useAccountPageData } from "./accountData";
 import { AccountOverviewSkeleton } from "./accountSkeletons";

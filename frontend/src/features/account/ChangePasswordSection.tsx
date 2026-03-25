@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
-import { Button } from "../../components/ui/Button";
-import { AppLink } from "../../components/ui/Link";
+import { Button } from "../../components/atoms/Button";
 import { updatePassword } from "../../lib/auth";
 import { validatePassword } from "../../lib/validation";
 import { AccountNotice, AccountPanel } from "./accountUi";
@@ -12,18 +11,29 @@ type Status =
   | { type: "error"; message: string }
   | { type: "success"; message: string };
 
-export function UpdatePasswordPage() {
+export function hasEmailIdentity(identities: Array<{ provider: string }>): boolean {
+  return identities.some((identity) => identity.provider === "email");
+}
+
+export function ChangePasswordSection({ identities }: { identities: Array<{ provider: string }> }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<Status>({ type: "idle" });
   const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
 
+  if (!hasEmailIdentity(identities)) {
+    return (
+      <AccountNotice tone="neutral">
+        Your account uses Google sign-in and does not have a password. Password changes are not
+        available for OAuth-only accounts.
+      </AccountNotice>
+    );
+  }
+
   const busy = status.type === "loading";
-  const succeeded = status.type === "success";
 
   const canSubmit =
     !busy &&
-    !succeeded &&
     password.length > 0 &&
     confirmPassword.length > 0 &&
     validatePassword(password) === null &&
@@ -46,6 +56,8 @@ export function UpdatePasswordPage() {
     try {
       const result = await updatePassword({ password });
       setStatus({ type: "success", message: result.detail });
+      setPassword("");
+      setConfirmPassword("");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update password.";
       const lowerMessage = message.toLowerCase();
@@ -70,18 +82,13 @@ export function UpdatePasswordPage() {
         <AccountNotice tone="error">{status.message}</AccountNotice>
       ) : null}
       {status.type === "success" ? (
-        <AccountNotice tone="success">
-          {status.message}{" "}
-          <AppLink href="/account" className="underline underline-offset-4 hover:opacity-70">
-            Go to profile
-          </AppLink>
-        </AccountNotice>
+        <AccountNotice tone="success">{status.message}</AccountNotice>
       ) : null}
 
       <AccountPanel
         kicker="Security"
-        title="Set a new password"
-        description="Choose a new password for your account. 8+ characters, uppercase, number, special character."
+        title="Change password"
+        description="Update the password for your account. 8+ characters, uppercase, number, special character."
       >
         <Form
           onSubmit={(e) => {
@@ -95,11 +102,13 @@ export function UpdatePasswordPage() {
           <TextField
             name="password"
             value={password}
-            onChange={setPassword}
+            onChange={(value) => {
+              setPassword(value);
+              if (status.type === "success") setStatus({ type: "idle" });
+            }}
             type="password"
             validate={(v) => (v.length > 0 ? validatePassword(v) : null)}
-            isDisabled={busy || succeeded}
-            autoFocus
+            isDisabled={busy}
           >
             <Label className="mb-2 block label-style">New password</Label>
             <Input
@@ -118,7 +127,7 @@ export function UpdatePasswordPage() {
             onChange={setConfirmPassword}
             type="password"
             validate={(v) => (v.length > 0 && v !== password ? "Passwords do not match." : null)}
-            isDisabled={busy || succeeded}
+            isDisabled={busy}
           >
             <Label className="mb-2 block label-style">Confirm password</Label>
             <Input
@@ -132,7 +141,7 @@ export function UpdatePasswordPage() {
           </TextField>
 
           <Button type="submit" size="sm" isDisabled={!canSubmit} isPending={busy}>
-            Update password
+            Change password
           </Button>
         </Form>
       </AccountPanel>

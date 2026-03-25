@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
-import { Button } from "../../components/ui/Button";
+import { Button } from "../../components/atoms/Button";
+import { AppLink } from "../../components/atoms/Link";
 import { updatePassword } from "../../lib/auth";
 import { validatePassword } from "../../lib/validation";
 import { AccountNotice, AccountPanel } from "./accountUi";
@@ -11,29 +12,18 @@ type Status =
   | { type: "error"; message: string }
   | { type: "success"; message: string };
 
-export function hasEmailIdentity(identities: Array<{ provider: string }>): boolean {
-  return identities.some((identity) => identity.provider === "email");
-}
-
-export function ChangePasswordSection({ identities }: { identities: Array<{ provider: string }> }) {
+export function UpdatePasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<Status>({ type: "idle" });
   const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
 
-  if (!hasEmailIdentity(identities)) {
-    return (
-      <AccountNotice tone="neutral">
-        Your account uses Google sign-in and does not have a password. Password changes are not
-        available for OAuth-only accounts.
-      </AccountNotice>
-    );
-  }
-
   const busy = status.type === "loading";
+  const succeeded = status.type === "success";
 
   const canSubmit =
     !busy &&
+    !succeeded &&
     password.length > 0 &&
     confirmPassword.length > 0 &&
     validatePassword(password) === null &&
@@ -56,8 +46,6 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
     try {
       const result = await updatePassword({ password });
       setStatus({ type: "success", message: result.detail });
-      setPassword("");
-      setConfirmPassword("");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update password.";
       const lowerMessage = message.toLowerCase();
@@ -82,13 +70,18 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
         <AccountNotice tone="error">{status.message}</AccountNotice>
       ) : null}
       {status.type === "success" ? (
-        <AccountNotice tone="success">{status.message}</AccountNotice>
+        <AccountNotice tone="success">
+          {status.message}{" "}
+          <AppLink href="/account" className="underline underline-offset-4 hover:opacity-70">
+            Go to profile
+          </AppLink>
+        </AccountNotice>
       ) : null}
 
       <AccountPanel
         kicker="Security"
-        title="Change password"
-        description="Update the password for your account. 8+ characters, uppercase, number, special character."
+        title="Set a new password"
+        description="Choose a new password for your account. 8+ characters, uppercase, number, special character."
       >
         <Form
           onSubmit={(e) => {
@@ -102,13 +95,11 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
           <TextField
             name="password"
             value={password}
-            onChange={(value) => {
-              setPassword(value);
-              if (status.type === "success") setStatus({ type: "idle" });
-            }}
+            onChange={setPassword}
             type="password"
             validate={(v) => (v.length > 0 ? validatePassword(v) : null)}
-            isDisabled={busy}
+            isDisabled={busy || succeeded}
+            autoFocus
           >
             <Label className="mb-2 block label-style">New password</Label>
             <Input
@@ -127,7 +118,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
             onChange={setConfirmPassword}
             type="password"
             validate={(v) => (v.length > 0 && v !== password ? "Passwords do not match." : null)}
-            isDisabled={busy}
+            isDisabled={busy || succeeded}
           >
             <Label className="mb-2 block label-style">Confirm password</Label>
             <Input
@@ -141,7 +132,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
           </TextField>
 
           <Button type="submit" size="sm" isDisabled={!canSubmit} isPending={busy}>
-            Change password
+            Update password
           </Button>
         </Form>
       </AccountPanel>

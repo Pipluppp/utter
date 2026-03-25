@@ -1,4 +1,4 @@
-import { Skeleton } from "../../components/ui/Skeleton";
+import { Skeleton } from "../../components/atoms/Skeleton";
 import { AccountPanel } from "./accountUi";
 
 const SKELETON_LINE_KEYS = ["line-a", "line-b", "line-c", "line-d", "line-e", "line-f"] as const;

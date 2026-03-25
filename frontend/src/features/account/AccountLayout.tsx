@@ -1,7 +1,7 @@
 import { Tab, TabList, Tabs } from "react-aria-components";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Button } from "../../components/ui/Button";
-import { Separator } from "../../components/ui/Separator";
+import { Button } from "../../components/atoms/Button";
+import { Separator } from "../../components/atoms/Separator";
 import { cn } from "../../lib/cn";
 import { useAccountData } from "./accountData";
 import { AccountNotice } from "./accountUi";
