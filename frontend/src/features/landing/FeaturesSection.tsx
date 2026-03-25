@@ -1,10 +1,10 @@
 import { FeatureEntryLink } from "../../app/FeatureEntryLink";
-import { buttonStyles } from "../../components/ui/Button";
-import { SVGBlobs } from "../../components/ui/SVGBlobs";
+import { buttonStyles } from "../../components/atoms/Button";
 import { cn } from "../../lib/cn";
 import { MockCloneFeature } from "./MockCloneFeature";
 import { MockDesignFeature } from "./MockDesignFeature";
 import { MockGenerateFeature } from "./MockGenerateFeature";
+import { SVGBlobs } from "./SVGBlobs";
 
 function Bullet({ children }: { children: React.ReactNode }) {
   return (

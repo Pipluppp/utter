@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { FeatureEntryLink } from "../../app/FeatureEntryLink";
-import { TextReveal } from "../../components/animation/TextReveal";
-import { buttonStyles } from "../../components/ui/Button";
-import { SVGBlobs } from "../../components/ui/SVGBlobs";
+import { buttonStyles } from "../../components/atoms/Button";
+import { SVGBlobs } from "./SVGBlobs";
+import { TextReveal } from "./TextReveal";
 
 export function LandingHero() {
   return (

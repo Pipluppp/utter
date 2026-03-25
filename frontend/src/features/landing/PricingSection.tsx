@@ -1,5 +1,5 @@
-import { PricingContent } from "../../components/marketing/PricingContent";
-import { SVGBlobs } from "../../components/ui/SVGBlobs";
+import { PricingContent } from "./PricingContent";
+import { SVGBlobs } from "./SVGBlobs";
 
 export function PricingSection() {
   return (

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
-import { WaveformPlayer } from "../../components/audio/WaveformPlayer";
-import { buttonStyles } from "../../components/ui/Button";
+import { buttonStyles } from "../../components/atoms/Button";
+import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
 import type { UtterDemo } from "../../content/utterDemo";
 import { cn } from "../../lib/cn";
 

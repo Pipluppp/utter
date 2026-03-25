@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
+import { buttonStyles } from "../../components/atoms/Button";
 import { creditPacks } from "../../content/plans";
 import { cn } from "../../lib/cn";
-import { buttonStyles } from "../ui/Button";
 
 export function PricingGrid({ compact, className }: { compact?: boolean; className?: string }) {
   return (

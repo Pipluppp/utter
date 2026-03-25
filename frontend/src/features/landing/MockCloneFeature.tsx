@@ -1,5 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { GridArtSurface } from "../../components/ui/GridArt";
+import { GridArtSurface } from "../../components/molecules/GridArt";
 import { cn } from "../../lib/cn";
 
 // ---------------------------------------------------------------------------
