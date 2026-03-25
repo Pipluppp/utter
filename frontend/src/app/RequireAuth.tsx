@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { AuthGateSkeleton } from "../components/ui/RouteSkeletons";
+import { AuthGateSkeleton } from "../components/templates/RouteSkeletons";
 import { useAuthState } from "./auth/AuthStateProvider";
 import { buildAuthHref, buildReturnTo } from "./navigation";
 

@@ -1,14 +1,14 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { RouterProvider as AriaRouterProvider } from "react-aria-components";
 import { Outlet, useLocation, useMatches, useNavigate } from "react-router-dom";
-import { TaskDock } from "../components/tasks/TaskDock";
+import { GlobalToastRegion } from "../components/molecules/Toast";
+import { TaskDock } from "../components/organisms/TaskDock";
 import {
   RouteAccountSkeleton,
   RouteAppSkeleton,
   RouteAuthSkeleton,
   RouteMarketingSkeleton,
-} from "../components/ui/RouteSkeletons";
-import { GlobalToastRegion } from "../components/ui/Toast";
+} from "../components/templates/RouteSkeletons";
 import { cn } from "../lib/cn";
 import { useAuthState } from "./auth/AuthStateProvider";
 import { AppFooter } from "./Footer";

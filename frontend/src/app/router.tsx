@@ -1,71 +1,71 @@
 import { lazy } from "react";
 import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
-import { LandingPage } from "../pages/Landing";
+import { LandingPage } from "../features/landing/Landing";
 import { Layout } from "./Layout";
 import type { RouteFamily } from "./navigation";
 import { RequireAuth } from "./RequireAuth";
 const ClonePage = lazy(async () => {
-  const m = await import("../pages/Clone");
+  const m = await import("../features/clone/Clone");
   return { default: m.ClonePage };
 });
 const GeneratePage = lazy(async () => {
-  const m = await import("../pages/Generate");
+  const m = await import("../features/generate/Generate");
   return { default: m.GeneratePage };
 });
 const DesignPage = lazy(async () => {
-  const m = await import("../pages/Design");
+  const m = await import("../features/design/Design");
   return { default: m.DesignPage };
 });
 const VoicesPage = lazy(async () => {
-  const m = await import("../pages/Voices");
+  const m = await import("../features/voices/Voices");
   return { default: m.VoicesPage };
 });
 const HistoryPage = lazy(async () => {
-  const m = await import("../pages/History");
+  const m = await import("../features/history/History");
   return { default: m.HistoryPage };
 });
 const TasksPage = lazy(async () => {
-  const m = await import("../pages/Tasks");
+  const m = await import("../features/tasks/Tasks");
   return { default: m.TasksPage };
 });
 const AboutPage = lazy(async () => {
-  const m = await import("../pages/About");
+  const m = await import("../features/about/About");
   return { default: m.AboutPage };
 });
 const PrivacyPage = lazy(async () => {
-  const m = await import("../pages/Privacy");
+  const m = await import("../features/legal/Privacy");
   return { default: m.PrivacyPage };
 });
 const TermsPage = lazy(async () => {
-  const m = await import("../pages/Terms");
+  const m = await import("../features/legal/Terms");
   return { default: m.TermsPage };
 });
 const AuthPage = lazy(async () => {
-  const m = await import("../pages/Auth");
+  const m = await import("../features/auth/Auth");
   return { default: m.AuthPage };
 });
 const ForgotPasswordPage = lazy(async () => {
-  const m = await import("../pages/ForgotPassword");
+  const m = await import("../features/auth/ForgotPassword");
   return { default: m.ForgotPasswordPage };
 });
 const AccountLayoutPage = lazy(async () => {
-  const m = await import("../pages/account/AccountLayout");
+  const m = await import("../features/account/AccountLayout");
   return { default: m.AccountLayoutPage };
 });
 const AccountOverviewPage = lazy(async () => {
-  const m = await import("../pages/account/Overview");
+  const m = await import("../features/account/Overview");
   return { default: m.AccountOverviewPage };
 });
 const AccountProfilePage = lazy(async () => {
-  const m = await import("../pages/account/Profile");
+  const m = await import("../features/account/Profile");
   return { default: m.AccountProfilePage };
 });
 const AccountCreditsPage = lazy(async () => {
-  const m = await import("../pages/account/Credits");
+  const m = await import("../features/account/Credits");
   return { default: m.AccountCreditsPage };
 });
 const UpdatePasswordPage = lazy(async () => {
-  const m = await import("../pages/account/UpdatePassword");
+  const m = await import("../features/account/UpdatePassword");
   return { default: m.UpdatePasswordPage };
 });
 

@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
-import { AppLink } from "../components/ui/Link";
-import { Separator } from "../components/ui/Separator";
+import { AppLink } from "../components/atoms/Link";
+import { Separator } from "../components/atoms/Separator";
 import { cn } from "../lib/cn";
 import { useAuthState } from "./auth/AuthStateProvider";
 import { buildAuthHref, buildReturnTo } from "./navigation";

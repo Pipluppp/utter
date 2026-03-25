@@ -1,5 +1,5 @@
 import { RouterProvider } from "react-router-dom";
-import { TaskProvider } from "../components/tasks/TaskProvider";
+import { TaskProvider } from "./TaskProvider";
 import { AuthStateProvider } from "./auth/AuthStateProvider";
 import { router } from "./router";
 import { ThemeProvider } from "./theme/ThemeProvider";

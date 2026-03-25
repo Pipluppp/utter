@@ -1,10 +1,10 @@
 import type { To } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-import { TaskBadge } from "../components/tasks/TaskBadge";
-import { Kbd } from "../components/ui/Kbd";
-import { AppLink, NavAppLink } from "../components/ui/Link";
-import { HeaderPendingAuthSkeleton } from "../components/ui/RouteSkeletons";
-import { Separator } from "../components/ui/Separator";
+import { Kbd } from "../components/atoms/Kbd";
+import { AppLink, NavAppLink } from "../components/atoms/Link";
+import { Separator } from "../components/atoms/Separator";
+import { TaskBadge } from "../components/organisms/TaskBadge";
+import { HeaderPendingAuthSkeleton } from "../components/templates/RouteSkeletons";
 import { cn } from "../lib/cn";
 import type { NavSectionItem, NavVariant } from "./navigation";
 
