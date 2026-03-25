@@ -69,19 +69,47 @@ export function TasksPage() {
   useEffect(() => {
     if (statusFilter !== "active") return;
 
-    const id = window.setInterval(() => {
-      void (async () => {
-        try {
-          const response = await apiJson<TaskListResponse>(`/api/tasks?${filterQuery}`);
-          setTasks(response.tasks);
-          setNextBefore(response.next_before);
-        } catch {
-          return;
-        }
-      })();
-    }, 3000);
+    let timeoutId: number | undefined;
+    let cancelled = false;
 
-    return () => window.clearInterval(id);
+    const POLL_MS = 5000;
+    const ERROR_POLL_MS = 10000;
+
+    async function poll() {
+      if (cancelled) return;
+      try {
+        const response = await apiJson<TaskListResponse>(`/api/tasks?${filterQuery}`);
+        if (cancelled) return;
+        setTasks(response.tasks);
+        setNextBefore(response.next_before);
+        if (response.tasks.length > 0) {
+          timeoutId = window.setTimeout(poll, POLL_MS);
+        }
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Task list poll failed:", error);
+        timeoutId = window.setTimeout(poll, ERROR_POLL_MS);
+      }
+    }
+
+    timeoutId = window.setTimeout(poll, POLL_MS);
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "hidden") {
+        window.clearTimeout(timeoutId);
+        timeoutId = undefined;
+      } else {
+        void poll();
+      }
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [filterQuery, statusFilter]);
 
   async function loadMore() {
