@@ -1,13 +1,14 @@
+import { Bug, Moon, Sun } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { RouterProvider as AriaRouterProvider } from "react-aria-components";
+import { Button as AriaButton, RouterProvider as AriaRouterProvider } from "react-aria-components";
 import { Outlet, useLocation, useMatches, useNavigate } from "react-router-dom";
 import { GlobalToastRegion } from "../components/molecules/Toast";
 import { TaskDock } from "../components/organisms/TaskDock";
 import {
-    RouteAccountSkeleton,
-    RouteAppSkeleton,
-    RouteAuthSkeleton,
-    RouteMarketingSkeleton,
+  RouteAccountSkeleton,
+  RouteAppSkeleton,
+  RouteAuthSkeleton,
+  RouteMarketingSkeleton,
 } from "../components/templates/RouteSkeletons";
 import { cn } from "../lib/cn";
 import { useAuthState } from "./auth/AuthStateProvider";
@@ -145,39 +146,31 @@ export function Layout() {
         {!isAuthSurface ? <AppFooter /> : null}
         {!isAuthSurface ? <TaskDock /> : null}
 
-        <button
-          type="button"
-          onClick={toggleTheme}
+        <AriaButton
+          onPress={toggleTheme}
           className={cn(
-            "fixed bottom-4 left-4 z-50 inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm",
+            "fixed bottom-4 left-4 z-50 inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm transition-colors press-scale",
             "hover:bg-muted/80 hover:text-foreground",
+            "pressed:bg-muted/80 pressed:text-foreground",
             "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           )}
           aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           aria-pressed={theme === "dark"}
-          title={theme === "dark" ? "Light mode" : "Dark mode"}
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className="size-5"
-          >
-            <path d="M21 12.8A8.5 8.5 0 0 1 11.2 3 6.5 6.5 0 1 0 21 12.8Z" />
-          </svg>
-        </button>
+          {theme === "dark" ? (
+            <Sun className="icon-md" strokeWidth={1.5} aria-hidden="true" />
+          ) : (
+            <Moon className="icon-md" strokeWidth={1.5} aria-hidden="true" />
+          )}
+        </AriaButton>
 
         <a
           href="https://steel-gong-714.notion.site/756b59f6379b82168ff001ffed20a47f"
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
-            "group fixed bottom-4 right-4 z-50 inline-flex items-center gap-2",
-            "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full",
+            "group fixed bottom-4 right-4 z-50 inline-flex items-center gap-2 rounded-full press-scale",
+            "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           )}
         >
           <span className="text-[10px] font-pixel uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
@@ -185,13 +178,12 @@ export function Layout() {
           </span>
           <span
             className={cn(
-              "inline-flex size-7 items-center justify-center rounded-full border border-border bg-background/80 backdrop-blur-sm",
-              "text-[9px] font-pixel uppercase leading-none text-muted-foreground",
-              "group-hover:bg-muted/80 group-hover:text-foreground transition-colors",
+              "inline-flex size-7 items-center justify-center rounded-full bg-transparent text-muted-foreground transition-colors",
+              "group-hover:bg-muted group-hover:text-foreground",
             )}
             title="bug"
           >
-            bug
+            <Bug className="icon-bug" aria-hidden="true" />
           </span>
         </a>
 
