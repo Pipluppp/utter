@@ -19,9 +19,12 @@ import { Button } from "../../components/atoms/Button";
 import { AppLink } from "../../components/atoms/Link";
 import { Message } from "../../components/atoms/Message";
 import { ProgressBar } from "../../components/atoms/ProgressBar";
+import {
+  AutocompleteSelect,
+  type AutocompleteSelectItem,
+} from "../../components/molecules/AutocompleteSelect";
 import { GridArtSurface } from "../../components/molecules/GridArt";
 import { InfoTip } from "../../components/molecules/InfoTip";
-import { Select, type SelectItem } from "../../components/molecules/Select";
 import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
 import { getUtterDemo } from "../../content/utterDemo";
 import { CLONE_TIPS } from "../../data/tips";
@@ -67,7 +70,7 @@ function contentTypeForFile(file: File): string {
 export function ClonePage() {
   const [params] = useSearchParams();
   const { languages, defaultLanguage, transcription } = useLanguages();
-  const languageItems: SelectItem[] = useMemo(
+  const languageItems: AutocompleteSelectItem[] = useMemo(
     () => languages.map((l) => ({ id: l, label: l })),
     [languages],
   );
@@ -571,7 +574,7 @@ export function ClonePage() {
   return (
     <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
       <div className="flex items-center justify-center gap-2">
-        <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
+        <h2 className="text-balance text-center text-3xl font-pixel font-medium uppercase tracking-[2px] md:text-4xl">
           Clone
         </h2>
         <InfoTip label="Clone tips" tips={CLONE_TIPS} halftoneImage="grass" />
@@ -760,13 +763,16 @@ export function ClonePage() {
           </Text>
         </TextField>
 
-        <Select
+        <AutocompleteSelect
           label="Language"
-          name="language"
           items={languageItems}
           selectedKey={language}
           onSelectionChange={setLanguage}
-        />
+          searchLabel="Search languages"
+          searchPlaceholder="Search..."
+        >
+          {(item) => item.label}
+        </AutocompleteSelect>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Button variant="secondary" type="button" block onPress={() => void onTryExample()}>
