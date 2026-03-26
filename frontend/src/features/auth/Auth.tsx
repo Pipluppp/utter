@@ -10,10 +10,10 @@ import { Message } from "../../components/atoms/Message";
 import { Separator } from "../../components/atoms/Separator";
 import { GridArt } from "../../components/molecules/GridArt";
 import {
-    getTurnstileSiteKey,
-    isAuthConfigured,
-    signInWithPassword,
-    signUpWithPassword,
+  getTurnstileSiteKey,
+  isAuthConfigured,
+  signInWithPassword,
+  signUpWithPassword,
 } from "../../lib/auth";
 import { cn } from "../../lib/cn";
 import { input } from "../../lib/recipes/input";

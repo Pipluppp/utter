@@ -92,7 +92,7 @@ export function AccountLayoutPage() {
                 "hover:bg-surface-hover",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 "selected:border-border-strong selected:bg-surface-selected",
-                "cursor-default press-scale-sm outline-none",
+                "cursor-default press-scale-sm-y outline-none",
               )}
             >
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground">

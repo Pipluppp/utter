@@ -76,7 +76,7 @@ export function AccountOverviewPage() {
               <Link
                 to="/account"
                 className={cn(
-                  "flex items-center justify-between border border-border px-4 py-3.5 text-[15px] text-foreground transition-colors hover:bg-subtle",
+                  "flex items-center justify-between border border-border px-4 py-3.5 text-[15px] text-foreground press-scale-sm-y hover:bg-surface-hover",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 )}
               >
@@ -86,7 +86,7 @@ export function AccountOverviewPage() {
               <Link
                 to="/account/credits"
                 className={cn(
-                  "flex items-center justify-between border border-border px-4 py-3.5 text-[15px] text-foreground transition-colors hover:bg-subtle",
+                  "flex items-center justify-between border border-border px-4 py-3.5 text-[15px] text-foreground press-scale-sm-y hover:bg-surface-hover",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 )}
               >
@@ -96,7 +96,7 @@ export function AccountOverviewPage() {
               <Link
                 to="/history"
                 className={cn(
-                  "flex items-center justify-between border border-border px-4 py-3.5 text-[15px] text-foreground transition-colors hover:bg-subtle",
+                  "flex items-center justify-between border border-border px-4 py-3.5 text-[15px] text-foreground press-scale-sm-y hover:bg-surface-hover",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 )}
               >

@@ -47,7 +47,7 @@ export function InfoTip({ label = "Information", tips, halftoneImage = "fire" }:
         onHoverStart={() => prefetchImage(imageUrl)}
         onFocus={() => prefetchImage(imageUrl)}
         className={cn(
-          "inline-flex size-9 items-center justify-center rounded-full bg-transparent text-muted-foreground transition-colors press-scale",
+          "inline-flex size-9 items-center justify-center rounded-full bg-transparent text-muted-foreground press-scale",
           "hover:bg-muted hover:text-foreground",
           "pressed:bg-muted pressed:text-foreground",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
@@ -171,7 +171,7 @@ function TipsDialog({
                     setDirection(i > currentIndex ? "right" : "left");
                     setCurrentIndex(i);
                   }}
-                  className="group flex items-center justify-center p-2 press-scale focus-visible:outline-none"
+                  className="group flex items-center justify-center p-2 focus-visible:outline-none"
                 >
                   <span
                     className={cn(
@@ -198,7 +198,6 @@ function TipsDialog({
             "text-white/70 hover:text-white hover:bg-white/10",
             "dark:text-black/70 dark:hover:text-black dark:hover:bg-black/10",
             "focus-visible:ring-2 focus-visible:ring-white/30 dark:focus-visible:ring-black/30",
-            "transition-colors duration-150",
           )}
         >
           <ChevronLeft className="icon-nav translate-x-[-1px]" strokeWidth={2.5} />
@@ -213,7 +212,6 @@ function TipsDialog({
             "text-white/70 hover:text-white hover:bg-white/10",
             "dark:text-black/70 dark:hover:text-black dark:hover:bg-black/10",
             "focus-visible:ring-2 focus-visible:ring-white/30 dark:focus-visible:ring-black/30",
-            "transition-colors duration-150",
           )}
         >
           <ChevronRight className="icon-nav translate-x-[1px]" strokeWidth={2.5} />

@@ -417,9 +417,9 @@ export function GeneratePage() {
                 id={task.taskId}
                 textValue={task.description}
                 className={cn(
-                  "flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left hover:bg-muted",
+                  "flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left press-scale-sm-y hover:bg-surface-hover",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                  "selected:bg-subtle",
+                  "selected:bg-surface-selected",
                 )}
               >
                 <div className="min-w-0 flex-1">
@@ -456,7 +456,7 @@ export function GeneratePage() {
             {downloadUrl ? (
               <button
                 type="button"
-                className="border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="press-scale border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 onClick={() => void onDownload()}
               >
                 Download

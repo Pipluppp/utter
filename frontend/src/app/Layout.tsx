@@ -149,7 +149,7 @@ export function Layout() {
         <AriaButton
           onPress={toggleTheme}
           className={cn(
-            "fixed bottom-4 left-4 z-50 inline-flex size-9 cursor-default items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm transition-colors press-scale",
+            "fixed bottom-4 left-4 z-50 inline-flex size-9 cursor-default items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm press-scale",
             "hover:bg-muted/80 hover:text-foreground",
             "pressed:bg-muted/80 pressed:text-foreground",
             "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",

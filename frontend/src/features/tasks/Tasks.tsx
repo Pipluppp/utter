@@ -267,7 +267,7 @@ export function TasksPage() {
               <div className="flex flex-wrap gap-3">
                 <Link
                   to={task.origin_page}
-                  className="inline-flex items-center border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="press-scale-sm inline-flex items-center border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   Open Source Page
                 </Link>

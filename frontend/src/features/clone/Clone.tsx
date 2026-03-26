@@ -816,7 +816,7 @@ export function ClonePage() {
                 <div className="mt-6 flex flex-col gap-3">
                   <AppLink
                     href={`/generate?voice=${created.id}`}
-                    className="inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className="press-scale-sm-y inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     Go to Generate <ArrowRight className="icon-sm" aria-hidden="true" />
                   </AppLink>
