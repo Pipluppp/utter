@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import { FeatureEntryLink } from "../../app/FeatureEntryLink";
 import { button } from "../../components/atoms/Button";
 import { cn } from "../../lib/cn";
@@ -79,7 +80,7 @@ export function _FeatureBlock({
               to={to}
               className={button({ variant: "secondary", size: "sm" }).base()}
             >
-              {`${ctaLabel} ->`}
+              {ctaLabel} <ArrowRight className="icon-sm" aria-hidden="true" />
             </FeatureEntryLink>
           </div>
         ) : null}
@@ -141,7 +142,7 @@ export function FeaturesSection() {
                   to="/clone"
                   className={button({ variant: "secondary", size: "sm" }).base()}
                 >
-                  {"Open Clone ->"}
+                  {"Open Clone"} <ArrowRight className="icon-sm" aria-hidden="true" />
                 </FeatureEntryLink>
               </div>
             </div>
@@ -176,7 +177,7 @@ export function FeaturesSection() {
                   to="/generate"
                   className={button({ variant: "secondary", size: "sm" }).base()}
                 >
-                  {"Open Generate ->"}
+                  {"Open Generate"} <ArrowRight className="icon-sm" aria-hidden="true" />
                 </FeatureEntryLink>
               </div>
             </div>

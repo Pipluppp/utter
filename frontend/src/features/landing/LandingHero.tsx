@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { FeatureEntryLink } from "../../app/FeatureEntryLink";
 import { button } from "../../components/atoms/Button";
@@ -26,13 +27,13 @@ export function LandingHero() {
             to={{ pathname: "/", hash: "#demos" }}
             className={button({ variant: "primary", size: "md" }).base()}
           >
-            {"Hear the demos ->"}
+            {"Hear the demos"} <ArrowRight className="icon-sm" aria-hidden="true" />
           </Link>
           <FeatureEntryLink
             to="/clone"
             className={button({ variant: "secondary", size: "md" }).base()}
           >
-            {"Clone a voice ->"}
+            {"Clone a voice"} <ArrowRight className="icon-sm" aria-hidden="true" />
           </FeatureEntryLink>
         </div>
       </div>
