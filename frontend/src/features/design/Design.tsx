@@ -1,21 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Form,
-  Input,
-  Label,
-  ListBox,
-  ListBoxItem,
-  Text,
-  TextArea,
-  TextField,
+    Form,
+    Input,
+    Label,
+    ListBox,
+    ListBoxItem,
+    Text,
+    TextArea,
+    TextField,
 } from "react-aria-components";
 import { useNavigate } from "react-router-dom";
 import { useTasks } from "../../app/TaskProvider";
 import { Button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
+import {
+    AutocompleteSelect,
+    type AutocompleteSelectItem,
+} from "../../components/molecules/AutocompleteSelect";
 import { GridArtSurface } from "../../components/molecules/GridArt";
 import { InfoTip } from "../../components/molecules/InfoTip";
-import { Select, type SelectItem } from "../../components/molecules/Select";
 import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
 import { DESIGN_TIPS } from "../../data/tips";
 import { useElapsedTick } from "../../hooks/useElapsedTick";
@@ -57,7 +60,7 @@ const EXAMPLES: Array<{ title: string; name: string; instruct: string }> = [
 export function DesignPage() {
   const navigate = useNavigate();
   const { languages } = useLanguages();
-  const languageItems: SelectItem[] = useMemo(
+  const languageItems: AutocompleteSelectItem[] = useMemo(
     () => languages.map((l) => ({ id: l, label: l })),
     [languages],
   );
@@ -328,7 +331,7 @@ export function DesignPage() {
   return (
     <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
       <div className="flex items-center justify-center gap-2">
-        <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
+        <h2 className="text-balance text-center text-3xl font-pixel font-medium uppercase tracking-[2px] md:text-4xl">
           Design
         </h2>
         <InfoTip label="Design tips" tips={DESIGN_TIPS} halftoneImage="fire" />
@@ -367,7 +370,7 @@ export function DesignPage() {
                 <button
                   key={ex.title}
                   type="button"
-                  className="border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="cursor-pointer border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   onClick={() => {
                     setName(ex.name);
                     setInstruct(ex.instruct);
@@ -392,13 +395,16 @@ export function DesignPage() {
           </Text>
         </TextField>
 
-        <Select
+        <AutocompleteSelect
           label="Language"
-          name="language"
           items={languageItems}
           selectedKey={language}
           onSelectionChange={setLanguage}
-        />
+          searchLabel="Search languages"
+          searchPlaceholder="Search..."
+        >
+          {(item) => item.label}
+        </AutocompleteSelect>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Button type="submit" block isDisabled={isSubmittingPreview}>
