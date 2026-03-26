@@ -157,7 +157,7 @@ export function TasksPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h2 className="text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
+        <h2 className="text-balance text-center text-3xl font-pixel font-medium uppercase tracking-[2px] md:text-4xl">
           Tasks
         </h2>
         <p className="max-w-2xl text-sm text-muted-foreground">

@@ -1,0 +1,7 @@
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("../../node_modules/geist/dist/fonts/geist-mono/GeistMono-Light.woff2") format("woff2");
+}

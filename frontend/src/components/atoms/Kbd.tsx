@@ -18,7 +18,7 @@ export function Kbd({
         "rounded border border-kbd-border bg-kbd-bg",
         "text-[10px] font-medium leading-none text-kbd-text normal-case",
         "shadow-[inset_0_-1px_0_rgb(0_0_0_/_0.14),0_1px_2px_var(--color-kbd-shadow)]",
-        "font-[var(--font-mono-ui)]",
+        "font-[var(--font-mono-ui)] tabular-nums",
         className,
       )}
     >

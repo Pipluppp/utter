@@ -1,0 +1,15 @@
+@font-face {
+  font-family: "Geist Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../../node_modules/geist/dist/fonts/geist-sans/Geist-Medium.woff2") format("woff2");
+}

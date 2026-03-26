@@ -271,7 +271,7 @@ export function HistoryPage() {
 
   return (
     <div className="space-y-8" aria-busy={loading}>
-      <h2 className="text-balance text-center text-xl font-pixel font-medium uppercase tracking-[2px]">
+      <h2 className="text-balance text-center text-3xl font-pixel font-medium uppercase tracking-[2px] md:text-4xl">
         History
       </h2>
 

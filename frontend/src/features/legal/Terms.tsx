@@ -9,7 +9,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function TermsPage() {
   return (
-    <div className="space-y-8">
+    <div className="max-w-[65ch] space-y-8">
       <div>
         <h2 className="text-xl font-pixel font-medium uppercase tracking-[2px]">
           Terms & Conditions
