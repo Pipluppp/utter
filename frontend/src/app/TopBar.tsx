@@ -105,7 +105,7 @@ function getSections(variant: NavVariant, signInHref: string) {
 
 function baseNavItemClassName(active: boolean) {
   return cn(
-    "inline-flex items-center gap-1.5 px-3 py-2 text-caption font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground",
+    "inline-flex items-center gap-1.5 px-3 py-2 text-caption font-medium uppercase tracking-wide text-foreground/80 press-scale-sm hover:bg-muted hover:text-foreground",
     "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     active && "bg-muted text-foreground",
   );
@@ -183,7 +183,7 @@ function MobileNavItem({
 }) {
   const itemClassName = (active: boolean) =>
     cn(
-      "flex w-full items-center justify-between px-3 py-3 text-caption font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground",
+      "flex w-full items-center justify-between px-3 py-3 text-caption font-medium uppercase tracking-wide text-foreground/80 press-scale-sm hover:bg-muted hover:text-foreground",
       "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       active && "bg-muted text-foreground",
     );
@@ -283,7 +283,7 @@ export function TopBar({
           <button
             type="button"
             className={cn(
-              "inline-flex items-center justify-center border border-border bg-background p-2 text-muted-foreground hover:bg-muted hover:text-foreground md:hidden",
+              "inline-flex items-center justify-center border border-border bg-background p-2 text-muted-foreground press-scale hover:bg-muted hover:text-foreground md:hidden",
               "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             )}
             aria-label={menuOpen ? "Close menu" : "Open menu"}

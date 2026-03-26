@@ -149,7 +149,7 @@ export function Layout() {
         <AriaButton
           onPress={toggleTheme}
           className={cn(
-            "fixed bottom-4 left-4 z-50 inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm transition-colors press-scale",
+            "fixed bottom-4 left-4 z-50 inline-flex size-9 cursor-default items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm transition-colors press-scale",
             "hover:bg-muted/80 hover:text-foreground",
             "pressed:bg-muted/80 pressed:text-foreground",
             "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
@@ -178,12 +178,12 @@ export function Layout() {
           </span>
           <span
             className={cn(
-              "inline-flex size-7 items-center justify-center rounded-full bg-transparent text-muted-foreground transition-colors",
-              "group-hover:bg-muted group-hover:text-foreground",
+              "inline-flex size-9 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm transition-colors",
+              "group-hover:bg-muted/80 group-hover:text-foreground",
             )}
             title="bug"
           >
-            <Bug className="icon-bug" aria-hidden="true" />
+            <Bug className="icon-sm" aria-hidden="true" />
           </span>
         </a>
 

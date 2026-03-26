@@ -698,12 +698,7 @@ export function ClonePage() {
                 void validateAndSetFile(files?.[0] ?? null);
               }}
             >
-              <Button
-                variant="secondary"
-                type="button"
-                className="cursor-pointer"
-                aria-label="Select audio file"
-              >
+              <Button variant="secondary" type="button" aria-label="Select audio file">
                 Browse Files
               </Button>
             </FileTrigger>

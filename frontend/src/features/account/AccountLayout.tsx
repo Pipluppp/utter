@@ -88,11 +88,11 @@ export function AccountLayoutPage() {
               key={item.to}
               id={item.to}
               className={cn(
-                "min-w-[190px] border border-border bg-background px-4 py-3.5 transition-colors",
+                "min-w-[190px] border border-border bg-background px-4 py-3.5",
                 "hover:bg-surface-hover",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 "selected:border-border-strong selected:bg-surface-selected",
-                "cursor-pointer outline-none",
+                "cursor-default press-scale-sm outline-none",
               )}
             >
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground">

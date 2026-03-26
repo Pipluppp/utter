@@ -10,10 +10,10 @@ import { Message } from "../../components/atoms/Message";
 import { Separator } from "../../components/atoms/Separator";
 import { GridArt } from "../../components/molecules/GridArt";
 import {
-  getTurnstileSiteKey,
-  isAuthConfigured,
-  signInWithPassword,
-  signUpWithPassword,
+    getTurnstileSiteKey,
+    isAuthConfigured,
+    signInWithPassword,
+    signUpWithPassword,
 } from "../../lib/auth";
 import { cn } from "../../lib/cn";
 import { input } from "../../lib/recipes/input";
@@ -153,7 +153,7 @@ export function AuthPage() {
           <a
             href={`/api/auth/oauth/google${safeReturnTo !== "/" ? `?returnTo=${encodeURIComponent(safeReturnTo)}` : ""}`}
             className={cn(
-              "mt-8 flex w-full items-center justify-center gap-3 border border-border px-4 py-2.5 text-sm font-medium transition-colors hover:bg-subtle",
+              "mt-8 flex w-full items-center justify-center gap-3 border border-border px-4 py-2.5 text-sm font-medium press-scale-sm-y hover:bg-subtle",
               busy && "pointer-events-none opacity-50",
             )}
           >

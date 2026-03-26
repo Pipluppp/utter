@@ -47,7 +47,7 @@ export function InfoTip({ label = "Information", tips, halftoneImage = "fire" }:
         onHoverStart={() => prefetchImage(imageUrl)}
         onFocus={() => prefetchImage(imageUrl)}
         className={cn(
-          "inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-transparent text-muted-foreground transition-colors press-scale",
+          "inline-flex size-9 items-center justify-center rounded-full bg-transparent text-muted-foreground transition-colors press-scale",
           "hover:bg-muted hover:text-foreground",
           "pressed:bg-muted pressed:text-foreground",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",

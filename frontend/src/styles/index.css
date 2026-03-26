@@ -174,10 +174,53 @@
 }
 
 @utility press-scale {
-  transition: transform 200ms cubic-bezier(0.2, 0, 0, 1);
-  &:active,
-  &[data-pressed] {
-    transform: scale(0.95);
+  will-change: scale;
+  transition:
+    scale 200ms cubic-bezier(0.2, 0, 0, 1),
+    background-color 200ms cubic-bezier(0.2, 0, 0, 1),
+    color 200ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
+  &:active:not(:disabled):not([data-disabled]),
+  &[data-pressed]:not(:disabled):not([data-disabled]) {
+    scale: 0.95;
+  }
+  &:disabled,
+  &[data-disabled] {
+    will-change: auto;
+  }
+}
+
+@utility press-scale-sm {
+  will-change: scale;
+  transition:
+    scale 150ms cubic-bezier(0.45, 0, 0.4, 1),
+    background-color 150ms cubic-bezier(0.45, 0, 0.4, 1),
+    color 150ms cubic-bezier(0.45, 0, 0.4, 1),
+    box-shadow 150ms cubic-bezier(0.45, 0, 0.4, 1);
+  &:active:not(:disabled):not([data-disabled]),
+  &[data-pressed]:not(:disabled):not([data-disabled]) {
+    scale: 0.98;
+  }
+  &:disabled,
+  &[data-disabled] {
+    will-change: auto;
+  }
+}
+
+@utility press-scale-sm-y {
+  will-change: scale;
+  transition:
+    scale 150ms cubic-bezier(0.45, 0, 0.4, 1),
+    background-color 150ms cubic-bezier(0.45, 0, 0.4, 1),
+    color 150ms cubic-bezier(0.45, 0, 0.4, 1),
+    box-shadow 150ms cubic-bezier(0.45, 0, 0.4, 1);
+  &:active:not(:disabled):not([data-disabled]),
+  &[data-pressed]:not(:disabled):not([data-disabled]) {
+    scale: 0.995 0.95;
+  }
+  &:disabled,
+  &[data-disabled] {
+    will-change: auto;
   }
 }
 

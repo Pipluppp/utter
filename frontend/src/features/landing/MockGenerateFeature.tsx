@@ -345,7 +345,7 @@ export function MockGenerateFeature(): ReactNode {
           {/* Generate button */}
           <div
             className={cn(
-              "relative inline-flex w-full cursor-pointer items-center justify-center gap-2 border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background transition-transform motion-reduce:transition-none",
+              "relative inline-flex w-full cursor-default items-center justify-center gap-2 border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background transition-transform motion-reduce:transition-none",
               step === 3 ? "scale-95" : "scale-100",
             )}
           >

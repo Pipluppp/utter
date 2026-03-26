@@ -385,10 +385,10 @@ export function MockCloneFeature(): ReactNode {
           {/* Upload / Record toggle */}
           <div className="flex items-center justify-center">
             <div className="inline-flex overflow-hidden border border-border bg-background shadow-elevated">
-              <div
-                role="presentation"
+              <button
+                type="button"
                 className={cn(
-                  "cursor-pointer px-4 py-2 text-xs font-medium uppercase tracking-wide transition-colors motion-reduce:transition-none",
+                  "cursor-default press-scale px-4 py-2 text-xs font-medium uppercase tracking-wide motion-reduce:transition-none",
                   audioMode === "upload"
                     ? "bg-foreground text-background"
                     : "bg-background text-foreground hover:bg-subtle",
@@ -396,11 +396,11 @@ export function MockCloneFeature(): ReactNode {
                 onClick={() => setAudioMode("upload")}
               >
                 Upload
-              </div>
-              <div
-                role="presentation"
+              </button>
+              <button
+                type="button"
                 className={cn(
-                  "cursor-pointer px-4 py-2 text-xs font-medium uppercase tracking-wide transition-colors motion-reduce:transition-none",
+                  "cursor-default press-scale px-4 py-2 text-xs font-medium uppercase tracking-wide motion-reduce:transition-none",
                   audioMode === "record"
                     ? "bg-foreground text-background"
                     : "bg-background text-foreground hover:bg-subtle",
@@ -408,7 +408,7 @@ export function MockCloneFeature(): ReactNode {
                 onClick={() => setAudioMode("record")}
               >
                 Record
-              </div>
+              </button>
             </div>
           </div>
 
@@ -541,7 +541,7 @@ export function MockCloneFeature(): ReactNode {
             </div>
             <div
               className={cn(
-                "relative inline-flex w-full cursor-pointer items-center justify-center gap-2 border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background transition-transform motion-reduce:transition-none",
+                "relative inline-flex w-full cursor-default items-center justify-center gap-2 border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background transition-transform motion-reduce:transition-none",
                 step === 4 ? "scale-95" : "scale-100",
               )}
             >
