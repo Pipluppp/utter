@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Button, Dialog, DialogTrigger, Modal, ModalOverlay } from "react-aria-components";
 import { cn } from "../../lib/cn";
@@ -46,13 +47,13 @@ export function InfoTip({ label = "Information", tips, halftoneImage = "fire" }:
         onHoverStart={() => prefetchImage(imageUrl)}
         onFocus={() => prefetchImage(imageUrl)}
         className={cn(
-          "inline-flex size-6 cursor-pointer items-center justify-center rounded-full border border-border bg-background text-caption font-semibold text-muted-foreground transition-colors",
-          "hover:border-border-strong hover:bg-surface-hover hover:text-foreground",
-          "pressed:scale-95 pressed:bg-surface-hover pressed:text-foreground",
+          "inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-transparent text-muted-foreground transition-colors press-scale",
+          "hover:bg-muted hover:text-foreground",
+          "pressed:bg-muted pressed:text-foreground",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         )}
       >
-        i
+        <Info className="icon-md" strokeWidth={1.5} aria-hidden="true" />
       </Button>
       <ModalOverlay
         isDismissable
@@ -170,7 +171,7 @@ function TipsDialog({
                     setDirection(i > currentIndex ? "right" : "left");
                     setCurrentIndex(i);
                   }}
-                  className="group flex items-center justify-center p-2 focus-visible:outline-none"
+                  className="group flex items-center justify-center p-2 press-scale focus-visible:outline-none"
                 >
                   <span
                     className={cn(
@@ -178,7 +179,7 @@ function TipsDialog({
                       "group-focus-visible:ring-2 group-focus-visible:ring-white/50 dark:group-focus-visible:ring-black/50",
                       i === currentIndex
                         ? "scale-110 bg-white dark:bg-black"
-                        : "bg-white/30 group-hovered:bg-white/50 dark:bg-black/30 dark:group-hovered:bg-black/50",
+                        : "bg-white/30 group-hover:bg-white/60 dark:bg-black/30 dark:group-hover:bg-black/60",
                     )}
                   />
                 </Button>
@@ -193,25 +194,14 @@ function TipsDialog({
           onPress={goPrev}
           className={cn(
             "absolute left-2 top-1/2 -translate-y-1/2",
-            "inline-flex size-10 items-center justify-center rounded-full",
-            "text-black/70 hovered:text-black hovered:bg-black/10",
-            "dark:text-black/70 dark:hovered:text-black dark:hovered:bg-black/10",
-            "focus-visible:ring-2 focus-visible:ring-black/30",
+            "inline-flex size-10 items-center justify-center rounded-full press-scale",
+            "text-white/70 hover:text-white hover:bg-white/10",
+            "dark:text-black/70 dark:hover:text-black dark:hover:bg-black/10",
+            "focus-visible:ring-2 focus-visible:ring-white/30 dark:focus-visible:ring-black/30",
             "transition-colors duration-150",
           )}
         >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
+          <ChevronLeft className="icon-nav translate-x-[-1px]" strokeWidth={2.5} />
         </Button>
 
         <Button
@@ -219,25 +209,14 @@ function TipsDialog({
           onPress={goNext}
           className={cn(
             "absolute right-2 top-1/2 -translate-y-1/2",
-            "inline-flex size-10 items-center justify-center rounded-full",
-            "text-black/70 hovered:text-black hovered:bg-black/10",
-            "dark:text-black/70 dark:hovered:text-black dark:hovered:bg-black/10",
-            "focus-visible:ring-2 focus-visible:ring-black/30",
+            "inline-flex size-10 items-center justify-center rounded-full press-scale",
+            "text-white/70 hover:text-white hover:bg-white/10",
+            "dark:text-black/70 dark:hover:text-black dark:hover:bg-black/10",
+            "focus-visible:ring-2 focus-visible:ring-white/30 dark:focus-visible:ring-black/30",
             "transition-colors duration-150",
           )}
         >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+          <ChevronRight className="icon-nav translate-x-[1px]" strokeWidth={2.5} />
         </Button>
       </div>
     </Dialog>
