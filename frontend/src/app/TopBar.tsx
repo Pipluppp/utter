@@ -280,7 +280,9 @@ export function TopBar({
           <nav className="hidden items-center gap-1 md:flex">
             {sections.map((section, index) => (
               <div key={getSectionKey(section)} className="contents">
-                {index > 0 ? <Separator orientation="vertical" className="mx-2 h-4" /> : null}
+                {index > 0 ? (
+                  <Separator orientation="vertical" className="mx-2 h-4 self-center" />
+                ) : null}
                 {section.map((item) => (
                   <DesktopNavItem
                     key={item.kind === "hash" ? item.hash : `${String(item.to)}:${item.label}`}
