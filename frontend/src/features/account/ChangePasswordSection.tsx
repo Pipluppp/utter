@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
 import { Button } from "../../components/atoms/Button";
 import { updatePassword } from "../../lib/auth";
+import { input } from "../../lib/recipes/input";
 import { validatePassword } from "../../lib/validation";
 import { AccountNotice, AccountPanel } from "./accountUi";
 
@@ -114,7 +115,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
             <Input
               placeholder="8+ chars, uppercase, number, special"
               autoComplete="new-password"
-              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className={input()}
             />
             <div className="min-h-[20px]">
               <FieldError className="block text-xs text-red-500" />
@@ -133,7 +134,7 @@ export function ChangePasswordSection({ identities }: { identities: Array<{ prov
             <Input
               placeholder="Re-enter your new password"
               autoComplete="new-password"
-              className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className={input()}
             />
             <div className="min-h-[20px]">
               <FieldError className="block text-xs text-red-500" />

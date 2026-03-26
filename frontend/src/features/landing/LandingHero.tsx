@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { FeatureEntryLink } from "../../app/FeatureEntryLink";
-import { buttonStyles } from "../../components/atoms/Button";
+import { button } from "../../components/atoms/Button";
 import { SVGBlobs } from "./SVGBlobs";
 import { TextReveal } from "./TextReveal";
 
@@ -24,13 +24,13 @@ export function LandingHero() {
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
             to={{ pathname: "/", hash: "#demos" }}
-            className={buttonStyles({ variant: "primary", size: "md" })}
+            className={button({ variant: "primary", size: "md" }).base()}
           >
             {"Hear the demos ->"}
           </Link>
           <FeatureEntryLink
             to="/clone"
-            className={buttonStyles({ variant: "secondary", size: "md" })}
+            className={button({ variant: "secondary", size: "md" }).base()}
           >
             {"Clone a voice ->"}
           </FeatureEntryLink>

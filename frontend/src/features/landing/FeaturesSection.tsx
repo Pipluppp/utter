@@ -1,5 +1,5 @@
 import { FeatureEntryLink } from "../../app/FeatureEntryLink";
-import { buttonStyles } from "../../components/atoms/Button";
+import { button } from "../../components/atoms/Button";
 import { cn } from "../../lib/cn";
 import { MockCloneFeature } from "./MockCloneFeature";
 import { MockDesignFeature } from "./MockDesignFeature";
@@ -77,7 +77,7 @@ export function _FeatureBlock({
           <div className="pt-1">
             <FeatureEntryLink
               to={to}
-              className={buttonStyles({ variant: "secondary", size: "sm" })}
+              className={button({ variant: "secondary", size: "sm" }).base()}
             >
               {`${ctaLabel} ->`}
             </FeatureEntryLink>
@@ -139,7 +139,7 @@ export function FeaturesSection() {
               <div className="pt-1">
                 <FeatureEntryLink
                   to="/clone"
-                  className={buttonStyles({ variant: "secondary", size: "sm" })}
+                  className={button({ variant: "secondary", size: "sm" }).base()}
                 >
                   {"Open Clone ->"}
                 </FeatureEntryLink>
@@ -174,7 +174,7 @@ export function FeaturesSection() {
               <div className="pt-1">
                 <FeatureEntryLink
                   to="/generate"
-                  className={buttonStyles({ variant: "secondary", size: "sm" })}
+                  className={button({ variant: "secondary", size: "sm" }).base()}
                 >
                   {"Open Generate ->"}
                 </FeatureEntryLink>

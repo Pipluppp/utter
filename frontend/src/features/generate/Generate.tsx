@@ -27,6 +27,7 @@ import { apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { fetchTextUtf8 } from "../../lib/fetchTextUtf8";
 import { resolveProtectedMediaUrl, triggerDownload } from "../../lib/protectedMedia";
+import { input } from "../../lib/recipes/input";
 import { formatElapsed } from "../../lib/time";
 import type { GenerateResponse, StoredTask, VoicesResponse } from "../../lib/types";
 import { useLanguages } from "../shared/hooks";
@@ -353,7 +354,7 @@ export function GeneratePage() {
           <TextArea
             name="text"
             placeholder="Type what you want the voice to say..."
-            className="min-h-44 min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className={input({ multiline: true, className: "min-h-44" })}
           />
           <Text
             slot="description"

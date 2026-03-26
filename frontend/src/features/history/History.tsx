@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Button, buttonStyles } from "../../components/atoms/Button";
+import { Button, button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
 import {
@@ -10,8 +10,10 @@ import {
 } from "../../components/molecules/AutocompleteSelect";
 import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
 import { apiJson } from "../../lib/api";
-import { cn } from "../../lib/cn";
 import { resolveProtectedMediaUrl, triggerDownload } from "../../lib/protectedMedia";
+import { input } from "../../lib/recipes/input";
+import { paginationButton } from "../../lib/recipes/pagination-button";
+import { statusBadge } from "../../lib/recipes/status-badge";
 import type { Generation, GenerationsResponse, RegenerateResponse } from "../../lib/types";
 import { useDebouncedValue } from "../shared/hooks";
 
@@ -286,12 +288,7 @@ export function HistoryPage() {
           <Input
             autoComplete="off"
             placeholder="Search history..."
-            className={cn(
-              "w-full border border-border bg-background px-4 py-3 pr-9 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors",
-              "hover:border-border-strong focus:border-border-strong",
-              "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              "[&::-webkit-search-cancel-button]:hidden",
-            )}
+            className={input({ className: "pr-9 [&::-webkit-search-cancel-button]:hidden" })}
           />
           <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground hovered:text-foreground group-data-[empty]:hidden">
             ×
@@ -332,21 +329,7 @@ export function HistoryPage() {
                 <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "border px-2 py-0.5 text-[10px] uppercase tracking-wide",
-                          g.status === "completed" &&
-                            "border-border bg-subtle text-muted-foreground",
-                          (g.status === "pending" || g.status === "processing") &&
-                            "border-border bg-muted text-muted-foreground",
-                          g.status === "failed" &&
-                            "border-status-error-border bg-status-error-bg text-status-error",
-                          g.status === "cancelled" &&
-                            "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200",
-                        )}
-                      >
-                        {g.status}
-                      </span>
+                      <span className={statusBadge({ status: g.status })}>{g.status}</span>
                       <div className="truncate text-sm font-semibold">
                         <Highlight text={g.voice_name ?? "Unknown voice"} tokens={tokens} />
                       </div>
@@ -381,10 +364,7 @@ export function HistoryPage() {
                       <>
                         <button
                           type="button"
-                          className={cn(
-                            buttonStyles({ variant: "secondary", size: "sm" }),
-                            "disabled:opacity-50",
-                          )}
+                          className={paginationButton().base()}
                           disabled={playDisabled}
                           aria-pressed={state === "playing"}
                           aria-controls={`gen-wave-${g.id}`}
@@ -394,10 +374,10 @@ export function HistoryPage() {
                         </button>
                         <button
                           type="button"
-                          className={buttonStyles({
+                          className={button({
                             variant: "secondary",
                             size: "sm",
-                          })}
+                          }).base()}
                           onClick={() => void onDownload(audioUrl)}
                         >
                           Download
@@ -446,10 +426,7 @@ export function HistoryPage() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            className={cn(
-              buttonStyles({ variant: "secondary", size: "sm" }),
-              "disabled:opacity-50",
-            )}
+            className={paginationButton().base()}
             disabled={data.pagination.page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -460,10 +437,7 @@ export function HistoryPage() {
           </div>
           <button
             type="button"
-            className={cn(
-              buttonStyles({ variant: "secondary", size: "sm" }),
-              "disabled:opacity-50",
-            )}
+            className={paginationButton().base()}
             disabled={data.pagination.page >= data.pagination.pages}
             onClick={() => setPage((p) => p + 1)}
           >

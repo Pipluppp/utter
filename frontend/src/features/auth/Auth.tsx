@@ -16,6 +16,7 @@ import {
   signUpWithPassword,
 } from "../../lib/auth";
 import { cn } from "../../lib/cn";
+import { input } from "../../lib/recipes/input";
 import { validateEmail, validatePassword } from "../../lib/validation";
 
 type PasswordIntent = "sign_in" | "sign_up";
@@ -216,11 +217,7 @@ export function AuthPage() {
               autoFocus
             >
               <Label className="mb-2 block label-style">Email</Label>
-              <Input
-                placeholder="you@example.com"
-                autoComplete="email"
-                className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              />
+              <Input placeholder="you@example.com" autoComplete="email" className={input()} />
               <div className="min-h-[20px]">
                 <FieldError className="block text-xs text-red-500" />
               </div>
@@ -244,7 +241,7 @@ export function AuthPage() {
                     : "8+ chars, uppercase, number, special"
                 }
                 autoComplete={intent === "sign_in" ? "current-password" : "new-password"}
-                className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className={input()}
               />
               <div className="min-h-[20px]">
                 <FieldError className="block text-xs text-red-500" />

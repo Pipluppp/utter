@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { buttonStyles } from "../../components/atoms/Button";
+import { button } from "../../components/atoms/Button";
 import { creditPacks } from "../../content/plans";
 import { cn } from "../../lib/cn";
 
@@ -36,10 +36,10 @@ export function PricingGrid({ compact, className }: { compact?: boolean; classNa
             </div>
             <NavLink
               to="/account/credits"
-              className={buttonStyles({
+              className={button({
                 variant: pack.featured ? "primary" : "secondary",
                 size: "sm",
-              })}
+              }).base()}
               aria-label={`Buy ${pack.name}`}
             >
               Buy credits

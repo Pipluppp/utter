@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { buttonStyles } from "../../components/atoms/Button";
+import { button } from "../../components/atoms/Button";
 import { cn } from "../../lib/cn";
 import { formatCredits, useAccountPageData } from "./accountData";
 import { AccountOverviewSkeleton } from "./accountSkeletons";
@@ -59,10 +59,10 @@ export function AccountOverviewPage() {
               {credits.credit_unit}. Credits update automatically after purchases and usage.
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
-              <Link to="/account/credits" className={buttonStyles({ size: "sm" })}>
+              <Link to="/account/credits" className={button({ size: "sm" }).base()}>
                 Buy credits
               </Link>
-              <Link to="/history" className={buttonStyles({ variant: "secondary", size: "sm" })}>
+              <Link to="/history" className={button({ variant: "secondary", size: "sm" }).base()}>
                 View history
               </Link>
             </div>

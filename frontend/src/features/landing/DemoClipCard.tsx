@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
-import { buttonStyles } from "../../components/atoms/Button";
+import { button } from "../../components/atoms/Button";
 import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
 import type { UtterDemo } from "../../content/utterDemo";
 import { cn } from "../../lib/cn";
+import { toggleButton } from "../../lib/recipes/toggle-button";
 
 export function DemoClipCard({
   demo,
@@ -75,22 +76,13 @@ export function DemoClipCard({
             }}
             className="inline-flex overflow-hidden border border-border bg-background"
           >
-            <ToggleButton
-              id="original"
-              className="cursor-pointer px-3 py-2 text-caption uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-background text-foreground hover:bg-subtle selected:bg-foreground selected:text-background"
-            >
+            <ToggleButton id="original" className={toggleButton()}>
               Original
             </ToggleButton>
             <ToggleButton
               id="clone"
               isDisabled={!canClone}
-              className={cn(
-                "cursor-pointer px-3 py-2 text-caption uppercase tracking-wide transition-colors",
-                "border-l border-border",
-                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                "bg-background text-foreground hover:bg-subtle selected:bg-foreground selected:text-background",
-                "disabled:cursor-not-allowed disabled:bg-muted disabled:text-faint disabled:hover:bg-muted",
-              )}
+              className={toggleButton({ disabled: true, className: "border-l border-border" })}
             >
               Clone
             </ToggleButton>
@@ -100,7 +92,7 @@ export function DemoClipCard({
             <a
               href={activeAudioUrl}
               aria-label={`Download ${demo.title} ${mode} audio`}
-              className={buttonStyles({ variant: "secondary", size: "sm" })}
+              className={button({ variant: "secondary", size: "sm" }).base()}
             >
               Download
             </a>

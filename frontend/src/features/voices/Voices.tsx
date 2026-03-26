@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
 import { NavLink, useSearchParams } from "react-router-dom";
-import { Button, buttonStyles } from "../../components/atoms/Button";
+import { Button, button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
 import {
@@ -10,7 +10,8 @@ import {
 } from "../../components/molecules/AutocompleteSelect";
 import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
 import { apiJson } from "../../lib/api";
-import { cn } from "../../lib/cn";
+import { input } from "../../lib/recipes/input";
+import { paginationButton } from "../../lib/recipes/pagination-button";
 import type { Voice, VoicesResponse } from "../../lib/types";
 import { useDebouncedValue } from "../shared/hooks";
 
@@ -255,12 +256,7 @@ export function VoicesPage() {
           <Input
             autoComplete="off"
             placeholder="Search voices..."
-            className={cn(
-              "w-full border border-border bg-background px-4 py-3 pr-9 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors",
-              "hover:border-border-strong focus:border-border-strong",
-              "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              "[&::-webkit-search-cancel-button]:hidden",
-            )}
+            className={input({ className: "pr-9 [&::-webkit-search-cancel-button]:hidden" })}
           />
           <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground hovered:text-foreground group-data-[empty]:hidden">
             ×
@@ -347,19 +343,16 @@ export function VoicesPage() {
                   <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end">
                     <NavLink
                       to={`/generate?voice=${v.id}`}
-                      className={buttonStyles({
+                      className={button({
                         variant: "secondary",
                         size: "sm",
-                      })}
+                      }).base()}
                     >
                       Generate
                     </NavLink>
                     <button
                       type="button"
-                      className={cn(
-                        buttonStyles({ variant: "secondary", size: "sm" }),
-                        "disabled:opacity-50",
-                      )}
+                      className={paginationButton().base()}
                       disabled={disabled}
                       aria-pressed={state === "playing"}
                       aria-controls={`voice-wave-${v.id}`}
@@ -398,10 +391,7 @@ export function VoicesPage() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            className={cn(
-              buttonStyles({ variant: "secondary", size: "sm" }),
-              "disabled:opacity-50",
-            )}
+            className={paginationButton().base()}
             disabled={data.pagination.page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -412,10 +402,7 @@ export function VoicesPage() {
           </div>
           <button
             type="button"
-            className={cn(
-              buttonStyles({ variant: "secondary", size: "sm" }),
-              "disabled:opacity-50",
-            )}
+            className={paginationButton().base()}
             disabled={data.pagination.page >= data.pagination.pages}
             onClick={() => setPage((p) => p + 1)}
           >

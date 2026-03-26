@@ -21,6 +21,7 @@ import { DESIGN_TIPS } from "../../data/tips";
 import { useElapsedTick } from "../../hooks/useElapsedTick";
 import { apiForm, apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
+import { input } from "../../lib/recipes/input";
 import { formatElapsed } from "../../lib/time";
 import type { DesignPreviewResponse, DesignSaveResponse, StoredTask } from "../../lib/types";
 import { useLanguages } from "../shared/hooks";
@@ -346,11 +347,7 @@ export function DesignPage() {
       >
         <TextField value={name} onChange={setName}>
           <Label className="mb-2 block label-style">Voice Name</Label>
-          <Input
-            name="name"
-            autoComplete="off"
-            className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          />
+          <Input name="name" autoComplete="off" className={input()} />
         </TextField>
 
         <TextField value={instruct} onChange={setInstruct}>
@@ -358,7 +355,7 @@ export function DesignPage() {
           <TextArea
             name="instruct"
             placeholder="Describe the voice (tone, pacing, timbre, vibe)..."
-            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className={input({ multiline: true })}
           />
           <Text
             slot="description"
@@ -388,7 +385,7 @@ export function DesignPage() {
           <TextArea
             name="text"
             placeholder="A short line to preview the voice..."
-            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className={input({ multiline: true })}
           />
           <Text slot="description" className="mt-2 text-xs text-faint">
             {text.length}/500

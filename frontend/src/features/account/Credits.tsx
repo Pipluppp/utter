@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Button, buttonStyles } from "../../components/atoms/Button";
+import { Button, button } from "../../components/atoms/Button";
 import { creditPacks } from "../../content/plans";
 import { apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
+import { toggleButton } from "../../lib/recipes/toggle-button";
 import { formatCredits, formatUsd, useAccountPageData } from "./accountData";
 import { AccountCreditsSkeleton } from "./accountSkeletons";
 import { AccountEmptyState, AccountNotice, AccountPanel } from "./accountUi";
@@ -248,22 +249,13 @@ export function AccountCreditsPage() {
               }}
               className="flex flex-wrap gap-2"
             >
-              <ToggleButton
-                id="all"
-                className="cursor-pointer border px-3 py-2 text-caption font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
-              >
+              <ToggleButton id="all" className={toggleButton({ bordered: true })}>
                 All
               </ToggleButton>
-              <ToggleButton
-                id="purchases"
-                className="cursor-pointer border px-3 py-2 text-caption font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
-              >
+              <ToggleButton id="purchases" className={toggleButton({ bordered: true })}>
                 Purchases
               </ToggleButton>
-              <ToggleButton
-                id="usage"
-                className="cursor-pointer border px-3 py-2 text-caption font-medium uppercase tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background border-border bg-background text-foreground hover:bg-subtle selected:border-border-strong selected:bg-foreground selected:text-background"
-              >
+              <ToggleButton id="usage" className={toggleButton({ bordered: true })}>
                 Usage
               </ToggleButton>
             </ToggleButtonGroup>
@@ -331,10 +323,10 @@ export function AccountCreditsPage() {
           </AccountPanel>
 
           <div className="flex flex-wrap gap-2">
-            <Link to="/history" className={buttonStyles({ variant: "secondary", size: "sm" })}>
+            <Link to="/history" className={button({ variant: "secondary", size: "sm" }).base()}>
               View history
             </Link>
-            <Link to="/account" className={buttonStyles({ variant: "secondary", size: "sm" })}>
+            <Link to="/account" className={button({ variant: "secondary", size: "sm" }).base()}>
               Edit profile
             </Link>
           </div>

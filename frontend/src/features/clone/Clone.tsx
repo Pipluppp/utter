@@ -37,6 +37,8 @@ import {
 } from "../../lib/audio";
 import { cn } from "../../lib/cn";
 import { fetchTextUtf8 } from "../../lib/fetchTextUtf8";
+import { input } from "../../lib/recipes/input";
+import { toggleButton } from "../../lib/recipes/toggle-button";
 import { formatElapsed } from "../../lib/time";
 import type { CloneResponse } from "../../lib/types";
 import { useLanguages } from "../shared/hooks";
@@ -590,17 +592,11 @@ export function ClonePage() {
           isDisabled={recording}
           className="inline-flex overflow-hidden border border-border bg-background shadow-elevated"
         >
-          <ToggleButton
-            id="upload"
-            className="cursor-pointer px-4 py-2 text-xs font-medium uppercase tracking-wide bg-background text-foreground hover:bg-subtle selected:bg-foreground selected:text-background"
-          >
+          <ToggleButton id="upload" className={toggleButton({ size: "md" })}>
             Upload
           </ToggleButton>
           {transcriptionEnabled ? (
-            <ToggleButton
-              id="record"
-              className="cursor-pointer px-4 py-2 text-xs font-medium uppercase tracking-wide bg-background text-foreground hover:bg-subtle selected:bg-foreground selected:text-background"
-            >
+            <ToggleButton id="record" className={toggleButton({ size: "md" })}>
               Record
             </ToggleButton>
           ) : null}
@@ -745,7 +741,7 @@ export function ClonePage() {
             name="name"
             autoComplete="off"
             placeholder="e.g. Duncan (calm, close-mic)..."
-            className="w-full border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className={input()}
           />
         </TextField>
 
@@ -754,7 +750,7 @@ export function ClonePage() {
           <TextArea
             name="transcript"
             placeholder="Paste the transcript of the reference audio..."
-            className="min-h-36 w-full resize-y border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated placeholder:text-faint transition-colors hover:border-border-strong focus:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className={input({ multiline: true })}
           />
           <Text
             slot="description"

@@ -6,6 +6,7 @@ import { useTasks } from "../../app/TaskProvider";
 import { Button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
 import { apiJson } from "../../lib/api";
+import { toggleButton } from "../../lib/recipes/toggle-button";
 import type {
   BackendTaskListItem,
   TaskListResponse,
@@ -186,7 +187,7 @@ export function TasksPage() {
           <ToggleButton
             key={value}
             id={value}
-            className="cursor-pointer border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background selected:bg-surface-selected"
+            className={toggleButton({ style: "surface", bordered: true })}
           >
             {label}
           </ToggleButton>
@@ -213,7 +214,7 @@ export function TasksPage() {
           <ToggleButton
             key={value}
             id={value}
-            className="cursor-pointer border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background selected:bg-surface-selected"
+            className={toggleButton({ style: "surface", bordered: true })}
           >
             {label}
           </ToggleButton>
