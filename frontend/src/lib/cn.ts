@@ -1,6 +1,9 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { defaultConfig } from "tailwind-variants";
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+defaultConfig.twMergeConfig = {
+  classGroups: {
+    "font-size": [{ text: ["caption"] }],
+  },
+};
+
+export { cn } from "tailwind-variants";

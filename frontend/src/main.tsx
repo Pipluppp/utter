@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./app/App";
+import "./lib/cn"; // configure tailwind-merge before any tv() call
 import "./styles/index.css";
 
 // Clean up legacy Supabase JS client token stored in localStorage.
