@@ -65,7 +65,7 @@ schema_paths = [
 ]
 
 [realtime]
-enabled = true
+enabled = false
 # Bind realtime via either IPv4 or IPv6. (default: IPv4)
 # ip_version = "IPv6"
 # The maximum length in bytes of HTTP request headers. (default: 4096)
@@ -93,24 +93,9 @@ port = 55424
 # sender_name = "Admin"
 
 [storage]
-enabled = true
+enabled = false
 # The maximum file size allowed (e.g. "5MB", "500KB").
-file_size_limit = "50MiB"
-
-[storage.image_transformation]
-enabled = true
-
-# Uncomment to configure local storage buckets
-# [storage.buckets.images]
-# public = false
 # file_size_limit = "50MiB"
-# allowed_mime_types = ["image/png", "image/jpeg"]
-# objects_path = "./images"
-
-[storage.buckets.references]
-public = false
-file_size_limit = "10MiB"
-allowed_mime_types = ["audio/wav", "audio/x-wav", "audio/mpeg", "audio/mp4", "audio/m4a"]
 
 [auth]
 enabled = true
@@ -263,7 +248,7 @@ enabled = false
 # user_pool_region = "us-east-1"
 
 [edge_runtime]
-enabled = true
+enabled = false
 # Configure one of the supported request policies: `oneshot`, `per_worker`.
 policy = "per_worker"
 # Port to attach the Chrome inspector for debugging edge functions.
@@ -277,9 +262,6 @@ inspector_port = 8083
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 # entrypoint = "./functions/MY_FUNCTION_NAME/index.ts"
-
-[functions.api]
-verify_jwt = false
 
 [analytics]
 enabled = false

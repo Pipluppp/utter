@@ -9,6 +9,7 @@ import {
     TEST_USER_A,
     VALID_VOICE_PAYLOAD,
 } from "./_helpers/fixtures.ts";
+import { r2List, r2Remove, r2Upload, waitForR2ObjectSize } from "./_helpers/r2.ts";
 import {
     apiFetch,
     deleteTestUser,
@@ -24,40 +25,7 @@ function getAdminClient() {
   return createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 }
 
-async function waitForReferenceSize(
-  admin: ReturnType<typeof getAdminClient>,
-  userId: string,
-  voiceId: string,
-  minBytes: number,
-): Promise<boolean> {
-  for (let i = 0; i < 20; i++) {
-    const listing = await admin.storage.from("references").list(
-      `${userId}/${voiceId}`,
-      {
-        limit: 100,
-      },
-    );
-    if (listing.error) return false;
-    const ref = (listing.data ?? []).find((obj) =>
-      obj.name === "reference.wav"
-    );
-    const refWithSize = ref as
-      | {
-        size?: number | string | null;
-        metadata?: {
-          size?: number | string | null;
-          contentLength?: number | string | null;
-        };
-      }
-      | undefined;
-    const value = refWithSize?.metadata?.size ??
-      refWithSize?.metadata?.contentLength ?? refWithSize?.size ?? null;
-    const size = value == null ? null : Number(value);
-    if (size !== null && Number.isFinite(size) && size >= minBytes) return true;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  return false;
-}
+
 
 describe("clone", () => {
   afterEach(() => {
@@ -226,7 +194,7 @@ describe("clone", () => {
         );
       }
       if (objectKey) {
-        await admin.storage.from("references").remove([objectKey]);
+        await r2Remove("references", [objectKey]);
       }
       await admin
         .from("profiles")
@@ -313,7 +281,7 @@ describe("clone", () => {
         );
       }
       if (objectKey) {
-        await admin.storage.from("references").remove([objectKey]);
+        await r2Remove("references", [objectKey]);
       }
       await admin
         .from("profiles")
@@ -377,7 +345,7 @@ describe("clone", () => {
         );
       }
       if (objectKey) {
-        await admin.storage.from("references").remove([objectKey]);
+        await r2Remove("references", [objectKey]);
       }
       await admin
         .from("profiles")
@@ -438,7 +406,7 @@ describe("clone", () => {
         );
       }
       if (objectKey) {
-        await admin.storage.from("references").remove([objectKey]);
+        await r2Remove("references", [objectKey]);
       }
     }
   });
@@ -450,24 +418,11 @@ describe("clone", () => {
     const oversizedAudio = new Uint8Array(MAX_REFERENCE_BYTES + 1);
 
     try {
-      const upload = await admin.storage.from("references").upload(
+      await r2Upload("references", objectKey, oversizedAudio, "audio/wav");
+
+      const sizeReady = await waitForR2ObjectSize(
+        "references",
         objectKey,
-        oversizedAudio,
-        {
-          contentType: "audio/wav",
-          upsert: true,
-        },
-      );
-
-      if (upload.error) {
-        expect(typeof upload.error.message).toBe("string");
-        return;
-      }
-
-      const sizeReady = await waitForReferenceSize(
-        admin,
-        userA.userId,
-        voiceId,
         oversizedAudio.length,
       );
       if (!sizeReady) {
@@ -487,7 +442,7 @@ describe("clone", () => {
       const body = await res.json();
       expect(typeof body.detail).toBe("string");
     } finally {
-      await admin.storage.from("references").remove([objectKey]);
+      await r2Remove("references", [objectKey]);
       await admin.from("voices").delete().eq("id", voiceId).eq(
         "user_id",
         userA.userId,
@@ -541,15 +496,9 @@ describe("clone", () => {
       expect(res.status).toBe(500);
       await res.body?.cancel();
 
-      const listing = await admin.storage.from("references").list(
-        `${userA.userId}/${voiceId}`,
-        {
-          limit: 100,
-        },
-      );
-      if (listing.error) throw new Error(listing.error.message);
-      const hasReference = (listing.data ?? []).some((obj) =>
-        obj.name === "reference.wav"
+      const listing = await r2List("references", `${userA.userId}/${voiceId}`);
+      const hasReference = listing.some((obj) =>
+        obj.key.endsWith("reference.wav")
       );
       expect(hasReference).toBe(false);
     } finally {
@@ -557,7 +506,7 @@ describe("clone", () => {
         "user_id",
         userA.userId,
       );
-      await admin.storage.from("references").remove([objectKey]);
+      await r2Remove("references", [objectKey]);
     }
   });
   }); // end clone finalize

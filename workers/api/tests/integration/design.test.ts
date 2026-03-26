@@ -4,6 +4,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { MINIMAL_WAV, TEST_USER_A } from "./_helpers/fixtures.ts";
+import { r2Remove, r2Upload } from "./_helpers/r2.ts";
 import {
     apiFetch,
     createTestUser,
@@ -234,11 +235,7 @@ describe.skipIf(!HAS_QWEN_KEY)("design", () => {
     const taskId = crypto.randomUUID();
     const objectKey = `${userA.userId}/preview_${taskId}.wav`;
 
-    const upload = await admin.storage.from("references").upload(objectKey, MINIMAL_WAV, {
-      contentType: "audio/wav",
-      upsert: true,
-    });
-    expect(upload.error).toBe(null);
+    await r2Upload("references", objectKey, MINIMAL_WAV, "audio/wav");
 
     const taskInsert = await admin.from("tasks").insert({
       id: taskId,
@@ -276,7 +273,7 @@ describe.skipIf(!HAS_QWEN_KEY)("design", () => {
       await admin.from("voices").delete().eq("id", body.id as string);
     } finally {
       await admin.from("tasks").delete().eq("id", taskId);
-      await admin.storage.from("references").remove([objectKey]);
+      await r2Remove("references", [objectKey]);
     }
   });
 

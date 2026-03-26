@@ -187,29 +187,39 @@ create trigger on_auth_user_created after insert on auth.users
   for each row execute function public.handle_new_user();
 
 -- ============================================================
--- STORAGE
+-- STORAGE (legacy — skipped when Supabase Storage is disabled)
 -- ============================================================
 
-insert into storage.buckets (id, name, public) values ('references', 'references', false);
-insert into storage.buckets (id, name, public) values ('generations', 'generations', false);
+do $$
+begin
+  if exists (select 1 from information_schema.tables where table_schema = 'storage' and table_name = 'buckets') then
+    insert into storage.buckets (id, name, public) values ('references', 'references', false) on conflict (id) do nothing;
+    insert into storage.buckets (id, name, public) values ('generations', 'generations', false) on conflict (id) do nothing;
+  end if;
+end $$;
 
-create policy "references_select_own" on storage.objects
-  for select to authenticated
-  using (
-    bucket_id = 'references'
-    and (select auth.uid())::text = (storage.foldername(name))[1]
-  );
+do $$
+begin
+  if exists (select 1 from information_schema.tables where table_schema = 'storage' and table_name = 'objects') then
+    create policy "references_select_own" on storage.objects
+      for select to authenticated
+      using (
+        bucket_id = 'references'
+        and (select auth.uid())::text = (storage.foldername(name))[1]
+      );
 
-create policy "references_insert_own" on storage.objects
-  for insert to authenticated
-  with check (
-    bucket_id = 'references'
-    and (select auth.uid())::text = (storage.foldername(name))[1]
-  );
+    create policy "references_insert_own" on storage.objects
+      for insert to authenticated
+      with check (
+        bucket_id = 'references'
+        and (select auth.uid())::text = (storage.foldername(name))[1]
+      );
 
-create policy "generations_select_own" on storage.objects
-  for select to authenticated
-  using (
-    bucket_id = 'generations'
-    and (select auth.uid())::text = (storage.foldername(name))[1]
-  );
+    create policy "generations_select_own" on storage.objects
+      for select to authenticated
+      using (
+        bucket_id = 'generations'
+        and (select auth.uid())::text = (storage.foldername(name))[1]
+      );
+  end if;
+end $$;

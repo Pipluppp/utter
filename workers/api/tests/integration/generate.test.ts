@@ -9,6 +9,7 @@ import {
     TEST_USER_B,
     VALID_GENERATE_PAYLOAD,
 } from "./_helpers/fixtures.ts";
+import { r2Remove, r2Upload, waitForR2ObjectSize } from "./_helpers/r2.ts";
 import {
     apiFetch,
     createTestUser,
@@ -77,41 +78,7 @@ async function cleanupActiveQueueTaskRows(userId: string): Promise<void> {
   }
 }
 
-async function waitForReferenceSize(
-  client: ReturnType<typeof getAdminClient>,
-  userId: string,
-  voiceId: string,
-  minBytes: number,
-): Promise<boolean> {
-  for (let i = 0; i < 20; i++) {
-    const listing = await client.storage.from("references").list(
-      `${userId}/${voiceId}`,
-      {
-        limit: 100,
-      },
-    );
-    if (listing.error) return false;
-    const ref = (listing.data ?? []).find((obj) =>
-      obj.name === "reference.wav"
-    );
-    const refWithSize = ref as
-      | {
-        size?: number | string | null;
-        metadata?: {
-          size?: number | string | null;
-          contentLength?: number | string | null;
-        };
-      }
-      | undefined;
-    const value = refWithSize?.metadata?.size ??
-      refWithSize?.metadata?.contentLength ??
-      refWithSize?.size ?? null;
-    const size = value == null ? null : Number(value);
-    if (size !== null && Number.isFinite(size) && size >= minBytes) return true;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  return false;
-}
+
 
 describe.skipIf(!HAS_QWEN_KEY)("generate", () => {
   afterEach(() => {
@@ -149,11 +116,8 @@ describe.skipIf(!HAS_QWEN_KEY)("generate", () => {
     voiceId = crypto.randomUUID();
     const objectKey = `${userA.userId}/${voiceId}/reference.wav`;
 
-    // Upload reference audio to storage
-    await client.storage.from("references").upload(objectKey, MINIMAL_WAV, {
-      contentType: "audio/wav",
-      upsert: true,
-    });
+    // Upload reference audio to R2
+    await r2Upload("references", objectKey, MINIMAL_WAV, "audio/wav");
 
     // Insert voice record
     await client.from("voices").insert({
@@ -307,24 +271,11 @@ describe.skipIf(!HAS_QWEN_KEY)("generate", () => {
     const oversizedAudio = new Uint8Array(MAX_REFERENCE_BYTES + 1);
 
     try {
-      const upload = await client.storage.from("references").upload(
+      await r2Upload("references", objectKey, oversizedAudio, "audio/wav");
+
+      const sizeReady = await waitForR2ObjectSize(
+        "references",
         objectKey,
-        oversizedAudio,
-        {
-          contentType: "audio/wav",
-          upsert: true,
-        },
-      );
-
-      if (upload.error) {
-        expect(typeof upload.error.message).toBe("string");
-        return;
-      }
-
-      const sizeReady = await waitForReferenceSize(
-        client,
-        userA.userId,
-        oversizedVoiceId,
         oversizedAudio.length,
       );
       if (!sizeReady) {
@@ -363,7 +314,7 @@ describe.skipIf(!HAS_QWEN_KEY)("generate", () => {
         "user_id",
         userA.userId,
       );
-      await client.storage.from("references").remove([objectKey]);
+      await r2Remove("references", [objectKey]);
     }
   });
 
