@@ -4,10 +4,10 @@ import { Outlet, useLocation, useMatches, useNavigate } from "react-router-dom";
 import { GlobalToastRegion } from "../components/molecules/Toast";
 import { TaskDock } from "../components/organisms/TaskDock";
 import {
-  RouteAccountSkeleton,
-  RouteAppSkeleton,
-  RouteAuthSkeleton,
-  RouteMarketingSkeleton,
+    RouteAccountSkeleton,
+    RouteAppSkeleton,
+    RouteAuthSkeleton,
+    RouteMarketingSkeleton,
 } from "../components/templates/RouteSkeletons";
 import { cn } from "../lib/cn";
 import { useAuthState } from "./auth/AuthStateProvider";
@@ -149,7 +149,7 @@ export function Layout() {
           type="button"
           onClick={toggleTheme}
           className={cn(
-            "fixed bottom-4 left-4 z-50 inline-flex size-9 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm",
+            "fixed bottom-4 left-4 z-50 inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm",
             "hover:bg-muted/80 hover:text-foreground",
             "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           )}
