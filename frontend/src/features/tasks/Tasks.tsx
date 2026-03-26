@@ -1,18 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Link } from "react-router-dom";
 import { taskLabel } from "../../app/taskKeys";
 import { useTasks } from "../../app/TaskProvider";
 import { Button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
+import { SegmentedControl } from "../../components/molecules/SegmentedControl";
 import { apiJson } from "../../lib/api";
-import { toggleButton } from "../../lib/recipes/toggle-button";
-import type {
-  BackendTaskListItem,
-  TaskListResponse,
-  TaskListStatus,
-  TaskListType,
-} from "../../lib/types";
+import type { BackendTaskListItem, TaskListResponse, TaskListType } from "../../lib/types";
 
 const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
   dateStyle: "medium",
@@ -26,7 +20,6 @@ function formatTimestamp(value: string | null) {
 
 export function TasksPage() {
   const { cancelTask, dismissTask, getStatusText } = useTasks();
-  const [statusFilter, setStatusFilter] = useState<TaskListStatus>("active");
   const [typeFilter, setTypeFilter] = useState<TaskListType>("all");
   const [tasks, setTasks] = useState<BackendTaskListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,12 +29,12 @@ export function TasksPage() {
 
   const filterQuery = useMemo(() => {
     const params = new URLSearchParams({
-      status: statusFilter,
+      status: "active",
       type: typeFilter,
       limit: "25",
     });
     return params.toString();
-  }, [statusFilter, typeFilter]);
+  }, [typeFilter]);
 
   useEffect(() => {
     let active = true;
@@ -68,8 +61,6 @@ export function TasksPage() {
   }, [filterQuery]);
 
   useEffect(() => {
-    if (statusFilter !== "active") return;
-
     let timeoutId: number | undefined;
     let cancelled = false;
 
@@ -111,7 +102,7 @@ export function TasksPage() {
       window.clearTimeout(timeoutId);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [filterQuery, statusFilter]);
+  }, [filterQuery]);
 
   async function loadMore() {
     if (!nextBefore) return;
@@ -119,7 +110,7 @@ export function TasksPage() {
 
     try {
       const params = new URLSearchParams({
-        status: statusFilter,
+        status: "active",
         type: typeFilter,
         limit: "25",
         before: nextBefore,
@@ -168,65 +159,25 @@ export function TasksPage() {
 
       {error ? <Message variant="error">{error}</Message> : null}
 
-      <ToggleButtonGroup
-        selectionMode="single"
-        disallowEmptySelection
-        selectedKeys={new Set([statusFilter])}
-        onSelectionChange={(keys) => {
-          const next = [...keys][0] as TaskListStatus;
-          if (next) setStatusFilter(next);
-        }}
-        className="flex flex-wrap gap-3"
-      >
-        {(
-          [
-            ["active", "Active"],
-            ["terminal", "Recent"],
-          ] as const
-        ).map(([value, label]) => (
-          <ToggleButton
-            key={value}
-            id={value}
-            className={toggleButton({ style: "surface", bordered: true })}
-          >
-            {label}
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
-
-      <ToggleButtonGroup
-        selectionMode="single"
-        disallowEmptySelection
-        selectedKeys={new Set([typeFilter])}
-        onSelectionChange={(keys) => {
-          const next = [...keys][0] as TaskListType;
-          if (next) setTypeFilter(next);
-        }}
-        className="flex flex-wrap gap-3"
-      >
-        {(
-          [
-            ["all", "All"],
-            ["generate", "Generate"],
-            ["design_preview", "Design"],
-          ] as const
-        ).map(([value, label]) => (
-          <ToggleButton
-            key={value}
-            id={value}
-            className={toggleButton({ style: "surface", bordered: true })}
-          >
-            {label}
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
+      <div className="flex flex-wrap items-center gap-2">
+        <SegmentedControl
+          items={[
+            { id: "all", label: "All" },
+            { id: "generate", label: "Generate" },
+            { id: "design_preview", label: "Design" },
+          ]}
+          selectedKey={typeFilter}
+          onSelectionChange={(key) => setTypeFilter(key as TaskListType)}
+          aria-label="Task type filter"
+        />
+      </div>
 
       {loading ? (
         <div className="border border-border bg-background p-4 text-sm text-muted-foreground shadow-elevated">
           Loading tasks...
         </div>
       ) : tasks.length === 0 ? (
-        <div className="border border-border bg-background p-4 text-sm text-muted-foreground shadow-elevated">
+        <div className="flex min-h-[50dvh] items-center justify-center border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
           No jobs in this view.
         </div>
       ) : (
