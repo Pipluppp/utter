@@ -288,7 +288,7 @@ export function GeneratePage() {
   return (
     <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
       <div className="flex items-center justify-center gap-2">
-        <h2 className="text-balance text-center text-2xl font-pixel font-medium uppercase tracking-[2px] md:text-3xl">
+        <h2 className="text-balance text-center text-3xl font-pixel font-medium uppercase tracking-[2px] md:text-4xl">
           Generate
         </h2>
         <InfoTip label="Generate tips" tips={GENERATE_TIPS} halftoneImage="lilac" />
