@@ -12,7 +12,7 @@ import {
   SelectValue,
   useFilter,
 } from "react-aria-components";
-import { cn } from "../../lib/cn";
+import { selectRecipe } from "./Select";
 
 export interface AutocompleteSelectItem {
   id: string;
@@ -49,6 +49,7 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
 }: AutocompleteSelectProps<T>) {
   const empty = items.length === 0;
   const { contains } = useFilter({ sensitivity: "base" });
+  const styles = selectRecipe();
 
   return (
     <Select
@@ -58,36 +59,18 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
       }}
       isDisabled={isDisabled || empty}
       placeholder={empty ? "No options available" : placeholder}
-      className={cn("group", className)}
+      className={styles.root({ className })}
     >
       {label ? <Label className="mb-2 block label-style">{label}</Label> : null}
-      <Button
-        className={cn(
-          "flex w-full cursor-pointer items-center justify-between border border-border bg-background px-4 py-3 text-sm text-foreground shadow-elevated",
-          "hovered:bg-muted",
-          "data-[focused]:border-ring data-[focused]:ring-2 data-[focused]:ring-ring data-[focused]:ring-offset-2 data-[focused]:ring-offset-background",
-          "disabled:cursor-not-allowed disabled:opacity-50",
-        )}
-      >
-        <SelectValue className="truncate font-[family-name:var(--font-mono)] data-[placeholder]:text-faint" />
-        <svg
-          className="size-4 shrink-0 text-muted-foreground"
-          viewBox="0 0 16 16"
-          fill="currentColor"
-          aria-hidden="true"
-        >
+      <Button className={styles.trigger()}>
+        <SelectValue
+          className={styles.value({ className: "font-[family-name:var(--font-mono)]" })}
+        />
+        <svg className={styles.icon()} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <path d="M8 11L3 6h10l-5 5z" />
         </svg>
       </Button>
-      <Popover
-        shouldFlip
-        className={cn(
-          "flex w-[var(--trigger-width)] flex-col overflow-y-auto border border-border bg-popover shadow-popover",
-          "data-[placement=bottom]:origin-top data-[placement=top]:origin-bottom",
-          "entering:animate-in entering:fade-in-0 entering:zoom-in-95",
-          "exiting:animate-out exiting:fade-out-0 exiting:zoom-out-95",
-        )}
-      >
+      <Popover shouldFlip className={styles.popover({ className: "flex flex-col" })}>
         {/* biome-ignore lint/a11y/noStaticElementInteractions: trap single-char keys so global shortcuts don't fire */}
         <div
           className="flex flex-col"
@@ -115,11 +98,7 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
                 <ListBoxItem
                   id={item.id}
                   textValue={String(item[filterKey] ?? item.label)}
-                  className={cn(
-                    "cursor-pointer px-3 py-2 text-sm text-foreground outline-none",
-                    "hover:bg-popover-hover data-[focused]:bg-popover-hover",
-                    "selected:bg-popover-selected selected:font-medium",
-                  )}
+                  className={styles.item()}
                 >
                   {children(item)}
                 </ListBoxItem>
