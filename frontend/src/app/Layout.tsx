@@ -5,10 +5,10 @@ import { Outlet, useLocation, useMatches, useNavigate } from "react-router-dom";
 import { GlobalToastRegion } from "../components/molecules/Toast";
 import { TaskDock } from "../components/organisms/TaskDock";
 import {
-  RouteAccountSkeleton,
-  RouteAppSkeleton,
-  RouteAuthSkeleton,
-  RouteMarketingSkeleton,
+    RouteAccountSkeleton,
+    RouteAppSkeleton,
+    RouteAuthSkeleton,
+    RouteMarketingSkeleton,
 } from "../components/templates/RouteSkeletons";
 import { cn } from "../lib/cn";
 import { useAuthState } from "./auth/AuthStateProvider";

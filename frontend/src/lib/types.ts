@@ -86,6 +86,8 @@ export type Voice = {
   description: string | null;
   created_at: string | null;
   tts_provider?: "qwen" | string;
+  is_favorite: boolean;
+  generation_count: number;
 };
 
 export type VoicesResponse = {

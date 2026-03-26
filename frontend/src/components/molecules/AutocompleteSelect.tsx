@@ -1,16 +1,17 @@
+import { ChevronDown } from "lucide-react";
 import type { Key } from "react-aria-components";
 import {
-  Autocomplete,
-  Button,
-  Input,
-  Label,
-  ListBox,
-  ListBoxItem,
-  Popover,
-  SearchField,
-  Select,
-  SelectValue,
-  useFilter,
+    Autocomplete,
+    Button,
+    Input,
+    Label,
+    ListBox,
+    ListBoxItem,
+    Popover,
+    SearchField,
+    Select,
+    SelectValue,
+    useFilter,
 } from "react-aria-components";
 import { selectRecipe } from "./Select";
 
@@ -32,6 +33,7 @@ export interface AutocompleteSelectProps<T extends AutocompleteSelectItem> {
   searchLabel?: string;
   searchPlaceholder?: string;
   className?: string;
+  size?: "default" | "compact";
 }
 
 export function AutocompleteSelect<T extends AutocompleteSelectItem>({
@@ -46,10 +48,12 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
   searchLabel = "Search",
   searchPlaceholder = "Search...",
   className,
+  size = "default",
 }: AutocompleteSelectProps<T>) {
   const empty = items.length === 0;
   const { contains } = useFilter({ sensitivity: "base" });
   const styles = selectRecipe();
+  const compact = size === "compact";
 
   return (
     <Select
@@ -62,15 +66,34 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
       className={styles.root({ className })}
     >
       {label ? <Label className="mb-2 block label-style">{label}</Label> : null}
-      <Button className={styles.trigger()}>
+      <Button
+        className={
+          compact
+            ? "flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground press-scale-sm transition-colors hover:text-foreground hover:border-muted-foreground data-[focused]:border-muted-foreground"
+            : `${styles.trigger()} press-scale`
+        }
+      >
         <SelectValue
-          className={styles.value({ className: "font-[family-name:var(--font-mono)]" })}
+          className={
+            compact
+              ? "truncate data-[placeholder]:text-muted-foreground"
+              : styles.value({ className: "font-[family-name:var(--font-mono)]" })
+          }
         />
-        <svg className={styles.icon()} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-          <path d="M8 11L3 6h10l-5 5z" />
-        </svg>
+        <ChevronDown
+          size={compact ? 14 : 16}
+          className={compact ? "shrink-0" : styles.icon()}
+          aria-hidden="true"
+        />
       </Button>
-      <Popover shouldFlip className={styles.popover({ className: "flex flex-col" })}>
+      <Popover
+        shouldFlip
+        className={
+          compact
+            ? "min-w-32 overflow-y-auto rounded-lg border border-border bg-popover shadow-popover data-[placement=bottom]:origin-top data-[placement=top]:origin-bottom entering:animate-in entering:fade-in-0 entering:zoom-in-95 exiting:animate-out exiting:fade-out-0 exiting:zoom-out-95 flex flex-col"
+            : styles.popover({ className: "flex flex-col" })
+        }
+      >
         {/* biome-ignore lint/a11y/noStaticElementInteractions: trap single-char keys so global shortcuts don't fire */}
         <div
           className="flex flex-col"
@@ -84,13 +107,23 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
             <SearchField autoFocus aria-label={searchLabel} className="p-1">
               <Input
                 placeholder={searchPlaceholder}
-                className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-faint focus:border-ring focus:outline-none"
+                className={
+                  compact
+                    ? "w-full rounded border border-border bg-background px-2 py-1 text-xs text-foreground placeholder:text-faint focus:border-ring focus:outline-none"
+                    : "w-full border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-faint focus:border-ring focus:outline-none"
+                }
               />
             </SearchField>
             <ListBox
               items={items}
               renderEmptyState={() => (
-                <div className="px-3 py-2 text-sm text-faint">No results.</div>
+                <div
+                  className={
+                    compact ? "px-2 py-1 text-xs text-faint" : "px-3 py-2 text-sm text-faint"
+                  }
+                >
+                  No results.
+                </div>
               )}
               className="max-h-60 overflow-y-auto p-1"
             >
@@ -98,7 +131,11 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
                 <ListBoxItem
                   id={item.id}
                   textValue={String(item[filterKey] ?? item.label)}
-                  className={styles.item()}
+                  className={
+                    compact
+                      ? "cursor-default rounded-sm px-2 py-1 text-xs text-foreground outline-none press-scale-sm-y hover:bg-popover-hover hovered:bg-popover-hover data-[focused]:bg-popover-hover selected:font-medium"
+                      : styles.item()
+                  }
                 >
                   {children(item)}
                 </ListBoxItem>
