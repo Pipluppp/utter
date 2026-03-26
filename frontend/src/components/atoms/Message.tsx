@@ -1,4 +1,15 @@
-import { cn } from "../../lib/cn";
+import { tv } from "tailwind-variants";
+
+const message = tv({
+  base: "border px-4 py-3 text-sm shadow-elevated",
+  variants: {
+    variant: {
+      error: "border-status-error-border bg-status-error-bg text-status-error",
+      success: "border-status-success-border bg-status-success-bg text-status-success",
+      info: "border-border bg-subtle text-foreground",
+    },
+  },
+});
 
 export function Message({
   variant,
@@ -9,13 +20,7 @@ export function Message({
 }) {
   return (
     <div
-      className={cn(
-        "border px-4 py-3 text-sm shadow-elevated",
-        variant === "error" && "border-status-error-border bg-status-error-bg text-status-error",
-        variant === "success" &&
-          "border-status-success-border bg-status-success-bg text-status-success",
-        variant === "info" && "border-border bg-subtle text-foreground",
-      )}
+      className={message({ variant })}
       role={variant === "error" ? "alert" : "status"}
       aria-live={variant === "error" ? "assertive" : "polite"}
     >

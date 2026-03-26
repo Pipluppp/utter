@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { tv } from "tailwind-variants";
 import { cn } from "../../lib/cn";
 
 export function AccountPanel({
@@ -36,8 +37,22 @@ export function AccountPanel({
   );
 }
 
+const accountNotice = tv({
+  base: "border px-4 py-3 text-[15px] leading-6 shadow-elevated",
+  variants: {
+    tone: {
+      neutral: "border-border bg-subtle text-muted-foreground",
+      success: "border-border-strong bg-subtle text-foreground",
+      error: "border-red-400 bg-red-50 text-red-700",
+    },
+  },
+  defaultVariants: {
+    tone: "neutral",
+  },
+});
+
 export function AccountNotice({
-  tone = "neutral",
+  tone,
   children,
   className,
 }: {
@@ -45,19 +60,7 @@ export function AccountNotice({
   children: ReactNode;
   className?: string;
 }) {
-  return (
-    <section
-      className={cn(
-        "border px-4 py-3 text-[15px] leading-6 shadow-elevated",
-        tone === "neutral" && "border-border bg-subtle text-muted-foreground",
-        tone === "success" && "border-border-strong bg-subtle text-foreground",
-        tone === "error" && "border-red-400 bg-red-50 text-red-700",
-        className,
-      )}
-    >
-      {children}
-    </section>
-  );
+  return <section className={accountNotice({ tone, className })}>{children}</section>;
 }
 
 export function AccountEmptyState({ title, body }: { title: string; body: string }) {
