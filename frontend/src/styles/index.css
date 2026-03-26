@@ -153,6 +153,34 @@
   color: var(--color-muted-foreground);
 }
 
+@utility icon-sm {
+  width: --spacing(4);
+  height: --spacing(4);
+}
+
+@utility icon-md {
+  width: --spacing(5);
+  height: --spacing(5);
+}
+
+@utility icon-nav {
+  width: --spacing(6);
+  height: --spacing(6);
+}
+
+@utility icon-bug {
+  width: --spacing(3.5);
+  height: --spacing(3.5);
+}
+
+@utility press-scale {
+  transition: transform 200ms cubic-bezier(0.2, 0, 0, 1);
+  &:active,
+  &[data-pressed] {
+    transform: scale(0.95);
+  }
+}
+
 @keyframes indeterminate {
   0% {
     transform: translateX(-100%);
