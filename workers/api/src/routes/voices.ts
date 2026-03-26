@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { requireUser } from "../_shared/auth.ts";
 import { createStorageProvider } from "../_shared/storage.ts";
 import { createAdminClient, createUserClient } from "../_shared/supabase.ts";
+import { VOICES_SORT_ALLOWLIST, validateSort, validateSortDir } from "./sort";
 
 function jsonDetail(detail: string, status: number) {
   return new Response(JSON.stringify({ detail }), {
@@ -15,6 +16,24 @@ function parsePositiveInt(value: string | null, fallback: number) {
   const n = Number(value ?? "");
   if (!Number.isFinite(n) || n < 1) return fallback;
   return Math.floor(n);
+}
+
+async function buildGenerationCountMap(
+  supabase: ReturnType<typeof createUserClient>,
+  voiceIds: string[],
+): Promise<Record<string, number>> {
+  if (voiceIds.length === 0) return {};
+
+  const { data: rows } = await supabase
+    .from("generations")
+    .select("voice_id")
+    .in("voice_id", voiceIds);
+
+  const countMap: Record<string, number> = {};
+  for (const row of rows ?? []) {
+    countMap[row.voice_id] = (countMap[row.voice_id] ?? 0) + 1;
+  }
+  return countMap;
 }
 
 export const voicesRoutes = new Hono();
@@ -39,21 +58,74 @@ voicesRoutes.get("/voices", async (c) => {
     ? source
     : null;
 
+  const sort = validateSort(c.req.query("sort"), VOICES_SORT_ALLOWLIST, "created_at");
+  const sortDir = validateSortDir(c.req.query("sort_dir"));
+  const favoritesOnly = c.req.query("favorites") === "true";
+
+  const ascending = sortDir === "asc";
   const from = (page - 1) * perPage;
   const to = from + perPage - 1;
 
+  // When sorting by generation_count, we need to fetch all matching voices,
+  // compute counts, sort in-memory, then paginate.
+  if (sort === "generation_count") {
+    let q = supabase
+      .from("voices")
+      .select(
+        "id, name, reference_transcript, language, source, description, created_at, tts_provider, is_favorite",
+        { count: "exact" },
+      )
+      .is("deleted_at", null);
+
+    if (search) q = q.ilike("name", `%${search}%`);
+    if (sourceFilter) q = q.eq("source", sourceFilter);
+    if (favoritesOnly) q = q.eq("is_favorite", true);
+
+    const { data, error, count } = await q;
+    if (error) return jsonDetail("Failed to load voices.", 500);
+
+    const allVoices = data ?? [];
+    const total = count ?? 0;
+
+    // Compute generation counts for all voices
+    const voiceIds = allVoices.map((v) => v.id);
+    const countMap = await buildGenerationCountMap(supabase, voiceIds);
+
+    // Sort: favorites first, then by generation_count
+    const sorted = allVoices
+      .map((v) => ({ ...v, generation_count: countMap[v.id] ?? 0 }))
+      .sort((a, b) => {
+        // Favorites first
+        if (a.is_favorite !== b.is_favorite) return a.is_favorite ? -1 : 1;
+        // Then by generation_count
+        const diff = a.generation_count - b.generation_count;
+        return ascending ? diff : -diff;
+      });
+
+    const pages = Math.max(1, Math.ceil(total / perPage));
+    const paged = sorted.slice(from, to + 1);
+
+    return c.json({
+      voices: paged,
+      pagination: { page, per_page: perPage, total, pages },
+    });
+  }
+
+  // Standard DB-sorted path
   let q = supabase
     .from("voices")
     .select(
-      "id, name, reference_transcript, language, source, description, created_at, tts_provider",
+      "id, name, reference_transcript, language, source, description, created_at, tts_provider, is_favorite",
       { count: "exact" },
     )
     .is("deleted_at", null)
-    .order("created_at", { ascending: false })
+    .order("is_favorite", { ascending: false })
+    .order(sort, { ascending })
     .range(from, to);
 
   if (search) q = q.ilike("name", `%${search}%`);
   if (sourceFilter) q = q.eq("source", sourceFilter);
+  if (favoritesOnly) q = q.eq("is_favorite", true);
 
   const { data, error, count } = await q;
   if (error) return jsonDetail("Failed to load voices.", 500);
@@ -61,8 +133,17 @@ voicesRoutes.get("/voices", async (c) => {
   const total = count ?? 0;
   const pages = Math.max(1, Math.ceil(total / perPage));
 
+  // Compute generation counts for the current page of voices
+  const voiceIds = (data ?? []).map((v) => v.id);
+  const countMap = await buildGenerationCountMap(supabase, voiceIds);
+
+  const voices = (data ?? []).map((v) => ({
+    ...v,
+    generation_count: countMap[v.id] ?? 0,
+  }));
+
   return c.json({
-    voices: data ?? [],
+    voices,
     pagination: { page, per_page: perPage, total, pages },
   });
 });
@@ -114,6 +195,82 @@ voicesRoutes.get("/voices/:id/preview", async (c) => {
   }
 
   return c.redirect(signed.signedUrl, 302);
+});
+
+voicesRoutes.patch("/voices/:id/favorite", async (c) => {
+  let supabase: ReturnType<typeof createUserClient>;
+  try {
+    ({ supabase } = await requireUser(c.req.raw));
+  } catch (e) {
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
+  }
+
+  const voiceId = c.req.param("id");
+  const { data: voice, error } = await supabase
+    .from("voices")
+    .select("id, is_favorite, deleted_at")
+    .eq("id", voiceId)
+    .maybeSingle();
+
+  if (error) return jsonDetail("Failed to load voice.", 500);
+  if (!voice) return jsonDetail("Voice not found.", 404);
+
+  const row = voice as { is_favorite: boolean; deleted_at: string | null };
+  if (row.deleted_at) return jsonDetail("Voice not found.", 404);
+
+  const admin = createAdminClient();
+  const { data: updated, error: updateError } = await admin
+    .from("voices")
+    .update({ is_favorite: !row.is_favorite })
+    .eq("id", voiceId)
+    .select()
+    .maybeSingle();
+
+  if (updateError || !updated) return jsonDetail("Failed to update voice.", 500);
+
+  return c.json(updated);
+});
+
+voicesRoutes.patch("/voices/:id/name", async (c) => {
+  let supabase: ReturnType<typeof createUserClient>;
+  try {
+    ({ supabase } = await requireUser(c.req.raw));
+  } catch (e) {
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const name = body?.name;
+  if (typeof name !== "string" || name.length < 1 || name.length > 100) {
+    return jsonDetail("Name must be between 1 and 100 characters.", 400);
+  }
+
+  const voiceId = c.req.param("id");
+  const { data: voice, error } = await supabase
+    .from("voices")
+    .select("id, deleted_at")
+    .eq("id", voiceId)
+    .maybeSingle();
+
+  if (error) return jsonDetail("Failed to load voice.", 500);
+  if (!voice) return jsonDetail("Voice not found.", 404);
+
+  const row = voice as { deleted_at: string | null };
+  if (row.deleted_at) return jsonDetail("Voice not found.", 404);
+
+  const admin = createAdminClient();
+  const { data: updated, error: updateError } = await admin
+    .from("voices")
+    .update({ name })
+    .eq("id", voiceId)
+    .select()
+    .maybeSingle();
+
+  if (updateError || !updated) return jsonDetail("Failed to update voice.", 500);
+
+  return c.json(updated);
 });
 
 voicesRoutes.delete("/voices/:id", async (c) => {

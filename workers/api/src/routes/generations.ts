@@ -3,6 +3,9 @@ import { Hono } from "hono"
 import { requireUser } from "../_shared/auth.ts"
 import { createStorageProvider } from "../_shared/storage.ts"
 import { createAdminClient, createUserClient } from "../_shared/supabase.ts"
+import { GENERATIONS_SORT_ALLOWLIST, validateSort, validateSortDir } from "./sort"
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function jsonDetail(detail: string, status: number) {
   return new Response(JSON.stringify({ detail }), {
@@ -34,6 +37,13 @@ generationsRoutes.get("/generations", async (c) => {
   const status = (c.req.query("status") ?? "").trim()
   const statusFilter = status && status !== "all" ? status : null
 
+  const voiceId = (c.req.query("voice_id") ?? "").trim()
+  const validVoiceId = UUID_RE.test(voiceId) ? voiceId : null
+
+  const sort = validateSort(c.req.query("sort"), GENERATIONS_SORT_ALLOWLIST, "created_at")
+  const sortDir = validateSortDir(c.req.query("sort_dir"))
+  const ascending = sortDir === "asc"
+
   const from = (page - 1) * perPage
   const to = from + perPage - 1
 
@@ -43,9 +53,16 @@ generationsRoutes.get("/generations", async (c) => {
       "id, voice_id, text, duration_seconds, language, status, generation_time_seconds, error_message, created_at, voices(name)",
       { count: "exact" },
     )
-    .order("created_at", { ascending: false })
-    .range(from, to)
 
+  if (sort === "voice_name") {
+    q = q.order("name", { ascending, referencedTable: "voices" })
+  } else {
+    q = q.order(sort, { ascending })
+  }
+
+  q = q.range(from, to)
+
+  if (validVoiceId) q = q.eq("voice_id", validVoiceId)
   if (search) q = q.ilike("text", `%${search}%`)
   if (statusFilter) q = q.eq("status", statusFilter)
 
