@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Button, Dialog, DialogTrigger, Modal, ModalOverlay } from "react-aria-components";
 import { cn } from "../../lib/cn";
 
@@ -46,8 +46,9 @@ export function InfoTip({ label = "Information", tips, halftoneImage = "fire" }:
         onHoverStart={() => prefetchImage(imageUrl)}
         onFocus={() => prefetchImage(imageUrl)}
         className={cn(
-          "inline-flex size-6 items-center justify-center rounded-full border border-border bg-background text-caption font-semibold text-muted-foreground",
-          "hovered:bg-surface-hover hovered:text-foreground",
+          "inline-flex size-6 cursor-pointer items-center justify-center rounded-full border border-border bg-background text-caption font-semibold text-muted-foreground transition-colors",
+          "hover:border-border-strong hover:bg-surface-hover hover:text-foreground",
+          "pressed:scale-95 pressed:bg-surface-hover pressed:text-foreground",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         )}
       >
@@ -86,8 +87,13 @@ function TipsDialog({
   tips: string[];
   halftoneImage: string;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
+
+  useEffect(() => {
+    containerRef.current?.focus();
+  }, []);
 
   function goNext() {
     setDirection("right");
@@ -112,7 +118,12 @@ function TipsDialog({
   return (
     <Dialog aria-label={label} className="relative outline-none">
       {/* Image-dominant layout: square ratio, content centered */}
-      <div onKeyDown={handleKeyDown} className="relative aspect-[5/4] w-full">
+      <div
+        ref={containerRef}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        className="relative aspect-[5/4] w-full outline-none"
+      >
         {/* Halftone background image — fills entire modal */}
         <div className="absolute inset-0 bg-neutral-800 dark:bg-neutral-200">
           <img
