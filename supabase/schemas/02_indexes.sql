@@ -19,6 +19,10 @@ CREATE INDEX idx_voices_user_active_provider_created
   ON public.voices (user_id, tts_provider, created_at DESC)
   WHERE deleted_at IS NULL;
 
+CREATE INDEX idx_voices_user_favorite_created
+  ON public.voices (user_id, is_favorite DESC, created_at DESC)
+  WHERE deleted_at IS NULL;
+
 -- ============================================================
 -- generations
 -- ============================================================

@@ -39,6 +39,7 @@ create table public.voices (
   provider_request_id text,
   provider_metadata jsonb not null default '{}'::jsonb,
   deleted_at timestamptz,
+  is_favorite boolean not null default false,
   created_at timestamptz not null default now(),
   constraint voices_tts_provider_check check (tts_provider in ('qwen')),
   constraint voices_provider_voice_kind_check check (provider_voice_kind is null or provider_voice_kind in ('vc', 'vd'))
