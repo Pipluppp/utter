@@ -122,7 +122,7 @@ function getSections(variant: NavVariant, signInHref: string) {
 
 function baseNavItemClassName(active: boolean) {
   return cn(
-    "inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground",
+    "inline-flex items-center gap-1.5 px-3 py-2 text-caption font-medium uppercase tracking-wide text-foreground/80 hover:bg-muted hover:text-foreground",
     "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     active && "bg-muted text-foreground",
   );
