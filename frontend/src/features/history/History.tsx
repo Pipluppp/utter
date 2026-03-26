@@ -5,16 +5,23 @@ import { Button, button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
 import {
-  AutocompleteSelect,
-  type AutocompleteSelectItem,
+    AutocompleteSelect,
+    type AutocompleteSelectItem,
 } from "../../components/molecules/AutocompleteSelect";
+import { SortSelect } from "../../components/molecules/SortSelect";
 import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
 import { apiJson } from "../../lib/api";
+import { formatCreatedAt } from "../../lib/format";
 import { resolveProtectedMediaUrl, triggerDownload } from "../../lib/protectedMedia";
 import { input } from "../../lib/recipes/input";
 import { paginationButton } from "../../lib/recipes/pagination-button";
 import { statusBadge } from "../../lib/recipes/status-badge";
-import type { Generation, GenerationsResponse, RegenerateResponse } from "../../lib/types";
+import type {
+    Generation,
+    GenerationsResponse,
+    RegenerateResponse,
+    VoicesResponse,
+} from "../../lib/types";
 import { useDebouncedValue } from "../shared/hooks";
 
 function tokenize(query: string) {
@@ -30,6 +37,15 @@ const STATUS_ITEMS: AutocompleteSelectItem[] = [
   { id: "failed", label: "Failed" },
   { id: "cancelled", label: "Cancelled" },
 ];
+const SORT_OPTIONS = [
+  { id: "created_at:desc", label: "↓ Date" },
+  { id: "created_at:asc", label: "↑ Date" },
+  { id: "duration_seconds:desc", label: "↓ Duration" },
+  { id: "duration_seconds:asc", label: "↑ Duration" },
+  { id: "voice_name:desc", label: "↓ Name" },
+  { id: "voice_name:asc", label: "↑ Name" },
+];
+
 const HISTORY_SKELETON_VARIANTS = [
   { id: "ready-a", showMeta: true },
   { id: "active-a", showMeta: false },
@@ -141,6 +157,9 @@ export function HistoryPage() {
   const initialQuery = searchParams.get("search") ?? "";
   const initialStatus = searchParams.get("status") ?? "all";
   const initialPageRaw = searchParams.get("page");
+  const initialSort = searchParams.get("sort") ?? "created_at";
+  const initialSortDir = searchParams.get("sort_dir") === "asc" ? "asc" : "desc";
+  const initialVoiceId = searchParams.get("voice_id") ?? "all";
   const initialPage = Math.max(1, Number(initialPageRaw ?? "1") || 1);
 
   const [query, setQuery] = useState(initialQuery);
@@ -148,6 +167,12 @@ export function HistoryPage() {
   const tokens = useMemo(() => tokenize(debounced), [debounced]);
 
   const [status, setStatus] = useState<"all" | string>(initialStatus);
+  const [sort, setSort] = useState(initialSort);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">(initialSortDir);
+  const [voiceId, setVoiceId] = useState(initialVoiceId);
+  const [voiceItems, setVoiceItems] = useState<AutocompleteSelectItem[]>([
+    { id: "all", label: "All Voices" },
+  ]);
   const [page, setPage] = useState(initialPage);
 
   const [data, setData] = useState<GenerationsResponse | null>(null);
@@ -158,6 +183,25 @@ export function HistoryPage() {
   const waveRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const refreshTimerRef = useRef<number | null>(null);
   const loadAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiJson<VoicesResponse>("/api/voices?per_page=100")
+      .then((res) => {
+        if (cancelled) return;
+        const items: AutocompleteSelectItem[] = [
+          { id: "all", label: "All Voices" },
+          ...res.voices.map((v) => ({ id: v.id, label: v.name })),
+        ];
+        setVoiceItems(items);
+      })
+      .catch(() => {
+        /* voice list is best-effort for the filter */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const load = useCallback(async () => {
     loadAbortRef.current?.abort();
@@ -172,6 +216,9 @@ export function HistoryPage() {
       qs.set("per_page", String(PER_PAGE));
       if (debounced.trim()) qs.set("search", debounced.trim());
       if (status !== "all") qs.set("status", status);
+      if (voiceId !== "all") qs.set("voice_id", voiceId);
+      if (sort !== "created_at") qs.set("sort", sort);
+      if (sortDir !== "desc") qs.set("sort_dir", sortDir);
       const res = await apiJson<GenerationsResponse>(`/api/generations?${qs.toString()}`, {
         signal: controller.signal,
       });
@@ -183,7 +230,7 @@ export function HistoryPage() {
       if (!controller.signal.aborted) setLoading(false);
       if (loadAbortRef.current === controller) loadAbortRef.current = null;
     }
-  }, [debounced, page, status]);
+  }, [debounced, page, status, voiceId, sort, sortDir]);
 
   useEffect(() => {
     void load();
@@ -193,16 +240,19 @@ export function HistoryPage() {
     return () => loadAbortRef.current?.abort();
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset paging when search/status changes
-  useEffect(() => setPage(1), [debounced, status]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset paging when search/status/filter/sort changes
+  useEffect(() => setPage(1), [debounced, status, voiceId, sort, sortDir]);
 
   useEffect(() => {
     const qs = new URLSearchParams();
     if (debounced.trim()) qs.set("search", debounced.trim());
     if (status !== "all") qs.set("status", status);
+    if (voiceId !== "all") qs.set("voice_id", voiceId);
+    if (sort !== "created_at") qs.set("sort", sort);
+    if (sortDir !== "desc") qs.set("sort_dir", sortDir);
     if (page !== 1) qs.set("page", String(page));
     setSearchParams(qs, { replace: true });
-  }, [debounced, page, setSearchParams, status]);
+  }, [debounced, page, setSearchParams, status, voiceId, sort, sortDir]);
 
   useEffect(() => {
     if (refreshTimerRef.current) {
@@ -277,12 +327,12 @@ export function HistoryPage() {
 
       {error ? <Message variant="error">{error}</Message> : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="flex flex-wrap items-end gap-3">
         <SearchField
           value={query}
           onChange={setQuery}
           aria-label="Search history"
-          className="group relative"
+          className="group relative min-w-48 flex-1"
         >
           <Label className="mb-2 block label-style">Search</Label>
           <Input
@@ -306,10 +356,35 @@ export function HistoryPage() {
         </AutocompleteSelect>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <SortSelect
+          items={SORT_OPTIONS}
+          selectedKey={`${sort}:${sortDir}`}
+          onSelectionChange={(key) => {
+            const [s, d] = key.split(":");
+            setSort(s);
+            setSortDir(d as "asc" | "desc");
+          }}
+          aria-label="Sort history"
+          placeholder="Sort by"
+        />
+        <AutocompleteSelect
+          items={voiceItems}
+          selectedKey={voiceId}
+          onSelectionChange={setVoiceId}
+          searchLabel="Search voices"
+          searchPlaceholder="Search..."
+          size="compact"
+          placeholder="All Voices"
+        >
+          {(item) => item.label}
+        </AutocompleteSelect>
+      </div>
+
       {loading && !data ? <HistorySkeleton /> : null}
 
       {!loading && data && data.generations.length === 0 ? (
-        <div className="border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
+        <div className="flex min-h-[50dvh] items-center justify-center border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
           No generations found.
         </div>
       ) : null}
@@ -350,6 +425,9 @@ export function HistoryPage() {
                     ) : null}
 
                     <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-faint">
+                      {formatCreatedAt(g.created_at) ? (
+                        <span>{formatCreatedAt(g.created_at)}</span>
+                      ) : null}
                       {g.duration_seconds != null ? (
                         <span>Duration: {g.duration_seconds.toFixed(1)}s</span>
                       ) : null}
