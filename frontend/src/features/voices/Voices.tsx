@@ -1,15 +1,15 @@
+import { Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
 import { NavLink, useSearchParams } from "react-router-dom";
 import { Button, button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
-import {
-  AutocompleteSelect,
-  type AutocompleteSelectItem,
-} from "../../components/molecules/AutocompleteSelect";
+import { SegmentedControl } from "../../components/molecules/SegmentedControl";
+import { SortSelect } from "../../components/molecules/SortSelect";
 import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
 import { apiJson } from "../../lib/api";
+import { formatCreatedAt } from "../../lib/format";
 import { input } from "../../lib/recipes/input";
 import { paginationButton } from "../../lib/recipes/pagination-button";
 import type { Voice, VoicesResponse } from "../../lib/types";
@@ -67,10 +67,18 @@ function snippet(value: string | null, maxLen: number, fallback: string) {
 type PlayState = "idle" | "loading" | "playing" | "paused" | "stopped";
 
 const PER_PAGE = 20;
-const SOURCE_ITEMS: AutocompleteSelectItem[] = [
+const SOURCE_ITEMS = [
   { id: "all", label: "All" },
   { id: "uploaded", label: "Clone" },
   { id: "designed", label: "Designed" },
+];
+const SORT_OPTIONS = [
+  { id: "created_at:desc", label: "↓ Date" },
+  { id: "created_at:asc", label: "↑ Date" },
+  { id: "name:desc", label: "↓ Name" },
+  { id: "name:asc", label: "↑ Name" },
+  { id: "generation_count:desc", label: "↓ Usage" },
+  { id: "generation_count:asc", label: "↑ Usage" },
 ];
 const VOICE_SKELETON_VARIANTS = [
   { id: "designed-a", showPrompt: true },
@@ -141,6 +149,9 @@ export function VoicesPage() {
   const initialQuery = searchParams.get("search") ?? "";
   const initialSource = searchParams.get("source");
   const initialPageRaw = searchParams.get("page");
+  const initialSort = searchParams.get("sort") ?? "created_at";
+  const initialSortDir = searchParams.get("sort_dir") === "asc" ? "asc" : "desc";
+  const initialFavorites = searchParams.get("favorites") ?? "all";
 
   const initialPage = Math.max(1, Number(initialPageRaw ?? "1") || 1);
   const initialSourceValue =
@@ -151,12 +162,19 @@ export function VoicesPage() {
   const tokens = useMemo(() => tokenize(debounced), [debounced]);
 
   const [source, setSource] = useState<"all" | "uploaded" | "designed">(initialSourceValue);
+  const [sort, setSort] = useState(initialSort);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">(initialSortDir);
+  const [favorites, setFavorites] = useState(initialFavorites);
   const [page, setPage] = useState(initialPage);
   const [data, setData] = useState<VoicesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [busyDelete, setBusyDelete] = useState<string | null>(null);
+  const [busyFavorite, setBusyFavorite] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [busyRename, setBusyRename] = useState<string | null>(null);
   const [playState, setPlayState] = useState<Record<string, PlayState>>({});
   const waveRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const loadAbortRef = useRef<AbortController | null>(null);
@@ -174,6 +192,9 @@ export function VoicesPage() {
       qs.set("per_page", String(PER_PAGE));
       if (debounced.trim()) qs.set("search", debounced.trim());
       if (source !== "all") qs.set("source", source);
+      if (sort !== "created_at") qs.set("sort", sort);
+      if (sortDir !== "desc") qs.set("sort_dir", sortDir);
+      if (favorites === "true") qs.set("favorites", "true");
       const res = await apiJson<VoicesResponse>(`/api/voices?${qs.toString()}`, {
         signal: controller.signal,
       });
@@ -185,7 +206,7 @@ export function VoicesPage() {
       if (!controller.signal.aborted) setLoading(false);
       if (loadAbortRef.current === controller) loadAbortRef.current = null;
     }
-  }, [debounced, page, source]);
+  }, [debounced, page, source, sort, sortDir, favorites]);
 
   useEffect(() => {
     void load();
@@ -195,16 +216,19 @@ export function VoicesPage() {
     return () => loadAbortRef.current?.abort();
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset paging when search/source changes
-  useEffect(() => setPage(1), [debounced, source]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset paging when search/source/sort/filter changes
+  useEffect(() => setPage(1), [debounced, source, sort, sortDir, favorites]);
 
   useEffect(() => {
     const qs = new URLSearchParams();
     if (debounced.trim()) qs.set("search", debounced.trim());
     if (source !== "all") qs.set("source", source);
+    if (sort !== "created_at") qs.set("sort", sort);
+    if (sortDir !== "desc") qs.set("sort_dir", sortDir);
+    if (favorites === "true") qs.set("favorites", "true");
     if (page !== 1) qs.set("page", String(page));
     setSearchParams(qs, { replace: true });
-  }, [debounced, page, setSearchParams, source]);
+  }, [debounced, page, setSearchParams, source, sort, sortDir, favorites]);
 
   async function onDelete(voice: Voice) {
     if (!confirm(`Delete voice "${voice.name}"?`)) return;
@@ -217,6 +241,52 @@ export function VoicesPage() {
     } finally {
       setBusyDelete(null);
     }
+  }
+
+  async function onToggleFavorite(voice: Voice) {
+    setBusyFavorite(voice.id);
+    setError(null);
+    try {
+      await apiJson(`/api/voices/${voice.id}/favorite`, { method: "PATCH" });
+      void load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to update favorite.");
+    } finally {
+      setBusyFavorite(null);
+    }
+  }
+
+  function onStartRename(voice: Voice) {
+    setEditingId(voice.id);
+    setEditName(voice.name);
+  }
+
+  async function onConfirmRename(voice: Voice) {
+    const trimmed = editName.trim();
+    if (!trimmed || trimmed === voice.name) {
+      setEditingId(null);
+      return;
+    }
+    setBusyRename(voice.id);
+    setError(null);
+    try {
+      await apiJson(`/api/voices/${voice.id}/name`, {
+        method: "PATCH",
+        json: { name: trimmed },
+      });
+      setEditingId(null);
+      void load();
+    } catch (e) {
+      setEditName(voice.name);
+      setEditingId(null);
+      setError(e instanceof Error ? e.message : "Failed to rename voice.");
+    } finally {
+      setBusyRename(null);
+    }
+  }
+
+  function onCancelRename() {
+    setEditingId(null);
   }
 
   async function onPreview(voice: Voice) {
@@ -245,12 +315,12 @@ export function VoicesPage() {
 
       {error ? <Message variant="error">{error}</Message> : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="flex flex-wrap items-end gap-3">
         <SearchField
           value={query}
           onChange={setQuery}
           aria-label="Search voices"
-          className="group relative"
+          className="group relative min-w-48 flex-1"
         >
           <Label className="mb-2 block label-style">Search</Label>
           <Input
@@ -262,22 +332,48 @@ export function VoicesPage() {
             ×
           </AriaButton>
         </SearchField>
-        <AutocompleteSelect
-          label="Source"
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <SortSelect
+          items={SORT_OPTIONS}
+          selectedKey={`${sort}:${sortDir}`}
+          onSelectionChange={(key) => {
+            const [s, d] = key.split(":");
+            setSort(s);
+            setSortDir(d as "asc" | "desc");
+          }}
+          aria-label="Sort voices"
+          placeholder="Sort by"
+        />
+        <SegmentedControl
           items={SOURCE_ITEMS}
           selectedKey={source}
           onSelectionChange={(key) => setSource(key as "all" | "uploaded" | "designed")}
-          searchLabel="Search sources"
-          searchPlaceholder="Search..."
-        >
-          {(item) => item.label}
-        </AutocompleteSelect>
+          aria-label="Source filter"
+        />
+        <div className="ml-auto">
+          <button
+            type="button"
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs uppercase tracking-wide transition-colors press-scale-sm ${
+              favorites === "true"
+                ? "border-foreground bg-foreground text-background hover:bg-foreground/80"
+                : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+            }`}
+            onClick={() => setFavorites((f) => (f === "true" ? "all" : "true"))}
+            aria-label={favorites === "true" ? "Show all voices" : "Show favorites only"}
+            aria-pressed={favorites === "true"}
+          >
+            <Star size={12} className={favorites === "true" ? "fill-current" : ""} />
+            Favorites
+          </button>
+        </div>
       </div>
 
       {loading && !data ? <VoicesSkeleton /> : null}
 
       {!loading && data && data.voices.length === 0 ? (
-        <div className="border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
+        <div className="flex min-h-[50dvh] items-center justify-center border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
           No voices found.
         </div>
       ) : null}
@@ -301,12 +397,55 @@ export function VoicesPage() {
                 <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="shrink-0 press-scale text-muted-foreground hover:text-foreground disabled:opacity-50"
+                        disabled={busyFavorite === v.id}
+                        aria-label={v.is_favorite ? "Remove from favorites" : "Add to favorites"}
+                        aria-pressed={v.is_favorite}
+                        onClick={() => void onToggleFavorite(v)}
+                      >
+                        <Star
+                          size={16}
+                          className={v.is_favorite ? "fill-current text-foreground" : ""}
+                        />
+                      </button>
                       <span className="border border-border bg-subtle px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
                         {v.source === "designed" ? "DESIGNED" : "CLONE"}
                       </span>
-                      <div className="truncate text-sm font-semibold">
-                        <Highlight text={v.name} tokens={tokens} />
-                      </div>
+                      {editingId === v.id ? (
+                        <Input
+                          autoFocus
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") void onConfirmRename(v);
+                            if (e.key === "Escape") onCancelRename();
+                          }}
+                          onBlur={() => void onConfirmRename(v)}
+                          disabled={busyRename === v.id}
+                          className={input({
+                            className: "max-w-xs !py-1 text-sm font-semibold",
+                          })}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          className="truncate text-sm font-semibold text-left hover:underline"
+                          onClick={() => onStartRename(v)}
+                        >
+                          <Highlight text={v.name} tokens={tokens} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-faint">
+                      {formatCreatedAt(v.created_at) ? (
+                        <span>{formatCreatedAt(v.created_at)}</span>
+                      ) : null}
+                      <span>
+                        {v.generation_count} generation{v.generation_count !== 1 ? "s" : ""}
+                      </span>
                     </div>
 
                     <div className="mt-3 space-y-3">
