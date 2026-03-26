@@ -1,3 +1,4 @@
+import { User } from "lucide-react";
 import type { To } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { Kbd } from "../components/atoms/Kbd";
@@ -7,24 +8,6 @@ import { TaskBadge } from "../components/organisms/TaskBadge";
 import { HeaderPendingAuthSkeleton } from "../components/templates/RouteSkeletons";
 import { cn } from "../lib/cn";
 import type { NavSectionItem, NavVariant } from "./navigation";
-
-function ProfileIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <circle cx="12" cy="8" r="4" />
-      <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
-    </svg>
-  );
-}
 
 function routeItem(
   label: string,
@@ -142,7 +125,7 @@ function NavItemContent({
   return (
     <>
       <span className="flex items-center gap-2">
-        {showProfileIcon ? <ProfileIcon className="size-4" /> : null}
+        {showProfileIcon ? <User className="icon-sm" aria-hidden="true" /> : null}
         <span>{label}</span>
         {showTaskBadge ? <TaskBadge /> : null}
       </span>
