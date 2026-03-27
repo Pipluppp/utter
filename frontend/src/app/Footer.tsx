@@ -1,7 +1,7 @@
+import { useLocation } from "@tanstack/react-router";
 import { ArrowUpRight, Bug, Moon, Sun } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button as AriaButton } from "react-aria-components";
-import { useLocation } from "react-router-dom";
 import { AppLink } from "../components/atoms/Link";
 import { Separator } from "../components/atoms/Separator";
 import { Tooltip } from "../components/atoms/Tooltip";

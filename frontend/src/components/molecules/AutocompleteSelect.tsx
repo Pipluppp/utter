@@ -1,17 +1,17 @@
 import { ChevronDown } from "lucide-react";
 import type { Key } from "react-aria-components";
 import {
-    Autocomplete,
-    Button,
-    Input,
-    Label,
-    ListBox,
-    ListBoxItem,
-    Popover,
-    SearchField,
-    Select,
-    SelectValue,
-    useFilter,
+  Autocomplete,
+  Button,
+  Input,
+  Label,
+  ListBox,
+  ListBoxItem,
+  Popover,
+  SearchField,
+  Select,
+  SelectValue,
+  useFilter,
 } from "react-aria-components";
 import { selectRecipe } from "./Select";
 

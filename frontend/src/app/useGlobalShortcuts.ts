@@ -1,5 +1,5 @@
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
@@ -30,7 +30,7 @@ export function useGlobalShortcuts(enabled: boolean) {
       if (location.pathname === to) return;
 
       event.preventDefault();
-      navigate(to);
+      void navigate({ to });
     };
 
     window.addEventListener("keydown", onKeyDown);

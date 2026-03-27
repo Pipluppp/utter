@@ -1,12 +1,13 @@
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
-import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button, button } from "../../components/atoms/Button";
 import { creditPacks } from "../../content/plans";
 import { apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { toggleButton } from "../../lib/recipes/toggle-button";
-import { formatCredits, formatUsd, useAccountPageData } from "./accountData";
+import { Route } from "../../routes/_app.account.credits";
+import { formatCredits, formatUsd, useAccountData } from "./accountData";
 import { AccountCreditsSkeleton } from "./accountSkeletons";
 import { AccountEmptyState, AccountNotice, AccountPanel } from "./accountUi";
 
@@ -14,16 +15,15 @@ type ActivityFilter = "all" | "purchases" | "usage";
 
 export function AccountCreditsPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { activity, credits, refresh, refreshing } = useAccountPageData();
+  const { checkout: checkoutParam } = Route.useSearch();
+  const { activity, credits, refresh, refreshing } = useAccountData();
   const [activePackId, setActivePackId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
 
   const checkoutStatus = useMemo(() => {
-    const value = new URLSearchParams(location.search).get("checkout");
-    return value === "success" || value === "cancel" ? value : null;
-  }, [location.search]);
+    return checkoutParam === "success" || checkoutParam === "cancel" ? checkoutParam : null;
+  }, [checkoutParam]);
 
   useEffect(() => {
     if (checkoutStatus === "success") {
@@ -62,16 +62,11 @@ export function AccountCreditsPage() {
   }
 
   function clearCheckoutStatus() {
-    const params = new URLSearchParams(location.search);
-    params.delete("checkout");
-    const nextSearch = params.toString();
-    navigate(
-      {
-        pathname: location.pathname,
-        search: nextSearch ? `?${nextSearch}` : "",
-      },
-      { replace: true },
-    );
+    void navigate({
+      to: "/account/credits",
+      search: {},
+      replace: true,
+    });
   }
 
   return (

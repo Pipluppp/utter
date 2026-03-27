@@ -1,15 +1,29 @@
-import { RouterProvider } from "react-router-dom";
+import { RouterProvider } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { router } from "../router";
 import { TaskProvider } from "./TaskProvider";
-import { AuthStateProvider } from "./auth/AuthStateProvider";
-import { router } from "./router";
+import { AuthStateProvider, useAuthState } from "./auth/AuthStateProvider";
 import { ThemeProvider } from "./theme/ThemeProvider";
+
+function InnerApp() {
+  const authState = useAuthState();
+
+  // Re-run beforeLoad guards whenever auth state settles
+  useEffect(() => {
+    if (authState.status !== "loading") {
+      void router.invalidate();
+    }
+  }, [authState.status]);
+
+  return <RouterProvider router={router} context={{ authState }} />;
+}
 
 export function App() {
   return (
     <ThemeProvider>
       <AuthStateProvider>
         <TaskProvider>
-          <RouterProvider router={router} />
+          <InnerApp />
         </TaskProvider>
       </AuthStateProvider>
     </ThemeProvider>

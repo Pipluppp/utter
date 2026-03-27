@@ -1,10 +1,10 @@
 import type { Key } from "react-aria-components";
 import {
-    SelectionIndicator,
-    ToggleButton,
-    ToggleButtonGroup,
-    composeRenderProps,
-    type ToggleButtonProps,
+  SelectionIndicator,
+  ToggleButton,
+  ToggleButtonGroup,
+  composeRenderProps,
+  type ToggleButtonProps,
 } from "react-aria-components";
 
 export interface SegmentedControlItem {

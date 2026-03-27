@@ -1,5 +1,5 @@
+import { Link, useLocation } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { NavLink, useLocation } from "react-router-dom";
 import { useTasks } from "../../app/TaskProvider";
 import { useElapsedTick } from "../../hooks/useElapsedTick";
 import { cn } from "../../lib/cn";
@@ -72,7 +72,7 @@ function TaskRow({
       )}
       title={raw}
     >
-      <NavLink
+      <Link
         to={task.originPage}
         className={cn(
           "flex min-w-0 flex-1 items-center gap-2 px-1 py-0.5 text-left",
@@ -84,7 +84,7 @@ function TaskRow({
         </span>
         <span className="min-w-0 flex-1 truncate">{short}</span>
         <span className="shrink-0 text-xs font-pixel font-medium text-faint">{elapsed}</span>
-      </NavLink>
+      </Link>
 
       {showCancel ? (
         <button

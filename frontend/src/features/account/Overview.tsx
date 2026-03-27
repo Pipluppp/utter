@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { button } from "../../components/atoms/Button";
 import { cn } from "../../lib/cn";
-import { formatCredits, useAccountPageData } from "./accountData";
+import { formatCredits, useAccountData } from "./accountData";
 import { AccountOverviewSkeleton } from "./accountSkeletons";
 import { AccountEmptyState, AccountPanel } from "./accountUi";
 
@@ -31,7 +31,7 @@ function PricingSummary() {
 }
 
 export function AccountOverviewPage() {
-  const { activity, credits } = useAccountPageData();
+  const { activity, credits } = useAccountData();
 
   if (!credits) {
     return <AccountOverviewSkeleton />;

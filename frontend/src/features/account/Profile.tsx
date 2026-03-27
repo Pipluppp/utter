@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "../../components/atoms/Button";
-import { useAccountPageData } from "./accountData";
+import { useAccountData } from "./accountData";
 import { AccountProfileSkeleton } from "./accountSkeletons";
 import { AccountNotice, AccountPanel } from "./accountUi";
 import { ChangePasswordSection } from "./ChangePasswordSection";
@@ -16,7 +16,7 @@ function previewInitials(value: string) {
 }
 
 export function AccountProfilePage() {
-  const { authEmail, identities, profile, signOut } = useAccountPageData();
+  const { authEmail, identities, profile, signOut } = useAccountData();
   const [error, setError] = useState<string | null>(null);
 
   async function onSignOut() {

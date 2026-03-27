@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button, button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
 import {
-    AutocompleteSelect,
-    type AutocompleteSelectItem,
+  AutocompleteSelect,
+  type AutocompleteSelectItem,
 } from "../../components/molecules/AutocompleteSelect";
 import { SortSelect } from "../../components/molecules/SortSelect";
 import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
@@ -17,11 +16,12 @@ import { input } from "../../lib/recipes/input";
 import { paginationButton } from "../../lib/recipes/pagination-button";
 import { statusBadge } from "../../lib/recipes/status-badge";
 import type {
-    Generation,
-    GenerationsResponse,
-    RegenerateResponse,
-    VoicesResponse,
+  Generation,
+  GenerationsResponse,
+  RegenerateResponse,
+  VoicesResponse,
 } from "../../lib/types";
+import { Route } from "../../routes/_app.history";
 import { useDebouncedValue } from "../shared/hooks";
 
 function tokenize(query: string) {
@@ -150,17 +150,19 @@ function HistorySkeleton() {
 }
 
 export function HistoryPage() {
-  const navigate = useNavigate();
+  const navigate = Route.useNavigate();
   const { toggle } = useWaveformListPlayer();
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialQuery = searchParams.get("search") ?? "";
-  const initialStatus = searchParams.get("status") ?? "all";
-  const initialPageRaw = searchParams.get("page");
-  const initialSort = searchParams.get("sort") ?? "created_at";
-  const initialSortDir = searchParams.get("sort_dir") === "asc" ? "asc" : "desc";
-  const initialVoiceId = searchParams.get("voice_id") ?? "all";
-  const initialPage = Math.max(1, Number(initialPageRaw ?? "1") || 1);
+  const {
+    search: initialQuery,
+    status: initialStatusParam,
+    page: initialPage,
+    sort: initialSort,
+    sort_dir: initialSortDir,
+    voice_id: initialVoiceIdParam,
+  } = Route.useSearch();
+  const initialStatus = initialStatusParam ?? "all";
+  const initialVoiceId = initialVoiceIdParam ?? "all";
 
   const [query, setQuery] = useState(initialQuery);
   const debounced = useDebouncedValue(query, 250);
@@ -244,15 +246,18 @@ export function HistoryPage() {
   useEffect(() => setPage(1), [debounced, status, voiceId, sort, sortDir]);
 
   useEffect(() => {
-    const qs = new URLSearchParams();
-    if (debounced.trim()) qs.set("search", debounced.trim());
-    if (status !== "all") qs.set("status", status);
-    if (voiceId !== "all") qs.set("voice_id", voiceId);
-    if (sort !== "created_at") qs.set("sort", sort);
-    if (sortDir !== "desc") qs.set("sort_dir", sortDir);
-    if (page !== 1) qs.set("page", String(page));
-    setSearchParams(qs, { replace: true });
-  }, [debounced, page, setSearchParams, status, voiceId, sort, sortDir]);
+    void navigate({
+      search: {
+        search: debounced.trim() || "",
+        status: status !== "all" ? status : undefined,
+        voice_id: voiceId !== "all" ? voiceId : undefined,
+        sort: sort !== "created_at" ? sort : "created_at",
+        sort_dir: sortDir !== "desc" ? sortDir : "desc",
+        page: page !== 1 ? page : 1,
+      },
+      replace: true,
+    });
+  }, [debounced, page, navigate, status, voiceId, sort, sortDir]);
 
   useEffect(() => {
     if (refreshTimerRef.current) {
@@ -286,7 +291,7 @@ export function HistoryPage() {
       const res = await apiJson<RegenerateResponse>(`/api/generations/${gen.id}/regenerate`, {
         method: "POST",
       });
-      navigate(res.redirect_url);
+      navigate({ to: res.redirect_url });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to regenerate.");
     }
@@ -506,7 +511,7 @@ export function HistoryPage() {
             type="button"
             className={paginationButton().base()}
             disabled={data.pagination.page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() => setPage((p: number) => Math.max(1, p - 1))}
           >
             Prev
           </button>
@@ -517,7 +522,7 @@ export function HistoryPage() {
             type="button"
             className={paginationButton().base()}
             disabled={data.pagination.page >= data.pagination.pages}
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => setPage((p: number) => p + 1)}
           >
             Next
           </button>

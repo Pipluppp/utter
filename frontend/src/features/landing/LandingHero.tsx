@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
 import { FeatureEntryLink } from "../../app/FeatureEntryLink";
 import { button } from "../../components/atoms/Button";
 import { SVGBlobs } from "./SVGBlobs";
@@ -23,10 +23,7 @@ export function LandingHero() {
         </p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link
-            to={{ pathname: "/", hash: "#demos" }}
-            className={button({ variant: "primary", size: "md" }).base()}
-          >
+          <Link to="/" hash="demos" className={button({ variant: "primary", size: "md" }).base()}>
             {"Hear the demos"} <ArrowRight className="icon-sm" aria-hidden="true" />
           </Link>
           <FeatureEntryLink

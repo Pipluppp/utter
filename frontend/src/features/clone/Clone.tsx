@@ -15,7 +15,6 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "react-aria-components";
-import { useSearchParams } from "react-router-dom";
 import { Button } from "../../components/atoms/Button";
 import { AppLink } from "../../components/atoms/Link";
 import { Message } from "../../components/atoms/Message";
@@ -45,6 +44,7 @@ import { input } from "../../lib/recipes/input";
 import { toggleButton } from "../../lib/recipes/toggle-button";
 import { formatElapsed } from "../../lib/time";
 import type { CloneResponse } from "../../lib/types";
+import { Route } from "../../routes/_app.clone";
 import { useLanguages } from "../shared/hooks";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -69,7 +69,7 @@ function contentTypeForFile(file: File): string {
 }
 
 export function ClonePage() {
-  const [params] = useSearchParams();
+  const { demo: demoParam } = Route.useSearch();
   const { languages, defaultLanguage, transcription } = useLanguages();
   const languageItems: AutocompleteSelectItem[] = useMemo(
     () => languages.map((l) => ({ id: l, label: l })),
@@ -459,7 +459,7 @@ export function ClonePage() {
   }
 
   useEffect(() => {
-    const demoId = params.get("demo");
+    const demoId = demoParam;
     if (!demoId) return;
     if (loadedDemoRef.current === demoId) return;
     loadedDemoRef.current = demoId;
@@ -492,7 +492,7 @@ export function ClonePage() {
         setError(e instanceof Error ? e.message : "Failed to load demo.");
       }
     })();
-  }, [params, validateAndSetFile]);
+  }, [demoParam, validateAndSetFile]);
 
   async function onSubmit() {
     setError(null);

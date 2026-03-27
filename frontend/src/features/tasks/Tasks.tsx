@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { taskLabel } from "../../app/taskKeys";
 import { useTasks } from "../../app/TaskProvider";
 import { Button } from "../../components/atoms/Button";

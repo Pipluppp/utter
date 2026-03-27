@@ -1,0 +1,85 @@
+import { Outlet, createFileRoute, redirect, useLocation } from "@tanstack/react-router";
+import { Suspense, useEffect, useState } from "react";
+import { useAuthState } from "../app/auth/AuthStateProvider";
+import { AppFooter } from "../app/Footer";
+import { buildAuthHref, buildReturnTo, getNavVariant } from "../app/navigation";
+import { TopBar } from "../app/TopBar";
+import { useGlobalShortcuts } from "../app/useGlobalShortcuts";
+import { TaskDock } from "../components/organisms/TaskDock";
+import {
+  AuthGateSkeleton,
+  RouteAccountSkeleton,
+  RouteAppSkeleton,
+} from "../components/templates/RouteSkeletons";
+
+export const Route = createFileRoute("/_app")({
+  beforeLoad: ({ context, location }) => {
+    if (context.authState.status === "signed_out") {
+      throw redirect({
+        to: "/auth" as string,
+        search: { returnTo: location.href },
+      });
+    }
+  },
+  pendingComponent: AuthGateSkeleton,
+  component: AppLayout,
+});
+
+function AppLayout() {
+  const location = useLocation();
+  const authState = useAuthState();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const navVariant = getNavVariant("app", authState.status);
+  const signInHref = buildAuthHref(buildReturnTo(location));
+
+  const suspenseFallback = location.pathname.startsWith("/account") ? (
+    <RouteAccountSkeleton />
+  ) : (
+    <RouteAppSkeleton />
+  );
+
+  useGlobalShortcuts(authState.status === "signed_in");
+
+  // Close mobile menu on route changes
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname, location.hash]);
+
+  // Escape key closes mobile menu
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
+
+  // Show skeleton while auth is still resolving — beforeLoad will redirect
+  // once router.invalidate() fires after auth settles to "signed_out"
+  if (authState.status === "loading") {
+    return <AuthGateSkeleton />;
+  }
+
+  return (
+    <>
+      <TopBar
+        variant={navVariant}
+        currentHash={location.hash}
+        signInHref={signInHref}
+        menuOpen={menuOpen}
+        onToggleMenu={() => setMenuOpen((open) => !open)}
+        onCloseMenu={() => setMenuOpen(false)}
+      />
+      <main id="main" tabIndex={-1} className="w-full flex-1 mx-auto max-w-5xl px-4 py-12 md:px-6">
+        <Suspense fallback={suspenseFallback}>
+          <Outlet />
+        </Suspense>
+      </main>
+      <AppFooter />
+      <TaskDock />
+    </>
+  );
+}

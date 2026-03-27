@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Form,
@@ -9,7 +10,6 @@ import {
   TextArea,
   TextField,
 } from "react-aria-components";
-import { useNavigate } from "react-router-dom";
 import { useTasks } from "../../app/TaskProvider";
 import { Button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
@@ -416,7 +416,7 @@ export function DesignPage() {
             block
             onPress={() => {
               if (!savedVoiceId) return;
-              void navigate(`/generate?voice=${encodeURIComponent(savedVoiceId)}`);
+              void navigate({ to: "/generate", search: { voice: savedVoiceId } });
             }}
             isDisabled={!savedVoiceId || isSavingVoice}
           >

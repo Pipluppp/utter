@@ -1,10 +1,10 @@
-import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { Outlet, createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
 import { Tab, TabList, Tabs } from "react-aria-components";
-import { Button } from "../../components/atoms/Button";
-import { Separator } from "../../components/atoms/Separator";
-import { cn } from "../../lib/cn";
-import { useAccountData } from "./accountData";
-import { AccountNotice } from "./accountUi";
+import { Button } from "../components/atoms/Button";
+import { Separator } from "../components/atoms/Separator";
+import { useAccountData } from "../features/account/accountData";
+import { AccountNotice } from "../features/account/accountUi";
+import { cn } from "../lib/cn";
 
 type AccountNavItem = {
   to: string;
@@ -30,13 +30,15 @@ const navItems: AccountNavItem[] = [
   },
 ];
 
-export function AccountLayoutPage() {
+export const Route = createFileRoute("/_app/account")({
+  component: AccountLayout,
+});
+
+function AccountLayout() {
   const account = useAccountData();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Determine selected tab from current path.
-  // Exact match for "/account" (Profile), prefix match for sub-routes.
   const selectedTab =
     navItems.find((item) =>
       item.to === "/account"

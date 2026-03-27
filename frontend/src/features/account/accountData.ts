@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useOutletContext } from "react-router-dom";
 import { useAuthState } from "../../app/auth/AuthStateProvider";
 import { getCreditPackById } from "../../content/plans";
 import { apiJson } from "../../lib/api";
@@ -253,8 +252,4 @@ export function useAccountData(): AccountData {
     refreshing,
     signOut,
   };
-}
-
-export function useAccountPageData() {
-  return useOutletContext<AccountData>();
 }

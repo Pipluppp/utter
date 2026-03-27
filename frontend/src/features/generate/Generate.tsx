@@ -8,7 +8,6 @@ import {
   TextArea,
   TextField,
 } from "react-aria-components";
-import { useSearchParams } from "react-router-dom";
 import { taskLabel } from "../../app/taskKeys";
 import { useTasks } from "../../app/TaskProvider";
 import { Button } from "../../components/atoms/Button";
@@ -30,6 +29,7 @@ import { resolveProtectedMediaUrl, triggerDownload } from "../../lib/protectedMe
 import { input } from "../../lib/recipes/input";
 import { formatElapsed } from "../../lib/time";
 import type { GenerateResponse, StoredTask, VoicesResponse } from "../../lib/types";
+import { Route } from "../../routes/_app.generate";
 import { useLanguages } from "../shared/hooks";
 
 type GenerateFormState = {
@@ -39,7 +39,12 @@ type GenerateFormState = {
 };
 
 export function GeneratePage() {
-  const [params] = useSearchParams();
+  const {
+    voice: voiceParam,
+    text: textParam,
+    language: languageParam,
+    demo: demoParam,
+  } = Route.useSearch();
   const { languages, defaultLanguage, provider, capabilities } = useLanguages();
   const languageItems: AutocompleteSelectItem[] = useMemo(
     () => languages.map((l) => ({ id: l, label: l })),
@@ -120,10 +125,10 @@ export function GeneratePage() {
       if (typeof fs.text === "string") setText(fs.text);
     }
 
-    const voice = params.get("voice");
-    const qsText = params.get("text");
-    const qsLang = params.get("language");
-    const demoId = params.get("demo");
+    const voice = voiceParam;
+    const qsText = textParam;
+    const qsLang = languageParam;
+    const demoId = demoParam;
     if (voice) setVoiceId(voice);
     if (typeof qsText === "string" && qsText.length > 0) setText(qsText);
     if (typeof qsLang === "string" && qsLang.length > 0) setLanguage(qsLang);
@@ -142,7 +147,7 @@ export function GeneratePage() {
         })();
       }
     }
-  }, [latestTask, params]);
+  }, [latestTask, voiceParam, textParam, languageParam, demoParam]);
 
   const selectedTask = useMemo(
     () => generateTasks.find((task) => task.taskId === selectedTaskId) ?? null,

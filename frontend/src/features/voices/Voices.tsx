@@ -1,7 +1,7 @@
+import { Link } from "@tanstack/react-router";
 import { Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
-import { NavLink, useSearchParams } from "react-router-dom";
 import { Button, button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
@@ -13,6 +13,7 @@ import { formatCreatedAt } from "../../lib/format";
 import { input } from "../../lib/recipes/input";
 import { paginationButton } from "../../lib/recipes/pagination-button";
 import type { Voice, VoicesResponse } from "../../lib/types";
+import { Route } from "../../routes/_app.voices";
 import { useDebouncedValue } from "../shared/hooks";
 
 function tokenize(query: string) {
@@ -145,17 +146,15 @@ function VoicesSkeleton() {
 export function VoicesPage() {
   const { toggle } = useWaveformListPlayer();
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialQuery = searchParams.get("search") ?? "";
-  const initialSource = searchParams.get("source");
-  const initialPageRaw = searchParams.get("page");
-  const initialSort = searchParams.get("sort") ?? "created_at";
-  const initialSortDir = searchParams.get("sort_dir") === "asc" ? "asc" : "desc";
-  const initialFavorites = searchParams.get("favorites") ?? "all";
-
-  const initialPage = Math.max(1, Number(initialPageRaw ?? "1") || 1);
-  const initialSourceValue =
-    initialSource === "uploaded" || initialSource === "designed" ? initialSource : "all";
+  const {
+    search: initialQuery,
+    source: initialSourceValue,
+    page: initialPage,
+    sort: initialSort,
+    sort_dir: initialSortDir,
+    favorites: initialFavorites,
+  } = Route.useSearch();
+  const navigate = Route.useNavigate();
 
   const [query, setQuery] = useState(initialQuery);
   const debounced = useDebouncedValue(query, 250);
@@ -220,15 +219,18 @@ export function VoicesPage() {
   useEffect(() => setPage(1), [debounced, source, sort, sortDir, favorites]);
 
   useEffect(() => {
-    const qs = new URLSearchParams();
-    if (debounced.trim()) qs.set("search", debounced.trim());
-    if (source !== "all") qs.set("source", source);
-    if (sort !== "created_at") qs.set("sort", sort);
-    if (sortDir !== "desc") qs.set("sort_dir", sortDir);
-    if (favorites === "true") qs.set("favorites", "true");
-    if (page !== 1) qs.set("page", String(page));
-    setSearchParams(qs, { replace: true });
-  }, [debounced, page, setSearchParams, source, sort, sortDir, favorites]);
+    void navigate({
+      search: {
+        search: debounced.trim() || "",
+        source: source !== "all" ? source : "all",
+        sort: sort !== "created_at" ? sort : "created_at",
+        sort_dir: sortDir !== "desc" ? sortDir : "desc",
+        favorites: favorites === "true" ? "true" : "all",
+        page: page !== 1 ? page : 1,
+      },
+      replace: true,
+    });
+  }, [debounced, page, navigate, source, sort, sortDir, favorites]);
 
   async function onDelete(voice: Voice) {
     if (!confirm(`Delete voice "${voice.name}"?`)) return;
@@ -360,7 +362,7 @@ export function VoicesPage() {
                 ? "border-foreground bg-foreground text-background hover:bg-foreground/80"
                 : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
             }`}
-            onClick={() => setFavorites((f) => (f === "true" ? "all" : "true"))}
+            onClick={() => setFavorites((f: string) => (f === "true" ? "all" : "true"))}
             aria-label={favorites === "true" ? "Show all voices" : "Show favorites only"}
             aria-pressed={favorites === "true"}
           >
@@ -480,15 +482,16 @@ export function VoicesPage() {
                   </div>
 
                   <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end">
-                    <NavLink
-                      to={`/generate?voice=${v.id}`}
+                    <Link
+                      to="/generate"
+                      search={{ voice: v.id }}
                       className={button({
                         variant: "secondary",
                         size: "sm",
                       }).base()}
                     >
                       Generate
-                    </NavLink>
+                    </Link>
                     <button
                       type="button"
                       className={paginationButton().base()}
@@ -532,7 +535,7 @@ export function VoicesPage() {
             type="button"
             className={paginationButton().base()}
             disabled={data.pagination.page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() => setPage((p: number) => Math.max(1, p - 1))}
           >
             Prev
           </button>
@@ -543,7 +546,7 @@ export function VoicesPage() {
             type="button"
             className={paginationButton().base()}
             disabled={data.pagination.page >= data.pagination.pages}
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => setPage((p: number) => p + 1)}
           >
             Next
           </button>

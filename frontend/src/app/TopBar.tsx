@@ -1,6 +1,5 @@
+import { useLocation } from "@tanstack/react-router";
 import { User } from "lucide-react";
-import type { To } from "react-router-dom";
-import { useLocation } from "react-router-dom";
 import { Kbd } from "../components/atoms/Kbd";
 import { AppLink, NavAppLink } from "../components/atoms/Link";
 import { Separator } from "../components/atoms/Separator";
@@ -11,7 +10,7 @@ import type { NavSectionItem, NavVariant } from "./navigation";
 
 function routeItem(
   label: string,
-  to: To,
+  to: string,
   options?: {
     shortcut?: string;
     showTaskBadge?: boolean;
@@ -36,18 +35,13 @@ function hashItem(label: string, hash: "#demos" | "#features" | "#pricing") {
   };
 }
 
-function toHref(to: To): string {
-  if (typeof to === "string") return to;
-  const path = to.pathname ?? "";
-  const search = to.search ?? "";
-  const hash = to.hash ?? "";
-  return `${path}${search}${hash}`;
+function toHref(to: string): string {
+  return to;
 }
 
-function isPathCurrent(pathname: string, to: To): boolean {
-  const href = typeof to === "string" ? to : (to.pathname ?? "/");
-  if (href === "/") return pathname === "/";
-  return pathname.startsWith(href);
+function isPathCurrent(pathname: string, to: string): boolean {
+  if (to === "/") return pathname === "/";
+  return pathname.startsWith(to);
 }
 
 function getSectionKey(section: NavSectionItem[]) {

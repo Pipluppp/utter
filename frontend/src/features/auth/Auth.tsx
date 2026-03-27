@@ -1,7 +1,7 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthState } from "../../app/auth/AuthStateProvider";
 import { getSafeReturnTo } from "../../app/navigation";
 import { Button } from "../../components/atoms/Button";
@@ -18,19 +18,19 @@ import {
 import { cn } from "../../lib/cn";
 import { input } from "../../lib/recipes/input";
 import { validateEmail, validatePassword } from "../../lib/validation";
+import { Route } from "../../routes/_auth.auth";
 
 type PasswordIntent = "sign_in" | "sign_up";
 
 export function AuthPage() {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
+  const { returnTo: rawReturnTo, error: rawError, intent: initialIntent } = Route.useSearch();
   const authState = useAuthState();
 
   const configured = isAuthConfigured();
   const turnstileSiteKey = getTurnstileSiteKey();
-  const returnTo = (params.get("returnTo") ?? "").trim();
-  const callbackError = (params.get("error") ?? "").trim();
-  const initialIntent: PasswordIntent = params.get("intent") === "sign_up" ? "sign_up" : "sign_in";
+  const returnTo = (rawReturnTo ?? "").trim();
+  const callbackError = (rawError ?? "").trim();
   const safeReturnTo = useMemo(() => getSafeReturnTo(returnTo), [returnTo]);
 
   const [intent, setIntent] = useState<PasswordIntent>(initialIntent);
@@ -53,7 +53,7 @@ export function AuthPage() {
 
   useEffect(() => {
     if (authState.status === "signed_in") {
-      navigate(safeReturnTo, { replace: true });
+      navigate({ to: safeReturnTo, replace: true });
     }
   }, [authState.status, navigate, safeReturnTo]);
 
@@ -77,7 +77,7 @@ export function AuthPage() {
         setCaptchaToken(null);
         await authState.refresh();
         setStatus({ type: "ok", message: "Signed in." });
-        navigate(safeReturnTo, { replace: true });
+        navigate({ to: safeReturnTo, replace: true });
         return;
       }
 
@@ -93,7 +93,7 @@ export function AuthPage() {
       if (result.signed_in) {
         await authState.refresh();
         setStatus({ type: "ok", message: "Account created." });
-        navigate(safeReturnTo, { replace: true });
+        navigate({ to: safeReturnTo, replace: true });
         return;
       }
 
