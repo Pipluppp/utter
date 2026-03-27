@@ -358,6 +358,7 @@ export function HistoryPage() {
           onSelectionChange={setStatus}
           searchLabel="Search statuses"
           searchPlaceholder="Search..."
+          popoverClassName="min-w-36"
         >
           {(item) => item.label}
         </AutocompleteSelect>

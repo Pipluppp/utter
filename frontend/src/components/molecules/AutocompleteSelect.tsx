@@ -33,6 +33,7 @@ export interface AutocompleteSelectProps<T extends AutocompleteSelectItem> {
   searchLabel?: string;
   searchPlaceholder?: string;
   className?: string;
+  popoverClassName?: string;
   size?: "default" | "compact";
 }
 
@@ -48,6 +49,7 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
   searchLabel = "Search",
   searchPlaceholder = "Search...",
   className,
+  popoverClassName,
   size = "default",
 }: AutocompleteSelectProps<T>) {
   const empty = items.length === 0;
@@ -91,7 +93,7 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
         className={
           compact
             ? "min-w-32 overflow-y-auto rounded-lg border border-border bg-popover shadow-popover data-[placement=bottom]:origin-top data-[placement=top]:origin-bottom entering:animate-in entering:fade-in-0 entering:zoom-in-95 exiting:animate-out exiting:fade-out-0 exiting:zoom-out-95 flex flex-col"
-            : styles.popover({ className: "flex flex-col" })
+            : styles.popover({ className: `flex flex-col ${popoverClassName ?? ""}` })
         }
       >
         {/* biome-ignore lint/a11y/noStaticElementInteractions: trap single-char keys so global shortcuts don't fire */}
