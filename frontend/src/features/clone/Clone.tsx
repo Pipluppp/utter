@@ -21,7 +21,6 @@ import {
 } from "../../components/molecules/AutocompleteSelect";
 import { GridArtSurface } from "../../components/molecules/GridArt";
 import { InfoTip } from "../../components/molecules/InfoTip";
-import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
 import { getUtterDemo } from "../../content/utterDemo";
 import { CLONE_TIPS } from "../../data/tips";
 import { apiForm } from "../../lib/api";
@@ -36,6 +35,7 @@ import {
 import { input } from "../../lib/recipes/input";
 import { toggleButton } from "../../lib/recipes/toggle-button";
 import { CloneSuccessModal } from "./components/CloneSuccessModal";
+import { RecordPanel } from "./components/RecordPanel";
 import { useAudioRecorder } from "./hooks/useAudioRecorder";
 import { useCloneSubmit } from "./hooks/useCloneSubmit";
 
@@ -76,10 +76,6 @@ export function ClonePage() {
   const [error, setError] = useState<string | null>(null);
 
   const fileInfo = file ? `${file.name} - ${(file.size / (1024 * 1024)).toFixed(1)} MB` : null;
-
-  const recordTimeMins = Math.floor(recorder.recordSeconds / 60);
-  const recordTimeSecs = recorder.recordSeconds % 60;
-  const recordTimeLabel = `${recordTimeMins}:${recordTimeSecs.toString().padStart(2, "0")}`;
 
   const validateAndSetFile = useCallback(async (next: File | null) => {
     setFileError(null);
@@ -267,79 +263,28 @@ export function ClonePage() {
       </div>
 
       {audioMode === "record" && TRANSCRIPTION_ENABLED ? (
-        <div className="space-y-4 border border-border bg-background p-6 shadow-elevated">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-semibold uppercase tracking-wide">
-              Record Reference Audio
-            </div>
-            <div className="text-xs text-faint">{recordTimeLabel}</div>
-          </div>
-
-          <div className="text-xs text-faint">
-            Aim for {RECOMMENDED_REFERENCE_SECONDS} seconds. Recording stops automatically at{" "}
-            {MAX_REFERENCE_SECONDS} seconds.
-          </div>
-
-          <div className="h-2 w-full overflow-hidden border border-border bg-muted">
-            <div
-              className="h-full bg-foreground transition-[width]"
-              style={{ width: `${Math.min(100, recorder.micLevel * 180)}%` }}
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              onPress={() => void recorder.start()}
-              isDisabled={recorder.recording || cloneSubmit.submitting || transcribing}
-            >
-              {recorder.recording ? "Recording..." : "Start"}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onPress={() => {
-                void (async () => {
-                  const wavFile = await recorder.stop();
-                  if (!wavFile) return;
-                  const accepted = await validateAndSetFile(wavFile);
-                  if (!accepted) return;
-                  await onTranscribeAudio(wavFile);
-                })();
-              }}
-              isDisabled={!recorder.recording}
-            >
-              Stop
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onPress={() => {
-                recorder.clear();
-                setTranscript("");
-                setFile(null);
-              }}
-              isDisabled={recorder.recording || transcribing}
-            >
-              Clear
-            </Button>
-          </div>
-
-          {transcribing ? (
-            <div className="text-xs font-medium uppercase tracking-wide text-faint">
-              Transcribing recorded audio...
-            </div>
-          ) : null}
-
-          {audioMode === "record" && file ? (
-            <div className="border border-border bg-background p-3">
-              <WaveformPlayer audioBlob={file} />
-            </div>
-          ) : null}
-        </div>
+        <RecordPanel
+          recorder={recorder}
+          file={file}
+          transcribing={transcribing}
+          submitting={cloneSubmit.submitting}
+          maxSeconds={MAX_REFERENCE_SECONDS}
+          recommendedSeconds={RECOMMENDED_REFERENCE_SECONDS}
+          onStop={() => {
+            void (async () => {
+              const wavFile = await recorder.stop();
+              if (!wavFile) return;
+              const accepted = await validateAndSetFile(wavFile);
+              if (!accepted) return;
+              await onTranscribeAudio(wavFile);
+            })();
+          }}
+          onClear={() => {
+            recorder.clear();
+            setTranscript("");
+            setFile(null);
+          }}
+        />
       ) : (
         <div className="relative">
           <DropZone
