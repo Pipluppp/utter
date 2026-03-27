@@ -1,0 +1,36 @@
+{
+  "name": "utter-frontend-staging",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "../../frontend/dist",
+    "binding": "ASSETS"
+  },
+  "env": {
+    "staging": {
+      "name": "utter",
+      "observability": {
+        "enabled": true
+      },
+      "services": [
+        {
+          "binding": "API",
+          "service": "utter-api-staging"
+        }
+      ],
+      "routes": [
+        {
+          "pattern": "uttervoice.com",
+          "custom_domain": true
+        }
+      ]
+    }
+  }
+}

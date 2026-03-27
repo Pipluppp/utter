@@ -1,0 +1,167 @@
+{
+  "name": "utter-api",
+  "workers_dev": false,
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "observability": {
+    "enabled": true
+  },
+  // ─── Non-sensitive config vars (public, committed to git) ───
+  // Top-level = local dev defaults. Environments override them.
+  "vars": {
+    "CORS_ALLOWED_ORIGIN": "http://localhost:5173",
+    "DASHSCOPE_REGION": "intl",
+    "QWEN_VC_TARGET_MODEL": "qwen3-tts-vc-2026-01-22",
+    "QWEN_VD_TARGET_MODEL": "qwen3-tts-vd-2026-01-26",
+    "VOICE_DESIGN_ENABLED": "false",
+    "QWEN_ASR_MODEL": "qwen3-asr-flash-2026-02-10",
+    "QWEN_ASR_BASE_URL": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    "QUEUE_BILLING_ENABLED": "false"
+  },
+  // ─── Declare required secrets ───
+  // - `wrangler deploy` fails if any are missing (safety net)
+  // - `wrangler types` uses this list for type generation (not .dev.vars)
+  // - Secrets are ALWAYS typed as `string`
+  "secrets": {
+    "required": [
+      "SUPABASE_URL",
+      "SUPABASE_ANON_KEY",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "STORAGE_SIGNING_SECRET",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
+      "DASHSCOPE_API_KEY"
+    ]
+  },
+  // ─── Local dev bindings (wrangler dev --local) ───
+  "r2_buckets": [
+    {
+      "binding": "R2_REFERENCES",
+      "bucket_name": "utter-references-local"
+    },
+    {
+      "binding": "R2_GENERATIONS",
+      "bucket_name": "utter-generations-local"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "TTS_QUEUE",
+        "queue": "tts-jobs-local"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "tts-jobs-local",
+        "max_batch_size": 1,
+        "max_batch_timeout": 2,
+        "max_retries": 3,
+        "dead_letter_queue": "tts-jobs-dlq-local"
+      }
+    ]
+  },
+  "env": {
+    "staging": {
+      "observability": {
+        "enabled": true
+      },
+      "secrets": {
+        "required": [
+          "SUPABASE_URL",
+          "SUPABASE_ANON_KEY",
+          "SUPABASE_SERVICE_ROLE_KEY",
+          "STORAGE_SIGNING_SECRET",
+          "STRIPE_SECRET_KEY",
+          "STRIPE_WEBHOOK_SECRET",
+          "DASHSCOPE_API_KEY"
+        ]
+      },
+      "vars": {
+        "CORS_ALLOWED_ORIGIN": "https://uttervoice.com,http://localhost:5173,https://utter.duncanb013.workers.dev",
+        "DASHSCOPE_REGION": "intl",
+        "QWEN_VC_TARGET_MODEL": "qwen3-tts-vc-2026-01-22",
+        "QWEN_VD_TARGET_MODEL": "qwen3-tts-vd-2026-01-26",
+        "VOICE_DESIGN_ENABLED": "true",
+        "QWEN_ASR_MODEL": "qwen3-asr-flash-2026-02-10",
+        "QWEN_ASR_BASE_URL": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        "QUEUE_BILLING_ENABLED": "false"
+      },
+      "r2_buckets": [
+        {
+          "binding": "R2_REFERENCES",
+          "bucket_name": "utter-references-staging"
+        },
+        {
+          "binding": "R2_GENERATIONS",
+          "bucket_name": "utter-generations-staging"
+        }
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "TTS_QUEUE",
+            "queue": "tts-jobs-staging"
+          }
+        ],
+        "consumers": [
+          {
+            "queue": "tts-jobs-staging",
+            "max_batch_size": 1,
+            "max_batch_timeout": 2,
+            "max_retries": 3,
+            "dead_letter_queue": "tts-jobs-dlq-staging"
+          }
+        ]
+      }
+    },
+    "production": {
+      "observability": {
+        "enabled": true
+      },
+      "secrets": {
+        "required": [
+          "SUPABASE_URL",
+          "SUPABASE_ANON_KEY",
+          "SUPABASE_SERVICE_ROLE_KEY",
+          "STORAGE_SIGNING_SECRET",
+          "STRIPE_SECRET_KEY",
+          "STRIPE_WEBHOOK_SECRET",
+          "DASHSCOPE_API_KEY"
+        ]
+      },
+      "vars": {
+        "CORS_ALLOWED_ORIGIN": "https://uttervoice.com,https://utter.duncanb013.workers.dev,https://utter-wheat.vercel.app",
+        "DASHSCOPE_REGION": "intl",
+        "QWEN_VC_TARGET_MODEL": "qwen3-tts-vc-2026-01-22",
+        "QWEN_VD_TARGET_MODEL": "qwen3-tts-vd-2026-01-26",
+        "VOICE_DESIGN_ENABLED": "false",
+        "QWEN_ASR_MODEL": "qwen3-asr-flash-2026-02-10",
+        "QWEN_ASR_BASE_URL": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        "QUEUE_BILLING_ENABLED": "false"
+      }
+      // TODO: Uncomment when ready for production R2/Queue bindings:
+      // "r2_buckets": [
+      //   { "binding": "R2_REFERENCES", "bucket_name": "utter-references" },
+      //   { "binding": "R2_GENERATIONS", "bucket_name": "utter-generations" }
+      // ],
+      // "queues": {
+      //   "producers": [
+      //     { "binding": "TTS_QUEUE", "queue": "tts-jobs" }
+      //   ],
+      //   "consumers": [
+      //     {
+      //       "queue": "tts-jobs",
+      //       "max_batch_size": 1,
+      //       "max_batch_timeout": 2,
+      //       "max_retries": 3,
+      //       "dead_letter_queue": "tts-jobs-dlq"
+      //     }
+      //   ]
+      // }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 {
-  "private": true,
   "name": "utter",
+  "private": true,
   "scripts": {
     "sb:start": "supabase start",
     "sb:stop": "supabase stop",
@@ -9,8 +9,8 @@
     "cf:bootstrap:wsl": "bash ./scripts/cloudflare-migration/bootstrap-auth.sh",
     "cf:pages:build": "npm --prefix frontend run build:staging",
     "cf:frontend:build:staging": "npm --prefix frontend run build:staging",
-    "cf:deploy:api:staging": "wrangler deploy --env staging --config workers/api/wrangler.toml",
-    "cf:deploy:frontend:staging": "wrangler deploy --env staging --config workers/frontend/wrangler.toml",
+    "cf:deploy:api:staging": "wrangler deploy --env staging --config workers/api/wrangler.jsonc",
+    "cf:deploy:frontend:staging": "wrangler deploy --env staging --config workers/frontend/wrangler.jsonc",
     "cf:deploy:staging": "npm run cf:deploy:api:staging && npm run cf:frontend:build:staging && npm run cf:deploy:frontend:staging",
     "cf:worker:install": "npm --prefix workers/api install",
     "cf:worker:dev": "npm --prefix workers/api run dev",

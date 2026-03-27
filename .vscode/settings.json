@@ -1,12 +1,25 @@
 {
-  "[javascript]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
-  "[javascriptreact]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
-  "[typescript]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
-  "[typescriptreact]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
-  "[json]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
-  "[jsonc]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
-  "[css]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
-
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
