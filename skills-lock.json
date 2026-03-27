@@ -16,6 +16,11 @@
       "sourceType": "github",
       "computedHash": "e3ba3d760c5f4cc43b02a91fb8924f726c7818f95cc35d79d0a606ca622b72f5"
     },
+    "tanstack-query-best-practices": {
+      "source": "deckardger/tanstack-agent-skills",
+      "sourceType": "github",
+      "computedHash": "addf4358803d7746f7fe0475a3370d835775217e00dd5fc7bbd8a7d6c53d81e5"
+    },
     "tanstack-router": {
       "source": "tanstack-skills/tanstack-skills",
       "sourceType": "github",
