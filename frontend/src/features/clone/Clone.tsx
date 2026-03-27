@@ -29,7 +29,7 @@ import { InfoTip } from "../../components/molecules/InfoTip";
 import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
 import { getUtterDemo } from "../../content/utterDemo";
 import { CLONE_TIPS } from "../../data/tips";
-import { apiForm, apiJson } from "../../lib/api";
+import { apiForm } from "../../lib/api";
 import { getAudioDurationSeconds } from "../../lib/audio/audio";
 import { cn } from "../../lib/cn";
 import { fetchTextUtf8 } from "../../lib/fetchTextUtf8";
@@ -40,8 +40,6 @@ import {
 } from "../../lib/provider-config";
 import { input } from "../../lib/recipes/input";
 import { toggleButton } from "../../lib/recipes/toggle-button";
-import { formatElapsed } from "../../lib/time";
-import type { CloneResponse } from "../../lib/types";
 import { useAudioRecorder } from "./hooks/useAudioRecorder";
 
 const cloneRoute = getRouteApi("/_app/clone");
@@ -54,17 +52,6 @@ const ALLOWED_EXTS = new Set([".wav", ".mp3", ".m4a"]);
 function extOf(name: string) {
   const idx = name.lastIndexOf(".");
   return idx >= 0 ? name.slice(idx).toLowerCase() : "";
-}
-
-function contentTypeForFile(file: File): string {
-  const byType = file.type?.trim();
-  if (byType) return byType;
-
-  const ext = extOf(file.name);
-  if (ext === ".wav") return "audio/wav";
-  if (ext === ".mp3") return "audio/mpeg";
-  if (ext === ".m4a") return "audio/mp4";
-  return "application/octet-stream";
 }
 
 export function ClonePage() {
@@ -88,24 +75,14 @@ export function ClonePage() {
   const [transcript, setTranscript] = useState("");
   const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
 
-  const [submitting, setSubmitting] = useState(false);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [elapsedLabel, setElapsedLabel] = useState("0:00");
-  const [sweepNonce, setSweepNonce] = useState(0);
+  const cloneSubmit = useCloneSubmit();
 
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<CloneResponse | null>(null);
 
   useEffect(() => {
     if (transcriptionEnabled) return;
     if (audioMode === "record") setAudioMode("upload");
   }, [audioMode, transcriptionEnabled]);
-
-  useEffect(() => {
-    if (!submitting || !startedAt) return;
-    const t = window.setInterval(() => setElapsedLabel(formatElapsed(startedAt)), 1000);
-    return () => window.clearInterval(t);
-  }, [startedAt, submitting]);
 
   const transcriptRequired = true;
 
@@ -238,7 +215,6 @@ export function ClonePage() {
 
   async function onSubmit() {
     setError(null);
-    setCreated(null);
     setFileError(null);
 
     if (!name.trim()) {
@@ -258,64 +234,20 @@ export function ClonePage() {
       return;
     }
 
-    setSubmitting(true);
-    setSweepNonce((value) => value + 1);
-    const t0 = Date.now();
-    setStartedAt(t0);
-    setElapsedLabel("0:00");
-
-    try {
-      const { voice_id, upload_url } = await apiJson<{
-        voice_id: string;
-        upload_url: string;
-        object_key: string;
-      }>("/api/clone/upload-url", {
-        method: "POST",
-        json: {
-          name: name.trim(),
-          language,
-          transcript: transcript.trim(),
-        },
-      });
-
-      const uploadRes = await fetch(upload_url, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": contentTypeForFile(file) },
-      });
-      if (!uploadRes.ok) {
-        throw new Error("Failed to upload audio file.");
-      }
-
-      const res = await apiJson<CloneResponse>("/api/clone/finalize", {
-        method: "POST",
-        json: {
-          voice_id,
-          name: name.trim(),
-          language,
-          transcript: transcript.trim(),
-        },
-      });
-      setCreated(res);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to clone voice.");
-    } finally {
-      setSubmitting(false);
-      setStartedAt(null);
-    }
+    await cloneSubmit.submit({ name, file, language, transcript });
   }
 
   const reset = useCallback(() => {
-    setCreated(null);
+    cloneSubmit.reset();
     setError(null);
     setFileError(null);
     setName("");
     setTranscript("");
     setFile(null);
-  }, []);
+  }, [cloneSubmit]);
 
   return (
-    <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
+    <GridArtSurface sweepNonce={cloneSubmit.sweepNonce} contentClassName="space-y-8">
       <div className="flex items-center justify-center gap-2">
         <h2 className="text-balance text-center text-3xl font-pixel font-medium uppercase tracking-[2px] md:text-4xl">
           Clone
@@ -324,6 +256,7 @@ export function ClonePage() {
       </div>
 
       {error ? <Message variant="error">{error}</Message> : null}
+      {cloneSubmit.error ? <Message variant="error">{cloneSubmit.error}</Message> : null}
       {recorder.error ? <Message variant="error">{recorder.error}</Message> : null}
 
       <div className="flex items-center justify-center">
@@ -375,7 +308,7 @@ export function ClonePage() {
               type="button"
               size="sm"
               onPress={() => void recorder.start()}
-              isDisabled={recorder.recording || submitting || transcribing}
+              isDisabled={recorder.recording || cloneSubmit.submitting || transcribing}
             >
               {recorder.recording ? "Recording..." : "Start"}
             </Button>
@@ -463,7 +396,7 @@ export function ClonePage() {
               size="sm"
               type="button"
               isPending={transcribing}
-              isDisabled={submitting}
+              isDisabled={cloneSubmit.submitting}
               onPress={() => void onTranscribeAudio()}
             >
               {transcribing ? "Transcribing..." : "Transcribe"}
@@ -520,26 +453,26 @@ export function ClonePage() {
           <Button variant="secondary" type="button" block onPress={() => void onTryExample()}>
             Try Example Voice
           </Button>
-          <Button type="submit" block isDisabled={submitting}>
-            {submitting ? `Cloning... ${elapsedLabel}` : "Clone Voice"}
+          <Button type="submit" block isDisabled={cloneSubmit.submitting}>
+            {cloneSubmit.submitting ? `Cloning... ${cloneSubmit.elapsedLabel}` : "Clone Voice"}
           </Button>
         </div>
       </Form>
 
-      {submitting ? (
+      {cloneSubmit.submitting ? (
         <div className="border border-border bg-subtle p-4 shadow-elevated">
           <div className="flex items-center justify-between">
             <div className="text-sm">
               <div className="font-medium uppercase tracking-wide">Progress</div>
               <div className="mt-1 text-sm text-muted-foreground">Cloning...</div>
             </div>
-            <div className="text-xs text-faint">{elapsedLabel}</div>
+            <div className="text-xs text-faint">{cloneSubmit.elapsedLabel}</div>
           </div>
           <ProgressBar label="Cloning voice" isIndeterminate className="mt-3" />
         </div>
       ) : null}
       <ModalOverlay
-        isOpen={!!created}
+        isOpen={!!cloneSubmit.created}
         onOpenChange={(isOpen) => {
           if (!isOpen) reset();
         }}
@@ -554,14 +487,15 @@ export function ClonePage() {
             <h3 id="clone-success-title" className="text-sm font-semibold uppercase tracking-wide">
               Clone Success
             </h3>
-            {created ? (
+            {cloneSubmit.created ? (
               <>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Voice <span className="text-foreground">{created.name}</span> is ready.
+                  Voice <span className="text-foreground">{cloneSubmit.created.name}</span> is
+                  ready.
                 </p>
                 <div className="mt-6 flex flex-col gap-3">
                   <AppLink
-                    href={`/generate?voice=${created.id}`}
+                    href={`/generate?voice=${cloneSubmit.created.id}`}
                     className="press-scale-sm-y inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     Go to Generate <ArrowRight className="icon-sm" aria-hidden="true" />
