@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiJson } from "../../../lib/api";
 import { formatElapsed } from "../../../lib/time";
 import type { CloneResponse } from "../../../lib/types";
+// -- Mock mode: VITE_MOCK_CLONE=true skips real API calls (see useCloneSubmit.mock.ts)
+import { mockCloneSubmit } from "./useCloneSubmit.mock";
+const MOCK_CLONE = import.meta.env.VITE_MOCK_CLONE === "true";
 
 function contentTypeForFile(file: File): string {
   const byType = file.type?.trim();
@@ -38,66 +41,73 @@ export type CloneSubmitResult = {
 
 export function useCloneSubmit(): CloneSubmitResult {
   const [submitting, setSubmitting] = useState(false);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [elapsedLabel, setElapsedLabel] = useState("0:00");
+  const startedAtRef = useRef<number | null>(null);
+  const [_tick, setTick] = useState(0);
   const [sweepNonce, setSweepNonce] = useState(0);
   const [created, setCreated] = useState<CloneResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const elapsedLabel = startedAtRef.current ? formatElapsed(startedAtRef.current) : "0:00";
+
   useEffect(() => {
-    if (!submitting || !startedAt) return;
-    const t = window.setInterval(() => setElapsedLabel(formatElapsed(startedAt)), 1000);
+    if (!submitting) return;
+    const t = window.setInterval(() => setTick((v) => v + 1), 1000);
     return () => window.clearInterval(t);
-  }, [startedAt, submitting]);
+  }, [submitting]);
 
   const submit = useCallback(async ({ name, file, language, transcript }: CloneSubmitParams) => {
     setError(null);
     setCreated(null);
 
+    startedAtRef.current = Date.now();
     setSubmitting(true);
     setSweepNonce((v) => v + 1);
-    const t0 = Date.now();
-    setStartedAt(t0);
-    setElapsedLabel("0:00");
+    setTick(0);
 
     try {
-      const { voice_id, upload_url } = await apiJson<{
-        voice_id: string;
-        upload_url: string;
-        object_key: string;
-      }>("/api/clone/upload-url", {
-        method: "POST",
-        json: {
-          name: name.trim(),
-          language,
-          transcript: transcript.trim(),
-        },
-      });
+      if (MOCK_CLONE) {
+        // Mock: simulates upload-url → upload → finalize with realistic delays
+        const res = await mockCloneSubmit(name);
+        setCreated(res);
+      } else {
+        const { voice_id, upload_url } = await apiJson<{
+          voice_id: string;
+          upload_url: string;
+          object_key: string;
+        }>("/api/clone/upload-url", {
+          method: "POST",
+          json: {
+            name: name.trim(),
+            language,
+            transcript: transcript.trim(),
+          },
+        });
 
-      const uploadRes = await fetch(upload_url, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": contentTypeForFile(file) },
-      });
-      if (!uploadRes.ok) {
-        throw new Error("Failed to upload audio file.");
+        const uploadRes = await fetch(upload_url, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": contentTypeForFile(file) },
+        });
+        if (!uploadRes.ok) {
+          throw new Error("Failed to upload audio file.");
+        }
+
+        const res = await apiJson<CloneResponse>("/api/clone/finalize", {
+          method: "POST",
+          json: {
+            voice_id,
+            name: name.trim(),
+            language,
+            transcript: transcript.trim(),
+          },
+        });
+        setCreated(res);
       }
-
-      const res = await apiJson<CloneResponse>("/api/clone/finalize", {
-        method: "POST",
-        json: {
-          voice_id,
-          name: name.trim(),
-          language,
-          transcript: transcript.trim(),
-        },
-      });
-      setCreated(res);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to clone voice.");
     } finally {
       setSubmitting(false);
-      setStartedAt(null);
+      startedAtRef.current = null;
     }
   }, []);
 

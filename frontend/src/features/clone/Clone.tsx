@@ -41,6 +41,7 @@ import {
 import { input } from "../../lib/recipes/input";
 import { toggleButton } from "../../lib/recipes/toggle-button";
 import { useAudioRecorder } from "./hooks/useAudioRecorder";
+import { useCloneSubmit } from "./hooks/useCloneSubmit";
 
 const cloneRoute = getRouteApi("/_app/clone");
 
@@ -68,7 +69,6 @@ export function ClonePage() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [audioMode, setAudioMode] = useState<"upload" | "record">("upload");
 
-  const transcriptionEnabled = TRANSCRIPTION_ENABLED;
   const [transcribing, setTranscribing] = useState(false);
 
   const [name, setName] = useState("");
@@ -79,23 +79,11 @@ export function ClonePage() {
 
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (transcriptionEnabled) return;
-    if (audioMode === "record") setAudioMode("upload");
-  }, [audioMode, transcriptionEnabled]);
+  const fileInfo = file ? `${file.name} - ${(file.size / (1024 * 1024)).toFixed(1)} MB` : null;
 
-  const transcriptRequired = true;
-
-  const fileInfo = useMemo(() => {
-    if (!file) return null;
-    return `${file.name} - ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
-  }, [file]);
-
-  const recordTimeLabel = useMemo(() => {
-    const mins = Math.floor(recorder.recordSeconds / 60);
-    const secs = recorder.recordSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  }, [recorder.recordSeconds]);
+  const recordTimeMins = Math.floor(recorder.recordSeconds / 60);
+  const recordTimeSecs = recorder.recordSeconds % 60;
+  const recordTimeLabel = `${recordTimeMins}:${recordTimeSecs.toString().padStart(2, "0")}`;
 
   const validateAndSetFile = useCallback(async (next: File | null) => {
     setFileError(null);
@@ -125,7 +113,7 @@ export function ClonePage() {
   async function onTranscribeAudio(nextFile: File | null = file) {
     setError(null);
 
-    if (!transcriptionEnabled) {
+    if (!TRANSCRIPTION_ENABLED) {
       setError("Transcription is not enabled on this server.");
       return;
     }
@@ -229,7 +217,7 @@ export function ClonePage() {
       setError("Reference audio must be 10MB or smaller.");
       return;
     }
-    if (transcriptRequired && transcript.trim().length < 10) {
+    if (transcript.trim().length < 10) {
       setError("Please provide a transcript (at least 10 characters).");
       return;
     }
@@ -266,7 +254,7 @@ export function ClonePage() {
           selectedKeys={new Set([audioMode])}
           onSelectionChange={(keys) => {
             const next = [...keys][0] as "upload" | "record";
-            if (next) setAudioMode(next);
+            if (next && (next !== "record" || TRANSCRIPTION_ENABLED)) setAudioMode(next);
           }}
           isDisabled={recorder.recording}
           className="inline-flex overflow-hidden border border-border bg-background shadow-elevated"
@@ -274,7 +262,7 @@ export function ClonePage() {
           <ToggleButton id="upload" className={toggleButton({ size: "md" })}>
             Upload
           </ToggleButton>
-          {transcriptionEnabled ? (
+          {TRANSCRIPTION_ENABLED ? (
             <ToggleButton id="record" className={toggleButton({ size: "md" })}>
               Record
             </ToggleButton>
@@ -282,7 +270,7 @@ export function ClonePage() {
         </ToggleButtonGroup>
       </div>
 
-      {audioMode === "record" && transcriptionEnabled ? (
+      {audioMode === "record" && TRANSCRIPTION_ENABLED ? (
         <div className="space-y-4 border border-border bg-background p-6 shadow-elevated">
           <div className="flex items-center justify-between gap-3">
             <div className="text-sm font-semibold uppercase tracking-wide">
@@ -389,7 +377,7 @@ export function ClonePage() {
             {fileError ? <div className="mt-3 text-xs text-status-error">{fileError}</div> : null}
           </DropZone>
 
-          {transcriptionEnabled && file ? (
+          {TRANSCRIPTION_ENABLED && file ? (
             <Button
               className="absolute right-4 top-4 z-10"
               variant="secondary"
