@@ -1,3 +1,4 @@
+import { getRouteApi } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -44,8 +45,9 @@ import { input } from "../../lib/recipes/input";
 import { toggleButton } from "../../lib/recipes/toggle-button";
 import { formatElapsed } from "../../lib/time";
 import type { CloneResponse } from "../../lib/types";
-import { Route } from "../../routes/_app.clone";
 import { useLanguages } from "../shared/hooks";
+
+const cloneRoute = getRouteApi("/_app/clone");
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_REFERENCE_SECONDS = 60;
@@ -69,7 +71,7 @@ function contentTypeForFile(file: File): string {
 }
 
 export function ClonePage() {
-  const { demo: demoParam } = Route.useSearch();
+  const { demo: demoParam } = cloneRoute.useSearch();
   const { languages, defaultLanguage, transcription } = useLanguages();
   const languageItems: AutocompleteSelectItem[] = useMemo(
     () => languages.map((l) => ({ id: l, label: l })),

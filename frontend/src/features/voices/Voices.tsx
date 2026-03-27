@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, getRouteApi } from "@tanstack/react-router";
 import { Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
@@ -13,8 +13,9 @@ import { formatCreatedAt } from "../../lib/format";
 import { input } from "../../lib/recipes/input";
 import { paginationButton } from "../../lib/recipes/pagination-button";
 import type { Voice, VoicesResponse } from "../../lib/types";
-import { Route } from "../../routes/_app.voices";
 import { useDebouncedValue } from "../shared/hooks";
+
+const voicesRoute = getRouteApi("/_app/voices");
 
 function tokenize(query: string) {
   return query.trim().split(/\s+/).filter(Boolean);
@@ -153,8 +154,8 @@ export function VoicesPage() {
     sort: initialSort,
     sort_dir: initialSortDir,
     favorites: initialFavorites,
-  } = Route.useSearch();
-  const navigate = Route.useNavigate();
+  } = voicesRoute.useSearch();
+  const navigate = voicesRoute.useNavigate();
 
   const [query, setQuery] = useState(initialQuery);
   const debounced = useDebouncedValue(query, 250);

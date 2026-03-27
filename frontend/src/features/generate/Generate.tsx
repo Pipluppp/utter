@@ -1,3 +1,4 @@
+import { getRouteApi } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Form,
@@ -29,8 +30,9 @@ import { resolveProtectedMediaUrl, triggerDownload } from "../../lib/protectedMe
 import { input } from "../../lib/recipes/input";
 import { formatElapsed } from "../../lib/time";
 import type { GenerateResponse, StoredTask, VoicesResponse } from "../../lib/types";
-import { Route } from "../../routes/_app.generate";
 import { useLanguages } from "../shared/hooks";
+
+const generateRoute = getRouteApi("/_app/generate");
 
 type GenerateFormState = {
   voiceId: string;
@@ -44,7 +46,7 @@ export function GeneratePage() {
     text: textParam,
     language: languageParam,
     demo: demoParam,
-  } = Route.useSearch();
+  } = generateRoute.useSearch();
   const { languages, defaultLanguage, provider, capabilities } = useLanguages();
   const languageItems: AutocompleteSelectItem[] = useMemo(
     () => languages.map((l) => ({ id: l, label: l })),

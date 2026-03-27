@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { fallback, zodSearchValidator } from "@tanstack/router-zod-adapter";
 import { z } from "zod";
-import { GeneratePage } from "../features/generate/Generate";
+import { GeneratePage } from "../../features/generate/Generate";
 
 const generateSearchSchema = z.object({
   voice: fallback(z.string().optional(), undefined),

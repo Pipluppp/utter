@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { fallback, zodSearchValidator } from "@tanstack/router-zod-adapter";
 import { z } from "zod";
-import { VoicesPage } from "../features/voices/Voices";
+import { VoicesPage } from "../../features/voices/Voices";
 
 export const voicesSearchSchema = z.object({
   search: fallback(z.string(), ""),

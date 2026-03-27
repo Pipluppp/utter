@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { fallback, zodSearchValidator } from "@tanstack/router-zod-adapter";
 import { z } from "zod";
-import { AccountCreditsPage } from "../features/account/Credits";
+import { AccountCreditsPage } from "../../../features/account/Credits";
 
 const creditsSearchSchema = z.object({
   checkout: fallback(z.string().optional(), undefined),

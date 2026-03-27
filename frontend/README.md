@@ -23,12 +23,13 @@ npm --prefix frontend run check:write
 
 - entry: `frontend/src/main.tsx`
 - app shell: `frontend/src/app/App.tsx`
-- router: `frontend/src/app/router.tsx`
+- router config: `frontend/src/router.ts`
+- router context: `frontend/src/routerContext.ts`
+- route tree: `frontend/src/routes`
 - auth state: `frontend/src/app/auth/AuthStateProvider.tsx`
 - API client: `frontend/src/lib/api.ts`
-- Supabase browser client: `frontend/src/lib/supabase.ts`
-- task state: `frontend/src/components/tasks/TaskProvider.tsx`
-- core pages: `frontend/src/pages`
+- task state: `frontend/src/app/TaskProvider.tsx`
+- generated route tree: `frontend/src/routeTree.gen.ts`
 
 ## Runtime Notes
 
@@ -46,7 +47,7 @@ npm --prefix frontend run check:write
 - `Voices.tsx`
 - `History.tsx`
 - `Tasks.tsx`
-- `pages/account/*`
+- `features/account/*`
 
 ## Constraints
 
@@ -57,5 +58,7 @@ npm --prefix frontend run check:write
 ## Read Next
 
 - [AGENTS.md](./AGENTS.md)
+- [src/routes/README.md](./src/routes/README.md)
+- [src/routes/AGENTS.md](./src/routes/AGENTS.md)
 - [docs/features.md](../docs/features.md)
 - [docs/backend.md](../docs/backend.md)

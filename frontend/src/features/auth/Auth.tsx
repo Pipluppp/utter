@@ -1,5 +1,5 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
-import { useNavigate } from "@tanstack/react-router";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
 import { useAuthState } from "../../app/auth/AuthStateProvider";
@@ -18,13 +18,14 @@ import {
 import { cn } from "../../lib/cn";
 import { input } from "../../lib/recipes/input";
 import { validateEmail, validatePassword } from "../../lib/validation";
-import { Route } from "../../routes/_auth.auth";
+
+const authRoute = getRouteApi("/_auth/auth");
 
 type PasswordIntent = "sign_in" | "sign_up";
 
 export function AuthPage() {
   const navigate = useNavigate();
-  const { returnTo: rawReturnTo, error: rawError, intent: initialIntent } = Route.useSearch();
+  const { returnTo: rawReturnTo, error: rawError, intent: initialIntent } = authRoute.useSearch();
   const authState = useAuthState();
 
   const configured = isAuthConfigured();

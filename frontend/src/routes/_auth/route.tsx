@@ -1,8 +1,8 @@
 import { Outlet, createFileRoute, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { buildAuthHref, buildReturnTo } from "../app/navigation";
-import { TopBar } from "../app/TopBar";
-import { RouteAuthSkeleton } from "../components/templates/RouteSkeletons";
+import { buildAuthHref, buildReturnTo } from "../../app/navigation";
+import { TopBar } from "../../app/TopBar";
+import { RouteAuthSkeleton } from "../../components/templates/RouteSkeletons";
 
 export const Route = createFileRoute("/_auth")({
   component: AuthLayout,

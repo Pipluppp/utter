@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Button, button } from "../../components/atoms/Button";
@@ -6,16 +6,17 @@ import { creditPacks } from "../../content/plans";
 import { apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { toggleButton } from "../../lib/recipes/toggle-button";
-import { Route } from "../../routes/_app.account.credits";
 import { formatCredits, formatUsd, useAccountData } from "./accountData";
 import { AccountCreditsSkeleton } from "./accountSkeletons";
 import { AccountEmptyState, AccountNotice, AccountPanel } from "./accountUi";
+
+const creditsRoute = getRouteApi("/_app/account/credits");
 
 type ActivityFilter = "all" | "purchases" | "usage";
 
 export function AccountCreditsPage() {
   const navigate = useNavigate();
-  const { checkout: checkoutParam } = Route.useSearch();
+  const { checkout: checkoutParam } = creditsRoute.useSearch();
   const { activity, credits, refresh, refreshing } = useAccountData();
   const [activePackId, setActivePackId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);

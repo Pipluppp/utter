@@ -1,3 +1,4 @@
+import { getRouteApi } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
 import { Button, button } from "../../components/atoms/Button";
@@ -21,8 +22,9 @@ import type {
   RegenerateResponse,
   VoicesResponse,
 } from "../../lib/types";
-import { Route } from "../../routes/_app.history";
 import { useDebouncedValue } from "../shared/hooks";
+
+const historyRoute = getRouteApi("/_app/history");
 
 function tokenize(query: string) {
   return query.trim().split(/\s+/).filter(Boolean);
@@ -150,7 +152,7 @@ function HistorySkeleton() {
 }
 
 export function HistoryPage() {
-  const navigate = Route.useNavigate();
+  const navigate = historyRoute.useNavigate();
   const { toggle } = useWaveformListPlayer();
 
   const {
@@ -160,7 +162,7 @@ export function HistoryPage() {
     sort: initialSort,
     sort_dir: initialSortDir,
     voice_id: initialVoiceIdParam,
-  } = Route.useSearch();
+  } = historyRoute.useSearch();
   const initialStatus = initialStatusParam ?? "all";
   const initialVoiceId = initialVoiceIdParam ?? "all";
 

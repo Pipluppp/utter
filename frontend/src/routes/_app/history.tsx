@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { fallback, zodSearchValidator } from "@tanstack/router-zod-adapter";
 import { z } from "zod";
-import { HistoryPage } from "../features/history/History";
+import { HistoryPage } from "../../features/history/History";
 
 export const historySearchSchema = z.object({
   search: fallback(z.string(), ""),

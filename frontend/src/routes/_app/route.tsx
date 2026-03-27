@@ -1,16 +1,16 @@
 import { Outlet, createFileRoute, redirect, useLocation } from "@tanstack/react-router";
 import { Suspense, useEffect, useState } from "react";
-import { useAuthState } from "../app/auth/AuthStateProvider";
-import { AppFooter } from "../app/Footer";
-import { buildAuthHref, buildReturnTo, getNavVariant } from "../app/navigation";
-import { TopBar } from "../app/TopBar";
-import { useGlobalShortcuts } from "../app/useGlobalShortcuts";
-import { TaskDock } from "../components/organisms/TaskDock";
+import { useAuthState } from "../../app/auth/AuthStateProvider";
+import { AppFooter } from "../../app/Footer";
+import { buildAuthHref, buildReturnTo, getNavVariant } from "../../app/navigation";
+import { TopBar } from "../../app/TopBar";
+import { useGlobalShortcuts } from "../../app/useGlobalShortcuts";
+import { TaskDock } from "../../components/organisms/TaskDock";
 import {
   AuthGateSkeleton,
   RouteAccountSkeleton,
   RouteAppSkeleton,
-} from "../components/templates/RouteSkeletons";
+} from "../../components/templates/RouteSkeletons";
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: ({ context, location }) => {

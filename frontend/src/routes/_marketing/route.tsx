@@ -1,11 +1,11 @@
 import { Outlet, createFileRoute, useLocation } from "@tanstack/react-router";
 import { Suspense, useEffect, useState } from "react";
-import { useAuthState } from "../app/auth/AuthStateProvider";
-import { AppFooter } from "../app/Footer";
-import { buildAuthHref, buildReturnTo, getNavVariant } from "../app/navigation";
-import { TopBar } from "../app/TopBar";
-import { useGlobalShortcuts } from "../app/useGlobalShortcuts";
-import { RouteMarketingSkeleton } from "../components/templates/RouteSkeletons";
+import { useAuthState } from "../../app/auth/AuthStateProvider";
+import { AppFooter } from "../../app/Footer";
+import { buildAuthHref, buildReturnTo, getNavVariant } from "../../app/navigation";
+import { TopBar } from "../../app/TopBar";
+import { useGlobalShortcuts } from "../../app/useGlobalShortcuts";
+import { RouteMarketingSkeleton } from "../../components/templates/RouteSkeletons";
 
 export const Route = createFileRoute("/_marketing")({
   component: MarketingLayout,
