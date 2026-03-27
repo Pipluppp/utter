@@ -31,7 +31,7 @@ export function TasksPage() {
     const params = new URLSearchParams({
       status: "active",
       type: typeFilter,
-      limit: "25",
+      limit: "10",
     });
     return params.toString();
   }, [typeFilter]);
@@ -112,7 +112,7 @@ export function TasksPage() {
       const params = new URLSearchParams({
         status: "active",
         type: typeFilter,
-        limit: "25",
+        limit: "10",
         before: nextBefore,
       });
       const response = await apiJson<TaskListResponse>(`/api/tasks?${params.toString()}`);
@@ -172,16 +172,12 @@ export function TasksPage() {
         />
       </div>
 
-      {loading ? (
-        <div className="border border-border bg-background p-4 text-sm text-muted-foreground shadow-elevated">
-          Loading tasks...
-        </div>
-      ) : tasks.length === 0 ? (
+      {!loading && tasks.length === 0 ? (
         <div className="flex min-h-[50dvh] items-center justify-center border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
           No jobs in this view.
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid min-h-[50dvh] content-start gap-3">
           {tasks.map((task) => (
             <div
               key={task.id}

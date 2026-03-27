@@ -68,7 +68,7 @@ function snippet(value: string | null, maxLen: number, fallback: string) {
 
 type PlayState = "idle" | "loading" | "playing" | "paused" | "stopped";
 
-const PER_PAGE = 20;
+const PER_PAGE = 10;
 const SOURCE_ITEMS = [
   { id: "all", label: "All" },
   { id: "uploaded", label: "Clone" },
@@ -382,7 +382,7 @@ export function VoicesPage() {
       ) : null}
 
       {!loading ? (
-        <div className="grid gap-4">
+        <div className="grid min-h-[50dvh] content-start gap-4">
           {data?.voices.map((v) => {
             const state = playState[v.id] ?? "idle";
             const label =
@@ -530,7 +530,7 @@ export function VoicesPage() {
         </div>
       ) : null}
 
-      {!loading && data ? (
+      {!loading && data && data.pagination.pages > 1 ? (
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"

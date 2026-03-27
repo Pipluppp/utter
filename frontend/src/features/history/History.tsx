@@ -30,7 +30,7 @@ function tokenize(query: string) {
   return query.trim().split(/\s+/).filter(Boolean);
 }
 
-const PER_PAGE = 20;
+const PER_PAGE = 10;
 const STATUS_ITEMS: AutocompleteSelectItem[] = [
   { id: "all", label: "All" },
   { id: "pending", label: "Pending" },
@@ -398,7 +398,7 @@ export function HistoryPage() {
       ) : null}
 
       {!loading ? (
-        <div className="grid gap-4">
+        <div className="grid min-h-[50dvh] content-start gap-4">
           {data?.generations.map((g) => {
             const audioUrl = generationAudioUrl(g);
             const isReady = g.status === "completed" && Boolean(audioUrl);
@@ -508,7 +508,7 @@ export function HistoryPage() {
         </div>
       ) : null}
 
-      {!loading && data ? (
+      {!loading && data && data.pagination.pages > 1 ? (
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"

@@ -363,7 +363,7 @@ export function GeneratePage() {
           <TextArea
             name="text"
             placeholder="Type what you want the voice to say..."
-            className={input({ multiline: true, className: "min-h-44" })}
+            className={input({ multiline: true, className: "min-h-64" })}
           />
           <Text
             slot="description"
