@@ -1,15 +1,11 @@
 import { getRouteApi } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Dialog,
   DropZone,
   FileTrigger,
   Form,
   Input,
   Label,
-  Modal,
-  ModalOverlay,
   Text,
   TextArea,
   TextField,
@@ -17,7 +13,6 @@ import {
   ToggleButtonGroup,
 } from "react-aria-components";
 import { Button } from "../../components/atoms/Button";
-import { AppLink } from "../../components/atoms/Link";
 import { Message } from "../../components/atoms/Message";
 import { ProgressBar } from "../../components/atoms/ProgressBar";
 import {
@@ -40,6 +35,7 @@ import {
 } from "../../lib/provider-config";
 import { input } from "../../lib/recipes/input";
 import { toggleButton } from "../../lib/recipes/toggle-button";
+import { CloneSuccessModal } from "./components/CloneSuccessModal";
 import { useAudioRecorder } from "./hooks/useAudioRecorder";
 import { useCloneSubmit } from "./hooks/useCloneSubmit";
 
@@ -459,44 +455,7 @@ export function ClonePage() {
           <ProgressBar label="Cloning voice" isIndeterminate className="mt-3" />
         </div>
       ) : null}
-      <ModalOverlay
-        isOpen={!!cloneSubmit.created}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) reset();
-        }}
-        isDismissable
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overscroll-contain backdrop-blur-sm data-[entering]:animate-in data-[entering]:fade-in data-[exiting]:animate-out data-[exiting]:fade-out"
-      >
-        <Modal className="w-full max-w-md">
-          <Dialog
-            className="border border-border bg-background p-6 shadow-elevated outline-none"
-            aria-labelledby="clone-success-title"
-          >
-            <h3 id="clone-success-title" className="text-sm font-semibold uppercase tracking-wide">
-              Clone Success
-            </h3>
-            {cloneSubmit.created ? (
-              <>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Voice <span className="text-foreground">{cloneSubmit.created.name}</span> is
-                  ready.
-                </p>
-                <div className="mt-6 flex flex-col gap-3">
-                  <AppLink
-                    href={`/generate?voice=${cloneSubmit.created.id}`}
-                    className="press-scale-sm-y inline-flex items-center justify-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  >
-                    Go to Generate <ArrowRight className="icon-sm" aria-hidden="true" />
-                  </AppLink>
-                  <Button variant="secondary" type="button" onPress={reset}>
-                    Clone Another Voice
-                  </Button>
-                </div>
-              </>
-            ) : null}
-          </Dialog>
-        </Modal>
-      </ModalOverlay>
+      <CloneSuccessModal created={cloneSubmit.created} onReset={reset} />
     </GridArtSurface>
   );
 }
