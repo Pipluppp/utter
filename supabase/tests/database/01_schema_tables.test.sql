@@ -1,6 +1,6 @@
 -- Phase 08b: Schema validation — tables, columns, types, constraints
 BEGIN;
-SELECT plan(104);
+SELECT plan(107);
 
 -- ============================================================
 -- PROFILES
@@ -51,6 +51,9 @@ SELECT has_column('public', 'voices', 'provider_target_model', 'voices.provider_
 SELECT has_column('public', 'voices', 'provider_voice_kind', 'voices.provider_voice_kind exists');
 SELECT has_column('public', 'voices', 'provider_metadata', 'voices.provider_metadata exists');
 SELECT col_default_is('public', 'voices', 'provider_metadata', '{}', 'voices.provider_metadata defaults to {}');
+SELECT has_column('public', 'voices', 'is_favorite', 'voices.is_favorite exists');
+SELECT col_not_null('public', 'voices', 'is_favorite', 'voices.is_favorite is NOT NULL');
+SELECT col_default_is('public', 'voices', 'is_favorite', 'false', 'voices.is_favorite defaults to false');
 SELECT has_column('public', 'voices', 'deleted_at', 'voices.deleted_at exists');
 
 -- ============================================================
