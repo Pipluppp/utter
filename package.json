@@ -23,6 +23,6 @@
   "devDependencies": {
     "cross-env": "^10.1.0",
     "supabase": "^2.84.4",
-    "wrangler": "^4.77.0"
+    "wrangler": "^4.78.0"
   }
 }
