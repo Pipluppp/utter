@@ -30,15 +30,7 @@ import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
 import { getUtterDemo } from "../../content/utterDemo";
 import { CLONE_TIPS } from "../../data/tips";
 import { apiForm, apiJson } from "../../lib/api";
-import {
-  concatFloat32Chunks,
-  createWavHeaderPcm16Mono,
-  float32ToPcm16leBytes,
-  getAudioDurationSeconds,
-  getTargetRecordingSampleRate,
-  resampleFloat32Linear,
-  rmsLevel,
-} from "../../lib/audio";
+import { getAudioDurationSeconds } from "../../lib/audio/audio";
 import { cn } from "../../lib/cn";
 import { fetchTextUtf8 } from "../../lib/fetchTextUtf8";
 import {
@@ -50,6 +42,7 @@ import { input } from "../../lib/recipes/input";
 import { toggleButton } from "../../lib/recipes/toggle-button";
 import { formatElapsed } from "../../lib/time";
 import type { CloneResponse } from "../../lib/types";
+import { useAudioRecorder } from "./hooks/useAudioRecorder";
 
 const cloneRoute = getRouteApi("/_app/clone");
 
@@ -81,29 +74,15 @@ export function ClonePage() {
     [],
   );
 
+  const recorder = useAudioRecorder({ maxSeconds: MAX_REFERENCE_SECONDS });
+
   const loadedDemoRef = useRef<string | null>(null);
-  const recordingActiveRef = useRef(false);
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [audioMode, setAudioMode] = useState<"upload" | "record">("upload");
 
   const transcriptionEnabled = TRANSCRIPTION_ENABLED;
   const [transcribing, setTranscribing] = useState(false);
-
-  const [recording, setRecording] = useState(false);
-  const [recordingError, setRecordingError] = useState<string | null>(null);
-  const [micLevel, setMicLevel] = useState(0);
-  const [recordSeconds, setRecordSeconds] = useState(0);
-
-  const streamRef = useRef<MediaStream | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const workletRef = useRef<AudioWorkletNode | null>(null);
-  const pcmChunksRef = useRef<Float32Array[]>([]);
-  const pcmSamplesRef = useRef(0);
-  const captureSampleRateRef = useRef(24000);
-  const recordTimerRef = useRef<number | null>(null);
-  const [recordedPreviewUrl, setRecordedPreviewUrl] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [transcript, setTranscript] = useState("");
@@ -136,50 +115,10 @@ export function ClonePage() {
   }, [file]);
 
   const recordTimeLabel = useMemo(() => {
-    const mins = Math.floor(recordSeconds / 60);
-    const secs = recordSeconds % 60;
+    const mins = Math.floor(recorder.recordSeconds / 60);
+    const secs = recorder.recordSeconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
-  }, [recordSeconds]);
-
-  useEffect(() => {
-    if (audioMode !== "record" || !file) {
-      setRecordedPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setRecordedPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [audioMode, file]);
-
-  useEffect(() => {
-    return () => {
-      if (recordTimerRef.current) {
-        window.clearInterval(recordTimerRef.current);
-        recordTimerRef.current = null;
-      }
-
-      const processor = processorRef.current;
-      processorRef.current = null;
-      if (processor) {
-        try {
-          processor.disconnect();
-        } catch {}
-        processor.onaudioprocess = null;
-      }
-
-      const audioCtx = audioCtxRef.current;
-      audioCtxRef.current = null;
-      if (audioCtx) {
-        void audioCtx.close().catch(() => {});
-      }
-
-      const stream = streamRef.current;
-      streamRef.current = null;
-      if (stream) {
-        for (const track of stream.getTracks()) track.stop();
-      }
-    };
-  }, []);
+  }, [recorder.recordSeconds]);
 
   const validateAndSetFile = useCallback(async (next: File | null) => {
     setFileError(null);
@@ -206,28 +145,15 @@ export function ClonePage() {
     return true;
   }, []);
 
-  async function onTranscribeAudio(
-    nextFile: File | null = file,
-    opts?: { errorTarget?: "page" | "record" },
-  ) {
-    const errorTarget = opts?.errorTarget ?? "page";
-
-    if (errorTarget === "record") {
-      setRecordingError(null);
-    } else {
-      setError(null);
-    }
+  async function onTranscribeAudio(nextFile: File | null = file) {
+    setError(null);
 
     if (!transcriptionEnabled) {
-      const msg = "Transcription is not enabled on this server.";
-      if (errorTarget === "record") setRecordingError(msg);
-      else setError(msg);
+      setError("Transcription is not enabled on this server.");
       return;
     }
     if (!nextFile) {
-      const msg = "Please select an audio file to transcribe.";
-      if (errorTarget === "record") setRecordingError(msg);
-      else setError(msg);
+      setError("Please select an audio file to transcribe.");
       return;
     }
 
@@ -244,197 +170,10 @@ export function ClonePage() {
       setTranscript(res.text);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to transcribe audio.";
-      if (errorTarget === "record") setRecordingError(msg);
-      else setError(msg);
+      setError(msg);
     } finally {
       setTranscribing(false);
     }
-  }
-
-  function stopRecordingTimer() {
-    if (recordTimerRef.current) {
-      window.clearInterval(recordTimerRef.current);
-      recordTimerRef.current = null;
-    }
-  }
-
-  async function cleanupRecording() {
-    stopRecordingTimer();
-    setMicLevel(0);
-
-    const worklet = workletRef.current;
-    workletRef.current = null;
-    if (worklet) {
-      try {
-        worklet.disconnect();
-      } catch {}
-      try {
-        worklet.port.onmessage = null;
-      } catch {}
-    }
-
-    const processor = processorRef.current;
-    processorRef.current = null;
-    if (processor) {
-      try {
-        processor.disconnect();
-      } catch {}
-      processor.onaudioprocess = null;
-    }
-
-    const audioCtx = audioCtxRef.current;
-    audioCtxRef.current = null;
-    if (audioCtx) {
-      try {
-        await audioCtx.close();
-      } catch {}
-    }
-
-    const stream = streamRef.current;
-    streamRef.current = null;
-    if (stream) {
-      for (const track of stream.getTracks()) track.stop();
-    }
-  }
-
-  async function startRecording() {
-    setError(null);
-    setRecordingError(null);
-    setFileError(null);
-
-    if (recordingActiveRef.current) return;
-
-    setRecordSeconds(0);
-    pcmChunksRef.current = [];
-    pcmSamplesRef.current = 0;
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-
-      const audioCtx = new AudioContext();
-      audioCtxRef.current = audioCtx;
-      captureSampleRateRef.current = audioCtx.sampleRate;
-      try {
-        await audioCtx.resume();
-      } catch {}
-
-      const source = audioCtx.createMediaStreamSource(stream);
-      const zeroGain = audioCtx.createGain();
-      zeroGain.gain.value = 0;
-
-      const processChunk = (input: Float32Array) => {
-        if (!input || input.length === 0) return;
-
-        setMicLevel(rmsLevel(input));
-
-        const copy = new Float32Array(input.length);
-        copy.set(input);
-        pcmChunksRef.current.push(copy);
-        pcmSamplesRef.current += copy.length;
-      };
-
-      let captureNode: AudioNode | null = null;
-
-      if (audioCtx.audioWorklet && typeof AudioWorkletNode !== "undefined") {
-        try {
-          await audioCtx.audioWorklet.addModule(
-            new URL("../lib/pcmCapture.worklet.js", import.meta.url),
-          );
-
-          const worklet = new AudioWorkletNode(audioCtx, "utter-pcm-capture", {
-            numberOfInputs: 1,
-            numberOfOutputs: 1,
-            channelCount: 1,
-          });
-          workletRef.current = worklet;
-          worklet.port.onmessage = (ev) => {
-            const data = ev.data as unknown;
-            if (!data || typeof data !== "object") return;
-            if ((data as { type?: unknown }).type !== "chunk") return;
-            const buffer = (data as { buffer?: unknown }).buffer;
-            if (!(buffer instanceof ArrayBuffer)) return;
-            processChunk(new Float32Array(buffer));
-          };
-          captureNode = worklet;
-        } catch {
-          captureNode = null;
-        }
-      }
-
-      if (!captureNode) {
-        const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-        processorRef.current = processor;
-        processor.onaudioprocess = (e) => {
-          processChunk(e.inputBuffer.getChannelData(0));
-        };
-        captureNode = processor;
-      }
-
-      source.connect(captureNode);
-      captureNode.connect(zeroGain);
-      zeroGain.connect(audioCtx.destination);
-
-      recordingActiveRef.current = true;
-      setRecording(true);
-      stopRecordingTimer();
-      recordTimerRef.current = window.setInterval(() => {
-        setRecordSeconds((seconds) => {
-          const next = Math.min(MAX_REFERENCE_SECONDS, seconds + 1);
-          if (next >= MAX_REFERENCE_SECONDS && recordingActiveRef.current) {
-            window.setTimeout(() => {
-              void stopRecording();
-            }, 0);
-          }
-          return next;
-        });
-      }, 1000);
-    } catch (e) {
-      await cleanupRecording();
-      setRecordingError(e instanceof Error ? e.message : "Failed to access microphone.");
-      recordingActiveRef.current = false;
-      setRecording(false);
-    }
-  }
-
-  async function stopRecording() {
-    if (!recordingActiveRef.current) return;
-
-    recordingActiveRef.current = false;
-    setRecording(false);
-    stopRecordingTimer();
-    await cleanupRecording();
-
-    const pcmSampleLength = pcmSamplesRef.current;
-    if (pcmSampleLength <= 0) {
-      setRecordingError("No audio captured.");
-      return;
-    }
-
-    const mergedPcm = concatFloat32Chunks(pcmChunksRef.current, pcmSampleLength);
-    const targetSampleRate = getTargetRecordingSampleRate(captureSampleRateRef.current);
-    const normalizedPcm = resampleFloat32Linear(
-      mergedPcm,
-      captureSampleRateRef.current,
-      targetSampleRate,
-    );
-    const pcmBytes = float32ToPcm16leBytes(normalizedPcm);
-    const header = createWavHeaderPcm16Mono(pcmBytes.byteLength, targetSampleRate);
-    const blob = new Blob([header, pcmBytes], {
-      type: "audio/wav",
-    });
-    const nextFile = new File([blob], `recording-${Date.now()}.wav`, {
-      type: "audio/wav",
-    });
-
-    if (nextFile.size > MAX_FILE_BYTES) {
-      setRecordingError("Recorded audio exceeded the 10MB limit. Try a shorter clip.");
-      return;
-    }
-
-    const accepted = await validateAndSetFile(nextFile);
-    if (!accepted) return;
-    await onTranscribeAudio(nextFile, { errorTarget: "record" });
   }
 
   async function onTryExample() {
@@ -585,7 +324,7 @@ export function ClonePage() {
       </div>
 
       {error ? <Message variant="error">{error}</Message> : null}
-      {recordingError ? <Message variant="error">{recordingError}</Message> : null}
+      {recorder.error ? <Message variant="error">{recorder.error}</Message> : null}
 
       <div className="flex items-center justify-center">
         <ToggleButtonGroup
@@ -596,7 +335,7 @@ export function ClonePage() {
             const next = [...keys][0] as "upload" | "record";
             if (next) setAudioMode(next);
           }}
-          isDisabled={recording}
+          isDisabled={recorder.recording}
           className="inline-flex overflow-hidden border border-border bg-background shadow-elevated"
         >
           <ToggleButton id="upload" className={toggleButton({ size: "md" })}>
@@ -627,7 +366,7 @@ export function ClonePage() {
           <div className="h-2 w-full overflow-hidden border border-border bg-muted">
             <div
               className="h-full bg-foreground transition-[width]"
-              style={{ width: `${Math.min(100, micLevel * 180)}%` }}
+              style={{ width: `${Math.min(100, recorder.micLevel * 180)}%` }}
             />
           </div>
 
@@ -635,17 +374,25 @@ export function ClonePage() {
             <Button
               type="button"
               size="sm"
-              onPress={() => void startRecording()}
-              isDisabled={recording || submitting || transcribing}
+              onPress={() => void recorder.start()}
+              isDisabled={recorder.recording || submitting || transcribing}
             >
-              {recording ? "Recording..." : "Start"}
+              {recorder.recording ? "Recording..." : "Start"}
             </Button>
             <Button
               type="button"
               size="sm"
               variant="secondary"
-              onPress={() => void stopRecording()}
-              isDisabled={!recording}
+              onPress={() => {
+                void (async () => {
+                  const wavFile = await recorder.stop();
+                  if (!wavFile) return;
+                  const accepted = await validateAndSetFile(wavFile);
+                  if (!accepted) return;
+                  await onTranscribeAudio(wavFile);
+                })();
+              }}
+              isDisabled={!recorder.recording}
             >
               Stop
             </Button>
@@ -654,15 +401,11 @@ export function ClonePage() {
               size="sm"
               variant="secondary"
               onPress={() => {
-                void cleanupRecording();
-                recordingActiveRef.current = false;
-                setRecording(false);
-                setRecordingError(null);
+                recorder.clear();
                 setTranscript("");
-                setRecordSeconds(0);
                 setFile(null);
               }}
-              isDisabled={recording || transcribing}
+              isDisabled={recorder.recording || transcribing}
             >
               Clear
             </Button>
@@ -674,9 +417,9 @@ export function ClonePage() {
             </div>
           ) : null}
 
-          {recordedPreviewUrl ? (
+          {audioMode === "record" && file ? (
             <div className="border border-border bg-background p-3">
-              <WaveformPlayer audioUrl={recordedPreviewUrl} audioBlob={file ?? undefined} />
+              <WaveformPlayer audioBlob={file} />
             </div>
           ) : null}
         </div>
