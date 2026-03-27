@@ -1,6 +1,6 @@
 ﻿# TanStack Query Audit
 
-Date: 2026-03-27
+Date: 2026-03-27 (updated 2026-03-28)
 
 ## Recommendation
 
@@ -8,7 +8,6 @@ TanStack Query is recommended for this frontend, but as the second follow-up aft
 
 Recommended first-wave Query targets:
 
-- `frontend/src/features/shared/hooks.ts` for `/api/languages`
 - `frontend/src/features/account/accountData.ts` plus its account consumers
 - `frontend/src/features/voices/Voices.tsx`
 - `frontend/src/features/history/History.tsx`
@@ -32,15 +31,14 @@ Explicit non-targets for the first Query pass:
 
 Current server reads found during code exploration:
 
-| Surface | File(s) | Endpoint(s) | Current pattern |
-| --- | --- | --- | --- |
-| Shared languages | `frontend/src/features/shared/hooks.ts` | `/api/languages` | Module cache + in-flight promise + per-caller `useEffect` |
-| Account snapshot | `frontend/src/features/account/accountData.ts` | `/api/me`, `/api/credits/usage?window_days=90`, auth session | Per-hook-instance fetch lifecycle |
-| Voice list page | `frontend/src/features/voices/Voices.tsx` | `/api/voices?...` | Manual `load()` + `AbortController` + reload after mutations |
-| Voice options | `frontend/src/features/generate/Generate.tsx`, `frontend/src/features/history/History.tsx` | `/api/voices`, `/api/voices?per_page=100` | Separate mount-time fetches |
-| Generation history | `frontend/src/features/history/History.tsx` | `/api/generations?...` | Manual `load()` + conditional polling |
-| Tasks page list | `frontend/src/features/tasks/Tasks.tsx` | `/api/tasks?...` | Manual fetch + recursive timeout polling + append pagination |
-| Task overlay details | `frontend/src/app/TaskProvider.tsx` | `/api/tasks/:id` | Per-task polling tied to localStorage state |
+| Surface              | File(s)                                                                                    | Endpoint(s)                                                  | Current pattern                                              |
+| -------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Account snapshot     | `frontend/src/features/account/accountData.ts`                                             | `/api/me`, `/api/credits/usage?window_days=90`, auth session | Per-hook-instance fetch lifecycle                            |
+| Voice list page      | `frontend/src/features/voices/Voices.tsx`                                                  | `/api/voices?...`                                            | Manual `load()` + `AbortController` + reload after mutations |
+| Voice options        | `frontend/src/features/generate/Generate.tsx`, `frontend/src/features/history/History.tsx` | `/api/voices`, `/api/voices?per_page=100`                    | Separate mount-time fetches                                  |
+| Generation history   | `frontend/src/features/history/History.tsx`                                                | `/api/generations?...`                                       | Manual `load()` + conditional polling                        |
+| Tasks page list      | `frontend/src/features/tasks/Tasks.tsx`                                                    | `/api/tasks?...`                                             | Manual fetch + recursive timeout polling + append pagination |
+| Task overlay details | `frontend/src/app/TaskProvider.tsx`                                                        | `/api/tasks/:id`                                             | Per-task polling tied to localStorage state                  |
 
 Current mutation-triggered refresh patterns:
 
@@ -62,6 +60,90 @@ Current route/search ownership is already in the right layer:
 
 TanStack Query should not replace those route/search contracts. It should replace duplicated component-owned server-state logic behind them.
 
+## Cleanup notes
+
+- `frontend/src/features/shared/hooks.ts` previously contained `useLanguages()` with a hand-rolled module-level cache, in-flight promise dedup, and `/api/languages` fetch. That code has been removed. Languages are now static constants in `frontend/src/lib/provider-config.ts` (`SUPPORTED_LANGUAGES`, `DEFAULT_LANGUAGE`). No `/api/languages` endpoint exists. There is no Query target here for languages.
+- `useCreditsUsage()` remains defined in `shared/hooks.ts` but has zero call sites. It is dead code and should be removed rather than migrated to Query.
+- `useDebouncedValue()` in `shared/hooks.ts` is a pure client utility and is not a Query target.
+
+## Implementation Guidance
+
+Informed by [TkDodo's Practical React Query series](https://tkdodo.eu/blog/practical-react-query). Detailed tips and code examples live in `docs/plans/2026-03-27/tanstack-query/tips.md`. Before/after migration snippets with exact codebase code live in `docs/plans/2026-03-27/tanstack-query/migration-guide.md`.
+
+### Primary abstraction: `queryOptions()`, not custom hooks
+
+Use `queryOptions()` from `@tanstack/react-query` as the first abstraction layer. Do not default to wrapping `useQuery` in custom hooks. `queryOptions()` works with `useQuery`, `useSuspenseQuery`, `useQueries`, `prefetchQuery`, `ensureQueryData`, and imperative `getQueryData`/`setQueryData` — all from the same definition. Custom hooks lock you into one specific hook and make it harder to switch to suspense or share config with imperative calls. Custom hooks are still fine when they add real logic beyond configuration (memoization, derived state), but they should be built on top of `queryOptions()`.
+
+Source: [#24 The Query Options API](https://tkdodo.eu/blog/the-query-options-api), [#31 Creating Query Abstractions](https://tkdodo.eu/blog/creating-query-abstractions)
+
+### Query key factories with `queryOptions()`
+
+Combine the key factory pattern from #8 with `queryOptions()` from #24. Key-only entries exist for invalidation hierarchy. Entries that need a `queryFn` use `queryOptions()` for full type safety (including `DataTag` inference on `getQueryData`/`setQueryData`).
+
+```ts
+export const voiceQueries = {
+  all: () => ["voices"] as const,
+  lists: () => [...voiceQueries.all(), "list"] as const,
+  list: (filters: VoiceListFilters) =>
+    queryOptions({
+      queryKey: [...voiceQueries.lists(), filters],
+      queryFn: ({ signal }) =>
+        apiJson<VoicesResponse>(`/api/voices?${buildQs(filters)}`, { signal }),
+    }),
+  options: () =>
+    queryOptions({
+      queryKey: [...voiceQueries.all(), "options"],
+      queryFn: () => apiJson<VoicesResponse>("/api/voices?per_page=100"),
+      staleTime: 1000 * 60,
+    }),
+};
+```
+
+Source: [#8 Effective React Query Keys](https://tkdodo.eu/blog/effective-react-query-keys), [#24 The Query Options API](https://tkdodo.eu/blog/the-query-options-api)
+
+### Global `staleTime` default
+
+Set a global `staleTime` (20 seconds recommended) instead of disabling `refetchOnWindowFocus` or `refetchOnMount`. Override per-query where needed (voice options: 60s, account snapshot: 30s, form seed data: `Infinity`). Leave `refetchOnWindowFocus` on — it's a feature for production.
+
+Source: [#1 Practical React Query](https://tkdodo.eu/blog/practical-react-query), [#10 React Query as a State Manager](https://tkdodo.eu/blog/react-query-as-a-state-manager)
+
+### Global mutation invalidation via `MutationCache`
+
+Set up a global `onSuccess` callback on the `MutationCache` that invalidates queries matching the mutation's `mutationKey`. Mutations declare a `mutationKey` to scope their invalidation. Mutations without a key invalidate everything (safe given a reasonable `staleTime`). This replaces all per-mutation `void load()` calls.
+
+```ts
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 1000 * 20 } },
+  mutationCache: new MutationCache({
+    onSuccess: (_data, _variables, _context, mutation) => {
+      queryClient.invalidateQueries({
+        queryKey: mutation.options.mutationKey,
+      });
+    },
+  }),
+});
+```
+
+Source: [#25 Automatic Query Invalidation after Mutations](https://tkdodo.eu/blog/automatic-query-invalidation-after-mutations)
+
+### Polling: `refetchInterval` callback
+
+Replace manual `setInterval` / `setTimeout` polling with `refetchInterval` accepting a callback. Query handles pause-on-hidden-tab natively with `refetchIntervalInBackground: false`. This replaces `refreshTimerRef` in History.tsx and the recursive `setTimeout` + visibility-change listener in Tasks.tsx.
+
+Source: [#1 Practical React Query](https://tkdodo.eu/blog/practical-react-query)
+
+### Mutations: `mutate` over `mutateAsync`, separate callback concerns
+
+Use `mutate` (not `mutateAsync`) unless you need the Promise. Put invalidation logic in the hook-level `onSuccess`. Put UI-specific actions (navigation, toasts) in the call-site `onSuccess` callback. `isPending` from `useMutation` replaces manual `busyDelete` / `busyFavorite` / `busyRename` / `isSubmitting` state variables.
+
+Source: [#12 Mastering Mutations in React Query](https://tkdodo.eu/blog/mastering-mutations-in-react-query)
+
+### TypeScript: inference over manual generics
+
+Do not pass generics to `useQuery<T>()`. Type the `queryFn` return (our `apiJson<T>()` already returns `Promise<T>`) and let inference flow. Avoid destructuring the query result if you need TypeScript narrowing — `query.isSuccess` narrows `query.data`, but `const { data, isSuccess } = ...` does not.
+
+Source: [#6 React Query and TypeScript](https://tkdodo.eu/blog/react-query-and-type-script)
+
 ## Per-File Audit
 
 ## `frontend/src/features/shared/hooks.ts`
@@ -69,85 +151,44 @@ TanStack Query should not replace those route/search contracts. It should replac
 ### 1. Current responsibilities
 
 - Exposes `useDebouncedValue()`.
-- Exposes `useLanguages()` for shared `/api/languages` metadata.
-- Exposes `useCreditsUsage(windowDays)` for `/api/credits/usage`, but no call sites were found.
+- Exposes `useCreditsUsage(windowDays)` for `/api/credits/usage`, but no call sites exist.
 
 ### 2. Current data flow
 
-- `languagesCache` stores the last successful `LanguagesResponse` at module scope.
-- `languagesInFlight` stores a shared promise so concurrent callers reuse the same request.
-- `getLanguagesOnce()` returns cached data if available, otherwise fetches `/api/languages`, writes `languagesCache`, and clears `languagesInFlight` in `finally`.
-- `useLanguages()` still creates per-caller React state for `data`, `loading`, and `error`.
-- `useLanguages()` returns derived fields:
-  - `languages`
-  - `defaultLanguage`
-  - `provider`
-  - `capabilities`
-  - `transcription`
-- Current consumers found by search:
-  - `frontend/src/features/about/About.tsx`
-  - `frontend/src/features/clone/Clone.tsx`
-  - `frontend/src/features/design/Design.tsx`
-  - `frontend/src/features/generate/Generate.tsx`
-- `useCreditsUsage()` is a separate ad hoc fetch hook with its own `data`, `loading`, `error`, and `refresh`, but it is currently unused.
+- `useCreditsUsage()` is a standalone ad hoc fetch hook with its own `data`, `loading`, `error`, and `refresh`.
+- `useDebouncedValue()` is a pure timer-based utility with no server interaction.
 
 ### 3. Current fetch trigger
 
-- `useLanguages()` fetches on mount via `useEffect`, but only if `languagesCache` is still empty.
-- `useCreditsUsage()` fetches on mount and whenever its `refresh` callback changes because `windowDays` changes.
+- `useCreditsUsage()` fetches on mount and whenever `windowDays` changes.
 
 ### 4. Current owned state
 
-- Module-level:
-  - `languagesCache`
-  - `languagesInFlight`
-- `useLanguages()` state:
-  - `data`
-  - `loading`
-  - `error`
-- `useCreditsUsage()` state:
-  - `data`
-  - `loading`
-  - `error`
+- `useCreditsUsage()` state: `data`, `loading`, `error`.
 
 ### 5. Current refresh / invalidation behavior
 
-- `useLanguages()` has no explicit invalidation, refresh, or staleness policy.
-- Once `languagesCache` is filled, the process keeps serving it until a full page reload.
 - `useCreditsUsage()` supports explicit `refresh()`, but that refresh is local to the hook instance and currently unused by the app.
 
 ### 6. Interaction with route/search state
 
-- None directly.
-- Consumers such as `Generate.tsx` and `Clone.tsx` combine this hook with route-owned search params, but the hook itself is not aware of route state.
+- None.
 
 ### 7. What TanStack Query would replace
 
-- For languages:
-  - `languagesCache`
-  - `languagesInFlight`
-  - `getLanguagesOnce()`
-  - per-caller `data/loading/error` ownership in `useLanguages()`
-- If `useCreditsUsage()` is revived later, Query would also replace its manual mount fetch and local refresh lifecycle.
+- Nothing today. `useCreditsUsage()` is dead code.
 
 ### 8. What TanStack Query would not replace
 
 - `useDebouncedValue()`
-- consumer-owned selected language state
-- consumer-owned form state
-- synchronous derived fields like `defaultLanguage` and `capabilities`
 
 ### 9. Adoption priority
 
-- `useLanguages()`: Wave 1, low-risk and high leverage because it already behaves like a hand-rolled shared query.
-- `useCreditsUsage()`: Do not migrate first because there are no call sites today.
+- Not a Query target. Remove `useCreditsUsage()` as dead code instead.
 
 ### 10. Suggested query keys / mutation boundaries
 
-- Query key:
-  - `["languages"]`
-- If `useCreditsUsage()` becomes live later:
-  - `["credits", "usage", { windowDays }]`
+- None.
 
 ## `frontend/src/features/account/accountData.ts`
 
@@ -187,13 +228,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 4. Current owned state
 
-- `authEmail`
-- `identities`
-- `me`
-- `credits`
-- `loading`
-- `refreshing`
-- `error`
+- `authEmail`, `identities`, `me`, `credits`, `loading`, `refreshing`, `error`
 - derived `activity`
 
 ### 5. Current refresh / invalidation behavior
@@ -217,12 +252,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 8. What TanStack Query would not replace
 
-- Pure helpers:
-  - `formatCredits`
-  - `formatUsd`
-  - `formatDate`
-  - `formatDateTime`
-  - `buildAccountActivity`
+- Pure helpers: `formatCredits`, `formatUsd`, `formatDate`, `formatDateTime`, `buildAccountActivity`
 - Route redirects and auth guards
 - The higher-level auth session contract in `AuthStateProvider`
 - Sign-out side effects that must still update router auth state
@@ -233,8 +263,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 10. Suggested query keys / mutation boundaries
 
-- Query key:
-  - `["account", "snapshot"]`
+- Query key: `["account", "snapshot"]`
 - Optional mutation boundaries:
   - sign-out can remain outside Query for now
   - later, a checkout-success invalidation can target `["account", "snapshot"]`
@@ -249,10 +278,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 2. Current data flow
 
-- Calls `useAccountData()` but only consumes:
-  - `error`
-  - `refresh`
-  - `refreshing`
+- Calls `useAccountData()` but only consumes: `error`, `refresh`, `refreshing`.
 - Does not pass account data to child pages.
 - Because children also call `useAccountData()`, the layout currently duplicates the account fetch but only uses it to show the top-level error banner.
 
@@ -294,8 +320,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 10. Suggested query keys / mutation boundaries
 
-- Reuse:
-  - `["account", "snapshot"]`
+- Reuse: `["account", "snapshot"]`
 
 ## `frontend/src/features/account/Overview.tsx`
 
@@ -307,9 +332,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 ### 2. Current data flow
 
 - Calls `useAccountData()` directly.
-- Reads:
-  - `credits`
-  - `activity`
+- Reads: `credits`, `activity`.
 - Shows the skeleton until `credits` is truthy.
 - Derives `recentActivity` from `activity.slice(0, 4)`.
 
@@ -320,9 +343,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 ### 4. Current owned state
 
 - No local fetch state.
-- Owns only derived values:
-  - `recentActivity`
-  - `balance`
+- Owns only derived values: `recentActivity`, `balance`.
 - All server state is hook-owned.
 
 ### 5. Current refresh / invalidation behavior
@@ -333,7 +354,6 @@ TanStack Query should not replace those route/search contracts. It should replac
 ### 6. Interaction with route/search state
 
 - None.
-- Navigation links point to other routes, but no search params drive the read.
 
 ### 7. What TanStack Query would replace
 
@@ -352,8 +372,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 10. Suggested query keys / mutation boundaries
 
-- Reuse:
-  - `["account", "snapshot"]`
+- Reuse: `["account", "snapshot"]`
 
 ## `frontend/src/features/account/Credits.tsx`
 
@@ -367,15 +386,8 @@ TanStack Query should not replace those route/search contracts. It should replac
 ### 2. Current data flow
 
 - Reads `checkout` from `creditsRoute.useSearch()`.
-- Calls `useAccountData()` directly and consumes:
-  - `activity`
-  - `credits`
-  - `refresh`
-  - `refreshing`
-- Local state owns:
-  - `activePackId`
-  - `checkoutError`
-  - `activityFilter`
+- Calls `useAccountData()` directly and consumes: `activity`, `credits`, `refresh`, `refreshing`.
+- Local state owns: `activePackId`, `checkoutError`, `activityFilter`.
 - `filteredActivity` is derived locally from `activity`.
 - `startCheckout(packId)` posts to `/api/billing/checkout`, then redirects the browser with `window.location.assign(response.url)`.
 
@@ -386,10 +398,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 4. Current owned state
 
-- Local UI state:
-  - `activePackId`
-  - `checkoutError`
-  - `activityFilter`
+- Local UI state: `activePackId`, `checkoutError`, `activityFilter`.
 - Hook-owned account state from a separate `useAccountData()` instance.
 
 ### 5. Current refresh / invalidation behavior
@@ -424,12 +433,9 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 10. Suggested query keys / mutation boundaries
 
-- Query key:
-  - `["account", "snapshot"]`
-- Optional mutation boundary:
-  - `["billing", "checkout", packId]`
-- On `checkout=success`, invalidate or refetch:
-  - `["account", "snapshot"]`
+- Query key: `["account", "snapshot"]`
+- Optional mutation boundary: `["billing", "checkout", packId]`
+- On `checkout=success`, invalidate or refetch: `["account", "snapshot"]`
 
 ## `frontend/src/features/account/Profile.tsx`
 
@@ -441,11 +447,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 2. Current data flow
 
-- Calls `useAccountData()` directly and consumes:
-  - `authEmail`
-  - `identities`
-  - `profile`
-  - `signOut`
+- Calls `useAccountData()` directly and consumes: `authEmail`, `identities`, `profile`, `signOut`.
 - Owns local `error` state only for sign-out failure.
 - Shows a skeleton until `profile` or `authEmail` becomes available.
 
@@ -456,8 +458,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 4. Current owned state
 
-- Local state:
-  - `error` for sign-out failure
+- Local state: `error` for sign-out failure.
 - Hook-owned account state from another independent `useAccountData()` instance.
 
 ### 5. Current refresh / invalidation behavior
@@ -488,8 +489,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 10. Suggested query keys / mutation boundaries
 
-- Query key:
-  - `["account", "snapshot"]`
+- Query key: `["account", "snapshot"]`
 - Keep sign-out as an imperative auth mutation for now.
 
 ## `frontend/src/features/voices/Voices.tsx`
@@ -503,20 +503,8 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 2. Current data flow
 
-- Reads validated initial route search from `voicesRoute.useSearch()`:
-  - `search`
-  - `source`
-  - `page`
-  - `sort`
-  - `sort_dir`
-  - `favorites`
-- Seeds local state from those route values once:
-  - `query`
-  - `source`
-  - `sort`
-  - `sortDir`
-  - `favorites`
-  - `page`
+- Reads validated initial route search from `voicesRoute.useSearch()`: `search`, `source`, `page`, `sort`, `sort_dir`, `favorites`.
+- Seeds local state from those route values once.
 - Debounces `query` with `useDebouncedValue(query, 250)`.
 - `load()` builds `URLSearchParams` and fetches `/api/voices?...`.
 - The response is stored in `data`.
@@ -535,25 +523,8 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 4. Current owned state
 
-- Server-state-like:
-  - `data`
-  - `loading`
-  - `error`
-  - `loadAbortRef`
-- Local UI state:
-  - `query`
-  - `source`
-  - `sort`
-  - `sortDir`
-  - `favorites`
-  - `page`
-  - `busyDelete`
-  - `busyFavorite`
-  - `editingId`
-  - `editName`
-  - `busyRename`
-  - `playState`
-  - `waveRefs`
+- Server-state-like: `data`, `loading`, `error`, `loadAbortRef`
+- Local UI state: `query`, `source`, `sort`, `sortDir`, `favorites`, `page`, `busyDelete`, `busyFavorite`, `editingId`, `editName`, `busyRename`, `playState`, `waveRefs`
 
 ### 5. Current refresh / invalidation behavior
 
@@ -572,8 +543,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 7. What TanStack Query would replace
 
-- `load()`
-- `loadAbortRef`
+- `load()`, `loadAbortRef`
 - `data/loading/error` ownership for the list read
 - manual reloads after delete, favorite toggle, and rename
 - overlapping voice read duplication with `Generate.tsx` and `History.tsx`
@@ -596,13 +566,8 @@ TanStack Query should not replace those route/search contracts. It should replac
 - Query keys:
   - `["voices", "list", { search: debounced.trim(), source, page, sort, sortDir, favorites, perPage: 20 }]`
   - `["voices", "options"]` for shared selector/filter consumers
-- Mutation boundaries:
-  - delete voice
-  - toggle favorite
-  - rename voice
-- Invalidate after successful mutations:
-  - matching `["voices", "list", ...]`
-  - `["voices", "options"]`
+- Mutation boundaries: delete voice, toggle favorite, rename voice
+- Invalidate after successful mutations: matching `["voices", "list", ...]` and `["voices", "options"]`
 
 ## `frontend/src/features/history/History.tsx`
 
@@ -615,13 +580,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 2. Current data flow
 
-- Reads validated initial route search from `historyRoute.useSearch()`:
-  - `search`
-  - `status`
-  - `page`
-  - `sort`
-  - `sort_dir`
-  - `voice_id`
+- Reads validated initial route search from `historyRoute.useSearch()`: `search`, `status`, `page`, `sort`, `sort_dir`, `voice_id`.
 - Seeds local state from those values once.
 - Fetches voice filter options separately on mount from `/api/voices?per_page=100`.
 - `load()` builds `URLSearchParams` and fetches `/api/generations?...`.
@@ -641,22 +600,8 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 4. Current owned state
 
-- Server-state-like:
-  - `voiceItems`
-  - `data`
-  - `loading`
-  - `error`
-  - `loadAbortRef`
-  - `refreshTimerRef`
-- Local UI state:
-  - `query`
-  - `status`
-  - `sort`
-  - `sortDir`
-  - `voiceId`
-  - `page`
-  - `playState`
-  - `waveRefs`
+- Server-state-like: `voiceItems`, `data`, `loading`, `error`, `loadAbortRef`, `refreshTimerRef`
+- Local UI state: `query`, `status`, `sort`, `sortDir`, `voiceId`, `page`, `playState`, `waveRefs`
 
 ### 5. Current refresh / invalidation behavior
 
@@ -677,9 +622,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 ### 7. What TanStack Query would replace
 
 - The mount-time voice options fetch
-- `load()`
-- `loadAbortRef`
-- `refreshTimerRef`
+- `load()`, `loadAbortRef`, `refreshTimerRef`
 - local `data/loading/error` ownership for the generations list
 - manual reload after delete
 
@@ -701,10 +644,8 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 - Query keys:
   - `["voices", "options"]`
-  - `["generations", "list", { search: debounced.trim(), status, voiceId, page, sort, sortDir, perPage: 20 }]`
-- Mutation boundaries:
-  - delete generation
-  - regenerate generation
+  - `["generations", "list", { search: debounced.trim(), status, voiceId, page, sort, sortDir, perPage: 10 }]`
+- Mutation boundaries: delete generation, regenerate generation
 - Regenerate can remain imperative if navigation dominates the UX.
 
 ## `frontend/src/features/generate/Generate.tsx`
@@ -712,19 +653,14 @@ TanStack Query should not replace those route/search contracts. It should replac
 ### 1. Current responsibilities
 
 - Renders the speech generation form.
-- Loads voice options and languages.
+- Loads voice options on mount.
 - Restores form state from route search and `TaskProvider`.
 - Starts generation jobs and reads tracked task results from `TaskProvider`.
 - Resolves completed audio URLs for playback and download.
 
 ### 2. Current data flow
 
-- Reads route search from `generateRoute.useSearch()`:
-  - `voice`
-  - `text`
-  - `language`
-  - `demo`
-- Reads shared language metadata from `useLanguages()`.
+- Reads route search from `generateRoute.useSearch()`: `voice`, `text`, `language`, `demo`.
 - Fetches `/api/voices` once on mount and stores it in `voices`.
 - Reads tracked tasks from `useTasks()`.
 - One-time restore effect seeds local form state from:
@@ -742,19 +678,8 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 4. Current owned state
 
-- Server-state-like:
-  - `voices`
-  - `loadingVoices`
-- Local/client state:
-  - `voiceId`
-  - `language`
-  - `text`
-  - `isSubmitting`
-  - `selectedTaskId`
-  - `error`
-  - `audioUrl`
-  - `downloadUrl`
-  - restore refs and submit guards
+- Server-state-like: `voices`, `loadingVoices`
+- Local/client state: `voiceId`, `language`, `text`, `isSubmitting`, `selectedTaskId`, `error`, `audioUrl`, `downloadUrl`, restore refs and submit guards
 - Cross-page tracked task state comes from `TaskProvider`, not from direct component fetches.
 
 ### 5. Current refresh / invalidation behavior
@@ -767,9 +692,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 - Route search is a one-time seed, not a continuously synchronized source of truth.
 - After the restore effect runs once, local form state owns the live values.
-- Query should not replace:
-  - `voice`, `text`, `language`, or `demo` search params
-  - task selection state
+- Query should not replace: `voice`, `text`, `language`, or `demo` search params, or task selection state.
 
 ### 7. What TanStack Query would replace
 
@@ -791,11 +714,8 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 10. Suggested query keys / mutation boundaries
 
-- Query keys:
-  - `["voices", "options"]`
-  - `["languages"]`
-- Mutation boundaries:
-  - none in this file for the first Query pass
+- Query keys: `["voices", "options"]`
+- Mutation boundaries: none in this file for the first Query pass
 - Keep generation job tracking outside Query for now.
 
 ## `frontend/src/features/tasks/Tasks.tsx`
@@ -808,13 +728,8 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 2. Current data flow
 
-- Local `typeFilter` drives `filterQuery`, which always includes:
-  - `status=active`
-  - `type=<typeFilter>`
-  - `limit=25`
-- Initial fetch effect requests `/api/tasks?${filterQuery}` and stores:
-  - `tasks`
-  - `nextBefore`
+- Local `typeFilter` drives `filterQuery`, which always includes: `status=active`, `type=<typeFilter>`, `limit=10`.
+- Initial fetch effect requests `/api/tasks?${filterQuery}` and stores: `tasks`, `nextBefore`.
 - Separate polling effect repeatedly refetches the same endpoint with `setTimeout`.
 - `loadMore()` appends older tasks fetched with `before=${nextBefore}`.
 - `onCancel()` uses `cancelTask()` from `TaskProvider`, then refetches the first page manually.
@@ -830,14 +745,8 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 4. Current owned state
 
-- Server-state-like:
-  - `tasks`
-  - `loading`
-  - `loadingMore`
-  - `error`
-  - `nextBefore`
-- Local UI state:
-  - `typeFilter`
+- Server-state-like: `tasks`, `loading`, `loadingMore`, `error`, `nextBefore`
+- Local UI state: `typeFilter`
 
 ### 5. Current refresh / invalidation behavior
 
@@ -851,7 +760,6 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 - None.
 - `typeFilter` is local component state, not route-owned state.
-- TanStack Query should not be used to replace the filter toggle itself.
 
 ### 7. What TanStack Query would replace
 
@@ -869,17 +777,14 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 9. Adoption priority
 
-- Later than languages/account/voices/history.
+- Later than account/voices/history.
 - Good Query fit, but the interaction with `TaskProvider` makes it a second-wave migration.
 
 ### 10. Suggested query keys / mutation boundaries
 
-- Query keys:
-  - `["tasks", "list", { status: "active", type: typeFilter, limit: 25 }]`
+- Query keys: `["tasks", "list", { status: "active", type: typeFilter, limit: 10 }]`
 - Prefer an infinite query with `before` as the page cursor.
-- Mutation boundaries:
-  - cancel task
-  - dismiss/clear task
+- Mutation boundaries: cancel task, dismiss/clear task
 - Any Query rollout here must coordinate with `TaskProvider` instead of pretending the provider does not exist.
 
 ## `frontend/src/app/TaskProvider.tsx`
@@ -890,12 +795,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 - Persists task state to localStorage.
 - Migrates legacy localStorage task keys.
 - Polls `/api/tasks/:id` for non-terminal tracked tasks.
-- Exposes helpers used by `Generate.tsx`, `Design.tsx`, the task dock, and the tasks page:
-  - `startTask`
-  - `dismissTask`
-  - `cancelTask`
-  - `clearTask`
-  - selectors and status formatters
+- Exposes helpers used by `Generate.tsx`, `Design.tsx`, the task dock, and the tasks page: `startTask`, `dismissTask`, `cancelTask`, `clearTask`, selectors and status formatters.
 
 ### 2. Current data flow
 
@@ -916,17 +816,9 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 4. Current owned state
 
-- Reducer store:
-  - `byId`
-  - `orderedIds`
-- Refs:
-  - `stateRef`
-  - `pollIntervalsRef`
-  - `pollInFlightRef`
-- Derived values exposed through context:
-  - `tasks`
-  - `tasksById`
-  - `activeCount`
+- Reducer store: `byId`, `orderedIds`
+- Refs: `stateRef`, `pollIntervalsRef`, `pollInFlightRef`
+- Derived values exposed through context: `tasks`, `tasksById`, `activeCount`
 
 ### 5. Current refresh / invalidation behavior
 
@@ -957,15 +849,12 @@ TanStack Query should not replace those route/search contracts. It should replac
 ### 9. Adoption priority
 
 - Not a first-wave Query target.
-- Revisit only after the server-state surfaces above have moved to Query and the provider's client/server responsibilities are separated more cleanly.
+- Revisit only after the first-wave server-state surfaces have moved to Query and the provider's client/server responsibilities are separated more cleanly.
 
 ### 10. Suggested query keys / mutation boundaries
 
-- If revisited later:
-  - `["tasks", "detail", taskId]`
-- Mutation boundaries already exist conceptually:
-  - cancel task
-  - clear/dismiss task
+- If revisited later: `["tasks", "detail", taskId]`
+- Mutation boundaries already exist conceptually: cancel task, clear/dismiss task
 - Do not start the Query rollout here.
 
 ## `frontend/src/app/auth/AuthStateProvider.tsx`
@@ -978,12 +867,8 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 2. Current data flow
 
-- `refresh()` calls `resolveAuthSnapshot()`.
-- `resolveAuthSnapshot()` calls `getAuthSession()`.
-- Successful results map to:
-  - `loading`
-  - `signed_out`
-  - `signed_in`
+- `refresh()` calls `resolveAuthSnapshot()` which calls `getAuthSession()`.
+- Successful results map to: `loading`, `signed_out`, `signed_in`.
 - Failures become a signed-out snapshot with an error.
 
 ### 3. Current fetch trigger
@@ -993,11 +878,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 4. Current owned state
 
-- `authState`
-  - `status`
-  - `user`
-  - `error`
-- `requestIdRef`
+- `authState` (`status`, `user`, `error`), `requestIdRef`
 
 ### 5. Current refresh / invalidation behavior
 
@@ -1017,10 +898,7 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 ### 8. What TanStack Query would not replace
 
-- auth context
-- auth gating semantics
-- router invalidation integration
-- signed-in vs signed-out app shell behavior
+- auth context, auth gating semantics, router invalidation integration, signed-in vs signed-out app shell behavior
 
 ### 9. Adoption priority
 
@@ -1063,24 +941,9 @@ TanStack Query should not replace those route/search contracts. It should replac
 - This is the route boundary.
 - `defaultPreload: "intent"` is already configured.
 
-### 7. What TanStack Query would replace
+### 7–10. TanStack Query assessment
 
-- Nothing directly in these files.
-
-### 8. What TanStack Query would not replace
-
-- router creation
-- router context injection
-- route preloading
-- auth-driven router invalidation
-
-### 9. Adoption priority
-
-- Not a Query target.
-
-### 10. Suggested query keys / mutation boundaries
-
-- None.
+- Not a Query target. Nothing to replace, no query keys needed.
 
 ## `frontend/src/routes/_app/route.tsx`
 
@@ -1090,50 +953,15 @@ TanStack Query should not replace those route/search contracts. It should replac
 - Redirects signed-out users in `beforeLoad`.
 - Chooses shell fallback UI and renders `TaskDock`.
 
-### 2. Current data flow
+### 2–6. Summary
 
 - Consumes `authState` from router context and `useAuthState()`.
-- No server fetches are defined in this route file.
-
-### 3. Current fetch trigger
-
-- None in the route file.
-
-### 4. Current owned state
-
-- Local shell state:
-  - `menuOpen`
-- Derived route state:
-  - current location
-  - `navVariant`
-
-### 5. Current refresh / invalidation behavior
-
+- No server fetches. Local shell state: `menuOpen`. Derives `navVariant` from location.
 - Relies on router invalidation from `App.tsx` so `beforeLoad` can re-run after auth changes.
 
-### 6. Interaction with route/search state
+### 7–10. TanStack Query assessment
 
-- This file is the auth-guard boundary.
-- It owns redirects, not data fetching.
-
-### 7. What TanStack Query would replace
-
-- Nothing here.
-
-### 8. What TanStack Query would not replace
-
-- `beforeLoad`
-- auth redirect behavior
-- shell composition
-- `menuOpen` UI state
-
-### 9. Adoption priority
-
-- Not a Query target.
-
-### 10. Suggested query keys / mutation boundaries
-
-- None.
+- Not a Query target. Nothing to replace, no query keys needed.
 
 ## `frontend/src/routes/_app/voices.tsx`
 
@@ -1141,50 +969,14 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 - Validates route search for the voices page.
 
-### 2. Current data flow
+### 2–6. Summary
 
-- Defines the URL contract for:
-  - `search`
-  - `source`
-  - `page`
-  - `sort`
-  - `sort_dir`
-  - `favorites`
-- Renders `VoicesPage`.
+- Defines the URL contract for: `search`, `source`, `page`, `sort`, `sort_dir`, `favorites`.
+- Renders `VoicesPage`. No fetch trigger, no owned state beyond search schema.
 
-### 3. Current fetch trigger
+### 7–10. TanStack Query assessment
 
-- None in the route file.
-
-### 4. Current owned state
-
-- Search schema only.
-
-### 5. Current refresh / invalidation behavior
-
-- None.
-
-### 6. Interaction with route/search state
-
-- This file is the owner of the voices search-param contract.
-- `Voices.tsx` reads from it and mirrors local UI state back into it.
-
-### 7. What TanStack Query would replace
-
-- Nothing in this file.
-
-### 8. What TanStack Query would not replace
-
-- `validateSearch`
-- search-param defaults and typing
-
-### 9. Adoption priority
-
-- Keep outside Query.
-
-### 10. Suggested query keys / mutation boundaries
-
-- None in the route file itself.
+- Not a Query target. Keep outside Query.
 
 ## `frontend/src/routes/_app/history.tsx`
 
@@ -1192,49 +984,14 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 - Validates route search for the history page.
 
-### 2. Current data flow
+### 2–6. Summary
 
-- Defines the URL contract for:
-  - `search`
-  - `status`
-  - `page`
-  - `sort`
-  - `sort_dir`
-  - `voice_id`
-- Renders `HistoryPage`.
+- Defines the URL contract for: `search`, `status`, `page`, `sort`, `sort_dir`, `voice_id`.
+- Renders `HistoryPage`. No fetch trigger, no owned state beyond search schema.
 
-### 3. Current fetch trigger
+### 7–10. TanStack Query assessment
 
-- None in the route file.
-
-### 4. Current owned state
-
-- Search schema only.
-
-### 5. Current refresh / invalidation behavior
-
-- None.
-
-### 6. Interaction with route/search state
-
-- This file owns the search-param contract that `History.tsx` mirrors into and out of.
-
-### 7. What TanStack Query would replace
-
-- Nothing in this file.
-
-### 8. What TanStack Query would not replace
-
-- `validateSearch`
-- URL-state typing and defaults
-
-### 9. Adoption priority
-
-- Keep outside Query.
-
-### 10. Suggested query keys / mutation boundaries
-
-- None in the route file itself.
+- Not a Query target. Keep outside Query.
 
 ## `frontend/src/routes/_app/generate.tsx`
 
@@ -1242,47 +999,14 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 - Validates route search for the generate page.
 
-### 2. Current data flow
+### 2–6. Summary
 
-- Defines the URL contract for:
-  - `voice`
-  - `text`
-  - `language`
-  - `demo`
-- Renders `GeneratePage`.
+- Defines the URL contract for: `voice`, `text`, `language`, `demo`.
+- Renders `GeneratePage`. No fetch trigger, no owned state beyond search schema.
 
-### 3. Current fetch trigger
+### 7–10. TanStack Query assessment
 
-- None in the route file.
-
-### 4. Current owned state
-
-- Search schema only.
-
-### 5. Current refresh / invalidation behavior
-
-- None.
-
-### 6. Interaction with route/search state
-
-- This file owns the seed values that `Generate.tsx` consumes once during restore.
-
-### 7. What TanStack Query would replace
-
-- Nothing in this file.
-
-### 8. What TanStack Query would not replace
-
-- route-owned search params
-- route typing and defaults
-
-### 9. Adoption priority
-
-- Keep outside Query.
-
-### 10. Suggested query keys / mutation boundaries
-
-- None in the route file itself.
+- Not a Query target. Keep outside Query.
 
 ## `frontend/src/routes/_app/account/credits.tsx`
 
@@ -1290,67 +1014,45 @@ TanStack Query should not replace those route/search contracts. It should replac
 
 - Validates the account credits route search.
 
-### 2. Current data flow
+### 2–6. Summary
 
 - Defines the URL contract for `checkout`.
-- Renders `AccountCreditsPage`.
+- Renders `AccountCreditsPage`. No fetch trigger, no owned state beyond search schema.
+- `Credits.tsx` uses the validated `checkout` param to decide whether to show a banner and refetch the account snapshot.
 
-### 3. Current fetch trigger
+### 7–10. TanStack Query assessment
 
-- None in the route file.
-
-### 4. Current owned state
-
-- Search schema only.
-
-### 5. Current refresh / invalidation behavior
-
-- None in the route file.
-- The consumer page reacts to the validated `checkout` value.
-
-### 6. Interaction with route/search state
-
-- This file is the source of truth for the `checkout` search param.
-- `Credits.tsx` uses that param to decide whether to show a banner and refetch the account snapshot.
-
-### 7. What TanStack Query would replace
-
-- Nothing in this file.
-
-### 8. What TanStack Query would not replace
-
-- `checkout` search ownership
-- route typing and defaults
-
-### 9. Adoption priority
-
-- Keep outside Query.
-
-### 10. Suggested query keys / mutation boundaries
-
-- None in the route file itself.
+- Not a Query target. Keep outside Query.
 
 ## Practical Rollout Order
 
-1. Keep route/search ownership in TanStack Router exactly where it is now.
-2. Introduce Query for `["languages"]`.
-3. Introduce a shared `["account", "snapshot"]` query and remove duplicated account hook ownership from the layout and leaf pages.
-4. Introduce shared voice queries:
-   - list queries for `Voices.tsx`
+1. Bootstrap: install `@tanstack/react-query`, create `QueryClient` with global `staleTime: 1000 * 20` and `MutationCache` global invalidation callback, wrap `App` in `QueryClientProvider`.
+2. Keep route/search ownership in TanStack Router exactly where it is now.
+3. Create query factories using `queryOptions()` co-located with each feature:
+   - `accountQueries` in `features/account/`
+   - `voiceQueries` in `features/voices/`
+   - `generationQueries` in `features/history/`
+4. Introduce a shared `["account", "snapshot"]` query and remove duplicated account hook ownership from the layout and leaf pages.
+5. Introduce shared voice queries:
+   - list queries for `Voices.tsx` with `useMutation` replacing manual `busyX` state
    - options query reused by `History.tsx` and `Generate.tsx`
-5. Move generations history reads to Query with conditional polling.
-6. Move the tasks page list to Query later, after deciding how it should coordinate with `TaskProvider`.
-7. Revisit `TaskProvider` only after the first-wave server-state surface is smaller.
+6. Move generations history reads to Query with `refetchInterval` callback for conditional polling.
+7. Move the tasks page list to Query later, after deciding how it should coordinate with `TaskProvider`.
+8. Revisit `TaskProvider` only after the first-wave server-state surface is smaller.
 
 ## Bottom Line
 
 TanStack Query is justified by the actual codebase today because the frontend now has:
 
-- a hand-rolled shared cache for languages
 - duplicated account snapshot ownership across layout and pages
 - overlapping `/api/voices` reads across three features
 - manual list orchestration with repeated `loading/error/data` state
-- manual reload-after-mutation patterns
-- polling loops for generations and task lists
+- manual reload-after-mutation patterns with per-mutation `busyX` state variables
+- polling loops for generations and task lists with manual `setInterval` / `setTimeout` / visibility-change management
 
-The right move is a selective Query rollout focused on shared server state, while explicitly leaving route/search state, auth guards, local form state, and the current `TaskProvider` client-state overlay outside the first migration.
+The right move is a selective Query rollout focused on shared server state, using `queryOptions()` as the primary abstraction, query key factories for invalidation hierarchy, a global `MutationCache` callback for automatic post-mutation invalidation, and `refetchInterval` callbacks for polling. Route/search state, auth guards, local form state, and the current `TaskProvider` client-state overlay stay outside the first migration.
+
+Companion documents:
+
+- Implementation tips: `docs/plans/2026-03-27/tanstack-query/tips.md`
+- Before/after migration guide: `docs/plans/2026-03-27/tanstack-query/migration-guide.md`
