@@ -24,10 +24,10 @@ import { DESIGN_TIPS } from "../../data/tips";
 import { useElapsedTick } from "../../hooks/useElapsedTick";
 import { apiForm, apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
+import { SUPPORTED_LANGUAGES } from "../../lib/provider-config";
 import { input } from "../../lib/recipes/input";
 import { formatElapsed } from "../../lib/time";
 import type { DesignPreviewResponse, DesignSaveResponse, StoredTask } from "../../lib/types";
-import { useLanguages } from "../shared/hooks";
 
 type DesignFormState = {
   name: string;
@@ -59,10 +59,9 @@ const EXAMPLES: Array<{ title: string; name: string; instruct: string }> = [
 
 export function DesignPage() {
   const navigate = useNavigate();
-  const { languages } = useLanguages();
   const languageItems: AutocompleteSelectItem[] = useMemo(
-    () => languages.map((l) => ({ id: l, label: l })),
-    [languages],
+    () => SUPPORTED_LANGUAGES.map((l) => ({ id: l, label: l })),
+    [],
   );
   const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
 
@@ -95,10 +94,13 @@ export function DesignPage() {
   const handledTaskKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (languages.length > 0 && !languages.includes(language)) {
-      setLanguage(languages[0] ?? "English");
+    if (
+      SUPPORTED_LANGUAGES.length > 0 &&
+      !(SUPPORTED_LANGUAGES as readonly string[]).includes(language)
+    ) {
+      setLanguage(SUPPORTED_LANGUAGES[0] ?? "English");
     }
-  }, [language, languages]);
+  }, [language]);
 
   useEffect(() => {
     return () => {

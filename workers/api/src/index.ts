@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 
-import { corsHeaders } from "./shared/cors";
 import {
   applyNoStoreHeaders,
   hasAuthCookies,
@@ -17,15 +16,15 @@ import {
 import { setRuntimeEnv } from "./_shared/runtime_env.ts";
 import { createAdminClient } from "./_shared/supabase.ts";
 import { handleTtsQueueBatch } from "./queues/consumer.ts";
+import { corsHeaders } from "./shared/cors";
 
-import { billingRoutes } from "./routes/billing.ts";
-import { generationsRoutes } from "./routes/generations.ts";
 import { authRoutes } from "./routes/auth.ts";
+import { billingRoutes } from "./routes/billing.ts";
 import { cloneRoutes } from "./routes/clone.ts";
 import { creditsRoutes } from "./routes/credits.ts";
 import { designRoutes } from "./routes/design.ts";
 import { generateRoutes } from "./routes/generate.ts";
-import { languagesRoutes } from "./routes/languages.ts";
+import { generationsRoutes } from "./routes/generations.ts";
 import { meRoutes } from "./routes/me.ts";
 import { storageRoutes } from "./routes/storage.ts";
 import { tasksRoutes } from "./routes/tasks.ts";
@@ -105,8 +104,7 @@ app.use("*", async (c, next) => {
 
 app.use("*", async (c, next) => {
   const admin = createAdminClient();
-  const requestId =
-    c.req.raw.headers.get("x-request-id")?.trim() || crypto.randomUUID();
+  const requestId = c.req.raw.headers.get("x-request-id")?.trim() || crypto.randomUUID();
   c.header("x-request-id", requestId);
 
   const method = c.req.method.toUpperCase();
@@ -142,10 +140,7 @@ app.use("*", async (c, next) => {
         decision: "error_deny",
         status_code: statusCode,
       });
-      return c.json(
-        { detail: "Rate limiter unavailable. Retry shortly." },
-        statusCode,
-      );
+      return c.json({ detail: "Rate limiter unavailable. Retry shortly." }, statusCode);
     }
 
     await next();
@@ -176,10 +171,7 @@ app.use("*", async (c, next) => {
         decision: "error_deny",
         status_code: statusCode,
       });
-      return c.json(
-        { detail: "Rate limiter unavailable. Retry shortly." },
-        statusCode,
-      );
+      return c.json({ detail: "Rate limiter unavailable. Retry shortly." }, statusCode);
     }
 
     await next();
@@ -242,7 +234,6 @@ app.use("*", async (c, next) => {
 app.get("/health", (c) => c.json({ ok: true }));
 
 app.route("/", authRoutes);
-app.route("/", languagesRoutes);
 app.route("/", meRoutes);
 app.route("/", storageRoutes);
 app.route("/", cloneRoutes);

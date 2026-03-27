@@ -1,21 +1,6 @@
-import { Skeleton } from "../../components/atoms/Skeleton";
-import { useLanguages } from "../shared/hooks";
-
-function AboutLanguagesSkeleton() {
-  return (
-    <div className="flex flex-wrap gap-2" aria-hidden="true">
-      <Skeleton className="h-6 w-16" />
-      <Skeleton className="h-6 w-20" />
-      <Skeleton className="h-6 w-24" />
-      <Skeleton className="h-6 w-24" />
-      <Skeleton className="h-6 w-16" />
-    </div>
-  );
-}
+import { SUPPORTED_LANGUAGES } from "../../lib/provider-config";
 
 export function AboutPage() {
-  const { languages, loading } = useLanguages();
-
   return (
     <div className="space-y-8">
       <h2 className="text-balance text-center text-xl font-pixel font-medium uppercase tracking-[2px]">
@@ -66,9 +51,7 @@ export function AboutPage() {
         <div className="text-caption font-semibold uppercase tracking-wide text-foreground">
           Supported languages
         </div>
-        <div className="leading-relaxed">
-          {loading ? <AboutLanguagesSkeleton /> : languages.join(", ")}
-        </div>
+        <div className="leading-relaxed">{SUPPORTED_LANGUAGES.join(", ")}</div>
       </div>
     </div>
   );

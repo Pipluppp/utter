@@ -134,24 +134,6 @@ export type GenerationsResponse = {
   };
 };
 
-export type LanguagesResponse = {
-  languages: string[];
-  default: string;
-  provider: "qwen" | string;
-  capabilities?: {
-    supports_generate: boolean;
-    supports_generate_stream: boolean;
-    default_generate_mode: "task";
-    allow_generate_mode_toggle: boolean;
-    max_text_chars: number;
-  };
-  transcription?: {
-    enabled: boolean;
-    provider: string;
-    model: string;
-  };
-};
-
 export type CloneResponse = { id: string; name: string };
 
 export type DesignPreviewResponse = { task_id: string; status: TaskStatus };

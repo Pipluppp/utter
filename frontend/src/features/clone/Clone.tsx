@@ -41,11 +41,15 @@ import {
 } from "../../lib/audio";
 import { cn } from "../../lib/cn";
 import { fetchTextUtf8 } from "../../lib/fetchTextUtf8";
+import {
+  DEFAULT_LANGUAGE,
+  SUPPORTED_LANGUAGES,
+  TRANSCRIPTION_ENABLED,
+} from "../../lib/provider-config";
 import { input } from "../../lib/recipes/input";
 import { toggleButton } from "../../lib/recipes/toggle-button";
 import { formatElapsed } from "../../lib/time";
 import type { CloneResponse } from "../../lib/types";
-import { useLanguages } from "../shared/hooks";
 
 const cloneRoute = getRouteApi("/_app/clone");
 
@@ -72,10 +76,9 @@ function contentTypeForFile(file: File): string {
 
 export function ClonePage() {
   const { demo: demoParam } = cloneRoute.useSearch();
-  const { languages, defaultLanguage, transcription } = useLanguages();
   const languageItems: AutocompleteSelectItem[] = useMemo(
-    () => languages.map((l) => ({ id: l, label: l })),
-    [languages],
+    () => SUPPORTED_LANGUAGES.map((l) => ({ id: l, label: l })),
+    [],
   );
 
   const loadedDemoRef = useRef<string | null>(null);
@@ -84,7 +87,7 @@ export function ClonePage() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [audioMode, setAudioMode] = useState<"upload" | "record">("upload");
 
-  const transcriptionEnabled = transcription?.enabled ?? false;
+  const transcriptionEnabled = TRANSCRIPTION_ENABLED;
   const [transcribing, setTranscribing] = useState(false);
 
   const [recording, setRecording] = useState(false);
@@ -104,7 +107,7 @@ export function ClonePage() {
 
   const [name, setName] = useState("");
   const [transcript, setTranscript] = useState("");
-  const [language, setLanguage] = useState(defaultLanguage);
+  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
 
   const [submitting, setSubmitting] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -113,8 +116,6 @@ export function ClonePage() {
 
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<CloneResponse | null>(null);
-
-  useEffect(() => setLanguage(defaultLanguage), [defaultLanguage]);
 
   useEffect(() => {
     if (transcriptionEnabled) return;

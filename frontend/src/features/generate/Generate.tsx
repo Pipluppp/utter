@@ -27,10 +27,15 @@ import { apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { fetchTextUtf8 } from "../../lib/fetchTextUtf8";
 import { resolveProtectedMediaUrl, triggerDownload } from "../../lib/protectedMedia";
+import {
+  DEFAULT_LANGUAGE,
+  MAX_TEXT_CHARS,
+  SUPPORTED_LANGUAGES,
+  TTS_PROVIDER,
+} from "../../lib/provider-config";
 import { input } from "../../lib/recipes/input";
 import { formatElapsed } from "../../lib/time";
 import type { GenerateResponse, StoredTask, VoicesResponse } from "../../lib/types";
-import { useLanguages } from "../shared/hooks";
 
 const generateRoute = getRouteApi("/_app/generate");
 
@@ -47,10 +52,9 @@ export function GeneratePage() {
     language: languageParam,
     demo: demoParam,
   } = generateRoute.useSearch();
-  const { languages, defaultLanguage, provider, capabilities } = useLanguages();
   const languageItems: AutocompleteSelectItem[] = useMemo(
-    () => languages.map((l) => ({ id: l, label: l })),
-    [languages],
+    () => SUPPORTED_LANGUAGES.map((l) => ({ id: l, label: l })),
+    [],
   );
 
   const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
@@ -72,7 +76,7 @@ export function GeneratePage() {
   );
 
   const [voiceId, setVoiceId] = useState("");
-  const [language, setLanguage] = useState(defaultLanguage);
+  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
   const [text, setText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sweepNonce, setSweepNonce] = useState(0);
@@ -86,8 +90,6 @@ export function GeneratePage() {
   const handledTaskKeyRef = useRef<string | null>(null);
   const loadedDemoRef = useRef<string | null>(null);
   const submitInFlightRef = useRef(false);
-
-  useEffect(() => setLanguage(defaultLanguage), [defaultLanguage]);
 
   useEffect(() => {
     let active = true;
@@ -219,7 +221,7 @@ export function GeneratePage() {
   }
 
   const charCount = text.length;
-  const maxTextChars = capabilities?.max_text_chars ?? 10000;
+  const maxTextChars = MAX_TEXT_CHARS;
   const voicePlaceholder = loadingVoices
     ? "Loading voices..."
     : !voices
@@ -230,7 +232,7 @@ export function GeneratePage() {
   const selectedVoice = voices?.voices.find((v) => v.id === voiceId) ?? null;
   const selectedVoiceProvider = selectedVoice?.tts_provider ?? "qwen";
   const selectedVoiceCompatible =
-    voiceId.length === 0 ? true : Boolean(selectedVoice) && selectedVoiceProvider === provider;
+    voiceId.length === 0 ? true : Boolean(selectedVoice) && selectedVoiceProvider === TTS_PROVIDER;
   const activeGenerateCount = generateTasks.filter(
     (task) => task.status === "pending" || task.status === "processing",
   ).length;
@@ -324,7 +326,7 @@ export function GeneratePage() {
         >
           {(v) => {
             const voiceProvider = v.tts_provider ?? "qwen";
-            const incompatible = voiceProvider !== provider;
+            const incompatible = voiceProvider !== TTS_PROVIDER;
             return (
               <div className={cn("flex flex-col gap-0.5", incompatible && "opacity-50")}>
                 <div className="flex items-center gap-2">

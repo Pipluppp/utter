@@ -1,7 +1,8 @@
-import type { QwenConfig, TtsCapabilities, TtsProviderName } from "./types.ts";
 import { envGet } from "../runtime_env.ts";
+import type { QwenConfig, TtsProviderName } from "./types.ts";
 
-const DEFAULT_QWEN_MAX_TEXT_CHARS = 100;
+/** Product-level cap on synthesis text length (characters). */
+const MAX_TEXT_CHARS = 1000;
 const DEFAULT_QWEN_BASE_URL = "https://dashscope-intl.aliyuncs.com";
 const DEFAULT_QWEN_REGION = "intl";
 const DEFAULT_QWEN_VC_TARGET_MODEL = "qwen3-tts-vc-2026-01-22";
@@ -18,38 +19,14 @@ function requireEnv(name: string): string {
   return value;
 }
 
-function parsePositiveInt(value: string | null, fallback: number): number {
-  if (!value) return fallback;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-  return Math.floor(parsed);
-}
-
 export function isVoiceDesignEnabled(): boolean {
   const value = optionalEnv("VOICE_DESIGN_ENABLED");
   if (!value) return true;
   return value.toLowerCase() === "true";
 }
 
-export function getTtsProviderMode(): TtsProviderName {
-  return "qwen";
-}
-
 export function getGenerateTextCapForMode(_mode: TtsProviderName): number {
-  return parsePositiveInt(
-    optionalEnv("QWEN_MAX_TEXT_CHARS"),
-    DEFAULT_QWEN_MAX_TEXT_CHARS,
-  );
-}
-
-export function getTtsCapabilities(): TtsCapabilities {
-  return {
-    supports_generate: true,
-    supports_generate_stream: false,
-    default_generate_mode: "task",
-    allow_generate_mode_toggle: false,
-    max_text_chars: getGenerateTextCapForMode("qwen"),
-  };
+  return MAX_TEXT_CHARS;
 }
 
 export function getQwenConfig(): QwenConfig {
@@ -62,13 +39,7 @@ export function getQwenConfig(): QwenConfig {
     apiKey: requireEnv("DASHSCOPE_API_KEY"),
     baseUrl: baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl,
     region,
-    vcTargetModel: optionalEnv("QWEN_VC_TARGET_MODEL") ??
-      DEFAULT_QWEN_VC_TARGET_MODEL,
-    vdTargetModel: optionalEnv("QWEN_VD_TARGET_MODEL") ??
-      DEFAULT_QWEN_VD_TARGET_MODEL,
-    maxTextChars: parsePositiveInt(
-      optionalEnv("QWEN_MAX_TEXT_CHARS"),
-      DEFAULT_QWEN_MAX_TEXT_CHARS,
-    ),
+    vcTargetModel: optionalEnv("QWEN_VC_TARGET_MODEL") ?? DEFAULT_QWEN_VC_TARGET_MODEL,
+    vdTargetModel: optionalEnv("QWEN_VD_TARGET_MODEL") ?? DEFAULT_QWEN_VD_TARGET_MODEL,
   };
 }

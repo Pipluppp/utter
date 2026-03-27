@@ -12,7 +12,6 @@ export interface WorkerEnv {
   DASHSCOPE_REGION?: "intl" | "cn";
   QWEN_VC_TARGET_MODEL?: string;
   QWEN_VD_TARGET_MODEL?: string;
-  QWEN_MAX_TEXT_CHARS?: string;
   VOICE_DESIGN_ENABLED?: "true" | "false";
   QWEN_ASR_MODEL?: string;
   QWEN_ASR_BASE_URL?: string;

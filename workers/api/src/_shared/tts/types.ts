@@ -8,23 +8,12 @@ export type ProviderErrorCategory =
   | "cancelled"
   | "unknown";
 
-export type GenerateMode = "task";
-
-export type TtsCapabilities = {
-  supports_generate: boolean;
-  supports_generate_stream: boolean;
-  default_generate_mode: GenerateMode;
-  allow_generate_mode_toggle: boolean;
-  max_text_chars: number;
-};
-
 export type QwenConfig = {
   apiKey: string;
   baseUrl: string;
   region: "intl" | "cn";
   vcTargetModel: string;
   vdTargetModel: string;
-  maxTextChars: number;
 };
 
 export type ProviderErrorInfo = {
