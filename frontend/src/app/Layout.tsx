@@ -1,20 +1,18 @@
-import { Bug, Moon, Sun } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { Button as AriaButton, RouterProvider as AriaRouterProvider } from "react-aria-components";
+import { RouterProvider as AriaRouterProvider } from "react-aria-components";
 import { Outlet, useLocation, useMatches, useNavigate } from "react-router-dom";
 import { GlobalToastRegion } from "../components/molecules/Toast";
 import { TaskDock } from "../components/organisms/TaskDock";
 import {
-    RouteAccountSkeleton,
-    RouteAppSkeleton,
-    RouteAuthSkeleton,
-    RouteMarketingSkeleton,
+  RouteAccountSkeleton,
+  RouteAppSkeleton,
+  RouteAuthSkeleton,
+  RouteMarketingSkeleton,
 } from "../components/templates/RouteSkeletons";
 import { cn } from "../lib/cn";
 import { useAuthState } from "./auth/AuthStateProvider";
 import { AppFooter } from "./Footer";
 import { buildAuthHref, buildReturnTo, getNavVariant, type RouteFamily } from "./navigation";
-import { useTheme } from "./theme/ThemeProvider";
 import { TopBar } from "./TopBar";
 import { useGlobalShortcuts } from "./useGlobalShortcuts";
 
@@ -24,7 +22,6 @@ export function Layout() {
   const navigate = useNavigate();
   const authState = useAuthState();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
   const routeFamily = useMemo<RouteFamily>(() => {
     for (const match of [...matches].toReversed()) {
       const handle = match.handle as { routeFamily?: RouteFamily } | undefined;
@@ -145,47 +142,6 @@ export function Layout() {
 
         {!isAuthSurface ? <AppFooter /> : null}
         {!isAuthSurface ? <TaskDock /> : null}
-
-        <AriaButton
-          onPress={toggleTheme}
-          className={cn(
-            "fixed bottom-4 left-4 z-50 inline-flex size-9 cursor-default items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm press-scale",
-            "hover:bg-muted/80 hover:text-foreground",
-            "pressed:bg-muted/80 pressed:text-foreground",
-            "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          )}
-          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          aria-pressed={theme === "dark"}
-        >
-          {theme === "dark" ? (
-            <Sun className="icon-md" strokeWidth={1.5} aria-hidden="true" />
-          ) : (
-            <Moon className="icon-md" strokeWidth={1.5} aria-hidden="true" />
-          )}
-        </AriaButton>
-
-        <a
-          href="https://steel-gong-714.notion.site/756b59f6379b82168ff001ffed20a47f"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(
-            "group fixed bottom-4 right-4 z-50 inline-flex items-center gap-2 rounded-full press-scale",
-            "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          )}
-        >
-          <span className="text-[10px] font-pixel uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
-            beta
-          </span>
-          <span
-            className={cn(
-              "inline-flex size-9 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground backdrop-blur-sm transition-colors",
-              "group-hover:bg-muted/80 group-hover:text-foreground",
-            )}
-            title="bug"
-          >
-            <Bug className="icon-sm" aria-hidden="true" />
-          </span>
-        </a>
 
         <GlobalToastRegion />
       </div>
