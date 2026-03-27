@@ -1,22 +1,7 @@
 import { getRouteApi } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Form,
-  Input,
-  Label,
-  Text,
-  TextArea,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-} from "react-aria-components";
-import { Button } from "../../components/atoms/Button";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Message } from "../../components/atoms/Message";
-import { ProgressBar } from "../../components/atoms/ProgressBar";
-import {
-  AutocompleteSelect,
-  type AutocompleteSelectItem,
-} from "../../components/molecules/AutocompleteSelect";
 import { GridArtSurface } from "../../components/molecules/GridArt";
 import { InfoTip } from "../../components/molecules/InfoTip";
 import { getUtterDemo } from "../../content/utterDemo";
@@ -24,13 +9,9 @@ import { CLONE_TIPS } from "../../data/tips";
 import { apiForm } from "../../lib/api";
 import { getAudioDurationSeconds } from "../../lib/audio/audio";
 import { fetchTextUtf8 } from "../../lib/fetchTextUtf8";
-import {
-  DEFAULT_LANGUAGE,
-  SUPPORTED_LANGUAGES,
-  TRANSCRIPTION_ENABLED,
-} from "../../lib/provider-config";
-import { input } from "../../lib/recipes/input";
+import { DEFAULT_LANGUAGE, TRANSCRIPTION_ENABLED } from "../../lib/provider-config";
 import { toggleButton } from "../../lib/recipes/toggle-button";
+import { CloneForm } from "./components/CloneForm";
 import { CloneSuccessModal } from "./components/CloneSuccessModal";
 import { RecordPanel } from "./components/RecordPanel";
 import { UploadPanel } from "./components/UploadPanel";
@@ -51,10 +32,6 @@ function extOf(name: string) {
 
 export function ClonePage() {
   const { demo: demoParam } = cloneRoute.useSearch();
-  const languageItems: AutocompleteSelectItem[] = useMemo(
-    () => SUPPORTED_LANGUAGES.map((l) => ({ id: l, label: l })),
-    [],
-  );
 
   const recorder = useAudioRecorder({ maxSeconds: MAX_REFERENCE_SECONDS });
 
@@ -296,72 +273,18 @@ export function ClonePage() {
         />
       )}
 
-      <Form
-        className="space-y-6"
-        validationBehavior="aria"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void onSubmit();
-        }}
-      >
-        <TextField value={name} onChange={setName}>
-          <Label className="mb-2 block label-style">Voice Name</Label>
-          <Input
-            name="name"
-            autoComplete="off"
-            placeholder="e.g. Duncan (calm, close-mic)..."
-            className={input()}
-          />
-        </TextField>
-
-        <TextField value={transcript} onChange={setTranscript}>
-          <Label className="mb-2 block label-style">Transcript</Label>
-          <TextArea
-            name="transcript"
-            placeholder="Paste the transcript of the reference audio..."
-            className={input({ multiline: true })}
-          />
-          <Text
-            slot="description"
-            className="mt-2 flex items-center justify-between text-xs text-faint"
-          >
-            {transcript.length} chars
-          </Text>
-        </TextField>
-
-        <AutocompleteSelect
-          label="Language"
-          items={languageItems}
-          selectedKey={language}
-          onSelectionChange={setLanguage}
-          searchLabel="Search languages"
-          searchPlaceholder="Search..."
-        >
-          {(item) => item.label}
-        </AutocompleteSelect>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Button variant="secondary" type="button" block onPress={() => void onTryExample()}>
-            Try Example Voice
-          </Button>
-          <Button type="submit" block isDisabled={cloneSubmit.submitting}>
-            {cloneSubmit.submitting ? `Cloning... ${cloneSubmit.elapsedLabel}` : "Clone Voice"}
-          </Button>
-        </div>
-      </Form>
-
-      {cloneSubmit.submitting ? (
-        <div className="border border-border bg-subtle p-4 shadow-elevated">
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <div className="font-medium uppercase tracking-wide">Progress</div>
-              <div className="mt-1 text-sm text-muted-foreground">Cloning...</div>
-            </div>
-            <div className="text-xs text-faint">{cloneSubmit.elapsedLabel}</div>
-          </div>
-          <ProgressBar label="Cloning voice" isIndeterminate className="mt-3" />
-        </div>
-      ) : null}
+      <CloneForm
+        name={name}
+        onNameChange={setName}
+        transcript={transcript}
+        onTranscriptChange={setTranscript}
+        language={language}
+        onLanguageChange={setLanguage}
+        submitting={cloneSubmit.submitting}
+        elapsedLabel={cloneSubmit.elapsedLabel}
+        onSubmit={() => void onSubmit()}
+        onTryExample={() => void onTryExample()}
+      />
       <CloneSuccessModal created={cloneSubmit.created} onReset={reset} />
     </GridArtSurface>
   );
