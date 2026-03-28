@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { button } from "../../components/atoms/Button";
+import { Link } from "../../components/atoms/Link";
 import { creditPacks } from "../../content/plans";
 import { cn } from "../../lib/cn";
 
