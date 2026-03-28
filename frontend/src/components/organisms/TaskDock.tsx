@@ -1,10 +1,12 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useTasks } from "../../app/TaskProvider";
 import { useElapsedTick } from "../../hooks/useElapsedTick";
 import { cn } from "../../lib/cn";
 import { formatElapsed } from "../../lib/time";
 import type { StoredTask, TaskType } from "../../lib/types";
+import { Button } from "../atoms/Button";
+import { AppLink } from "../atoms/Link";
 
 function Icon({ type }: { type: TaskType }) {
   if (type === "clone") {
@@ -72,43 +74,31 @@ function TaskRow({
       )}
       title={raw}
     >
-      <Link
+      <AppLink
         to={task.originPage}
-        className={cn(
-          "flex min-w-0 flex-1 items-center gap-2 px-1 py-0.5 text-left",
-          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        )}
+        className="flex min-w-0 flex-1 items-center gap-2 px-1 py-0.5 text-left"
       >
         <span className="size-4 shrink-0 text-muted-foreground">
           <Icon type={task.type} />
         </span>
         <span className="min-w-0 flex-1 truncate">{short}</span>
         <span className="shrink-0 text-xs font-pixel font-medium text-faint">{elapsed}</span>
-      </Link>
+      </AppLink>
 
       {showCancel ? (
-        <button
-          type="button"
-          className="border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          onClick={(e) => {
-            e.stopPropagation();
-            onCancel();
-          }}
-        >
+        <Button variant="secondary" size="xs" onPress={onCancel}>
           Cancel
-        </button>
+        </Button>
       ) : (
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="xs"
           aria-label="Dismiss task"
-          className="px-2 py-1 text-[11px] uppercase tracking-wide text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDismiss();
-          }}
+          className="border-transparent bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground"
+          onPress={onDismiss}
         >
           Dismiss
-        </button>
+        </Button>
       )}
     </div>
   );

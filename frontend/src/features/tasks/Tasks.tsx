@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { taskLabel } from "../../app/taskKeys";
 import { useTasks } from "../../app/TaskProvider";
@@ -212,12 +211,12 @@ export function TasksPage() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <Link
+                <AppLink
                   to={task.origin_page}
-                  className="press-scale-sm inline-flex items-center border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="press-scale-sm inline-flex items-center border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-surface-hover"
                 >
                   Open Source Page
-                </Link>
+                </AppLink>
                 {task.supports_cancel ? (
                   <Button type="button" variant="secondary" onPress={() => void onCancel(task.id)}>
                     Cancel

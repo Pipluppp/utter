@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { cn } from "../lib/cn";
+import { Link } from "./atoms/Link";
 
 /**
  * Shared 404 content used by both the router-wide `defaultNotFoundComponent`
@@ -18,7 +18,6 @@ export function NotFoundContent() {
         className={cn(
           "mt-8 inline-flex items-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background press-scale",
           "hover:bg-foreground/80 hover:border-foreground/80",
-          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         )}
       >
         Go home
