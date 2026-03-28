@@ -369,17 +369,17 @@ export function DesignPage() {
             <span>{instruct.length}/500</span>
             <div className="flex flex-wrap gap-2">
               {EXAMPLES.map((ex) => (
-                <button
+                <Button
                   key={ex.title}
-                  type="button"
-                  className="cursor-default press-scale border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  onClick={() => {
+                  variant="secondary"
+                  size="xs"
+                  onPress={() => {
                     setName(ex.name);
                     setInstruct(ex.instruct);
                   }}
                 >
                   {ex.title}
-                </button>
+                </Button>
               ))}
             </div>
           </Text>

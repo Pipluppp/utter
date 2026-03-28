@@ -2,20 +2,20 @@ import { getRouteApi } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
-import { Button, button } from "../../components/atoms/Button";
+import { Button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
 import {
   AutocompleteSelect,
   type AutocompleteSelectItem,
 } from "../../components/molecules/AutocompleteSelect";
+import { ConfirmDialog } from "../../components/molecules/ConfirmDialog";
 import { SortSelect } from "../../components/molecules/SortSelect";
 import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
 import { apiJson } from "../../lib/api";
 import { formatCreatedAt } from "../../lib/format";
 import { resolveProtectedMediaUrl, triggerDownload } from "../../lib/protectedMedia";
 import { input } from "../../lib/recipes/input";
-import { paginationButton } from "../../lib/recipes/pagination-button";
 import { statusBadge } from "../../lib/recipes/status-badge";
 import type {
   Generation,
@@ -183,6 +183,7 @@ export function HistoryPage() {
   const [data, setData] = useState<GenerationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Generation | null>(null);
 
   const [playState, setPlayState] = useState<Record<string, PlayState>>({});
   const waveRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -280,7 +281,6 @@ export function HistoryPage() {
   }, [data, load]);
 
   async function onDelete(gen: Generation) {
-    if (!confirm("Delete generation?")) return;
     try {
       await apiJson(`/api/generations/${gen.id}`, { method: "DELETE" });
       void load();
@@ -449,26 +449,23 @@ export function HistoryPage() {
                   <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-self-end">
                     {isReady && audioUrl ? (
                       <>
-                        <button
-                          type="button"
-                          className={paginationButton().base()}
-                          disabled={playDisabled}
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          isDisabled={playDisabled}
                           aria-pressed={state === "playing"}
                           aria-controls={`gen-wave-${g.id}`}
-                          onClick={() => void onPlay(g, audioUrl)}
+                          onPress={() => void onPlay(g, audioUrl)}
                         >
                           {playLabel}
-                        </button>
-                        <button
-                          type="button"
-                          className={button({
-                            variant: "secondary",
-                            size: "sm",
-                          }).base()}
-                          onClick={() => void onDownload(audioUrl)}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onPress={() => void onDownload(audioUrl)}
                         >
                           Download
-                        </button>
+                        </Button>
                       </>
                     ) : (
                       <span className="text-xs text-faint">
@@ -483,14 +480,15 @@ export function HistoryPage() {
                     >
                       Regenerate
                     </Button>
-                    <button
-                      type="button"
-                      className="inline-flex items-center justify-center border border-foreground bg-foreground text-background p-2 press-scale hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="px-2"
                       aria-label="Delete generation"
-                      onClick={() => void onDelete(g)}
+                      onPress={() => setDeleteTarget(g)}
                     >
                       <Trash2 size={14} />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -511,27 +509,40 @@ export function HistoryPage() {
 
       {!loading && data && data.pagination.pages > 1 ? (
         <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            className={paginationButton().base()}
-            disabled={data.pagination.page <= 1}
-            onClick={() => setPage((p: number) => Math.max(1, p - 1))}
+          <Button
+            variant="secondary"
+            size="sm"
+            isDisabled={data.pagination.page <= 1}
+            onPress={() => setPage((p: number) => Math.max(1, p - 1))}
           >
             Prev
-          </button>
+          </Button>
           <div className="text-xs text-faint">
             Page {data.pagination.page} of {data.pagination.pages}
           </div>
-          <button
-            type="button"
-            className={paginationButton().base()}
-            disabled={data.pagination.page >= data.pagination.pages}
-            onClick={() => setPage((p: number) => p + 1)}
+          <Button
+            variant="secondary"
+            size="sm"
+            isDisabled={data.pagination.page >= data.pagination.pages}
+            onPress={() => setPage((p: number) => p + 1)}
           >
             Next
-          </button>
+          </Button>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        title="Delete generation"
+        message="Delete this generation? This cannot be undone."
+        confirmLabel="Delete"
+        isOpen={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        onConfirm={() => {
+          if (deleteTarget) void onDelete(deleteTarget);
+        }}
+      />
     </div>
   );
 }

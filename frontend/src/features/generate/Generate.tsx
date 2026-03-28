@@ -463,13 +463,9 @@ export function GeneratePage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm font-medium uppercase tracking-wide">Result</div>
             {downloadUrl ? (
-              <button
-                type="button"
-                className="press-scale border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                onClick={() => void onDownload()}
-              >
+              <Button variant="secondary" size="sm" onPress={() => void onDownload()}>
                 Download
-              </button>
+              </Button>
             ) : null}
           </div>
           <WaveformPlayer audioUrl={audioUrl} />

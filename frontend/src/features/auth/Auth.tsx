@@ -1,7 +1,14 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { getRouteApi } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
+import {
+  Button as AriaButton,
+  FieldError,
+  Form,
+  Input,
+  Label,
+  TextField,
+} from "react-aria-components";
 import { useAuthState } from "../../app/auth/AuthStateProvider";
 import { getSafeReturnTo } from "../../app/navigation";
 import { Button } from "../../components/atoms/Button";
@@ -276,24 +283,22 @@ export function AuthPage() {
             {intent === "sign_in" ? (
               <>
                 Don&apos;t have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => setIntent("sign_up")}
-                  className="underline underline-offset-2 hover:text-foreground"
+                <AriaButton
+                  onPress={() => setIntent("sign_up")}
+                  className="cursor-default press-scale-sm px-1.5 py-0.5 text-sm font-medium text-muted-foreground hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   Sign up
-                </button>
+                </AriaButton>
               </>
             ) : (
               <>
                 Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => setIntent("sign_in")}
-                  className="underline underline-offset-2 hover:text-foreground"
+                <AriaButton
+                  onPress={() => setIntent("sign_in")}
+                  className="cursor-default press-scale-sm px-1.5 py-0.5 text-sm font-medium text-muted-foreground hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   Sign in
-                </button>
+                </AriaButton>
               </>
             )}
           </p>

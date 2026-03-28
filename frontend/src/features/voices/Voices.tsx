@@ -1,10 +1,18 @@
 import { Link, getRouteApi } from "@tanstack/react-router";
 import { Star, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
-import { button } from "../../components/atoms/Button";
+import {
+  Button as AriaButton,
+  Input,
+  Label,
+  SearchField,
+  ToggleButton,
+} from "react-aria-components";
+import { Button, button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
+import { ConfirmDialog } from "../../components/molecules/ConfirmDialog";
+import { InlineEditable } from "../../components/molecules/InlineEditable";
 import { SegmentedControl } from "../../components/molecules/SegmentedControl";
 import { SortSelect } from "../../components/molecules/SortSelect";
 import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
@@ -171,9 +179,8 @@ export function VoicesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [busyDelete, setBusyDelete] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Voice | null>(null);
   const [busyFavorite, setBusyFavorite] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
   const [busyRename, setBusyRename] = useState<string | null>(null);
   const [playState, setPlayState] = useState<Record<string, PlayState>>({});
   const waveRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -234,7 +241,6 @@ export function VoicesPage() {
   }, [debounced, page, navigate, source, sort, sortDir, favorites]);
 
   async function onDelete(voice: Voice) {
-    if (!confirm(`Delete voice "${voice.name}"?`)) return;
     setBusyDelete(voice.id);
     try {
       await apiJson(`/api/voices/${voice.id}`, { method: "DELETE" });
@@ -259,37 +265,20 @@ export function VoicesPage() {
     }
   }
 
-  function onStartRename(voice: Voice) {
-    setEditingId(voice.id);
-    setEditName(voice.name);
-  }
-
-  async function onConfirmRename(voice: Voice) {
-    const trimmed = editName.trim();
-    if (!trimmed || trimmed === voice.name) {
-      setEditingId(null);
-      return;
-    }
+  async function onRename(voice: Voice, name: string) {
     setBusyRename(voice.id);
     setError(null);
     try {
       await apiJson(`/api/voices/${voice.id}/name`, {
         method: "PATCH",
-        json: { name: trimmed },
+        json: { name },
       });
-      setEditingId(null);
       void load();
     } catch (e) {
-      setEditName(voice.name);
-      setEditingId(null);
       setError(e instanceof Error ? e.message : "Failed to rename voice.");
     } finally {
       setBusyRename(null);
     }
-  }
-
-  function onCancelRename() {
-    setEditingId(null);
   }
 
   async function onPreview(voice: Voice) {
@@ -356,20 +345,25 @@ export function VoicesPage() {
           aria-label="Source filter"
         />
         <div className="ml-auto">
-          <button
-            type="button"
-            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors press-scale-sm ${
-              favorites === "true"
-                ? "border-foreground bg-foreground text-background hover:bg-foreground/80"
-                : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
-            }`}
-            onClick={() => setFavorites((f: string) => (f === "true" ? "all" : "true"))}
+          <ToggleButton
+            isSelected={favorites === "true"}
+            onChange={(isSelected) => setFavorites(isSelected ? "true" : "all")}
             aria-label={favorites === "true" ? "Show all voices" : "Show favorites only"}
-            aria-pressed={favorites === "true"}
+            className={({ isSelected }) =>
+              `flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors press-scale-sm ${
+                isSelected
+                  ? "border-foreground bg-foreground text-background hover:bg-foreground/80"
+                  : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+              }`
+            }
           >
-            <Star size={12} className={favorites === "true" ? "fill-current" : ""} />
-            <span className="hidden sm:inline">Favorites</span>
-          </button>
+            {({ isSelected }) => (
+              <>
+                <Star size={12} className={isSelected ? "fill-current" : ""} />
+                <span className="hidden sm:inline">Favorites</span>
+              </>
+            )}
+          </ToggleButton>
         </div>
       </div>
 
@@ -400,46 +394,34 @@ export function VoicesPage() {
                 <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        className="shrink-0 press-scale text-muted-foreground hover:text-foreground disabled:opacity-50"
-                        disabled={busyFavorite === v.id}
+                      <ToggleButton
+                        isSelected={v.is_favorite}
+                        onChange={() => void onToggleFavorite(v)}
+                        isDisabled={busyFavorite === v.id}
                         aria-label={v.is_favorite ? "Remove from favorites" : "Add to favorites"}
-                        aria-pressed={v.is_favorite}
-                        onClick={() => void onToggleFavorite(v)}
+                        className={({ isSelected }) =>
+                          `shrink-0 press-scale text-muted-foreground hover:text-foreground disabled:opacity-50${isSelected ? " text-foreground" : ""}`
+                        }
                       >
-                        <Star
-                          size={16}
-                          className={v.is_favorite ? "fill-current text-foreground" : ""}
-                        />
-                      </button>
+                        {({ isSelected }) => (
+                          <Star
+                            size={16}
+                            className={isSelected ? "fill-current text-foreground" : ""}
+                          />
+                        )}
+                      </ToggleButton>
                       <span className="border border-border bg-subtle px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
                         {v.source === "designed" ? "DESIGNED" : "CLONE"}
                       </span>
-                      {editingId === v.id ? (
-                        <Input
-                          autoFocus
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") void onConfirmRename(v);
-                            if (e.key === "Escape") onCancelRename();
-                          }}
-                          onBlur={() => void onConfirmRename(v)}
-                          disabled={busyRename === v.id}
-                          className={input({
-                            className: "max-w-xs !py-1 text-sm font-semibold",
-                          })}
-                        />
-                      ) : (
-                        <button
-                          type="button"
-                          className="truncate text-sm font-semibold text-left hover:underline"
-                          onClick={() => onStartRename(v)}
-                        >
-                          <Highlight text={v.name} tokens={tokens} />
-                        </button>
-                      )}
+                      <InlineEditable
+                        value={v.name}
+                        onSave={(name) => onRename(v, name)}
+                        isDisabled={busyRename === v.id}
+                        aria-label={`Rename voice ${v.name}`}
+                        className="text-sm font-semibold"
+                      >
+                        {() => <Highlight text={v.name} tokens={tokens} />}
+                      </InlineEditable>
                     </div>
 
                     <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-faint">
@@ -493,25 +475,26 @@ export function VoicesPage() {
                     >
                       Generate
                     </Link>
-                    <button
-                      type="button"
-                      className={paginationButton().base()}
-                      disabled={disabled}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onPress={() => void onPreview(v)}
+                      isDisabled={disabled}
                       aria-pressed={state === "playing"}
                       aria-controls={`voice-wave-${v.id}`}
-                      onClick={() => void onPreview(v)}
                     >
                       {label}
-                    </button>
-                    <button
-                      type="button"
-                      className="inline-flex items-center justify-center border border-foreground bg-foreground text-background p-2 press-scale hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
-                      disabled={busyDelete === v.id}
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="px-2"
+                      onPress={() => setDeleteTarget(v)}
+                      isDisabled={busyDelete === v.id}
                       aria-label="Delete voice"
-                      onClick={() => void onDelete(v)}
                     >
                       <Trash2 size={14} />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -553,6 +536,19 @@ export function VoicesPage() {
           </button>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        title="Delete voice"
+        message={deleteTarget ? `Delete voice "${deleteTarget.name}"?` : ""}
+        confirmLabel="Delete"
+        isOpen={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        onConfirm={() => {
+          if (deleteTarget) void onDelete(deleteTarget);
+        }}
+      />
     </div>
   );
 }
