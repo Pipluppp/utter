@@ -26,7 +26,7 @@ function FooterLink({
       rel={external ? "noopener noreferrer" : undefined}
       className={cn(
         "inline-flex w-fit whitespace-nowrap text-[15px] leading-tight text-muted-foreground transition-colors duration-150 ease-out",
-        "hover:text-foreground focus-visible:ring-offset-surface-subtle",
+        "data-[hovered]:text-foreground data-[pressed]:text-foreground focus-visible:ring-offset-surface-subtle",
       )}
     >
       {children}
@@ -106,8 +106,8 @@ export function AppFooter() {
                 className={cn(
                   "inline-flex size-10 items-center justify-center rounded-full border border-border-subtle bg-background/65 text-muted-foreground backdrop-blur-sm press-scale-sm",
                   "transition-[background-color,border-color,color] duration-150 ease-out",
-                  "hover:border-border-strong hover:bg-background/85 hover:text-foreground",
-                  "pressed:border-border-strong pressed:bg-background/85 pressed:text-foreground",
+                  "data-[hovered]:border-border-strong data-[hovered]:bg-background/85 data-[hovered]:text-foreground",
+                  "data-[pressed]:border-border-strong data-[pressed]:bg-background/85 data-[pressed]:text-foreground",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle",
                 )}
                 aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}

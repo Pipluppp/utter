@@ -426,9 +426,9 @@ export function GeneratePage() {
                 id={task.taskId}
                 textValue={task.description}
                 className={cn(
-                  "flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left press-scale-sm-y hover:bg-surface-hover",
+                  "flex w-full items-center justify-between gap-3 border border-border bg-background px-3 py-3 text-left press-scale-sm-y data-[hovered]:bg-surface-hover data-[pressed]:bg-surface-hover",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                  "selected:bg-surface-selected",
+                  "data-[selected]:bg-surface-selected",
                 )}
               >
                 <div className="min-w-0 flex-1">

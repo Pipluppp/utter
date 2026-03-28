@@ -48,8 +48,8 @@ export function InfoTip({ label = "Information", tips, halftoneImage = "fire" }:
         onFocus={() => prefetchImage(imageUrl)}
         className={cn(
           "inline-flex size-9 items-center justify-center rounded-full bg-transparent text-muted-foreground press-scale",
-          "hover:bg-muted hover:text-foreground",
-          "pressed:bg-muted pressed:text-foreground",
+          "data-[hovered]:bg-muted data-[hovered]:text-foreground",
+          "data-[pressed]:bg-muted data-[pressed]:text-foreground",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         )}
       >
@@ -179,7 +179,7 @@ function TipsDialog({
                       "group-focus-visible:ring-2 group-focus-visible:ring-white/50 dark:group-focus-visible:ring-black/50",
                       i === currentIndex
                         ? "scale-110 bg-white dark:bg-black"
-                        : "bg-white/30 group-hover:bg-white/60 dark:bg-black/30 dark:group-hover:bg-black/60",
+                        : "bg-white/30 group-data-[hovered]:bg-white/60 group-data-[pressed]:bg-white/60 dark:bg-black/30 dark:group-data-[hovered]:bg-black/60 dark:group-data-[pressed]:bg-black/60",
                     )}
                   />
                 </Button>
@@ -195,8 +195,8 @@ function TipsDialog({
           className={cn(
             "absolute left-2 top-1/2 -translate-y-1/2",
             "inline-flex size-10 items-center justify-center rounded-full press-scale",
-            "text-white/70 hover:text-white hover:bg-white/10",
-            "dark:text-black/70 dark:hover:text-black dark:hover:bg-black/10",
+            "text-white/70 data-[hovered]:text-white data-[hovered]:bg-white/10 data-[pressed]:text-white data-[pressed]:bg-white/10",
+            "dark:text-black/70 dark:data-[hovered]:text-black dark:data-[hovered]:bg-black/10 dark:data-[pressed]:text-black dark:data-[pressed]:bg-black/10",
             "focus-visible:ring-2 focus-visible:ring-white/30 dark:focus-visible:ring-black/30",
           )}
         >
@@ -209,8 +209,8 @@ function TipsDialog({
           className={cn(
             "absolute right-2 top-1/2 -translate-y-1/2",
             "inline-flex size-10 items-center justify-center rounded-full press-scale",
-            "text-white/70 hover:text-white hover:bg-white/10",
-            "dark:text-black/70 dark:hover:text-black dark:hover:bg-black/10",
+            "text-white/70 data-[hovered]:text-white data-[hovered]:bg-white/10 data-[pressed]:text-white data-[pressed]:bg-white/10",
+            "dark:text-black/70 dark:data-[hovered]:text-black dark:data-[hovered]:bg-black/10 dark:data-[pressed]:text-black dark:data-[pressed]:bg-black/10",
             "focus-visible:ring-2 focus-visible:ring-white/30 dark:focus-visible:ring-black/30",
           )}
         >

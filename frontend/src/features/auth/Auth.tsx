@@ -251,7 +251,7 @@ export function AuthPage() {
               <div className="text-right">
                 <AppLink
                   href="/auth/forgot-password"
-                  className="text-sm text-muted-foreground hover:text-foreground"
+                  className="text-sm text-muted-foreground data-[hovered]:text-foreground data-[pressed]:text-foreground"
                 >
                   Forgot password?
                 </AppLink>
@@ -285,7 +285,7 @@ export function AuthPage() {
                 Don&apos;t have an account?{" "}
                 <AriaButton
                   onPress={() => setIntent("sign_up")}
-                  className="cursor-default press-scale-sm px-1.5 py-0.5 text-sm font-medium text-muted-foreground hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="cursor-default press-scale-sm px-1.5 py-0.5 text-sm font-medium text-muted-foreground data-[hovered]:bg-subtle data-[hovered]:text-foreground data-[pressed]:bg-subtle data-[pressed]:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   Sign up
                 </AriaButton>
@@ -295,7 +295,7 @@ export function AuthPage() {
                 Already have an account?{" "}
                 <AriaButton
                   onPress={() => setIntent("sign_in")}
-                  className="cursor-default press-scale-sm px-1.5 py-0.5 text-sm font-medium text-muted-foreground hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="cursor-default press-scale-sm px-1.5 py-0.5 text-sm font-medium text-muted-foreground data-[hovered]:bg-subtle data-[hovered]:text-foreground data-[pressed]:bg-subtle data-[pressed]:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   Sign in
                 </AriaButton>
@@ -306,10 +306,10 @@ export function AuthPage() {
 
         <div className="flex items-center justify-between text-[11px] text-faint">
           <div className="flex gap-4">
-            <AppLink href="/terms" className="hover:text-foreground">
+            <AppLink href="/terms" className="data-[hovered]:text-foreground data-[pressed]:text-foreground">
               Terms
             </AppLink>
-            <AppLink href="/privacy" className="hover:text-foreground">
+            <AppLink href="/privacy" className="data-[hovered]:text-foreground data-[pressed]:text-foreground">
               Privacy
             </AppLink>
           </div>

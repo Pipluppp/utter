@@ -164,7 +164,7 @@ export function WaveformPlayer({
       <div className="flex items-center justify-between">
         <Button
           className={cn(
-            "border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide press-scale hover:bg-surface-hover",
+            "border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide press-scale data-[hovered]:bg-surface-hover data-[pressed]:bg-surface-hover",
             "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             !isReady && "cursor-not-allowed opacity-50",
           )}

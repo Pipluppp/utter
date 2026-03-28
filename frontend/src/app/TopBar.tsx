@@ -100,7 +100,7 @@ function getSections(variant: NavVariant, signInHref: string) {
 
 function baseNavItemClassName(active: boolean) {
   return cn(
-    "inline-flex items-center gap-1.5 px-3 py-2 text-caption font-medium uppercase tracking-wide text-foreground/80 press-scale-sm-y hover:bg-muted hover:text-foreground",
+    "inline-flex items-center gap-1.5 px-3 py-2 text-caption font-medium uppercase tracking-wide text-foreground/80 press-scale-sm-y data-[hovered]:bg-muted data-[hovered]:text-foreground data-[pressed]:bg-muted data-[pressed]:text-foreground",
     "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     active && "bg-muted text-foreground",
   );
@@ -178,7 +178,7 @@ function MobileNavItem({
 }) {
   const itemClassName = (active: boolean) =>
     cn(
-      "flex w-full items-center justify-between px-3 py-3 text-caption font-medium uppercase tracking-wide text-foreground/80 press-scale-sm-y hover:bg-surface-subtle-hover hover:text-foreground",
+      "flex w-full items-center justify-between px-3 py-3 text-caption font-medium uppercase tracking-wide text-foreground/80 press-scale-sm-y data-[hovered]:bg-surface-subtle-hover data-[hovered]:text-foreground data-[pressed]:bg-surface-subtle-hover data-[pressed]:text-foreground",
       "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle",
       active && "bg-surface-subtle-hover text-foreground",
     );
@@ -265,7 +265,7 @@ export function TopBar({
                 slot="trigger"
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
                 className={cn(
-                  "inline-flex items-center justify-center border border-border bg-background p-2 text-muted-foreground press-scale hover:bg-muted hover:text-foreground",
+                  "inline-flex items-center justify-center border border-border bg-background p-2 text-muted-foreground press-scale data-[hovered]:bg-muted data-[hovered]:text-foreground data-[pressed]:bg-muted data-[pressed]:text-foreground",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 )}
               >

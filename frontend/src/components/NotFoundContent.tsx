@@ -17,7 +17,7 @@ export function NotFoundContent() {
         to="/"
         className={cn(
           "mt-8 inline-flex items-center border border-foreground bg-foreground px-6 py-3 text-sm font-medium uppercase tracking-wide text-background press-scale",
-          "hover:bg-foreground/80 hover:border-foreground/80",
+          "data-[hovered]:bg-foreground/80 data-[hovered]:border-foreground/80 data-[pressed]:bg-foreground/80 data-[pressed]:border-foreground/80",
         )}
       >
         Go home

@@ -348,7 +348,7 @@ export function HistoryPage() {
             placeholder="Search history..."
             className={inputStyles({ className: "pr-9 [&::-webkit-search-cancel-button]:hidden" })}
           />
-          <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground hovered:text-foreground group-data-[empty]:hidden">
+          <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground data-[hovered]:text-foreground data-[pressed]:text-foreground group-data-[empty]:hidden">
             ×
           </AriaButton>
         </SearchField>

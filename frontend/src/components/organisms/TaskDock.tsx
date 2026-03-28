@@ -94,7 +94,7 @@ function TaskRow({
           variant="secondary"
           size="xs"
           aria-label="Dismiss task"
-          className="border-transparent bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground"
+          className="border-transparent bg-transparent text-muted-foreground data-[hovered]:bg-transparent data-[hovered]:text-foreground data-[pressed]:text-foreground"
           onPress={onDismiss}
         >
           Dismiss

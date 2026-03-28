@@ -73,7 +73,7 @@ export function UpdatePasswordPage() {
       {status.type === "success" ? (
         <AccountNotice tone="success">
           {status.message}{" "}
-          <AppLink href="/account" className="underline underline-offset-4 hover:opacity-70">
+          <AppLink href="/account" className="underline underline-offset-4 data-[hovered]:opacity-70 data-[pressed]:opacity-70">
             Go to profile
           </AppLink>
         </AccountNotice>

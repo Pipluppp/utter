@@ -321,7 +321,7 @@ export function VoicesPage() {
             placeholder="Search voices..."
             className={inputStyles({ className: "pr-9 [&::-webkit-search-cancel-button]:hidden" })}
           />
-          <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground hovered:text-foreground group-data-[empty]:hidden">
+          <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground data-[hovered]:text-foreground data-[pressed]:text-foreground group-data-[empty]:hidden">
             ×
           </AriaButton>
         </SearchField>
@@ -353,8 +353,8 @@ export function VoicesPage() {
             className={({ isSelected }) =>
               `flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors press-scale-sm ${
                 isSelected
-                  ? "border-foreground bg-foreground text-background hover:bg-foreground/80"
-                  : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                  ? "border-foreground bg-foreground text-background data-[hovered]:bg-foreground/80 data-[pressed]:bg-foreground/80"
+                  : "border-border text-muted-foreground data-[hovered]:text-foreground data-[hovered]:border-muted-foreground data-[pressed]:text-foreground data-[pressed]:border-muted-foreground"
               }`
             }
           >
@@ -401,7 +401,7 @@ export function VoicesPage() {
                         isDisabled={busyFavorite === v.id}
                         aria-label={v.is_favorite ? "Remove from favorites" : "Add to favorites"}
                         className={({ isSelected }) =>
-                          `shrink-0 press-scale text-muted-foreground hover:text-foreground disabled:opacity-50${isSelected ? " text-foreground" : ""}`
+                          `shrink-0 press-scale text-muted-foreground data-[hovered]:text-foreground data-[pressed]:text-foreground data-[disabled]:opacity-50${isSelected ? " text-foreground" : ""}`
                         }
                       >
                         {({ isSelected }) => (

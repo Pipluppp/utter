@@ -391,7 +391,7 @@ export function MockCloneFeature(): ReactNode {
                   "cursor-default press-scale px-4 py-2 text-xs font-medium uppercase tracking-wide motion-reduce:transition-none",
                   audioMode === "upload"
                     ? "bg-foreground text-background"
-                    : "bg-background text-foreground hover:bg-subtle",
+                    : "bg-background text-foreground data-[hovered]:bg-subtle data-[pressed]:bg-subtle",
                 )}
                 onPress={() => setAudioMode("upload")}
               >
@@ -402,7 +402,7 @@ export function MockCloneFeature(): ReactNode {
                   "cursor-default press-scale px-4 py-2 text-xs font-medium uppercase tracking-wide motion-reduce:transition-none",
                   audioMode === "record"
                     ? "bg-foreground text-background"
-                    : "bg-background text-foreground hover:bg-subtle",
+                    : "bg-background text-foreground data-[hovered]:bg-subtle data-[pressed]:bg-subtle",
                 )}
                 onPress={() => setAudioMode("record")}
               >

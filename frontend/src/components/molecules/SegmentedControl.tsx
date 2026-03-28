@@ -16,7 +16,7 @@ function SegmentedControlButton(props: ToggleButtonProps) {
   return (
     <ToggleButton
       {...props}
-      className="press-scale-sm relative z-10 cursor-default px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground outline-none not-selected:hover:text-foreground selected:text-background"
+      className="press-scale-sm relative z-10 cursor-default px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground outline-none not-data-[selected]:data-[hovered]:text-foreground not-data-[selected]:data-[pressed]:text-foreground data-[selected]:text-background"
     >
       {composeRenderProps(props.children, (children) => (
         <>
@@ -43,7 +43,7 @@ export function SegmentedControl({
 }: SegmentedControlProps) {
   return (
     <ToggleButtonGroup
-      className="inline-flex rounded-full border border-border transition-colors hover:border-muted-foreground"
+      className="inline-flex rounded-full border border-border transition-colors data-[hovered]:border-muted-foreground"
       aria-label={ariaLabel}
       selectionMode="single"
       disallowEmptySelection

@@ -30,7 +30,7 @@ export function SortSelect({
         if (key !== null) onSelectionChange(key as string);
       }}
     >
-      <Button className="press-scale-sm flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground hover:border-muted-foreground data-[focused]:border-muted-foreground">
+      <Button className="press-scale-sm flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground transition-colors data-[hovered]:text-foreground data-[hovered]:border-muted-foreground data-[pressed]:text-foreground data-[pressed]:border-muted-foreground data-[focused]:border-muted-foreground">
         <SelectValue className="data-[placeholder]:text-muted-foreground">
           {({ defaultChildren }) => defaultChildren || placeholder}
         </SelectValue>
@@ -46,7 +46,7 @@ export function SortSelect({
             <ListBoxItem
               id={item.id}
               textValue={item.label}
-              className="press-scale-sm-y cursor-default rounded-sm px-3 py-1.5 text-xs uppercase tracking-wide text-foreground outline-none hover:bg-popover-hover hovered:bg-popover-hover data-[focused]:bg-popover-hover selected:font-medium"
+              className="press-scale-sm-y cursor-default rounded-sm px-3 py-1.5 text-xs uppercase tracking-wide text-foreground outline-none data-[hovered]:bg-popover-hover data-[pressed]:bg-popover-hover data-[focused]:bg-popover-hover data-[selected]:font-medium"
             >
               {item.label}
             </ListBoxItem>

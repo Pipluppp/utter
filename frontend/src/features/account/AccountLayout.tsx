@@ -101,7 +101,7 @@ export function AccountLayoutPage() {
               className={({ isSelected }) =>
                 cn(
                   "block min-w-[190px] border border-border bg-background px-4 py-3.5",
-                  "hover:bg-surface-hover",
+                  "data-[hovered]:bg-surface-hover data-[pressed]:bg-surface-hover",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   "cursor-pointer press-scale-sm-y outline-none",
                   isSelected && "border-border-strong bg-surface-selected",

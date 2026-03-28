@@ -213,7 +213,7 @@ export function TasksPage() {
               <div className="flex flex-wrap gap-3">
                 <AppLink
                   to={task.origin_page}
-                  className="press-scale-sm inline-flex items-center border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide hover:bg-surface-hover"
+                  className="press-scale-sm inline-flex items-center border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide data-[hovered]:bg-surface-hover data-[pressed]:bg-surface-hover"
                 >
                   Open Source Page
                 </AppLink>

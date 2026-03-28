@@ -8,7 +8,7 @@ export const toastStyles = tv({
     title: "text-sm font-medium text-foreground",
     description: "text-xs text-muted-foreground",
     close:
-      "inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground hovered:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+      "inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground data-[hovered]:text-foreground data-[pressed]:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
   },
   variants: {
     variant: {

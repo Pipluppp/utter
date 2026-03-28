@@ -3,19 +3,25 @@ import { tv } from "tailwind-variants";
 export type ButtonVariant = "primary" | "secondary";
 export type ButtonSize = "xs" | "sm" | "md";
 
+/**
+ * Button styles — uses data-[hovered/pressed/disabled]: (not plugin shorthands).
+ * Hover and pressed colors are identical: on desktop press is already hovered,
+ * on mobile touch there is no hover so data-[pressed]: provides the color change.
+ * See lib/styles/AGENTS.md "Interaction States" for the full rules.
+ */
 export const buttonStyles = tv({
   slots: {
-    base: "relative inline-flex press-scale items-center justify-center gap-2 border font-medium uppercase tracking-wide focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-faint",
+    base: "relative inline-flex press-scale items-center justify-center gap-2 border font-medium uppercase tracking-wide focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[disabled]:cursor-not-allowed data-[disabled]:border-border data-[disabled]:bg-muted data-[disabled]:text-faint",
     spinner:
       "pointer-events-none absolute inset-0 m-auto size-4 animate-spin rounded-full border-2 border-r-transparent",
   },
   variants: {
     variant: {
       primary: {
-        base: "border-foreground bg-foreground text-background hover:bg-foreground/80 hover:border-foreground/80",
+        base: "border-foreground bg-foreground text-background data-[hovered]:bg-foreground/80 data-[hovered]:border-foreground/80 data-[pressed]:bg-foreground/80 data-[pressed]:border-foreground/80",
       },
       secondary: {
-        base: "border-border bg-background text-foreground hover:bg-surface-hover",
+        base: "border-border bg-background text-foreground data-[hovered]:bg-surface-hover data-[pressed]:bg-surface-hover",
       },
     },
     size: {

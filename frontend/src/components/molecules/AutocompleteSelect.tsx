@@ -71,7 +71,7 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
       <Button
         className={
           compact
-            ? "flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground hover:border-muted-foreground data-[focused]:border-muted-foreground"
+            ? "flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground transition-colors data-[hovered]:text-foreground data-[hovered]:border-muted-foreground data-[pressed]:text-foreground data-[pressed]:border-muted-foreground data-[focused]:border-muted-foreground"
             : styles.trigger()
         }
       >
@@ -135,7 +135,7 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
                   textValue={String(item[filterKey] ?? item.label)}
                   className={
                     compact
-                      ? "cursor-default rounded-sm px-2 py-1 text-xs text-foreground outline-none press-scale-sm-y hover:bg-popover-hover hovered:bg-popover-hover data-[focused]:bg-popover-hover selected:font-medium"
+                      ? "cursor-default rounded-sm px-2 py-1 text-xs text-foreground outline-none press-scale-sm-y data-[hovered]:bg-popover-hover data-[pressed]:bg-popover-hover data-[focused]:bg-popover-hover data-[selected]:font-medium"
                       : styles.item()
                   }
                 >

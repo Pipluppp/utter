@@ -121,7 +121,7 @@ export function ForgotPasswordPage() {
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <AppLink
               href="/auth"
-              className="text-foreground underline underline-offset-4 hover:opacity-70"
+              className="text-foreground underline underline-offset-4 data-[hovered]:opacity-70 data-[pressed]:opacity-70"
             >
               Back to sign in
             </AppLink>
@@ -130,10 +130,10 @@ export function ForgotPasswordPage() {
 
         <div className="flex items-center justify-between text-[11px] text-faint">
           <div className="flex gap-4">
-            <AppLink href="/terms" className="hover:text-foreground">
+            <AppLink href="/terms" className="data-[hovered]:text-foreground data-[pressed]:text-foreground">
               Terms
             </AppLink>
-            <AppLink href="/privacy" className="hover:text-foreground">
+            <AppLink href="/privacy" className="data-[hovered]:text-foreground data-[pressed]:text-foreground">
               Privacy
             </AppLink>
           </div>
