@@ -230,87 +230,9 @@ export function TopBar({
   const showMenuToggle =
     variant === "marketing_public" || variant === "marketing_member" || variant === "app_member";
 
-  return (
-    <header className="sticky top-0 z-10 border-b border-border bg-background">
-      {showMenuToggle ? (
-        <Disclosure isExpanded={menuOpen} onExpandedChange={onMenuOpenChange} className="contents">
-          <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 md:px-6">
-            <AppLink
-              href="/"
-              className="text-[16px] font-pixel font-medium tracking-[2px] uppercase focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              UTTER
-            </AppLink>
-
-            <nav className="hidden items-center gap-1 md:flex">
-              {sections.map((section, index) => (
-                <div key={getSectionKey(section)} className="contents">
-                  {index > 0 ? (
-                    <Separator orientation="vertical" className="mx-2 h-4 self-center" />
-                  ) : null}
-                  {section.map((item) => (
-                    <DesktopNavItem
-                      key={item.kind === "hash" ? item.hash : `${String(item.to)}:${item.label}`}
-                      item={item}
-                      currentHash={currentHash}
-                      pathname={pathname}
-                    />
-                  ))}
-                </div>
-              ))}
-            </nav>
-
-            <Heading className="contents md:hidden" level={2}>
-              <AriaButton
-                slot="trigger"
-                aria-label={menuOpen ? "Close menu" : "Open menu"}
-                className={cn(
-                  "inline-flex items-center justify-center border border-border bg-background p-2 text-muted-foreground press-scale data-[hovered]:bg-muted data-[hovered]:text-foreground data-[pressed]:bg-muted data-[pressed]:text-foreground",
-                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                )}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  aria-hidden="true"
-                  className="size-5"
-                >
-                  <path d="M4 7h16M4 12h16M4 17h16" />
-                </svg>
-              </AriaButton>
-            </Heading>
-          </div>
-
-          <DisclosurePanel
-            className={cn(
-              "md:hidden",
-              menuOpen && "border-t border-border-subtle bg-surface-subtle",
-            )}
-          >
-            <div className="mx-auto w-full max-w-5xl px-4 py-2 md:px-6">
-              <div className="space-y-1">
-                {sections.map((section, index) => (
-                  <div key={getSectionKey(section)}>
-                    {index > 0 ? <Separator className="my-2" /> : null}
-                    {section.map((item) => (
-                      <MobileNavItem
-                        key={item.kind === "hash" ? item.hash : `${String(item.to)}:${item.label}`}
-                        item={item}
-                        currentHash={currentHash}
-                        pathname={pathname}
-                        onPress={() => onMenuOpenChange(false)}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </DisclosurePanel>
-        </Disclosure>
-      ) : (
+  if (!showMenuToggle) {
+    return (
+      <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 md:px-6">
           <AppLink
             href="/"
@@ -333,7 +255,93 @@ export function TopBar({
             <HeaderPendingAuthSkeleton />
           ) : null}
         </div>
-      )}
-    </header>
+      </header>
+    );
+  }
+
+  return (
+    <Disclosure isExpanded={menuOpen} onExpandedChange={onMenuOpenChange}>
+      <header
+        className={cn(
+          "sticky top-0 z-10 border-b bg-background",
+          menuOpen ? "border-border-subtle md:border-border" : "border-border",
+        )}
+      >
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 md:px-6">
+          <AppLink
+            href="/"
+            className="text-[16px] font-pixel font-medium tracking-[2px] uppercase focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            UTTER
+          </AppLink>
+
+          <nav className="hidden items-center gap-1 md:flex">
+            {sections.map((section, index) => (
+              <div key={getSectionKey(section)} className="contents">
+                {index > 0 ? (
+                  <Separator orientation="vertical" className="mx-2 h-4 self-center" />
+                ) : null}
+                {section.map((item) => (
+                  <DesktopNavItem
+                    key={item.kind === "hash" ? item.hash : `${String(item.to)}:${item.label}`}
+                    item={item}
+                    currentHash={currentHash}
+                    pathname={pathname}
+                  />
+                ))}
+              </div>
+            ))}
+          </nav>
+
+          <Heading className="contents md:hidden" level={2}>
+            <AriaButton
+              slot="trigger"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              className={cn(
+                "inline-flex items-center justify-center border border-border bg-background p-2 text-muted-foreground press-scale data-[hovered]:bg-muted data-[hovered]:text-foreground data-[pressed]:bg-muted data-[pressed]:text-foreground",
+                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              )}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                aria-hidden="true"
+                className="size-5"
+              >
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            </AriaButton>
+          </Heading>
+        </div>
+      </header>
+
+      <DisclosurePanel
+        className={cn("md:hidden", menuOpen && "border-b border-border-subtle bg-surface-subtle")}
+      >
+        <div className="mx-auto w-full max-w-5xl px-4 py-2 md:px-6">
+          <div className="space-y-1">
+            {sections.map((section, index) => (
+              <div key={getSectionKey(section)}>
+                {index > 0 ? (
+                  <div role="separator" className="my-2 h-px w-full bg-border-subtle" />
+                ) : null}
+                {section.map((item) => (
+                  <MobileNavItem
+                    key={item.kind === "hash" ? item.hash : `${String(item.to)}:${item.label}`}
+                    item={item}
+                    currentHash={currentHash}
+                    pathname={pathname}
+                    onPress={() => onMenuOpenChange(false)}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </DisclosurePanel>
+    </Disclosure>
   );
 }
