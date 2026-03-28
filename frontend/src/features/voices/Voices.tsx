@@ -1,4 +1,4 @@
-import { Link, getRouteApi } from "@tanstack/react-router";
+import { getRouteApi } from "@tanstack/react-router";
 import { Star, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -10,6 +10,7 @@ import {
 } from "react-aria-components";
 import { Button } from "../../components/atoms/Button";
 import { buttonStyle } from "../../components/atoms/Button.styles";
+import { Link } from "../../components/atoms/Link";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
 import { ConfirmDialog } from "../../components/molecules/ConfirmDialog";

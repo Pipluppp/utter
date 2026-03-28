@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { buttonStyle } from "../../components/atoms/Button.styles";
+import { Link } from "../../components/atoms/Link";
 import { cn } from "../../lib/cn";
 import { formatCredits, useAccountData } from "./accountData";
 import { AccountOverviewSkeleton } from "./accountSkeletons";

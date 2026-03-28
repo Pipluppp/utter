@@ -1,8 +1,9 @@
-import { Link, getRouteApi, useNavigate } from "@tanstack/react-router";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Button } from "../../components/atoms/Button";
 import { buttonStyle } from "../../components/atoms/Button.styles";
+import { Link } from "../../components/atoms/Link";
 import { creditPacks } from "../../content/plans";
 import { apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
