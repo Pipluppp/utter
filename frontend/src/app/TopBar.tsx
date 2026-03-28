@@ -204,7 +204,6 @@ function MobileNavItem({
     >
       <NavItemContent
         label={item.label}
-        shortcut={item.shortcut}
         showTaskBadge={item.showTaskBadge}
         showProfileIcon={item.showProfileIcon}
       />
