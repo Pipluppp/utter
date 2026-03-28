@@ -1,5 +1,5 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
-import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import { getRouteApi } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FieldError, Form, Input, Label, TextField } from "react-aria-components";
 import { useAuthState } from "../../app/auth/AuthStateProvider";
@@ -24,7 +24,6 @@ const authRoute = getRouteApi("/_auth/auth");
 type PasswordIntent = "sign_in" | "sign_up";
 
 export function AuthPage() {
-  const navigate = useNavigate();
   const { returnTo: rawReturnTo, error: rawError, intent: initialIntent } = authRoute.useSearch();
   const authState = useAuthState();
 
@@ -52,12 +51,6 @@ export function AuthPage() {
     setStatus({ type: "error", message: callbackError });
   }, [callbackError]);
 
-  useEffect(() => {
-    if (authState.status === "signed_in") {
-      navigate({ to: safeReturnTo, replace: true });
-    }
-  }, [authState.status, navigate, safeReturnTo]);
-
   async function onPasswordSubmit() {
     const normalizedEmail = email.trim();
     setServerErrors({});
@@ -76,9 +69,8 @@ export function AuthPage() {
         });
         turnstileRef.current?.reset();
         setCaptchaToken(null);
-        await authState.refresh();
         setStatus({ type: "ok", message: "Signed in." });
-        navigate({ to: safeReturnTo, replace: true });
+        await authState.refresh();
         return;
       }
 
@@ -92,9 +84,8 @@ export function AuthPage() {
       setCaptchaToken(null);
 
       if (result.signed_in) {
-        await authState.refresh();
         setStatus({ type: "ok", message: "Account created." });
-        navigate({ to: safeReturnTo, replace: true });
+        await authState.refresh();
         return;
       }
 

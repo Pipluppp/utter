@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { fallback, zodSearchValidator } from "@tanstack/router-zod-adapter";
 import { z } from "zod";
+import { getSafeReturnTo } from "../../app/navigation";
 import { AuthPage } from "../../features/auth/Auth";
 
 export const authSearchSchema = z.object({
@@ -11,5 +12,10 @@ export const authSearchSchema = z.object({
 
 export const Route = createFileRoute("/_auth/auth")({
   validateSearch: zodSearchValidator(authSearchSchema),
+  beforeLoad: ({ context, search }) => {
+    if (context.authState.status === "signed_in") {
+      throw redirect({ to: getSafeReturnTo(search.returnTo), replace: true });
+    }
+  },
   component: AuthPage,
 });
