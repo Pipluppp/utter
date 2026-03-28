@@ -160,6 +160,11 @@
   font-synthesis: none;
 }
 
+@utility font-pixel-square {
+  font-family: var(--font-pixel-square);
+  font-synthesis: none;
+}
+
 @utility label-style {
   font-size: var(--text-caption);
   line-height: calc(var(--text-caption) * 1.5);

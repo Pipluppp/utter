@@ -66,7 +66,7 @@ export function TextReveal({ lines, className }: Props) {
   }, [totalSteps]);
 
   const h1Classes =
-    "text-balance text-[clamp(40px,7.5vw,80px)] font-pixel font-medium uppercase tracking-[2px] text-center";
+    "text-balance text-[clamp(28px,9.5vw,80px)] font-pixel-square sm:font-pixel font-medium uppercase tracking-[0.5px] sm:tracking-[2px] text-center";
 
   return (
     <div className={className} style={{ position: "relative" }}>
