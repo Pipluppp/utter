@@ -6,7 +6,7 @@ import { AppLink } from "../../components/atoms/Link";
 import { Message } from "../../components/atoms/Message";
 import { GridArt } from "../../components/molecules/GridArt";
 import { forgotPassword, getTurnstileSiteKey, isAuthConfigured } from "../../lib/auth";
-import { input } from "../../lib/recipes/input";
+import { inputStyles } from "../../lib/styles/input";
 import { validateEmail } from "../../lib/validation";
 
 export function ForgotPasswordPage() {
@@ -96,7 +96,7 @@ export function ForgotPasswordPage() {
               autoFocus
             >
               <Label className="mb-2 block label-style">Email</Label>
-              <Input placeholder="you@example.com" autoComplete="email" className={input()} />
+              <Input placeholder="you@example.com" autoComplete="email" className={inputStyles()} />
               <div className="min-h-[20px]">
                 <FieldError className="block text-xs text-red-500" />
               </div>

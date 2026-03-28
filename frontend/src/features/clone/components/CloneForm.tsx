@@ -7,7 +7,7 @@ import {
   type AutocompleteSelectItem,
 } from "../../../components/molecules/AutocompleteSelect";
 import { SUPPORTED_LANGUAGES } from "../../../lib/provider-config";
-import { input } from "../../../lib/recipes/input";
+import { inputStyles } from "../../../lib/styles/input";
 
 interface CloneFormProps {
   name: string;
@@ -55,7 +55,7 @@ export function CloneForm({
             name="name"
             autoComplete="off"
             placeholder="e.g. Duncan (calm, close-mic)..."
-            className={input()}
+            className={inputStyles()}
           />
         </TextField>
 
@@ -64,7 +64,7 @@ export function CloneForm({
           <TextArea
             name="transcript"
             placeholder="Paste the transcript of the reference audio..."
-            className={input({ multiline: true })}
+            className={inputStyles({ multiline: true })}
           />
           <Text
             slot="description"

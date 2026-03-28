@@ -8,7 +8,8 @@ import {
   SearchField,
   ToggleButton,
 } from "react-aria-components";
-import { Button, button } from "../../components/atoms/Button";
+import { Button } from "../../components/atoms/Button";
+import { buttonStyle } from "../../components/atoms/Button.styles";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
 import { ConfirmDialog } from "../../components/molecules/ConfirmDialog";
@@ -18,8 +19,8 @@ import { SortSelect } from "../../components/molecules/SortSelect";
 import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
 import { apiJson } from "../../lib/api";
 import { formatCreatedAt } from "../../lib/format";
-import { input } from "../../lib/recipes/input";
-import { paginationButton } from "../../lib/recipes/pagination-button";
+import { inputStyles } from "../../lib/styles/input";
+import { paginationButtonStyles } from "../../lib/styles/pagination-button";
 import type { Voice, VoicesResponse } from "../../lib/types";
 import { useDebouncedValue } from "../shared/hooks";
 
@@ -318,7 +319,7 @@ export function VoicesPage() {
           <Input
             autoComplete="off"
             placeholder="Search voices..."
-            className={input({ className: "pr-9 [&::-webkit-search-cancel-button]:hidden" })}
+            className={inputStyles({ className: "pr-9 [&::-webkit-search-cancel-button]:hidden" })}
           />
           <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground hovered:text-foreground group-data-[empty]:hidden">
             ×
@@ -468,10 +469,10 @@ export function VoicesPage() {
                     <Link
                       to="/generate"
                       search={{ voice: v.id }}
-                      className={button({
+                      className={buttonStyle({
                         variant: "secondary",
                         size: "sm",
-                      }).base()}
+                      })}
                     >
                       Generate
                     </Link>
@@ -517,7 +518,7 @@ export function VoicesPage() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            className={paginationButton().base()}
+            className={paginationButtonStyles().base()}
             disabled={data.pagination.page <= 1}
             onClick={() => setPage((p: number) => Math.max(1, p - 1))}
           >
@@ -528,7 +529,7 @@ export function VoicesPage() {
           </div>
           <button
             type="button"
-            className={paginationButton().base()}
+            className={paginationButtonStyles().base()}
             disabled={data.pagination.page >= data.pagination.pages}
             onClick={() => setPage((p: number) => p + 1)}
           >

@@ -6,7 +6,7 @@ import { GridArtSurface } from "../../components/molecules/GridArt";
 import { InfoTip } from "../../components/molecules/InfoTip";
 import { CLONE_TIPS } from "../../data/tips";
 import { DEFAULT_LANGUAGE, TRANSCRIPTION_ENABLED } from "../../lib/provider-config";
-import { toggleButton } from "../../lib/recipes/toggle-button";
+import { toggleButtonStyles } from "../../lib/styles/toggle-button";
 import { CloneForm } from "./components/CloneForm";
 import { CloneSuccessModal } from "./components/CloneSuccessModal";
 import { RecordPanel } from "./components/RecordPanel";
@@ -140,11 +140,11 @@ export function ClonePage() {
           isDisabled={recorder.recording}
           className="inline-flex overflow-hidden border border-border bg-background shadow-elevated"
         >
-          <ToggleButton id="upload" className={toggleButton({ size: "md" })}>
+          <ToggleButton id="upload" className={toggleButtonStyles({ size: "md" })}>
             Upload
           </ToggleButton>
           {TRANSCRIPTION_ENABLED ? (
-            <ToggleButton id="record" className={toggleButton({ size: "md" })}>
+            <ToggleButton id="record" className={toggleButtonStyles({ size: "md" })}>
               Record
             </ToggleButton>
           ) : null}

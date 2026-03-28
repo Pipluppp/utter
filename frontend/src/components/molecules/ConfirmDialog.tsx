@@ -1,5 +1,4 @@
 import { Button as AriaButton, Dialog, Heading, Modal, ModalOverlay } from "react-aria-components";
-import { button } from "../atoms/Button";
 
 interface ConfirmDialogProps {
   title: string;
@@ -35,7 +34,7 @@ export function ConfirmDialog({
               <div className="mt-6 flex justify-end gap-2">
                 <AriaButton
                   onPress={close}
-                  className={button({ variant: "secondary", size: "sm" }).base()}
+                  className={buttonStyle({ variant: "secondary", size: "sm" })}
                 >
                   Cancel
                 </AriaButton>
@@ -44,7 +43,7 @@ export function ConfirmDialog({
                     onConfirm();
                     close();
                   }}
-                  className={button({ variant: "primary", size: "sm" }).base()}
+                  className={buttonStyle({ variant: "primary", size: "sm" })}
                 >
                   {confirmLabel}
                 </AriaButton>

@@ -15,8 +15,8 @@ import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
 import { apiJson } from "../../lib/api";
 import { formatCreatedAt } from "../../lib/format";
 import { resolveProtectedMediaUrl, triggerDownload } from "../../lib/protectedMedia";
-import { input } from "../../lib/recipes/input";
-import { statusBadge } from "../../lib/recipes/status-badge";
+import { inputStyles } from "../../lib/styles/input";
+import { statusBadgeStyles } from "../../lib/styles/status-badge";
 import type {
   Generation,
   GenerationsResponse,
@@ -346,7 +346,7 @@ export function HistoryPage() {
           <Input
             autoComplete="off"
             placeholder="Search history..."
-            className={input({ className: "pr-9 [&::-webkit-search-cancel-button]:hidden" })}
+            className={inputStyles({ className: "pr-9 [&::-webkit-search-cancel-button]:hidden" })}
           />
           <AriaButton className="absolute right-2 top-[38px] flex h-6 w-6 items-center justify-center text-muted-foreground hovered:text-foreground group-data-[empty]:hidden">
             ×
@@ -413,7 +413,7 @@ export function HistoryPage() {
                 <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className={statusBadge({ status: g.status })}>{g.status}</span>
+                      <span className={statusBadgeStyles({ status: g.status })}>{g.status}</span>
                       <div className="truncate text-sm font-semibold">
                         <Highlight text={g.voice_name ?? "Unknown voice"} tokens={tokens} />
                       </div>

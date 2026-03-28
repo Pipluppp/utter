@@ -1,11 +1,11 @@
 import { useHover } from "@react-aria/interactions";
 import { useMemo, useState } from "react";
 import { Link, ToggleButton, ToggleButtonGroup } from "react-aria-components";
-import { button } from "../../components/atoms/Button";
+import { buttonStyle } from "../../components/atoms/Button.styles";
 import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
 import type { UtterDemo } from "../../content/utterDemo";
 import { cn } from "../../lib/cn";
-import { toggleButton } from "../../lib/recipes/toggle-button";
+import { toggleButtonStyles } from "../../lib/styles/toggle-button";
 
 export function DemoClipCard({
   demo,
@@ -81,13 +81,16 @@ export function DemoClipCard({
             }}
             className="inline-flex overflow-hidden border border-border bg-background"
           >
-            <ToggleButton id="original" className={toggleButton()}>
+            <ToggleButton id="original" className={toggleButtonStyles()}>
               Original
             </ToggleButton>
             <ToggleButton
               id="clone"
               isDisabled={!canClone}
-              className={toggleButton({ disabled: true, className: "border-l border-border" })}
+              className={toggleButtonStyles({
+                disabled: true,
+                className: "border-l border-border",
+              })}
             >
               Clone
             </ToggleButton>
@@ -97,7 +100,7 @@ export function DemoClipCard({
             <Link
               href={activeAudioUrl}
               aria-label={`Download ${demo.title} ${mode} audio`}
-              className={button({ variant: "secondary", size: "sm" }).base()}
+              className={buttonStyle({ variant: "secondary", size: "sm" })}
             >
               Download
             </Link>

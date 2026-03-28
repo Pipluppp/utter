@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { FeatureEntryLink } from "../../app/FeatureEntryLink";
-import { button } from "../../components/atoms/Button";
+import { buttonStyle } from "../../components/atoms/Button.styles";
 import { cn } from "../../lib/cn";
 import { MockCloneFeature } from "./MockCloneFeature";
 import { MockDesignFeature } from "./MockDesignFeature";
@@ -76,10 +76,7 @@ export function _FeatureBlock({
         </ul>
         {ctaLabel && to ? (
           <div className="pt-1">
-            <FeatureEntryLink
-              to={to}
-              className={button({ variant: "secondary", size: "sm" }).base()}
-            >
+            <FeatureEntryLink to={to} className={buttonStyle({ variant: "secondary", size: "sm" })}>
               {ctaLabel} <ArrowRight className="icon-sm" aria-hidden="true" />
             </FeatureEntryLink>
           </div>
@@ -140,7 +137,7 @@ export function FeaturesSection() {
               <div className="pt-1">
                 <FeatureEntryLink
                   to="/clone"
-                  className={button({ variant: "secondary", size: "sm" }).base()}
+                  className={buttonStyle({ variant: "secondary", size: "sm" })}
                 >
                   {"Open Clone"} <ArrowRight className="icon-sm" aria-hidden="true" />
                 </FeatureEntryLink>
@@ -175,7 +172,7 @@ export function FeaturesSection() {
               <div className="pt-1">
                 <FeatureEntryLink
                   to="/generate"
-                  className={button({ variant: "secondary", size: "sm" }).base()}
+                  className={buttonStyle({ variant: "secondary", size: "sm" })}
                 >
                   {"Open Generate"} <ArrowRight className="icon-sm" aria-hidden="true" />
                 </FeatureEntryLink>
@@ -203,7 +200,7 @@ export function FeaturesSection() {
               <div className="pt-1">
                 <FeatureEntryLink
                   to="/design"
-                  className={button({ variant: "secondary", size: "sm" }).base()}
+                  className={buttonStyle({ variant: "secondary", size: "sm" })}
                 >
                   {"Open Design"} <ArrowRight className="icon-sm" aria-hidden="true" />
                 </FeatureEntryLink>

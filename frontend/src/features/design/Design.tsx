@@ -25,7 +25,7 @@ import { useElapsedTick } from "../../hooks/useElapsedTick";
 import { apiForm, apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { SUPPORTED_LANGUAGES } from "../../lib/provider-config";
-import { input } from "../../lib/recipes/input";
+import { inputStyles } from "../../lib/styles/input";
 import { formatElapsed } from "../../lib/time";
 import type { DesignPreviewResponse, DesignSaveResponse, StoredTask } from "../../lib/types";
 
@@ -352,7 +352,7 @@ export function DesignPage() {
       >
         <TextField value={name} onChange={setName}>
           <Label className="mb-2 block label-style">Voice Name</Label>
-          <Input name="name" autoComplete="off" className={input()} />
+          <Input name="name" autoComplete="off" className={inputStyles()} />
         </TextField>
 
         <TextField value={instruct} onChange={setInstruct}>
@@ -360,7 +360,7 @@ export function DesignPage() {
           <TextArea
             name="instruct"
             placeholder="Describe the voice (tone, pacing, timbre, vibe)..."
-            className={input({ multiline: true })}
+            className={inputStyles({ multiline: true })}
           />
           <Text
             slot="description"
@@ -390,7 +390,7 @@ export function DesignPage() {
           <TextArea
             name="text"
             placeholder="A short line to preview the voice..."
-            className={input({ multiline: true })}
+            className={inputStyles({ multiline: true })}
           />
           <Text slot="description" className="mt-2 text-xs text-faint">
             {text.length}/500

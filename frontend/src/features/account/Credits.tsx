@@ -1,11 +1,12 @@
 import { Link, getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
-import { Button, button } from "../../components/atoms/Button";
+import { Button } from "../../components/atoms/Button";
+import { buttonStyle } from "../../components/atoms/Button.styles";
 import { creditPacks } from "../../content/plans";
 import { apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
-import { toggleButton } from "../../lib/recipes/toggle-button";
+import { toggleButtonStyles } from "../../lib/styles/toggle-button";
 import { formatCredits, formatUsd, useAccountData } from "./accountData";
 import { AccountCreditsSkeleton } from "./accountSkeletons";
 import { AccountEmptyState, AccountNotice, AccountPanel } from "./accountUi";
@@ -245,13 +246,13 @@ export function AccountCreditsPage() {
               }}
               className="flex flex-wrap gap-2"
             >
-              <ToggleButton id="all" className={toggleButton({ bordered: true })}>
+              <ToggleButton id="all" className={toggleButtonStyles({ bordered: true })}>
                 All
               </ToggleButton>
-              <ToggleButton id="purchases" className={toggleButton({ bordered: true })}>
+              <ToggleButton id="purchases" className={toggleButtonStyles({ bordered: true })}>
                 Purchases
               </ToggleButton>
-              <ToggleButton id="usage" className={toggleButton({ bordered: true })}>
+              <ToggleButton id="usage" className={toggleButtonStyles({ bordered: true })}>
                 Usage
               </ToggleButton>
             </ToggleButtonGroup>
@@ -319,10 +320,10 @@ export function AccountCreditsPage() {
           </AccountPanel>
 
           <div className="flex flex-wrap gap-2">
-            <Link to="/history" className={button({ variant: "secondary", size: "sm" }).base()}>
+            <Link to="/history" className={buttonStyle({ variant: "secondary", size: "sm" })}>
               View history
             </Link>
-            <Link to="/account" className={button({ variant: "secondary", size: "sm" }).base()}>
+            <Link to="/account" className={buttonStyle({ variant: "secondary", size: "sm" })}>
               Edit profile
             </Link>
           </div>

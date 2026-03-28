@@ -2,23 +2,7 @@ import {
   ProgressBar as AriaProgressBar,
   type ProgressBarProps as AriaProgressBarProps,
 } from "react-aria-components";
-import { tv } from "tailwind-variants";
-
-const progressBar = tv({
-  slots: {
-    root: "flex flex-col gap-1",
-    labelRow: "flex items-center justify-between text-xs text-muted-foreground",
-    track: "h-1.5 w-full overflow-hidden bg-muted",
-    fill: "h-full bg-foreground transition-all duration-300",
-  },
-  variants: {
-    isIndeterminate: {
-      true: {
-        fill: "w-1/3 animate-[indeterminate_1.5s_ease-in-out_infinite]",
-      },
-    },
-  },
-});
+import { progressBarStyles } from "./ProgressBar.styles";
 
 interface ProgressBarProps extends Omit<AriaProgressBarProps, "children"> {
   label?: string;
@@ -27,9 +11,9 @@ interface ProgressBarProps extends Omit<AriaProgressBarProps, "children"> {
 
 export function ProgressBar({ label, className, ...props }: ProgressBarProps) {
   return (
-    <AriaProgressBar {...props} className={progressBar().root({ className })}>
+    <AriaProgressBar {...props} className={progressBarStyles().root({ className })}>
       {({ percentage, valueText, isIndeterminate }) => {
-        const { labelRow, track, fill } = progressBar({ isIndeterminate });
+        const { labelRow, track, fill } = progressBarStyles({ isIndeterminate });
         return (
           <>
             {label || valueText ? (

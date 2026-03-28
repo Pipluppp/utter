@@ -13,7 +13,7 @@ import {
   SelectValue,
   useFilter,
 } from "react-aria-components";
-import { selectRecipe } from "./Select";
+import { selectStyles } from "./Select.styles";
 
 export interface AutocompleteSelectItem {
   id: string;
@@ -54,7 +54,7 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
 }: AutocompleteSelectProps<T>) {
   const empty = items.length === 0;
   const { contains } = useFilter({ sensitivity: "base" });
-  const styles = selectRecipe();
+  const styles = selectStyles();
   const compact = size === "compact";
 
   return (

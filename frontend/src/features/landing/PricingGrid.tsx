@@ -1,4 +1,4 @@
-import { button } from "../../components/atoms/Button";
+import { buttonStyle } from "../../components/atoms/Button.styles";
 import { Link } from "../../components/atoms/Link";
 import { creditPacks } from "../../content/plans";
 import { cn } from "../../lib/cn";
@@ -36,10 +36,10 @@ export function PricingGrid({ compact, className }: { compact?: boolean; classNa
             </div>
             <Link
               to="/account/credits"
-              className={button({
+              className={buttonStyle({
                 variant: pack.featured ? "primary" : "secondary",
                 size: "sm",
-              }).base()}
+              })}
               aria-label={`Buy ${pack.name}`}
             >
               Buy credits

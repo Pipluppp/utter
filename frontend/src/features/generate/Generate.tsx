@@ -33,7 +33,7 @@ import {
   SUPPORTED_LANGUAGES,
   TTS_PROVIDER,
 } from "../../lib/provider-config";
-import { input } from "../../lib/recipes/input";
+import { inputStyles } from "../../lib/styles/input";
 import { formatElapsed } from "../../lib/time";
 import type { GenerateResponse, StoredTask, VoicesResponse } from "../../lib/types";
 
@@ -363,7 +363,7 @@ export function GeneratePage() {
           <TextArea
             name="text"
             placeholder="Type what you want the voice to say..."
-            className={input({ multiline: true, className: "min-h-64" })}
+            className={inputStyles({ multiline: true, className: "min-h-64" })}
           />
           <Text
             slot="description"

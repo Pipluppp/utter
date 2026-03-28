@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Input, TextField } from "react-aria-components";
-import { input as inputRecipe } from "../../lib/recipes/input";
+import { inputStyles as inputRecipe } from "../../lib/styles/input";
 
 interface InlineEditableProps {
   /** Current persisted value. */

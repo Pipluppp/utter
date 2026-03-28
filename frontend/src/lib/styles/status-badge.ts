@@ -1,6 +1,6 @@
 import { tv } from "tailwind-variants";
 
-export const statusBadge = tv({
+export const statusBadgeStyles = tv({
   base: "border px-2 py-0.5 text-[10px] uppercase tracking-wide",
   variants: {
     status: {

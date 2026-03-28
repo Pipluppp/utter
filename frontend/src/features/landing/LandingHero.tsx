@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { FeatureEntryLink } from "../../app/FeatureEntryLink";
-import { button } from "../../components/atoms/Button";
+import { buttonStyle } from "../../components/atoms/Button.styles";
 import { Link } from "../../components/atoms/Link";
 import { SVGBlobs } from "./SVGBlobs";
 import { TextReveal } from "./TextReveal";
@@ -26,15 +26,15 @@ export function LandingHero() {
           <Link
             to="/"
             hash="demos"
-            className={button({ variant: "primary", size: "md" }).base({
-              className: "min-w-[200px]",
-            })}
+            className={buttonStyle({ variant: "primary", size: "md", className: "min-w-[200px]" })}
           >
             {"Hear the demos"} <ArrowRight className="icon-sm" aria-hidden="true" />
           </Link>
           <FeatureEntryLink
             to="/clone"
-            className={button({ variant: "secondary", size: "md" }).base({
+            className={buttonStyle({
+              variant: "secondary",
+              size: "md",
               className: "min-w-[200px]",
             })}
           >

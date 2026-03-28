@@ -3,7 +3,7 @@ import { FieldError, Form, Input, Label, TextField } from "react-aria-components
 import { Button } from "../../components/atoms/Button";
 import { AppLink } from "../../components/atoms/Link";
 import { updatePassword } from "../../lib/auth";
-import { input } from "../../lib/recipes/input";
+import { inputStyles } from "../../lib/styles/input";
 import { validatePassword } from "../../lib/validation";
 import { AccountNotice, AccountPanel } from "./accountUi";
 
@@ -106,7 +106,7 @@ export function UpdatePasswordPage() {
             <Input
               placeholder="8+ chars, uppercase, number, special"
               autoComplete="new-password"
-              className={input()}
+              className={inputStyles()}
             />
             <div className="min-h-[20px]">
               <FieldError className="block text-xs text-red-500" />
@@ -125,7 +125,7 @@ export function UpdatePasswordPage() {
             <Input
               placeholder="Re-enter your new password"
               autoComplete="new-password"
-              className={input()}
+              className={inputStyles()}
             />
             <div className="min-h-[20px]">
               <FieldError className="block text-xs text-red-500" />
