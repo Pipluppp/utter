@@ -71,7 +71,7 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
       <Button
         className={
           compact
-            ? "flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground transition-colors data-[hovered]:text-foreground data-[hovered]:border-muted-foreground data-[pressed]:text-foreground data-[pressed]:border-muted-foreground data-[focused]:border-muted-foreground"
+            ? "flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground transition-colors data-[hovered]:bg-muted data-[hovered]:text-foreground data-[pressed]:bg-muted data-[pressed]:text-foreground data-[focused]:border-ring"
             : styles.trigger()
         }
       >
