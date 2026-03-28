@@ -352,7 +352,7 @@ export function VoicesPage() {
             onChange={(isSelected) => setFavorites(isSelected ? "true" : "all")}
             aria-label={favorites === "true" ? "Show all voices" : "Show favorites only"}
             className={({ isSelected }) =>
-              `flex min-h-[30px] items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors press-scale-sm ${
+              `flex min-h-[30px] items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold tracking-wide transition-colors press-scale-sm ${
                 isSelected
                   ? "border-foreground bg-foreground text-background data-[hovered]:bg-foreground/80 data-[pressed]:bg-foreground/80"
                   : "border-border text-muted-foreground data-[hovered]:bg-muted data-[hovered]:text-foreground data-[pressed]:bg-muted data-[pressed]:text-foreground"
