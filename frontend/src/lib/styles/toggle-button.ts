@@ -4,8 +4,10 @@ export const toggleButtonStyles = tv({
   base: "cursor-default press-scale px-3 py-2 text-caption font-medium uppercase tracking-wide focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-background text-foreground",
   variants: {
     style: {
-      inverted: "data-[hovered]:bg-subtle data-[pressed]:bg-subtle data-[selected]:bg-foreground data-[selected]:text-background",
-      surface: "data-[hovered]:bg-surface-hover data-[pressed]:bg-surface-hover data-[selected]:bg-surface-selected",
+      inverted:
+        "not-data-[selected]:data-[hovered]:bg-subtle not-data-[selected]:data-[pressed]:bg-subtle data-[selected]:bg-foreground data-[selected]:text-background",
+      surface:
+        "not-data-[selected]:data-[hovered]:bg-surface-hover not-data-[selected]:data-[pressed]:bg-surface-hover data-[selected]:bg-surface-selected",
     },
     bordered: {
       true: "border border-border",
