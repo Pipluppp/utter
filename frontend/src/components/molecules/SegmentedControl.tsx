@@ -16,11 +16,11 @@ function SegmentedControlButton(props: ToggleButtonProps) {
   return (
     <ToggleButton
       {...props}
-      className="press-scale-sm relative z-10 cursor-default px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground outline-none not-data-[selected]:data-[hovered]:text-foreground not-data-[selected]:data-[pressed]:text-foreground data-[selected]:text-background"
+      className="press-scale-sm relative z-10 cursor-default rounded-full px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground outline-none not-data-[selected]:data-[hovered]:bg-muted not-data-[selected]:data-[hovered]:text-foreground not-data-[selected]:data-[pressed]:bg-muted not-data-[selected]:data-[pressed]:text-foreground data-[selected]:text-background"
     >
       {composeRenderProps(props.children, (children) => (
         <>
-          <SelectionIndicator className="absolute inset-0 z-0 rounded-full bg-foreground transition-all duration-200 ease-out" />
+          <SelectionIndicator className="absolute inset-0 z-0 rounded-full bg-foreground" />
           <span className="relative z-10">{children}</span>
         </>
       ))}
@@ -43,7 +43,7 @@ export function SegmentedControl({
 }: SegmentedControlProps) {
   return (
     <ToggleButtonGroup
-      className="inline-flex rounded-full border border-border transition-colors data-[hovered]:border-muted-foreground"
+      className="inline-flex rounded-full border border-border"
       aria-label={ariaLabel}
       selectionMode="single"
       disallowEmptySelection
