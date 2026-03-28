@@ -2,19 +2,21 @@ import { ArrowRight } from "lucide-react";
 import { FeatureEntryLink } from "../../app/FeatureEntryLink";
 import { buttonStyle } from "../../components/atoms/Button.styles";
 import { Link } from "../../components/atoms/Link";
-import { SVGBlobs } from "./SVGBlobs";
+import { GridArt } from "../../components/molecules/GridArt";
 import { TextReveal } from "./TextReveal";
 
 export function LandingHero() {
   return (
-    <section className="relative isolate overflow-x-clip py-6 md:py-14">
-      <div className="pointer-events-none absolute -left-[18%] top-0 -z-10 w-[56%] overflow-hidden opacity-32 [mask-image:linear-gradient(to_right,#000_0%,#000_50%,transparent_100%)] select-none">
-        <SVGBlobs density="sparse" className="w-full" />
+    <section className="relative isolate left-1/2 right-1/2 -mx-[50vw] w-screen overflow-x-clip pt-0 pb-14 md:pt-1 md:pb-20">
+      <div className="pointer-events-none absolute inset-0 -z-10 select-none [mask-image:linear-gradient(180deg,transparent_0%,black_10%,black_80%,transparent_100%)] [-webkit-mask-image:linear-gradient(180deg,transparent_0%,black_10%,black_80%,transparent_100%)]">
+        <GridArt
+          className="opacity-[0.19] dark:opacity-[0.14]"
+          lineClassName="stroke-foreground/[0.09]"
+          highlightOpacityScale={1.3}
+          glyphOpacity={0.1}
+        />
       </div>
-      <div className="pointer-events-none absolute -right-[18%] top-0 -z-10 w-[56%] overflow-hidden opacity-32 [mask-image:linear-gradient(to_left,#000_0%,#000_50%,transparent_100%)] select-none">
-        <SVGBlobs density="sparse" className="w-full" />
-      </div>
-      <div className="mx-auto max-w-4xl text-center">
+      <div className="mx-auto max-w-4xl px-4 text-center">
         <TextReveal lines={["Clone voices.", "Design new ones.", "Generate speech."]} />
 
         <p className="mx-auto mt-5 max-w-2xl text-sm text-muted-foreground">
