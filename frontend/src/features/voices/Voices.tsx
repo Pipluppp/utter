@@ -490,7 +490,7 @@ export function VoicesPage() {
                     <Button
                       variant="primary"
                       size="sm"
-                      className="px-2"
+                      square
                       onPress={() => setDeleteTarget(v)}
                       isDisabled={busyDelete === v.id}
                       aria-label="Delete voice"

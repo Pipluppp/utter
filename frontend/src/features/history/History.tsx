@@ -483,7 +483,7 @@ export function HistoryPage() {
                     <Button
                       variant="primary"
                       size="sm"
-                      className="px-2"
+                      square
                       aria-label="Delete generation"
                       onPress={() => setDeleteTarget(g)}
                     >

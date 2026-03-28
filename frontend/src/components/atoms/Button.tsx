@@ -7,6 +7,7 @@ export { buttonStyle, buttonStyles, type ButtonSize, type ButtonVariant } from "
 interface ButtonProps extends Omit<AriaButtonProps, "children"> {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  square?: boolean;
   block?: boolean;
   className?: string;
   children?: ReactNode;
@@ -16,13 +17,14 @@ export function Button({
   className,
   variant = "primary",
   size = "md",
+  square,
   block,
   isPending,
   isDisabled,
   children,
   ...props
 }: ButtonProps) {
-  const { base, spinner } = buttonStyles({ variant, size, block, isPending });
+  const { base, spinner } = buttonStyles({ variant, size, square, block, isPending });
   return (
     <AriaButton
       className={base({ className })}

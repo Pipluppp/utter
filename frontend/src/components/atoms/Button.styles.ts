@@ -29,6 +29,9 @@ export const buttonStyles = tv({
       sm: { base: "px-3 py-2 text-caption" },
       xs: { base: "px-2 py-1 text-[11px]" },
     },
+    square: {
+      true: { base: "!p-0 shrink-0" },
+    },
     block: {
       true: { base: "w-full press-scale-sm-y" },
     },
@@ -39,6 +42,9 @@ export const buttonStyles = tv({
   compoundVariants: [
     { variant: "primary", isPending: true, class: { spinner: "border-background/70" } },
     { variant: "secondary", isPending: true, class: { spinner: "border-foreground/60" } },
+    { square: true, size: "md", class: { base: "size-[46px]" } },
+    { square: true, size: "sm", class: { base: "size-[37px]" } },
+    { square: true, size: "xs", class: { base: "size-[28px]" } },
   ],
   defaultVariants: {
     variant: "primary",
