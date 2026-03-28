@@ -1,12 +1,13 @@
-import { Outlet, useLocation } from "@tanstack/react-router";
+import { Outlet, Link as RouterLink, useLocation } from "@tanstack/react-router";
+import { Tab, TabList, Tabs } from "react-aria-components";
 import { Button } from "../../components/atoms/Button";
-import { Link } from "../../components/atoms/Link";
 import { Separator } from "../../components/atoms/Separator";
 import { cn } from "../../lib/cn";
 import { useAccountData } from "./accountData";
 import { AccountNotice } from "./accountUi";
 
 type AccountNavItem = {
+  id: string;
   to: string;
   label: string;
   desc: string;
@@ -14,28 +15,37 @@ type AccountNavItem = {
 
 const navItems: AccountNavItem[] = [
   {
+    id: "profile",
     to: "/account",
     label: "Profile",
     desc: "Identity and sign out",
   },
   {
+    id: "overview",
     to: "/account/overview",
     label: "Overview",
     desc: "Balance, trials, activity",
   },
   {
+    id: "credits",
     to: "/account/credits",
     label: "Credits",
     desc: "Packs and purchase activity",
   },
 ];
 
+function selectedTab(pathname: string): string {
+  for (const item of navItems) {
+    if (item.to === "/account" ? pathname === "/account" : pathname.startsWith(item.to)) {
+      return item.id;
+    }
+  }
+  return "profile";
+}
+
 export function AccountLayoutPage() {
   const account = useAccountData();
   const location = useLocation();
-
-  const isActive = (to: string) =>
-    to === "/account" ? location.pathname === "/account" : location.pathname.startsWith(to);
 
   return (
     <div className="space-y-6">
@@ -71,26 +81,41 @@ export function AccountLayoutPage() {
         </AccountNotice>
       ) : null}
 
-      <nav aria-label="Account sections" className="flex min-w-0 gap-2 overflow-x-auto pb-2">
-        {navItems.map((item) => (
-          <Link
-            key={item.to}
-            to={item.to}
-            className={cn(
-              "block min-w-[190px] border border-border bg-background px-4 py-3.5",
-              "hover:bg-surface-hover",
-              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              "cursor-pointer press-scale-sm-y outline-none",
-              isActive(item.to) && "border-border-strong bg-surface-selected",
-            )}
-          >
-            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground">
-              {item.label}
-            </div>
-            <div className="mt-1.5 text-[13px] leading-5 text-foreground/68">{item.desc}</div>
-          </Link>
-        ))}
-      </nav>
+      <Tabs selectedKey={selectedTab(location.pathname)} className="space-y-0">
+        <TabList aria-label="Account sections" className="flex min-w-0 gap-2 overflow-x-auto pb-2">
+          {navItems.map((item) => (
+            <Tab
+              key={item.id}
+              id={item.id}
+              href={item.to}
+              render={(props) =>
+                "href" in props ? (
+                  <RouterLink
+                    {...(props as React.ComponentProps<typeof RouterLink>)}
+                    to={item.to}
+                  />
+                ) : (
+                  <div {...props} />
+                )
+              }
+              className={({ isSelected }) =>
+                cn(
+                  "block min-w-[190px] border border-border bg-background px-4 py-3.5",
+                  "hover:bg-surface-hover",
+                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  "cursor-pointer press-scale-sm-y outline-none",
+                  isSelected && "border-border-strong bg-surface-selected",
+                )
+              }
+            >
+              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground">
+                {item.label}
+              </div>
+              <div className="mt-1.5 text-[13px] leading-5 text-foreground/68">{item.desc}</div>
+            </Tab>
+          ))}
+        </TabList>
+      </Tabs>
       <Separator />
 
       <section className="min-w-0">
