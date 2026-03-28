@@ -71,15 +71,15 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
       <Button
         className={
           compact
-            ? "flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground transition-colors data-[hovered]:bg-muted data-[hovered]:text-foreground data-[pressed]:bg-muted data-[pressed]:text-foreground data-[focused]:border-ring"
+            ? "flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs tracking-wide text-muted-foreground transition-colors data-[hovered]:bg-muted data-[hovered]:text-foreground data-[pressed]:bg-muted data-[pressed]:text-foreground data-[focused]:border-ring"
             : styles.trigger()
         }
       >
         <SelectValue
           className={
             compact
-              ? "truncate data-[placeholder]:text-muted-foreground"
-              : styles.value({ className: "font-[family-name:var(--font-mono)]" })
+              ? "normal-case truncate font-semibold data-[placeholder]:text-muted-foreground"
+              : styles.value({ className: "font-semibold" })
           }
         />
         <ChevronDown
@@ -92,7 +92,7 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
         shouldFlip
         className={
           compact
-            ? "min-w-32 overflow-y-auto rounded-lg border border-border bg-popover shadow-popover data-[placement=bottom]:origin-top data-[placement=top]:origin-bottom entering:animate-in entering:fade-in-0 entering:zoom-in-95 exiting:animate-out exiting:fade-out-0 exiting:zoom-out-95 flex flex-col"
+            ? "min-w-36 overflow-y-auto rounded-lg border border-border bg-popover shadow-popover data-[placement=bottom]:origin-top data-[placement=top]:origin-bottom entering:animate-in entering:fade-in-0 entering:zoom-in-95 exiting:animate-out exiting:fade-out-0 exiting:zoom-out-95 flex flex-col"
             : styles.popover({ className: `flex flex-col ${popoverClassName ?? ""}` })
         }
       >
@@ -111,8 +111,8 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
                 placeholder={searchPlaceholder}
                 className={
                   compact
-                    ? "w-full rounded border border-border bg-background px-2 py-1 text-xs text-foreground placeholder:text-faint focus:border-ring focus:outline-none"
-                    : "w-full border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-faint focus:border-ring focus:outline-none"
+                    ? "w-full rounded border border-background bg-background px-2.5 py-1.5 text-[13px] text-foreground placeholder:text-faint focus:border-ring focus:outline-none"
+                    : "w-full rounded border border-background bg-background px-3 py-2 text-sm text-foreground placeholder:text-faint focus:border-ring focus:outline-none"
                 }
               />
             </SearchField>
@@ -121,7 +121,9 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
               renderEmptyState={() => (
                 <div
                   className={
-                    compact ? "px-2 py-1 text-xs text-faint" : "px-3 py-2 text-sm text-faint"
+                    compact
+                      ? "px-2.5 py-1.5 text-[13px] text-faint"
+                      : "px-3 py-2 text-sm text-faint"
                   }
                 >
                   No results.
@@ -135,7 +137,7 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
                   textValue={String(item[filterKey] ?? item.label)}
                   className={
                     compact
-                      ? "cursor-default rounded-sm px-2 py-1 text-xs text-foreground outline-none press-scale-sm-y data-[hovered]:bg-popover-hover data-[pressed]:bg-popover-hover data-[focused]:bg-popover-hover data-[selected]:font-medium"
+                      ? "cursor-default rounded-sm px-2.5 py-1.5 text-[13px] text-foreground outline-none press-scale-sm-y data-[hovered]:bg-popover-hover data-[pressed]:bg-popover-hover data-[focused]:bg-popover-hover data-[selected]:bg-popover-selected data-[selected]:font-medium"
                       : styles.item()
                   }
                 >
