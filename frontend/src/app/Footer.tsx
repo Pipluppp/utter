@@ -25,7 +25,7 @@ function FooterLink({
       target={external ? "_blank" : undefined}
       rel={external ? "noopener noreferrer" : undefined}
       className={cn(
-        "inline-flex w-fit whitespace-nowrap text-[15px] leading-tight text-muted-foreground transition-colors duration-150 ease-out",
+        "inline-flex w-fit whitespace-nowrap text-[15px] leading-tight text-foreground/70 transition-colors duration-150 ease-out",
         "data-[hovered]:text-foreground data-[pressed]:text-foreground focus-visible:ring-offset-surface-subtle",
       )}
     >
@@ -37,7 +37,9 @@ function FooterLink({
 function FooterSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-5">
-      <h2 className="text-caption font-medium uppercase tracking-[0.18em] text-faint">{title}</h2>
+      <h2 className="text-caption font-medium uppercase tracking-[0.18em] text-faint/60">
+        {title}
+      </h2>
       <div className="flex flex-col gap-4">{children}</div>
     </section>
   );
