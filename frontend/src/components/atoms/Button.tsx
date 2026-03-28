@@ -3,7 +3,7 @@ import { Button as AriaButton, type ButtonProps as AriaButtonProps } from "react
 import { tv } from "tailwind-variants";
 
 export type ButtonVariant = "primary" | "secondary";
-export type ButtonSize = "sm" | "md";
+export type ButtonSize = "xs" | "sm" | "md";
 
 export const button = tv({
   slots: {
@@ -23,6 +23,7 @@ export const button = tv({
     size: {
       md: { base: "px-6 py-3 text-sm" },
       sm: { base: "px-3 py-2 text-caption" },
+      xs: { base: "px-2 py-1 text-[11px]" },
     },
     block: {
       true: { base: "w-full press-scale-sm-y" },
