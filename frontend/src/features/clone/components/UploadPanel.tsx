@@ -65,7 +65,7 @@ export function UploadPanel({
             isDisabled={submitting}
             onPress={onTranscribe}
           >
-            {transcribing ? "Transcribing..." : "Transcribe"}
+            Transcribe
           </Button>
         ) : null}
       </DropZone>

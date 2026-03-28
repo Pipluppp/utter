@@ -376,8 +376,8 @@ export function GeneratePage() {
           </Text>
         </TextField>
 
-        <Button type="submit" block isDisabled={!canSubmit}>
-          {isSubmitting ? "Starting generation..." : "Generate Speech"}
+        <Button type="submit" block isDisabled={!canSubmit} isPending={isSubmitting}>
+          Generate Speech
         </Button>
       </Form>
 

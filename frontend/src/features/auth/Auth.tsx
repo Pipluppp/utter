@@ -306,10 +306,16 @@ export function AuthPage() {
 
         <div className="flex items-center justify-between text-[11px] text-faint">
           <div className="flex gap-4">
-            <AppLink href="/terms" className="data-[hovered]:text-foreground data-[pressed]:text-foreground">
+            <AppLink
+              href="/terms"
+              className="data-[hovered]:text-foreground data-[pressed]:text-foreground"
+            >
               Terms
             </AppLink>
-            <AppLink href="/privacy" className="data-[hovered]:text-foreground data-[pressed]:text-foreground">
+            <AppLink
+              href="/privacy"
+              className="data-[hovered]:text-foreground data-[pressed]:text-foreground"
+            >
               Privacy
             </AppLink>
           </div>

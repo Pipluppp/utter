@@ -11,17 +11,23 @@ export type ButtonSize = "xs" | "sm" | "md";
  */
 export const buttonStyles = tv({
   slots: {
-    base: "relative inline-flex press-scale items-center justify-center gap-2 border font-medium uppercase tracking-wide focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[disabled]:cursor-not-allowed data-[disabled]:border-border data-[disabled]:bg-muted data-[disabled]:text-faint",
-    spinner:
-      "pointer-events-none absolute inset-0 m-auto size-4 animate-spin rounded-full border-2 border-r-transparent",
+    base: "relative inline-flex press-scale items-center justify-center gap-2 border font-medium uppercase tracking-wide focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background not-data-[pending]:data-[disabled]:cursor-not-allowed not-data-[pending]:data-[disabled]:border-border not-data-[pending]:data-[disabled]:bg-muted not-data-[pending]:data-[disabled]:text-faint",
+    /** Visible label wrapper — hidden with visibility:hidden when pending so
+     *  the button keeps its intrinsic size while the spinner overlays. */
+    label: "inline-flex items-center gap-2",
+    /** Centered spinner overlay — always in the a11y tree when pending
+     *  (opacity-0 initially, opacity-100 when shown). */
+    spinnerWrap: "pointer-events-none absolute inset-0 flex items-center justify-center opacity-0",
   },
   variants: {
     variant: {
       primary: {
         base: "border-foreground bg-foreground text-background data-[hovered]:bg-foreground/80 data-[hovered]:border-foreground/80 data-[pressed]:bg-foreground/80 data-[pressed]:border-foreground/80",
+        spinnerWrap: "text-background",
       },
       secondary: {
         base: "border-border bg-background text-foreground data-[hovered]:bg-surface-hover data-[pressed]:bg-surface-hover",
+        spinnerWrap: "text-foreground/60",
       },
     },
     size: {
@@ -36,12 +42,13 @@ export const buttonStyles = tv({
       true: { base: "w-full press-scale-sm-y" },
     },
     isPending: {
-      true: { base: "text-transparent" },
+      true: {
+        label: "invisible",
+        spinnerWrap: "opacity-100",
+      },
     },
   },
   compoundVariants: [
-    { variant: "primary", isPending: true, class: { spinner: "border-background/70" } },
-    { variant: "secondary", isPending: true, class: { spinner: "border-foreground/60" } },
     { square: true, size: "md", class: { base: "size-[46px]" } },
     { square: true, size: "sm", class: { base: "size-[37px]" } },
     { square: true, size: "xs", class: { base: "size-[28px]" } },

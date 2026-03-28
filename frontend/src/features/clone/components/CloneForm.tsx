@@ -89,8 +89,8 @@ export function CloneForm({
           <Button variant="secondary" type="button" block onPress={() => void onTryExample()}>
             Try Example Voice
           </Button>
-          <Button type="submit" block isDisabled={submitting}>
-            {submitting ? `Cloning... ${elapsedLabel}` : "Clone Voice"}
+          <Button type="submit" block isPending={submitting}>
+            Clone Voice
           </Button>
         </div>
       </Form>
