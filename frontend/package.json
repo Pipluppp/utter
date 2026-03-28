@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:tunnel": "vite --mode tunnel",
+    "tunnel": "cloudflared tunnel --url http://localhost:5173",
     "build": "vite build",
     "build:staging": "vite build --mode staging",
     "preview": "vite preview",

@@ -12,6 +12,7 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    allowedHosts: [".trycloudflare.com"],
     proxy: {
       "/api": {
         target: BACKEND_ORIGIN,

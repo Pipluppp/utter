@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { getAuthSession, type AuthUser } from "../../lib/auth";
 
 export type AuthStatus = "loading" | "signed_out" | "signed_in";
@@ -31,7 +31,19 @@ function createLoadingSnapshot(): AuthStateCore {
   };
 }
 
+// To skip auth when we run npm run dev:tunnel locally, and test it on mobile quickly and all the pages
+const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === "true";
+
+const MOCK_USER: AuthUser = {
+  id: "00000000-0000-0000-0000-000000000000",
+  email: "dev@localhost",
+};
+
 async function resolveAuthSnapshot(): Promise<AuthStateCore> {
+  if (SKIP_AUTH) {
+    return { status: "signed_in", user: MOCK_USER, error: null };
+  }
+
   const session = await getAuthSession();
   if (!session.signed_in || !session.user) {
     return createSignedOutSnapshot();
