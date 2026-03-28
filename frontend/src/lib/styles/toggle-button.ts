@@ -1,7 +1,7 @@
 import { tv } from "tailwind-variants";
 
 export const toggleButtonStyles = tv({
-  base: "cursor-default press-scale px-3 py-2 text-caption font-medium uppercase tracking-wide focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-background text-foreground",
+  base: "cursor-default press-scale px-3 py-2 text-caption font-medium uppercase tracking-wide focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-background text-foreground data-[selected]:font-semibold",
   variants: {
     style: {
       inverted:

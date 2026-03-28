@@ -388,10 +388,10 @@ export function MockCloneFeature(): ReactNode {
             <div className="inline-flex overflow-hidden border border-border bg-background shadow-elevated">
               <Button
                 className={cn(
-                  "cursor-default press-scale px-4 py-2 text-xs font-medium uppercase tracking-wide motion-reduce:transition-none",
+                  "cursor-default press-scale px-4 py-2 text-xs uppercase tracking-wide motion-reduce:transition-none",
                   audioMode === "upload"
-                    ? "bg-foreground text-background"
-                    : "bg-background text-foreground data-[hovered]:bg-subtle data-[pressed]:bg-subtle",
+                    ? "bg-foreground font-semibold text-background"
+                    : "bg-background font-medium text-foreground data-[hovered]:bg-subtle data-[pressed]:bg-subtle",
                 )}
                 onPress={() => setAudioMode("upload")}
               >
@@ -399,10 +399,10 @@ export function MockCloneFeature(): ReactNode {
               </Button>
               <Button
                 className={cn(
-                  "cursor-default press-scale px-4 py-2 text-xs font-medium uppercase tracking-wide motion-reduce:transition-none",
+                  "cursor-default press-scale px-4 py-2 text-xs uppercase tracking-wide motion-reduce:transition-none",
                   audioMode === "record"
-                    ? "bg-foreground text-background"
-                    : "bg-background text-foreground data-[hovered]:bg-subtle data-[pressed]:bg-subtle",
+                    ? "bg-foreground font-semibold text-background"
+                    : "bg-background font-medium text-foreground data-[hovered]:bg-subtle data-[pressed]:bg-subtle",
                 )}
                 onPress={() => setAudioMode("record")}
               >
