@@ -1,6 +1,6 @@
 # Polar.sh Research Plan
 
-Date: 2026-03-22
+Date: 2026-03-29 (moved from 2026-03-22)
 Status: Planned
 Scope: Evaluate Polar.sh as a billing provider alternative to Stripe
 
