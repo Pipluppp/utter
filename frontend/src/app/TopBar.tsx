@@ -263,7 +263,7 @@ export function TopBar({
       <header
         className={cn(
           "sticky top-0 z-10 border-b bg-background",
-          menuOpen ? "border-border-subtle md:border-border" : "border-border",
+          menuOpen ? "border-transparent md:border-border" : "border-border",
         )}
       >
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 md:px-6">
@@ -318,14 +318,14 @@ export function TopBar({
       </header>
 
       <DisclosurePanel
-        className={cn("md:hidden", menuOpen && "border-b border-border-subtle bg-surface-subtle")}
+        className={cn("md:hidden", menuOpen && "border-b border-border bg-surface-subtle")}
       >
-        <div className="mx-auto w-full max-w-5xl px-4 py-2 md:px-6">
+        <div className="mx-auto w-full max-w-5xl px-4 py-4 md:px-6">
           <div className="space-y-1">
             {sections.map((section, index) => (
               <div key={getSectionKey(section)}>
                 {index > 0 ? (
-                  <div role="separator" className="my-2 h-px w-full bg-border-subtle" />
+                  <div role="separator" className="my-4 h-px w-full bg-border-subtle" />
                 ) : null}
                 {section.map((item) => (
                   <MobileNavItem
