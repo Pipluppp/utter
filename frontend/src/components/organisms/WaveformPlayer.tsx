@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "react-aria-components";
 import WaveSurfer from "wavesurfer.js";
 import { useTheme } from "../../app/theme/ThemeProvider";
 import { cn } from "../../lib/cn";
@@ -161,16 +162,15 @@ export function WaveformPlayer({
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between">
-        <button
-          type="button"
+        <Button
           className={cn(
             "border border-border bg-background px-3 py-2 text-caption uppercase tracking-wide press-scale hover:bg-surface-hover",
             "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             !isReady && "cursor-not-allowed opacity-50",
           )}
-          disabled={!isReady}
+          isDisabled={!isReady}
           aria-pressed={isPlaying}
-          onClick={() => {
+          onPress={() => {
             const ws = wsRef.current;
             if (!ws) return;
             if (ws.isPlaying()) {
@@ -181,7 +181,7 @@ export function WaveformPlayer({
           }}
         >
           {isPlaying ? "Pause" : "Play"}
-        </button>
+        </Button>
         <span className="text-xs text-faint">{timeLabel}</span>
       </div>
 

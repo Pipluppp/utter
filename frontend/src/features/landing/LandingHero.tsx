@@ -1,7 +1,7 @@
-import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { FeatureEntryLink } from "../../app/FeatureEntryLink";
 import { button } from "../../components/atoms/Button";
+import { Link } from "../../components/atoms/Link";
 import { SVGBlobs } from "./SVGBlobs";
 import { TextReveal } from "./TextReveal";
 
@@ -23,12 +23,20 @@ export function LandingHero() {
         </p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link to="/" hash="demos" className={button({ variant: "primary", size: "md" }).base()}>
+          <Link
+            to="/"
+            hash="demos"
+            className={button({ variant: "primary", size: "md" }).base({
+              className: "min-w-[200px]",
+            })}
+          >
             {"Hear the demos"} <ArrowRight className="icon-sm" aria-hidden="true" />
           </Link>
           <FeatureEntryLink
             to="/clone"
-            className={button({ variant: "secondary", size: "md" }).base()}
+            className={button({ variant: "secondary", size: "md" }).base({
+              className: "min-w-[200px]",
+            })}
           >
             {"Clone a voice"} <ArrowRight className="icon-sm" aria-hidden="true" />
           </FeatureEntryLink>

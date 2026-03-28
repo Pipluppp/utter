@@ -16,7 +16,7 @@ function SegmentedControlButton(props: ToggleButtonProps) {
   return (
     <ToggleButton
       {...props}
-      className="press-scale-sm relative z-10 cursor-default px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground outline-none not-selected:hover:text-foreground selected:text-background"
+      className="press-scale-sm relative z-10 cursor-default px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground outline-none not-selected:hover:text-foreground selected:text-background"
     >
       {composeRenderProps(props.children, (children) => (
         <>

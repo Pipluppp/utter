@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link } from "../components/atoms/Link";
 import { cn } from "../lib/cn";
 import { useAuthState } from "./auth/AuthStateProvider";
 import { buildAuthHref } from "./navigation";

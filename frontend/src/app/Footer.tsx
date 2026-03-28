@@ -104,7 +104,7 @@ export function AppFooter() {
               <AriaButton
                 onPress={toggleTheme}
                 className={cn(
-                  "inline-flex size-10 cursor-pointer items-center justify-center rounded-full border border-footer-border bg-background/65 text-muted-foreground backdrop-blur-sm press-scale-sm",
+                  "inline-flex size-10 items-center justify-center rounded-full border border-footer-border bg-background/65 text-muted-foreground backdrop-blur-sm press-scale-sm",
                   "transition-[background-color,border-color,color] duration-150 ease-out",
                   "hover:border-border-strong hover:bg-background/85 hover:text-foreground",
                   "pressed:border-border-strong pressed:bg-background/85 pressed:text-foreground",

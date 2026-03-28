@@ -200,6 +200,14 @@ export function FeaturesSection() {
                 <Bullet>Shape tone, age, style, accent, and texture in plain language.</Bullet>
                 <Bullet>Save a completed preview before using it in Generate.</Bullet>
               </ul>
+              <div className="pt-1">
+                <FeatureEntryLink
+                  to="/design"
+                  className={button({ variant: "secondary", size: "sm" }).base()}
+                >
+                  {"Open Design"} <ArrowRight className="icon-sm" aria-hidden="true" />
+                </FeatureEntryLink>
+              </div>
             </div>
 
             <div data-col="media" className="md:col-span-7">

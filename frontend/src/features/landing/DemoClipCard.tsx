@@ -1,5 +1,6 @@
+import { useHover } from "@react-aria/interactions";
 import { useMemo, useState } from "react";
-import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
+import { Link, ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { button } from "../../components/atoms/Button";
 import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
 import type { UtterDemo } from "../../content/utterDemo";
@@ -17,6 +18,7 @@ export function DemoClipCard({
 }) {
   const [mode, setMode] = useState<"original" | "clone">("original");
   const canClone = Boolean(demo.outputAudioUrl);
+  const { hoverProps, isHovered } = useHover({});
 
   const activeAudioUrl = useMemo(() => {
     if (mode === "clone" && demo.outputAudioUrl) return demo.outputAudioUrl;
@@ -25,11 +27,14 @@ export function DemoClipCard({
 
   return (
     <article
+      {...hoverProps}
+      data-hovered={isHovered || undefined}
       className={cn(
         "mx-auto w-full max-w-[560px]",
-        "border border-border bg-background shadow-elevated hover:bg-subtle",
+        "border border-border bg-background shadow-elevated",
         "transition-[background-color,border-color,box-shadow] duration-300 ease-out motion-reduce:transition-none",
-        "hover:border-border-strong hover:shadow-[0_10px_28px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_12px_36px_rgba(0,0,0,0.50)]",
+        isHovered &&
+          "bg-subtle border-border-strong shadow-[0_10px_28px_rgba(0,0,0,0.08)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.50)]",
         className,
       )}
     >
@@ -89,13 +94,13 @@ export function DemoClipCard({
           </ToggleButtonGroup>
 
           {activeAudioUrl ? (
-            <a
+            <Link
               href={activeAudioUrl}
               aria-label={`Download ${demo.title} ${mode} audio`}
               className={button({ variant: "secondary", size: "sm" }).base()}
             >
               Download
-            </a>
+            </Link>
           ) : null}
         </div>
 

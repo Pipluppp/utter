@@ -1,6 +1,6 @@
-import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { Tab, TabList, Tabs } from "react-aria-components";
+import { Outlet, useLocation } from "@tanstack/react-router";
 import { Button } from "../../components/atoms/Button";
+import { Link } from "../../components/atoms/Link";
 import { Separator } from "../../components/atoms/Separator";
 import { cn } from "../../lib/cn";
 import { useAccountData } from "./accountData";
@@ -33,16 +33,9 @@ const navItems: AccountNavItem[] = [
 export function AccountLayoutPage() {
   const account = useAccountData();
   const location = useLocation();
-  const navigate = useNavigate();
 
-  // Determine selected tab from current path.
-  // Exact match for "/account" (Profile), prefix match for sub-routes.
-  const selectedTab =
-    navItems.find((item) =>
-      item.to === "/account"
-        ? location.pathname === "/account"
-        : location.pathname.startsWith(item.to),
-    )?.to ?? "/account";
+  const isActive = (to: string) =>
+    to === "/account" ? location.pathname === "/account" : location.pathname.startsWith(to);
 
   return (
     <div className="space-y-6">
@@ -78,35 +71,27 @@ export function AccountLayoutPage() {
         </AccountNotice>
       ) : null}
 
-      <Tabs
-        selectedKey={selectedTab}
-        onSelectionChange={(key) => void navigate({ to: key as string })}
-      >
-        <TabList
-          aria-label="Account sections"
-          className="flex min-w-max gap-2 overflow-x-auto pb-2"
-        >
-          {navItems.map((item) => (
-            <Tab
-              key={item.to}
-              id={item.to}
-              className={cn(
-                "min-w-[190px] border border-border bg-background px-4 py-3.5",
-                "hover:bg-surface-hover",
-                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                "selected:border-border-strong selected:bg-surface-selected",
-                "cursor-default press-scale-sm-y outline-none",
-              )}
-            >
-              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground">
-                {item.label}
-              </div>
-              <div className="mt-1.5 text-[13px] leading-5 text-foreground/68">{item.desc}</div>
-            </Tab>
-          ))}
-        </TabList>
-        <Separator />
-      </Tabs>
+      <nav aria-label="Account sections" className="flex min-w-0 gap-2 overflow-x-auto pb-2">
+        {navItems.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            className={cn(
+              "block min-w-[190px] border border-border bg-background px-4 py-3.5",
+              "hover:bg-surface-hover",
+              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              "cursor-pointer press-scale-sm-y outline-none",
+              isActive(item.to) && "border-border-strong bg-surface-selected",
+            )}
+          >
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground">
+              {item.label}
+            </div>
+            <div className="mt-1.5 text-[13px] leading-5 text-foreground/68">{item.desc}</div>
+          </Link>
+        ))}
+      </nav>
+      <Separator />
 
       <section className="min-w-0">
         <Outlet />

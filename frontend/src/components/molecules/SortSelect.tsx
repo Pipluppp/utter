@@ -30,7 +30,7 @@ export function SortSelect({
         if (key !== null) onSelectionChange(key as string);
       }}
     >
-      <Button className="press-scale-sm flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground hover:border-muted-foreground data-[focused]:border-muted-foreground">
+      <Button className="press-scale-sm flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground hover:border-muted-foreground data-[focused]:border-muted-foreground">
         <SelectValue className="data-[placeholder]:text-muted-foreground">
           {({ defaultChildren }) => defaultChildren || placeholder}
         </SelectValue>

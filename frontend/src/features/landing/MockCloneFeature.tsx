@@ -1,4 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "react-aria-components";
 import { GridArtSurface } from "../../components/molecules/GridArt";
 import { cn } from "../../lib/cn";
 
@@ -385,30 +386,28 @@ export function MockCloneFeature(): ReactNode {
           {/* Upload / Record toggle */}
           <div className="flex items-center justify-center">
             <div className="inline-flex overflow-hidden border border-border bg-background shadow-elevated">
-              <button
-                type="button"
+              <Button
                 className={cn(
                   "cursor-default press-scale px-4 py-2 text-xs font-medium uppercase tracking-wide motion-reduce:transition-none",
                   audioMode === "upload"
                     ? "bg-foreground text-background"
                     : "bg-background text-foreground hover:bg-subtle",
                 )}
-                onClick={() => setAudioMode("upload")}
+                onPress={() => setAudioMode("upload")}
               >
                 Upload
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
                 className={cn(
                   "cursor-default press-scale px-4 py-2 text-xs font-medium uppercase tracking-wide motion-reduce:transition-none",
                   audioMode === "record"
                     ? "bg-foreground text-background"
                     : "bg-background text-foreground hover:bg-subtle",
                 )}
-                onClick={() => setAudioMode("record")}
+                onPress={() => setAudioMode("record")}
               >
                 Record
-              </button>
+              </Button>
             </div>
           </div>
 

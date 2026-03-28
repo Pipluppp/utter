@@ -1,8 +1,8 @@
 import { Link, getRouteApi } from "@tanstack/react-router";
-import { Star } from "lucide-react";
+import { Star, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
-import { Button, button } from "../../components/atoms/Button";
+import { button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
 import { SegmentedControl } from "../../components/molecules/SegmentedControl";
@@ -358,7 +358,7 @@ export function VoicesPage() {
         <div className="ml-auto">
           <button
             type="button"
-            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs uppercase tracking-wide transition-colors press-scale-sm ${
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors press-scale-sm ${
               favorites === "true"
                 ? "border-foreground bg-foreground text-background hover:bg-foreground/80"
                 : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
@@ -368,7 +368,7 @@ export function VoicesPage() {
             aria-pressed={favorites === "true"}
           >
             <Star size={12} className={favorites === "true" ? "fill-current" : ""} />
-            Favorites
+            <span className="hidden sm:inline">Favorites</span>
           </button>
         </div>
       </div>
@@ -503,15 +503,15 @@ export function VoicesPage() {
                     >
                       {label}
                     </button>
-                    <Button
+                    <button
                       type="button"
-                      variant="secondary"
-                      size="sm"
-                      isDisabled={busyDelete === v.id}
-                      onPress={() => void onDelete(v)}
+                      className="inline-flex items-center justify-center border border-foreground bg-foreground text-background p-2 press-scale hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={busyDelete === v.id}
+                      aria-label="Delete voice"
+                      onClick={() => void onDelete(v)}
                     >
-                      Delete
-                    </Button>
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
 

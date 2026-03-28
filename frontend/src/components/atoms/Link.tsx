@@ -14,6 +14,12 @@ interface NavAppLinkProps extends AppLinkProps {
   isCurrent?: boolean;
 }
 
+/**
+ * Bare RAC + TanStack Router link. No default styling — pass your own className.
+ * Use this for one-off styled links (e.g. button-styled hero CTAs).
+ */
+export const Link = CreatedLink;
+
 export function AppLink({ className, ...props }: AppLinkProps) {
   return (
     <CreatedLink

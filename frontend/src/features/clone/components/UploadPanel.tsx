@@ -24,7 +24,7 @@ export function UploadPanel({
   onTranscribe,
 }: UploadPanelProps) {
   return (
-    <div className="relative">
+    <div>
       <DropZone
         aria-label="Drop audio file here"
         className={cn(
@@ -55,21 +55,20 @@ export function UploadPanel({
         <div className="mt-2 text-xs text-faint">WAV / MP3 / M4A - max 10MB - 60s max</div>
         {fileInfo ? <div className="mt-3 text-xs text-foreground">{fileInfo}</div> : null}
         {fileError ? <div className="mt-3 text-xs text-status-error">{fileError}</div> : null}
+        {transcriptionEnabled && file ? (
+          <Button
+            className="mt-3"
+            variant="secondary"
+            size="sm"
+            type="button"
+            isPending={transcribing}
+            isDisabled={submitting}
+            onPress={onTranscribe}
+          >
+            {transcribing ? "Transcribing..." : "Transcribe"}
+          </Button>
+        ) : null}
       </DropZone>
-
-      {transcriptionEnabled && file ? (
-        <Button
-          className="absolute right-4 top-4 z-10"
-          variant="secondary"
-          size="sm"
-          type="button"
-          isPending={transcribing}
-          isDisabled={submitting}
-          onPress={onTranscribe}
-        >
-          {transcribing ? "Transcribing..." : "Transcribe"}
-        </Button>
-      ) : null}
     </div>
   );
 }

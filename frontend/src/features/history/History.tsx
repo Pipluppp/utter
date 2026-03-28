@@ -1,4 +1,5 @@
 import { getRouteApi } from "@tanstack/react-router";
+import { Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
 import { Button, button } from "../../components/atoms/Button";
@@ -482,14 +483,14 @@ export function HistoryPage() {
                     >
                       Regenerate
                     </Button>
-                    <Button
+                    <button
                       type="button"
-                      variant="secondary"
-                      size="sm"
-                      onPress={() => void onDelete(g)}
+                      className="inline-flex items-center justify-center border border-foreground bg-foreground text-background p-2 press-scale hover:bg-foreground/80 hover:border-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Delete generation"
+                      onClick={() => void onDelete(g)}
                     >
-                      Delete
-                    </Button>
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
 
