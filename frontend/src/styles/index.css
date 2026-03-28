@@ -230,6 +230,7 @@
   }
 }
 
+/* Scale but smaller on the x axis to avoid large horizontal change on wide components */
 @utility press-scale-sm-y {
   will-change: scale;
   transition:
