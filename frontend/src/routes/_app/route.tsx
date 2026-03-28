@@ -45,18 +45,6 @@ function AppLayout() {
     setMenuOpen(false);
   }, [location.pathname, location.hash]);
 
-  // Escape key closes mobile menu
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [menuOpen]);
-
   // Show skeleton while auth is still resolving — beforeLoad will redirect
   // once router.invalidate() fires after auth settles to "signed_out"
   if (authState.status === "loading") {
@@ -70,8 +58,7 @@ function AppLayout() {
         currentHash={location.hash}
         signInHref={signInHref}
         menuOpen={menuOpen}
-        onToggleMenu={() => setMenuOpen((open) => !open)}
-        onCloseMenu={() => setMenuOpen(false)}
+        onMenuOpenChange={setMenuOpen}
       />
       <main id="main" tabIndex={-1} className="w-full flex-1 mx-auto max-w-5xl px-4 py-12 md:px-6">
         <Suspense fallback={suspenseFallback}>

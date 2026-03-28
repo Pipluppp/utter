@@ -1,5 +1,6 @@
 import { useLocation } from "@tanstack/react-router";
 import { User } from "lucide-react";
+import { Button as AriaButton, Disclosure, DisclosurePanel, Heading } from "react-aria-components";
 import { Kbd } from "../components/atoms/Kbd";
 import { AppLink, NavAppLink } from "../components/atoms/Link";
 import { Separator } from "../components/atoms/Separator";
@@ -177,9 +178,9 @@ function MobileNavItem({
 }) {
   const itemClassName = (active: boolean) =>
     cn(
-      "flex w-full items-center justify-between px-3 py-3 text-caption font-medium uppercase tracking-wide text-foreground/80 press-scale-sm-y hover:bg-muted hover:text-foreground",
-      "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-      active && "bg-muted text-foreground",
+      "flex w-full items-center justify-between px-3 py-3 text-caption font-medium uppercase tracking-wide text-foreground/80 press-scale-sm-y hover:bg-surface-subtle-hover hover:text-foreground",
+      "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle",
+      active && "bg-surface-subtle-hover text-foreground",
     );
 
   if (item.kind === "hash") {
@@ -216,15 +217,13 @@ export function TopBar({
   currentHash,
   signInHref,
   menuOpen,
-  onToggleMenu,
-  onCloseMenu,
+  onMenuOpenChange,
 }: {
   variant: NavVariant;
   currentHash: string;
   signInHref: string;
   menuOpen: boolean;
-  onToggleMenu: () => void;
-  onCloseMenu: () => void;
+  onMenuOpenChange: (isOpen: boolean) => void;
 }) {
   const sections = getSections(variant, signInHref);
   const { pathname } = useLocation();
@@ -233,101 +232,108 @@ export function TopBar({
 
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-background">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 md:px-6">
-        <AppLink
-          href="/"
-          className="text-[16px] font-pixel font-medium tracking-[2px] uppercase focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          UTTER
-        </AppLink>
-
-        {variant === "auth_minimal" ? (
-          <nav className="flex items-center gap-1">
-            <NavAppLink
-              href="/"
-              isCurrent={pathname === "/"}
-              className={baseNavItemClassName(pathname === "/")}
-            >
-              Back to home
-            </NavAppLink>
-          </nav>
-        ) : variant === "app_pending_auth" ? (
-          <HeaderPendingAuthSkeleton />
-        ) : (
-          <nav className="hidden items-center gap-1 md:flex">
-            {sections.map((section, index) => (
-              <div key={getSectionKey(section)} className="contents">
-                {index > 0 ? (
-                  <Separator orientation="vertical" className="mx-2 h-4 self-center" />
-                ) : null}
-                {section.map((item) => (
-                  <DesktopNavItem
-                    key={item.kind === "hash" ? item.hash : `${String(item.to)}:${item.label}`}
-                    item={item}
-                    currentHash={currentHash}
-                    pathname={pathname}
-                  />
-                ))}
-              </div>
-            ))}
-          </nav>
-        )}
-
-        {showMenuToggle ? (
-          <button
-            type="button"
-            className={cn(
-              "inline-flex items-center justify-center border border-border bg-background p-2 text-muted-foreground press-scale hover:bg-muted hover:text-foreground md:hidden",
-              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-            )}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={menuOpen}
-            aria-controls="mobile-nav"
-            onClick={onToggleMenu}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              aria-hidden="true"
-              className="size-5"
-            >
-              <path d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
-          </button>
-        ) : null}
-      </div>
-
       {showMenuToggle ? (
-        <div
-          id="mobile-nav"
-          className={cn(
-            "border-t border-border bg-background md:hidden",
-            menuOpen ? "block" : "hidden",
-          )}
-        >
-          <div className="mx-auto w-full max-w-5xl px-4 py-2 md:px-6">
-            <div className="space-y-1">
+        <Disclosure isExpanded={menuOpen} onExpandedChange={onMenuOpenChange} className="contents">
+          <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 md:px-6">
+            <AppLink
+              href="/"
+              className="text-[16px] font-pixel font-medium tracking-[2px] uppercase focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              UTTER
+            </AppLink>
+
+            <nav className="hidden items-center gap-1 md:flex">
               {sections.map((section, index) => (
-                <div key={getSectionKey(section)}>
-                  {index > 0 ? <Separator className="my-2" /> : null}
+                <div key={getSectionKey(section)} className="contents">
+                  {index > 0 ? (
+                    <Separator orientation="vertical" className="mx-2 h-4 self-center" />
+                  ) : null}
                   {section.map((item) => (
-                    <MobileNavItem
+                    <DesktopNavItem
                       key={item.kind === "hash" ? item.hash : `${String(item.to)}:${item.label}`}
                       item={item}
                       currentHash={currentHash}
                       pathname={pathname}
-                      onPress={onCloseMenu}
                     />
                   ))}
                 </div>
               ))}
-            </div>
+            </nav>
+
+            <Heading className="contents md:hidden" level={2}>
+              <AriaButton
+                slot="trigger"
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                className={cn(
+                  "inline-flex items-center justify-center border border-border bg-background p-2 text-muted-foreground press-scale hover:bg-muted hover:text-foreground",
+                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                )}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                  className="size-5"
+                >
+                  <path d="M4 7h16M4 12h16M4 17h16" />
+                </svg>
+              </AriaButton>
+            </Heading>
           </div>
+
+          <DisclosurePanel
+            className={cn(
+              "md:hidden",
+              menuOpen && "border-t border-border-subtle bg-surface-subtle",
+            )}
+          >
+            <div className="mx-auto w-full max-w-5xl px-4 py-2 md:px-6">
+              <div className="space-y-1">
+                {sections.map((section, index) => (
+                  <div key={getSectionKey(section)}>
+                    {index > 0 ? <Separator className="my-2" /> : null}
+                    {section.map((item) => (
+                      <MobileNavItem
+                        key={item.kind === "hash" ? item.hash : `${String(item.to)}:${item.label}`}
+                        item={item}
+                        currentHash={currentHash}
+                        pathname={pathname}
+                        onPress={() => onMenuOpenChange(false)}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </DisclosurePanel>
+        </Disclosure>
+      ) : (
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 md:px-6">
+          <AppLink
+            href="/"
+            className="text-[16px] font-pixel font-medium tracking-[2px] uppercase focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            UTTER
+          </AppLink>
+
+          {variant === "auth_minimal" ? (
+            <nav className="flex items-center gap-1">
+              <NavAppLink
+                href="/"
+                isCurrent={pathname === "/"}
+                className={baseNavItemClassName(pathname === "/")}
+              >
+                Back to home
+              </NavAppLink>
+            </nav>
+          ) : variant === "app_pending_auth" ? (
+            <HeaderPendingAuthSkeleton />
+          ) : null}
         </div>
-      ) : null}
+      )}
     </header>
   );
 }

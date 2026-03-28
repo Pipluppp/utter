@@ -19,18 +19,6 @@ function AuthLayout() {
     setMenuOpen(false);
   }, [location.pathname, location.hash]);
 
-  // Escape key closes mobile menu
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [menuOpen]);
-
   return (
     <>
       <TopBar
@@ -38,8 +26,7 @@ function AuthLayout() {
         currentHash={location.hash}
         signInHref={signInHref}
         menuOpen={menuOpen}
-        onToggleMenu={() => setMenuOpen((open) => !open)}
-        onCloseMenu={() => setMenuOpen(false)}
+        onMenuOpenChange={setMenuOpen}
       />
       <main id="main" tabIndex={-1} className="w-full flex-1 flex overflow-hidden">
         <Outlet />
