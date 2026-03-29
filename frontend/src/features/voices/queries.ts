@@ -1,6 +1,8 @@
 import { queryOptions } from "@tanstack/react-query";
 import { apiJson } from "../../lib/api";
-import type { VoicesResponse } from "../../lib/types";
+import type { Voice, VoicesResponse } from "../../lib/types";
+
+export type VoiceOptionItem = Voice & { label: string };
 
 export const PER_PAGE = 10;
 
@@ -39,5 +41,11 @@ export const voiceQueries = {
       queryKey: [...voiceQueries.all(), "options"] as const,
       queryFn: () => apiJson<VoicesResponse>("/api/voices"),
       staleTime: 1000 * 60, // 60s
+    }),
+  optionsWithLabels: () =>
+    queryOptions({
+      ...voiceQueries.options(),
+      select: (data): VoiceOptionItem[] =>
+        data.voices.map((v) => ({ ...v, label: v.name })),
     }),
 };

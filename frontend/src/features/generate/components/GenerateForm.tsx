@@ -1,13 +1,13 @@
 import { Form, Label, Text, TextArea, TextField } from "react-aria-components";
 import { Button } from "../../../components/atoms/Button";
 import {
-  AutocompleteSelect,
-  type AutocompleteSelectItem,
+    AutocompleteSelect,
+    type AutocompleteSelectItem,
 } from "../../../components/molecules/AutocompleteSelect";
 import { cn } from "../../../lib/cn";
 import { TTS_PROVIDER } from "../../../lib/provider-config";
 import { inputStyles } from "../../../lib/styles/input";
-import type { VoiceOptionItem } from "../../shared/hooks/useVoiceOptions";
+import type { VoiceOptionItem } from "../../voices/queries";
 
 export interface GenerateFormProps {
   voiceItems: VoiceOptionItem[];

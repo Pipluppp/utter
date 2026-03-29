@@ -13,14 +13,14 @@ export const taskQueries = {
   list: (filters: TaskListFilters) =>
     infiniteQueryOptions({
       queryKey: [...taskQueries.lists(), filters] as const,
-      queryFn: ({ pageParam }) => {
+      queryFn: ({ pageParam, signal }) => {
         const qs = new URLSearchParams({
           status: filters.status,
           type: filters.type,
           limit: "10",
         });
         if (pageParam) qs.set("before", pageParam);
-        return apiJson<TaskListResponse>(`/api/tasks?${qs.toString()}`);
+        return apiJson<TaskListResponse>(`/api/tasks?${qs.toString()}`, { signal });
       },
       initialPageParam: null as string | null,
       getNextPageParam: (lastPage) => lastPage.next_before,

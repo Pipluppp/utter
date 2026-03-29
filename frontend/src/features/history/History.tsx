@@ -9,8 +9,8 @@ import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
 import { apiJson } from "../../lib/api";
 import type { Generation } from "../../lib/types";
 import { useDebouncedValue } from "../shared/hooks";
-import { useVoiceOptions } from "../shared/hooks/useVoiceOptions";
 import { tokenize } from "../shared/tokenize";
+import { voiceQueries } from "../voices/queries";
 import { HistoryCard } from "./components/HistoryCard";
 import { HistoryFilterBar } from "./components/HistoryFilterBar";
 import { HistorySkeleton } from "./components/HistorySkeleton";
@@ -47,13 +47,13 @@ export function HistoryPage() {
   const [page, setPage] = useState(initialPage);
 
   // Voice options for the filter dropdown
-  const { voices } = useVoiceOptions();
+  const voiceOptionsQuery = useQuery(voiceQueries.optionsWithLabels());
   const voiceItems = useMemo<AutocompleteSelectItem[]>(
     () => [
       { id: "all", label: "All Voices" },
-      ...voices.map((v) => ({ id: v.id, label: v.label })),
+      ...(voiceOptionsQuery.data ?? []).map((v) => ({ id: v.id, label: v.label })),
     ],
-    [voices],
+    [voiceOptionsQuery.data],
   );
 
   const historyQuery = useQuery({

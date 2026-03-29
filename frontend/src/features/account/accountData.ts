@@ -5,10 +5,10 @@ import { getCreditPackById } from "../../content/plans";
 import { apiJson } from "../../lib/api";
 import { getAuthSession, signOut as signOutRequest } from "../../lib/auth";
 import type {
-  CreditLedgerEvent,
-  CreditsUsageResponse,
-  MeResponse,
-  ProfileRecord,
+    CreditLedgerEvent,
+    CreditsUsageResponse,
+    MeResponse,
+    ProfileRecord,
 } from "../../lib/types";
 import { accountQueries } from "./queries";
 
@@ -189,7 +189,7 @@ export function useAccountData(): AccountData {
 
   const signOut = useCallback(async () => {
     await signOutRequest();
-    queryClient.removeQueries({ queryKey: accountQueries.all() });
+    queryClient.clear();
     await authState.refresh();
   }, [authState, queryClient]);
 

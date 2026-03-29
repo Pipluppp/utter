@@ -6,6 +6,7 @@ import { buildAuthHref, buildReturnTo, getNavVariant } from "../../app/navigatio
 import { TopBar } from "../../app/TopBar";
 import { useGlobalShortcuts } from "../../app/useGlobalShortcuts";
 import { TaskDock } from "../../components/organisms/TaskDock";
+import { QueryErrorBoundary } from "../../components/QueryErrorBoundary";
 import {
   AuthGateSkeleton,
   RouteAccountSkeleton,
@@ -61,9 +62,11 @@ function AppLayout() {
         onMenuOpenChange={setMenuOpen}
       />
       <main id="main" tabIndex={-1} className="w-full flex-1 mx-auto max-w-5xl px-4 py-12 md:px-6">
-        <Suspense fallback={suspenseFallback}>
-          <Outlet />
-        </Suspense>
+        <QueryErrorBoundary>
+          <Suspense fallback={suspenseFallback}>
+            <Outlet />
+          </Suspense>
+        </QueryErrorBoundary>
       </main>
       <AppFooter />
       <TaskDock />

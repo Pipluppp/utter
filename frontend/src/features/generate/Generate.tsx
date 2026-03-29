@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ListBox, ListBoxItem } from "react-aria-components";
@@ -21,7 +22,7 @@ import {
 } from "../../lib/provider-config";
 import { formatElapsed } from "../../lib/time";
 import type { StoredTask } from "../../lib/types";
-import { useVoiceOptions } from "../shared/hooks/useVoiceOptions";
+import { voiceQueries } from "../voices/queries";
 import { GenerateForm } from "./components/GenerateForm";
 import { GenerateResult } from "./components/GenerateResult";
 import type { GenerateFormState } from "./hooks/useGenerateSubmit";
@@ -43,7 +44,10 @@ export function GeneratePage() {
   );
 
   const { startTask: _startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
-  const { voices: voiceItems, loading: loadingVoices, error: voicesError } = useVoiceOptions();
+  const voicesQuery = useQuery(voiceQueries.optionsWithLabels());
+  const voiceItems = voicesQuery.data ?? [];
+  const loadingVoices = voicesQuery.isPending;
+  const voicesError = voicesQuery.error?.message ?? null;
   const generateSubmit = useGenerateSubmit();
 
   const generateTasks = getTasksByType("generate");
