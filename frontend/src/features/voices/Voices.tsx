@@ -1,8 +1,10 @@
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Message } from "../../components/atoms/Message";
 import { ConfirmDialog } from "../../components/molecules/ConfirmDialog";
 import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
+import { apiJson } from "../../lib/api";
 import { paginationButtonStyles } from "../../lib/styles/pagination-button";
 import type { Voice } from "../../lib/types";
 import { useDebouncedValue } from "../shared/hooks";
@@ -10,8 +12,7 @@ import { tokenize } from "../shared/tokenize";
 import { VoiceCard } from "./components/VoiceCard";
 import { VoiceFilterBar } from "./components/VoiceFilterBar";
 import { VoicesSkeleton } from "./components/VoicesSkeleton";
-import { useVoiceList } from "./hooks/useVoiceList";
-import { useVoiceMutations } from "./hooks/useVoiceMutations";
+import { voiceQueries } from "./queries";
 
 const voicesRoute = getRouteApi("/_app/voices");
 
@@ -41,18 +42,35 @@ export function VoicesPage() {
   const [favorites, setFavorites] = useState(initialFavorites);
   const [page, setPage] = useState(initialPage);
 
-  const voiceList = useVoiceList({
-    search: debounced,
-    source,
-    sort,
-    sortDir,
-    favorites,
-    page,
+  const voicesQuery = useQuery({
+    ...voiceQueries.list({ search: debounced, source, sort, sortDir, favorites, page }),
+    placeholderData: keepPreviousData,
   });
 
-  const handleError = useCallback((msg: string) => voiceList.setError(msg), [voiceList.setError]);
+  const deleteVoice = useMutation({
+    mutationKey: voiceQueries.all(),
+    mutationFn: (id: string) => apiJson(`/api/voices/${id}`, { method: "DELETE" }),
+  });
 
-  const mutations = useVoiceMutations(voiceList.reload, handleError);
+  const toggleFavorite = useMutation({
+    mutationKey: voiceQueries.all(),
+    mutationFn: (id: string) => apiJson(`/api/voices/${id}/favorite`, { method: "PATCH" }),
+  });
+
+  const renameVoice = useMutation({
+    mutationKey: voiceQueries.all(),
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      apiJson(`/api/voices/${id}/name`, { method: "PATCH", json: { name } }),
+  });
+
+  const [localError, setLocalError] = useState<string | null>(null);
+  const displayError =
+    localError ??
+    voicesQuery.error?.message ??
+    deleteVoice.error?.message ??
+    toggleFavorite.error?.message ??
+    renameVoice.error?.message ??
+    null;
 
   const [highlightedVoiceId, setHighlightedVoiceId] = useState<string | null>(null);
   const voiceCardRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -65,9 +83,9 @@ export function VoicesPage() {
 
   // Highlight + scroll to voice when voice_id param is present
   useEffect(() => {
-    if (!voiceIdParam || voiceList.loading || !voiceList.data) return;
+    if (!voiceIdParam || voicesQuery.isPending || !voicesQuery.data) return;
 
-    const match = voiceList.data.voices.find((v) => v.id === voiceIdParam);
+    const match = voicesQuery.data.voices.find((v) => v.id === voiceIdParam);
     if (match) {
       setHighlightedVoiceId(voiceIdParam);
       requestAnimationFrame(() => {
@@ -80,7 +98,7 @@ export function VoicesPage() {
       setFavorites("all");
       setPage(1);
     }
-  }, [voiceIdParam, voiceList.loading, voiceList.data]);
+  }, [voiceIdParam, voicesQuery.isPending, voicesQuery.data]);
 
   // Auto-clear highlight after 2 seconds for fade-out
   useEffect(() => {
@@ -104,31 +122,36 @@ export function VoicesPage() {
     });
   }, [debounced, page, navigate, source, sort, sortDir, favorites, voiceIdParam]);
 
-  async function onPreview(voice: Voice) {
-    const container = waveRefs.current[voice.id];
-    if (!container) return;
-    voiceList.setError(null);
-    await toggle({
-      id: voice.id,
-      container,
-      audioUrl: `/api/voices/${voice.id}/preview`,
-      onState: (state) => {
-        const next: PlayState = state;
-        setPlayState((prev) => ({ ...prev, [voice.id]: next }));
-      },
-      onError: (message) => {
-        voiceList.setError(message);
-      },
-    });
-  }
+  const onPreview = useCallback(
+    async (voice: Voice) => {
+      const container = waveRefs.current[voice.id];
+      if (!container) return;
+      setLocalError(null);
+      await toggle({
+        id: voice.id,
+        container,
+        audioUrl: `/api/voices/${voice.id}/preview`,
+        onState: (state) => {
+          const next: PlayState = state;
+          setPlayState((prev) => ({ ...prev, [voice.id]: next }));
+        },
+        onError: (message) => {
+          setLocalError(message);
+        },
+      });
+    },
+    [toggle],
+  );
+
+  const showLoading = voicesQuery.isFetching && !voicesQuery.isPending;
 
   return (
-    <div className="space-y-8" aria-busy={voiceList.loading}>
+    <div className="space-y-8" aria-busy={voicesQuery.isPending}>
       <h2 className="text-balance text-center text-3xl font-pixel font-medium uppercase tracking-[2px] md:text-4xl">
         Voices
       </h2>
 
-      {voiceList.error ? <Message variant="error">{voiceList.error}</Message> : null}
+      {displayError ? <Message variant="error">{displayError}</Message> : null}
 
       <VoiceFilterBar
         query={query}
@@ -145,27 +168,27 @@ export function VoicesPage() {
         onFavoritesChange={setFavorites}
       />
 
-      {voiceList.loading && !voiceList.data ? <VoicesSkeleton /> : null}
+      {voicesQuery.isPending ? <VoicesSkeleton /> : null}
 
-      {!voiceList.loading && voiceList.data && voiceList.data.voices.length === 0 ? (
+      {!voicesQuery.isPending && voicesQuery.data && voicesQuery.data.voices.length === 0 ? (
         <div className="flex min-h-[50dvh] items-center justify-center border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
           No voices found.
         </div>
       ) : null}
 
-      {voiceList.data && (voiceList.loading || voiceList.data.voices.length > 0) ? (
+      {voicesQuery.data && (voicesQuery.isPending || voicesQuery.data.voices.length > 0) ? (
         <div
-          className={`grid min-h-[50dvh] content-start gap-4${voiceList.showLoading ? " pointer-events-none opacity-60" : ""}`}
+          className={`grid min-h-[50dvh] content-start gap-4${showLoading ? " pointer-events-none opacity-60" : ""}`}
         >
-          {voiceList.data?.voices.map((v) => (
+          {voicesQuery.data?.voices.map((v) => (
             <VoiceCard
               key={v.id}
               voice={v}
               tokens={tokens}
               playState={playState[v.id] ?? "idle"}
-              busyDelete={mutations.busyDelete === v.id}
-              busyFavorite={mutations.busyFavorite === v.id}
-              busyRename={mutations.busyRename === v.id}
+              busyDelete={deleteVoice.isPending && deleteVoice.variables === v.id}
+              busyFavorite={toggleFavorite.isPending && toggleFavorite.variables === v.id}
+              busyRename={renameVoice.isPending && renameVoice.variables?.id === v.id}
               highlighted={v.id === highlightedVoiceId}
               cardRef={(el) => {
                 if (el) voiceCardRefs.current.set(v.id, el);
@@ -176,30 +199,30 @@ export function VoicesPage() {
               }}
               onPreview={() => void onPreview(v)}
               onDelete={() => setDeleteTarget(v)}
-              onToggleFavorite={() => void mutations.toggleFavorite(v)}
-              onRename={(name) => void mutations.renameVoice(v, name)}
+              onToggleFavorite={() => toggleFavorite.mutate(v.id)}
+              onRename={(name) => renameVoice.mutate({ id: v.id, name })}
             />
           ))}
         </div>
       ) : null}
 
-      {!voiceList.loading && voiceList.data && voiceList.data.pagination.pages > 1 ? (
+      {!voicesQuery.isPending && voicesQuery.data && voicesQuery.data.pagination.pages > 1 ? (
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
             className={paginationButtonStyles().base()}
-            disabled={voiceList.data.pagination.page <= 1}
+            disabled={voicesQuery.data.pagination.page <= 1}
             onClick={() => setPage((p: number) => Math.max(1, p - 1))}
           >
             Prev
           </button>
           <div className="text-xs text-faint">
-            Page {voiceList.data.pagination.page} of {voiceList.data.pagination.pages}
+            Page {voicesQuery.data.pagination.page} of {voicesQuery.data.pagination.pages}
           </div>
           <button
             type="button"
             className={paginationButtonStyles().base()}
-            disabled={voiceList.data.pagination.page >= voiceList.data.pagination.pages}
+            disabled={voicesQuery.data.pagination.page >= voicesQuery.data.pagination.pages}
             onClick={() => setPage((p: number) => p + 1)}
           >
             Next
@@ -209,14 +232,14 @@ export function VoicesPage() {
 
       <ConfirmDialog
         title="Delete voice"
-        message={deleteTarget ? `Delete voice "${deleteTarget.name}"?` : ""}
+        message={deleteTarget ? `Delete voice "${deleteTarget.name}"` : ""}
         confirmLabel="Delete"
         isOpen={deleteTarget !== null}
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
         onConfirm={() => {
-          if (deleteTarget) void mutations.deleteVoice(deleteTarget);
+          if (deleteTarget) deleteVoice.mutate(deleteTarget.id);
         }}
       />
     </div>
