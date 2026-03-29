@@ -32,6 +32,7 @@ export function ClonePage() {
   const transcriber = useTranscribe();
 
   const [audioMode, setAudioMode] = useState<"upload" | "record">("upload");
+  const [fileSource, setFileSource] = useState<"upload" | "record" | null>(null);
   const [name, setName] = useState("");
   const [transcript, setTranscript] = useState("");
   const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
@@ -42,7 +43,8 @@ export function ClonePage() {
     async (fill) => {
       setName(fill.name);
       setTranscript(fill.transcript);
-      await cloneFile.validateAndSet(fill.file);
+      const ok = await cloneFile.validateAndSet(fill.file);
+      if (ok) setFileSource("upload");
     },
     (msg) => setError(msg),
   );
@@ -77,7 +79,8 @@ export function ClonePage() {
       const exampleFile = new File([audioBlob], "audio.wav", { type: "audio/wav" });
       setName("ASMR");
       setTranscript(exampleText.trim());
-      await cloneFile.validateAndSet(exampleFile);
+      const ok = await cloneFile.validateAndSet(exampleFile);
+      if (ok) setFileSource("upload");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load example.");
     }
@@ -86,6 +89,7 @@ export function ClonePage() {
   async function onSubmit() {
     setError(null);
     cloneFile.clear();
+    setFileSource(null);
 
     if (!name.trim()) {
       setError("Please enter a voice name.");
@@ -110,6 +114,7 @@ export function ClonePage() {
   const reset = useCallback(() => {
     cloneSubmit.reset();
     cloneFile.clear();
+    setFileSource(null);
     setError(null);
     setName("");
     setTranscript("");
@@ -154,7 +159,7 @@ export function ClonePage() {
       {audioMode === "record" && TRANSCRIPTION_ENABLED ? (
         <RecordPanel
           recorder={recorder}
-          file={cloneFile.file}
+          file={fileSource === "record" ? cloneFile.file : null}
           transcribing={transcriber.transcribing}
           submitting={cloneSubmit.submitting}
           maxSeconds={MAX_REFERENCE_SECONDS}
@@ -165,6 +170,7 @@ export function ClonePage() {
               if (!wavFile) return;
               const accepted = await cloneFile.validateAndSet(wavFile);
               if (!accepted) return;
+              setFileSource("record");
               await onTranscribeAudio(wavFile);
             })();
           }}
@@ -172,17 +178,22 @@ export function ClonePage() {
             recorder.clear();
             setTranscript("");
             cloneFile.clear();
+            setFileSource(null);
           }}
         />
       ) : (
         <UploadPanel
-          file={cloneFile.file}
-          fileInfo={cloneFile.fileInfo}
+          file={fileSource === "upload" ? cloneFile.file : null}
+          fileInfo={fileSource === "upload" ? cloneFile.fileInfo : null}
           fileError={cloneFile.fileError}
           transcriptionEnabled={TRANSCRIPTION_ENABLED}
           transcribing={transcriber.transcribing}
           submitting={cloneSubmit.submitting}
-          onFileSelect={cloneFile.validateAndSet}
+          onFileSelect={async (f) => {
+            const ok = await cloneFile.validateAndSet(f);
+            if (ok) setFileSource("upload");
+            return ok;
+          }}
           onTranscribe={() => void onTranscribeAudio()}
         />
       )}

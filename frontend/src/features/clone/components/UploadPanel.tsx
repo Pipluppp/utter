@@ -1,5 +1,6 @@
 import { DropZone, FileTrigger } from "react-aria-components";
 import { Button } from "../../../components/atoms/Button";
+import { WaveformPlayer } from "../../../components/organisms/WaveformPlayer";
 import { cn } from "../../../lib/cn";
 
 interface UploadPanelProps {
@@ -55,6 +56,11 @@ export function UploadPanel({
         <div className="mt-2 text-xs text-faint">WAV / MP3 / M4A - max 10MB - 60s max</div>
         {fileInfo ? <div className="mt-3 text-xs text-foreground">{fileInfo}</div> : null}
         {fileError ? <div className="mt-3 text-xs text-status-error">{fileError}</div> : null}
+        {file ? (
+          <div className="mt-3 border border-border bg-background p-3">
+            <WaveformPlayer audioBlob={file} />
+          </div>
+        ) : null}
         {transcriptionEnabled && file ? (
           <Button
             className="mt-3"
