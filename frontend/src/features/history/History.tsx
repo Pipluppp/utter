@@ -24,7 +24,7 @@ import type {
   RegenerateResponse,
   VoicesResponse,
 } from "../../lib/types";
-import { useDebouncedValue } from "../shared/hooks";
+import { useDebouncedValue, useDeferredLoading } from "../shared/hooks";
 
 const historyRoute = getRouteApi("/_app/history");
 
@@ -183,6 +183,7 @@ export function HistoryPage() {
 
   const [data, setData] = useState<GenerationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const showLoading = useDeferredLoading(loading);
   const [error, setError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Generation | null>(null);
 
@@ -399,8 +400,10 @@ export function HistoryPage() {
         </div>
       ) : null}
 
-      {!loading ? (
-        <div className="grid min-h-[50dvh] content-start gap-4">
+      {data && (loading || data.generations.length > 0) ? (
+        <div
+          className={`grid min-h-[50dvh] content-start gap-4${showLoading ? " pointer-events-none opacity-60" : ""}`}
+        >
           {data?.generations.map((g) => {
             const audioUrl = generationAudioUrl(g);
             const isReady = g.status === "completed" && Boolean(audioUrl);

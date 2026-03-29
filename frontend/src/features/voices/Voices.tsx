@@ -23,7 +23,7 @@ import { formatCreatedAt } from "../../lib/format";
 import { inputStyles } from "../../lib/styles/input";
 import { paginationButtonStyles } from "../../lib/styles/pagination-button";
 import type { Voice, VoicesResponse } from "../../lib/types";
-import { useDebouncedValue } from "../shared/hooks";
+import { useDebouncedValue, useDeferredLoading } from "../shared/hooks";
 
 const voicesRoute = getRouteApi("/_app/voices");
 
@@ -179,6 +179,7 @@ export function VoicesPage() {
   const [page, setPage] = useState(initialPage);
   const [data, setData] = useState<VoicesResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const showLoading = useDeferredLoading(loading);
   const [error, setError] = useState<string | null>(null);
 
   const [highlightedVoiceId, setHighlightedVoiceId] = useState<string | null>(null);
@@ -410,8 +411,10 @@ export function VoicesPage() {
         </div>
       ) : null}
 
-      {!loading ? (
-        <div className="grid min-h-[50dvh] content-start gap-4">
+      {data && (loading || data.voices.length > 0) ? (
+        <div
+          className={`grid min-h-[50dvh] content-start gap-4${showLoading ? " pointer-events-none opacity-60" : ""}`}
+        >
           {data?.voices.map((v) => {
             const state = playState[v.id] ?? "idle";
             const label =

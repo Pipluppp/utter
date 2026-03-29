@@ -3,9 +3,11 @@ import { taskLabel } from "../../app/taskKeys";
 import { useTasks } from "../../app/TaskProvider";
 import { Button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
+import { Skeleton } from "../../components/atoms/Skeleton";
 import { SegmentedControl } from "../../components/molecules/SegmentedControl";
 import { apiJson } from "../../lib/api";
 import type { BackendTaskListItem, TaskListResponse, TaskListType } from "../../lib/types";
+import { useDeferredLoading } from "../shared/hooks";
 
 const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
   dateStyle: "medium",
@@ -17,11 +19,49 @@ function formatTimestamp(value: string | null) {
   return dateTimeFormat.format(new Date(value));
 }
 
+const TASK_SKELETON_KEYS = ["task-a", "task-b", "task-c"] as const;
+
+function TaskCardSkeleton() {
+  return (
+    <div
+      className="space-y-3 border border-border bg-background p-4 shadow-elevated"
+      aria-hidden="true"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-1">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-3 w-28" />
+        </div>
+        <Skeleton className="h-3 w-32" />
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <Skeleton className="h-9 w-32" />
+        <Skeleton className="h-9 w-20" />
+      </div>
+    </div>
+  );
+}
+
+function TasksSkeleton() {
+  return (
+    <div className="grid min-h-[50dvh] content-start gap-3" aria-hidden="true">
+      {TASK_SKELETON_KEYS.map((key) => (
+        <TaskCardSkeleton key={key} />
+      ))}
+    </div>
+  );
+}
+
 export function TasksPage() {
   const { cancelTask, dismissTask, getStatusText } = useTasks();
   const [typeFilter, setTypeFilter] = useState<TaskListType>("all");
   const [tasks, setTasks] = useState<BackendTaskListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const showLoading = useDeferredLoading(loading);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nextBefore, setNextBefore] = useState<string | null>(null);
@@ -171,12 +211,18 @@ export function TasksPage() {
         />
       </div>
 
+      {loading && tasks.length === 0 ? <TasksSkeleton /> : null}
+
       {!loading && tasks.length === 0 ? (
         <div className="flex min-h-[50dvh] items-center justify-center border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
           No jobs in this view.
         </div>
-      ) : (
-        <div className="grid min-h-[50dvh] content-start gap-3">
+      ) : null}
+
+      {tasks.length > 0 ? (
+        <div
+          className={`grid min-h-[50dvh] content-start gap-3${showLoading ? " pointer-events-none opacity-60" : ""}`}
+        >
           {tasks.map((task) => (
             <div
               key={task.id}
@@ -243,7 +289,7 @@ export function TasksPage() {
             </div>
           ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
