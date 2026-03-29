@@ -154,7 +154,7 @@ export function GridArt({
 function GridSweepBackdrop({ sweepNonce = 0 }: { sweepNonce?: number }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-      <div className="absolute inset-0 [mask-image:linear-gradient(180deg,transparent_0%,black_8%,black_92%,transparent_100%)] [-webkit-mask-image:linear-gradient(180deg,transparent_0%,black_8%,black_92%,transparent_100%)]">
+      <div className="absolute inset-x-0 top-0 h-[200vh] [mask-image:linear-gradient(180deg,transparent_0%,black_8%,black_92%,transparent_100%)] [-webkit-mask-image:linear-gradient(180deg,transparent_0%,black_8%,black_92%,transparent_100%)]">
         <GridArt
           className="opacity-[0.14]"
           lineClassName="stroke-foreground/[0.09]"
