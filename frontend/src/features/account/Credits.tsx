@@ -207,7 +207,7 @@ export function AccountCreditsPage() {
                       size="sm"
                       onPress={() => void startCheckout(pack.id)}
                       isPending={activePackId === pack.id}
-                      isDisabled={Boolean(activePackId)}
+                      isDisabled
                     >
                       Buy
                     </Button>
