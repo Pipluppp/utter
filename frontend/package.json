@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.4.2",
+    "@tanstack/react-query": "^5.95.2",
     "@tanstack/react-router": "^1.168.7",
     "@tanstack/router-zod-adapter": "^1.81.5",
     "clsx": "^2.1.1",
