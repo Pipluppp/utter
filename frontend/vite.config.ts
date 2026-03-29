@@ -1,5 +1,5 @@
 import tailwindcss from "@tailwindcss/vite";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
@@ -8,7 +8,7 @@ import { defineConfig } from "vite";
 const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN ?? "http://127.0.0.1:8787";
 
 export default defineConfig({
-  plugins: [TanStackRouterVite({ autoCodeSplitting: true }), react(), tailwindcss()],
+  plugins: [tanstackRouter({ autoCodeSplitting: true }), react(), tailwindcss()],
   build: {
     // Never inline JS assets as data: URIs — AudioWorklet modules loaded via
     // `new URL(…, import.meta.url)` must be served as real files so they
