@@ -1,3 +1,19 @@
+# 2026-03-29
+
+## TanStack Query Migration
+
+Replace hand-rolled `useState`/`useEffect` fetch hooks with TanStack Query across the frontend SPA. Planned as a two-spec rollout: Spec 1 covers bootstrap + all Wave 1 surfaces (Account, Voices, Voice Options, Generation History), Spec 2 covers the Tasks page (Wave 2) with `useInfiniteQuery` and optimistic updates.
+
+| Doc | What's in it |
+|-----|-------------|
+| [tanstack-query-audit.md](./tanstack-query/tanstack-query-audit.md) | Full audit: per-hook assessment, what to migrate, what NOT to migrate, rollout order |
+| [migration-guide.md](./tanstack-query/migration-guide.md) | Before/after code for every wave, bootstrap through cleanup |
+| [tips.md](./tanstack-query/tips.md) | Implementation patterns: `queryOptions()`, key factories, `MutationCache`, polling, TypeScript inference |
+| [clone-dissection.md](./tanstack-query/clone-dissection.md) | Clone.tsx analysis (context only, not a migration target) |
+| [prompts/](./tanstack-query/prompts/) | Agent prompts for executing the migration (full prompt, spec 1, spec 2) |
+
+---
+
 # Polar.sh Billing Migration
 
 Replace Stripe with Polar.sh for credit-pack billing. Polar is a Merchant of Record — they handle all international tax compliance so we don't have to.

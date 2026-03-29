@@ -146,7 +146,7 @@ Cross-feature invalidation gaps (unchanged from pre-extraction):
 
 ## Implementation Guidance
 
-Informed by [TkDodo's Practical React Query series](https://tkdodo.eu/blog/practical-react-query). Detailed tips and code examples live in `docs/plans/2026-03-28/tanstack-query/tips.md`. Before/after migration snippets with exact codebase code live in `docs/plans/2026-03-28/tanstack-query/migration-guide.md`.
+Informed by [TkDodo's Practical React Query series](https://tkdodo.eu/blog/practical-react-query). Detailed tips and code examples live in `docs/plans/2026-03-29/tanstack-query/tips.md`. Before/after migration snippets with exact codebase code live in `docs/plans/2026-03-29/tanstack-query/migration-guide.md`.
 
 ### Primary abstraction: `queryOptions()`, not custom hooks
 
@@ -464,6 +464,6 @@ The key wins remain:
 - Eliminated `loading`/`error`/`data` useState boilerplate
 
 Companion documents:
-- Implementation tips: `docs/plans/2026-03-28/tanstack-query/tips.md`
-- Before/after migration guide: `docs/plans/2026-03-28/tanstack-query/migration-guide.md`
-- Clone.tsx dissection: `docs/plans/2026-03-28/tanstack-query/clone-dissection.md`
+- Implementation tips: `docs/plans/2026-03-29/tanstack-query/tips.md`
+- Before/after migration guide: `docs/plans/2026-03-29/tanstack-query/migration-guide.md`
+- Clone.tsx dissection: `docs/plans/2026-03-29/tanstack-query/clone-dissection.md`
