@@ -1,5 +1,7 @@
+import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { queryClient } from "../lib/queryClient";
 import { router } from "../router";
 import { TaskProvider } from "./TaskProvider";
 import { AuthStateProvider, useAuthState } from "./auth/AuthStateProvider";
@@ -23,7 +25,9 @@ export function App() {
     <ThemeProvider>
       <AuthStateProvider>
         <TaskProvider>
-          <InnerApp />
+          <QueryClientProvider client={queryClient}>
+            <InnerApp />
+          </QueryClientProvider>
         </TaskProvider>
       </AuthStateProvider>
     </ThemeProvider>
