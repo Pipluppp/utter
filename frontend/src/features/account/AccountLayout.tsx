@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Outlet, Link as RouterLink, useLocation } from "@tanstack/react-router";
 import { Tab, TabList, Tabs } from "react-aria-components";
 import { Button } from "../../components/atoms/Button";
@@ -5,6 +6,7 @@ import { Separator } from "../../components/atoms/Separator";
 import { cn } from "../../lib/cn";
 import { useAccountData } from "./accountData";
 import { AccountNotice } from "./accountUi";
+import { accountQueries } from "./queries";
 
 type AccountNavItem = {
   id: string;
@@ -45,6 +47,7 @@ function selectedTab(pathname: string): string {
 
 export function AccountLayoutPage() {
   const account = useAccountData();
+  const queryClient = useQueryClient();
   const location = useLocation();
 
   return (
@@ -72,7 +75,7 @@ export function AccountLayoutPage() {
             <Button
               variant="secondary"
               size="sm"
-              onPress={() => void account.refresh({ background: true })}
+              onPress={() => void queryClient.invalidateQueries({ queryKey: accountQueries.all() })}
               isPending={account.refreshing}
             >
               Retry

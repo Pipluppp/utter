@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/atoms/Button";
@@ -10,13 +11,15 @@ import { AccountCreditsSkeleton } from "./accountSkeletons";
 import { AccountNotice, AccountPanel } from "./accountUi";
 import { CreditActivityList } from "./components/CreditActivityList";
 import { CreditPackCard } from "./components/CreditPackCard";
+import { accountQueries } from "./queries";
 
 const creditsRoute = getRouteApi("/_app/account/credits");
 
 export function AccountCreditsPage() {
   const navigate = useNavigate();
   const { checkout: checkoutParam } = creditsRoute.useSearch();
-  const { activity, credits, refresh, refreshing } = useAccountData();
+  const queryClient = useQueryClient();
+  const { activity, credits, refreshing } = useAccountData();
   const [activePackId, setActivePackId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
@@ -26,9 +29,9 @@ export function AccountCreditsPage() {
 
   useEffect(() => {
     if (checkoutStatus === "success") {
-      void refresh({ background: true });
+      void queryClient.invalidateQueries({ queryKey: accountQueries.all() });
     }
-  }, [checkoutStatus, refresh]);
+  }, [checkoutStatus, queryClient]);
 
   async function startCheckout(packId: string) {
     setCheckoutError(null);
@@ -121,7 +124,9 @@ export function AccountCreditsPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onPress={() => void refresh({ background: true })}
+                    onPress={() =>
+                      void queryClient.invalidateQueries({ queryKey: accountQueries.all() })
+                    }
                     isPending={refreshing}
                   >
                     Refresh

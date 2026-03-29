@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
 import { useAuthState } from "../../app/auth/AuthStateProvider";
 import { getCreditPackById } from "../../content/plans";
 import { apiJson } from "../../lib/api";
@@ -9,6 +10,7 @@ import type {
   MeResponse,
   ProfileRecord,
 } from "../../lib/types";
+import { accountQueries } from "./queries";
 
 const creditsFormat = new Intl.NumberFormat();
 const usdFormat = new Intl.NumberFormat(undefined, {
@@ -53,14 +55,6 @@ export type AccountData = {
   signOut: () => Promise<void>;
 };
 
-function errorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 async function loadAuthSessionInfo() {
   const session = await getAuthSession();
   return {
@@ -69,7 +63,7 @@ async function loadAuthSessionInfo() {
   };
 }
 
-async function loadAccountSnapshot() {
+export async function loadAccountSnapshot() {
   const [me, credits, authSession] = await Promise.all([
     apiJson<MeResponse>("/api/me"),
     apiJson<CreditsUsageResponse>("/api/credits/usage?window_days=90"),
@@ -185,71 +179,33 @@ export function buildAccountActivity(event: CreditLedgerEvent): AccountActivity 
 
 export function useAccountData(): AccountData {
   const authState = useAuthState();
-  const [authEmail, setAuthEmail] = useState("");
-  const [identities, setIdentities] = useState<Array<{ provider: string }>>([]);
-  const [me, setMe] = useState<MeResponse | null>(null);
-  const [credits, setCredits] = useState<CreditsUsageResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const query = useQuery(accountQueries.snapshot());
 
-  const refresh = useCallback(async (options?: { background?: boolean }) => {
-    const background = options?.background ?? false;
-
-    if (background) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-
-    try {
-      const snapshot = await loadAccountSnapshot();
-      setMe(snapshot.me);
-      setCredits(snapshot.credits);
-      setAuthEmail(snapshot.authEmail);
-      setIdentities(snapshot.identities);
-      setError(null);
-    } catch (caughtError) {
-      setError(errorMessage(caughtError, "Failed to load account details."));
-    } finally {
-      if (background) {
-        setRefreshing(false);
-      } else {
-        setLoading(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  const activity = useMemo(
+    () => (query.data?.credits?.events ?? []).map(buildAccountActivity),
+    [query.data],
+  );
 
   const signOut = useCallback(async () => {
     await signOutRequest();
+    queryClient.removeQueries({ queryKey: accountQueries.all() });
     await authState.refresh();
-
-    setAuthEmail("");
-    setMe(null);
-    setCredits(null);
-    setIdentities([]);
-  }, [authState]);
-
-  const activity = useMemo(
-    () => (credits?.events ?? []).map((event) => buildAccountActivity(event)),
-    [credits],
-  );
+  }, [authState, queryClient]);
 
   return {
     activity,
-    authEmail,
-    credits,
-    error,
-    identities,
-    loading,
-    me,
-    profile: me?.profile ?? null,
-    refresh,
-    refreshing,
+    authEmail: query.data?.authEmail ?? "",
+    credits: query.data?.credits ?? null,
+    error: query.error instanceof Error ? query.error.message : null,
+    identities: query.data?.identities ?? [],
+    loading: query.isPending,
+    me: query.data?.me ?? null,
+    profile: query.data?.me?.profile ?? null,
+    refresh: async () => {
+      await queryClient.invalidateQueries({ queryKey: accountQueries.all() });
+    },
+    refreshing: query.isFetching && !query.isPending,
     signOut,
   };
 }
