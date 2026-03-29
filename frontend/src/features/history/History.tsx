@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button as AriaButton, Input, Label, SearchField } from "react-aria-components";
 import { Button } from "../../components/atoms/Button";
+import { AppLink } from "../../components/atoms/Link";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
 import {
@@ -414,9 +415,20 @@ export function HistoryPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className={statusBadgeStyles({ status: g.status })}>{g.status}</span>
-                      <div className="truncate text-sm font-semibold">
-                        <Highlight text={g.voice_name ?? "Unknown voice"} tokens={tokens} />
-                      </div>
+                      {g.voice_name != null ? (
+                        <AppLink
+                          to="/voices"
+                          search={{ voice_id: g.voice_id }}
+                          aria-label={`View voice ${g.voice_name}`}
+                          className="truncate text-sm font-semibold hover:underline"
+                        >
+                          <Highlight text={g.voice_name} tokens={tokens} />
+                        </AppLink>
+                      ) : (
+                        <div className="truncate text-sm font-semibold">
+                          <Highlight text="Unknown voice" tokens={tokens} />
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-2 text-sm text-muted-foreground">

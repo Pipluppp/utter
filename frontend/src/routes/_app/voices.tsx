@@ -10,6 +10,7 @@ export const voicesSearchSchema = z.object({
   sort: fallback(z.enum(["created_at", "name", "generation_count"]), "created_at"),
   sort_dir: fallback(z.enum(["asc", "desc"]), "desc"),
   favorites: fallback(z.enum(["all", "true"]), "all"),
+  voice_id: fallback(z.string().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/voices")({

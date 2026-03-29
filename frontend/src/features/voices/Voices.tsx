@@ -10,7 +10,7 @@ import {
 } from "react-aria-components";
 import { Button } from "../../components/atoms/Button";
 import { buttonStyle } from "../../components/atoms/Button.styles";
-import { Link } from "../../components/atoms/Link";
+import { AppLink, Link } from "../../components/atoms/Link";
 import { Message } from "../../components/atoms/Message";
 import { Skeleton } from "../../components/atoms/Skeleton";
 import { ConfirmDialog } from "../../components/molecules/ConfirmDialog";
@@ -164,6 +164,7 @@ export function VoicesPage() {
     sort: initialSort,
     sort_dir: initialSortDir,
     favorites: initialFavorites,
+    voice_id: voiceIdParam,
   } = voicesRoute.useSearch();
   const navigate = voicesRoute.useNavigate();
 
@@ -179,6 +180,9 @@ export function VoicesPage() {
   const [data, setData] = useState<VoicesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [highlightedVoiceId, setHighlightedVoiceId] = useState<string | null>(null);
+  const voiceCardRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   const [busyDelete, setBusyDelete] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Voice | null>(null);
@@ -228,6 +232,34 @@ export function VoicesPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset paging when search/source/sort/filter changes
   useEffect(() => setPage(1), [debounced, source, sort, sortDir, favorites]);
 
+  // Highlight + scroll to voice when voice_id param is present
+  useEffect(() => {
+    if (!voiceIdParam || loading || !data) return;
+
+    const match = data.voices.find((v) => v.id === voiceIdParam);
+    if (match) {
+      setHighlightedVoiceId(voiceIdParam);
+      // Defer scroll to next frame so the card ref is registered
+      requestAnimationFrame(() => {
+        const el = voiceCardRefs.current.get(voiceIdParam);
+        el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    } else {
+      // Voice not on current page — clear filters and reset to page 1
+      setQuery("");
+      setSource("all");
+      setFavorites("all");
+      setPage(1);
+    }
+  }, [voiceIdParam, loading, data]);
+
+  // Auto-clear highlight after 2 seconds for fade-out
+  useEffect(() => {
+    if (!highlightedVoiceId) return;
+    const timer = setTimeout(() => setHighlightedVoiceId(null), 2000);
+    return () => clearTimeout(timer);
+  }, [highlightedVoiceId]);
+
   useEffect(() => {
     void navigate({
       search: {
@@ -237,10 +269,11 @@ export function VoicesPage() {
         sort_dir: sortDir !== "desc" ? sortDir : "desc",
         favorites: favorites === "true" ? "true" : "all",
         page: page !== 1 ? page : 1,
+        voice_id: voiceIdParam,
       },
       replace: true,
     });
-  }, [debounced, page, navigate, source, sort, sortDir, favorites]);
+  }, [debounced, page, navigate, source, sort, sortDir, favorites, voiceIdParam]);
 
   async function onDelete(voice: Voice) {
     setBusyDelete(voice.id);
@@ -392,7 +425,14 @@ export function VoicesPage() {
             const disabled = state === "loading";
 
             return (
-              <div key={v.id} className="border border-border bg-background p-4 shadow-elevated">
+              <div
+                key={v.id}
+                ref={(el) => {
+                  if (el) voiceCardRefs.current.set(v.id, el);
+                  else voiceCardRefs.current.delete(v.id);
+                }}
+                className={`border border-border bg-background p-4 shadow-elevated transition-shadow duration-500${v.id === highlightedVoiceId ? " ring-2 ring-ring" : ""}`}
+              >
                 <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -426,18 +466,27 @@ export function VoicesPage() {
                       </InlineEditable>
                     </div>
 
-                    <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-faint">
+                    <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-faint/70">
                       {formatCreatedAt(v.created_at) ? (
                         <span>{formatCreatedAt(v.created_at)}</span>
                       ) : null}
-                      <span>
-                        {v.generation_count} generation{v.generation_count !== 1 ? "s" : ""}
-                      </span>
+                      {v.generation_count > 0 ? (
+                        <AppLink
+                          to="/history"
+                          search={{ voice_id: v.id }}
+                          aria-label={`View generations for ${v.name}`}
+                          className="underline decoration-faint/40 underline-offset-2 hover:text-foreground hover:decoration-foreground/40"
+                        >
+                          {v.generation_count} generation{v.generation_count !== 1 ? "s" : ""}
+                        </AppLink>
+                      ) : (
+                        <span>0 generations</span>
+                      )}
                     </div>
 
                     <div className="mt-3 space-y-3">
                       <div>
-                        <div className="text-[11px] uppercase tracking-wide text-faint">
+                        <div className="text-[11px] uppercase tracking-wide text-faint/60">
                           {v.source === "designed"
                             ? "Preview text (saved transcript)"
                             : "Reference transcript"}
@@ -452,7 +501,7 @@ export function VoicesPage() {
 
                       {v.source === "designed" ? (
                         <div>
-                          <div className="text-[11px] uppercase tracking-wide text-faint">
+                          <div className="text-[11px] uppercase tracking-wide text-faint/60">
                             Design prompt
                           </div>
                           <div className="mt-1 text-sm text-muted-foreground">
