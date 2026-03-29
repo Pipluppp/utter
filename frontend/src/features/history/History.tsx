@@ -1,3 +1,4 @@
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../../components/atoms/Button";
@@ -5,6 +6,7 @@ import { Message } from "../../components/atoms/Message";
 import type { AutocompleteSelectItem } from "../../components/molecules/AutocompleteSelect";
 import { ConfirmDialog } from "../../components/molecules/ConfirmDialog";
 import { useWaveformListPlayer } from "../../hooks/useWaveformListPlayer";
+import { apiJson } from "../../lib/api";
 import type { Generation } from "../../lib/types";
 import { useDebouncedValue } from "../shared/hooks";
 import { useVoiceOptions } from "../shared/hooks/useVoiceOptions";
@@ -13,7 +15,7 @@ import { HistoryCard } from "./components/HistoryCard";
 import { HistoryFilterBar } from "./components/HistoryFilterBar";
 import { HistorySkeleton } from "./components/HistorySkeleton";
 import { useGenerationActions } from "./hooks/useGenerationActions";
-import { useGenerationList } from "./hooks/useGenerationList";
+import { generationQueries } from "./queries";
 
 const historyRoute = getRouteApi("/_app/history");
 
@@ -54,18 +56,27 @@ export function HistoryPage() {
     [voices],
   );
 
-  const genList = useGenerationList({
-    search: debounced,
-    status,
-    voiceId,
-    sort,
-    sortDir,
-    page,
+  const historyQuery = useQuery({
+    ...generationQueries.list({ search: debounced, status, voiceId, sort, sortDir, page }),
+    placeholderData: keepPreviousData,
+    refetchInterval: (query) => {
+      const hasActive = query.state.data?.generations.some(
+        (g) => g.status === "pending" || g.status === "processing",
+      );
+      return hasActive ? 5000 : false;
+    },
   });
 
-  const handleError = useCallback((msg: string) => genList.setError(msg), [genList.setError]);
+  const deleteGeneration = useMutation({
+    mutationKey: generationQueries.all(),
+    mutationFn: (id: string) => apiJson(`/api/generations/${id}`, { method: "DELETE" }),
+  });
 
-  const actions = useGenerationActions(genList.reload, handleError, navigate);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const displayError =
+    localError ?? historyQuery.error?.message ?? deleteGeneration.error?.message ?? null;
+
+  const actions = useGenerationActions(setLocalError, navigate);
 
   const [deleteTarget, setDeleteTarget] = useState<Generation | null>(null);
   const [playState, setPlayState] = useState<Record<string, PlayState>>({});
@@ -87,31 +98,36 @@ export function HistoryPage() {
     });
   }, [debounced, page, navigate, status, voiceId, sort, sortDir]);
 
-  async function onPlay(gen: Generation, audioUrl: string) {
-    const container = waveRefs.current[gen.id];
-    if (!container) return;
-    genList.setError(null);
-    await toggle({
-      id: gen.id,
-      container,
-      audioUrl,
-      onState: (state) => {
-        const next: PlayState = state;
-        setPlayState((prev) => ({ ...prev, [gen.id]: next }));
-      },
-      onError: (message) => {
-        genList.setError(message);
-      },
-    });
-  }
+  const onPlay = useCallback(
+    async (gen: Generation, audioUrl: string) => {
+      const container = waveRefs.current[gen.id];
+      if (!container) return;
+      setLocalError(null);
+      await toggle({
+        id: gen.id,
+        container,
+        audioUrl,
+        onState: (state) => {
+          const next: PlayState = state;
+          setPlayState((prev) => ({ ...prev, [gen.id]: next }));
+        },
+        onError: (message) => {
+          setLocalError(message);
+        },
+      });
+    },
+    [toggle],
+  );
+
+  const showLoading = historyQuery.isFetching && !historyQuery.isPending;
 
   return (
-    <div className="space-y-8" aria-busy={genList.loading}>
+    <div className="space-y-8" aria-busy={historyQuery.isPending}>
       <h2 className="text-balance text-center text-3xl font-pixel font-medium uppercase tracking-[2px] md:text-4xl">
         History
       </h2>
 
-      {genList.error ? <Message variant="error">{genList.error}</Message> : null}
+      {displayError ? <Message variant="error">{displayError}</Message> : null}
 
       <HistoryFilterBar
         query={query}
@@ -129,19 +145,21 @@ export function HistoryPage() {
         }}
       />
 
-      {genList.loading && !genList.data ? <HistorySkeleton /> : null}
+      {historyQuery.isPending ? <HistorySkeleton /> : null}
 
-      {!genList.loading && genList.data && genList.data.generations.length === 0 ? (
+      {!historyQuery.isPending &&
+      historyQuery.data &&
+      historyQuery.data.generations.length === 0 ? (
         <div className="flex min-h-[50dvh] items-center justify-center border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
           No generations found.
         </div>
       ) : null}
 
-      {genList.data && (genList.loading || genList.data.generations.length > 0) ? (
+      {historyQuery.data && (historyQuery.isPending || historyQuery.data.generations.length > 0) ? (
         <div
-          className={`grid min-h-[50dvh] content-start gap-4${genList.showLoading ? " pointer-events-none opacity-60" : ""}`}
+          className={`grid min-h-[50dvh] content-start gap-4${showLoading ? " pointer-events-none opacity-60" : ""}`}
         >
-          {genList.data?.generations.map((g) => (
+          {historyQuery.data?.generations.map((g) => (
             <HistoryCard
               key={g.id}
               generation={g}
@@ -164,23 +182,23 @@ export function HistoryPage() {
         </div>
       ) : null}
 
-      {!genList.loading && genList.data && genList.data.pagination.pages > 1 ? (
+      {!historyQuery.isPending && historyQuery.data && historyQuery.data.pagination.pages > 1 ? (
         <div className="flex items-center justify-between gap-3">
           <Button
             variant="secondary"
             size="sm"
-            isDisabled={genList.data.pagination.page <= 1}
+            isDisabled={historyQuery.data.pagination.page <= 1}
             onPress={() => setPage((p: number) => Math.max(1, p - 1))}
           >
             Prev
           </Button>
           <div className="text-xs text-faint">
-            Page {genList.data.pagination.page} of {genList.data.pagination.pages}
+            Page {historyQuery.data.pagination.page} of {historyQuery.data.pagination.pages}
           </div>
           <Button
             variant="secondary"
             size="sm"
-            isDisabled={genList.data.pagination.page >= genList.data.pagination.pages}
+            isDisabled={historyQuery.data.pagination.page >= historyQuery.data.pagination.pages}
             onPress={() => setPage((p: number) => p + 1)}
           >
             Next
@@ -197,7 +215,7 @@ export function HistoryPage() {
           if (!open) setDeleteTarget(null);
         }}
         onConfirm={() => {
-          if (deleteTarget) void actions.deleteGeneration(deleteTarget);
+          if (deleteTarget) deleteGeneration.mutate(deleteTarget.id);
         }}
       />
     </div>

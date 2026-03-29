@@ -4,28 +4,14 @@ import { resolveProtectedMediaUrl, triggerDownload } from "../../../lib/protecte
 import type { Generation, RegenerateResponse } from "../../../lib/types";
 
 export type UseGenerationActionsResult = {
-  deleteGeneration: (gen: Generation) => Promise<void>;
   regenerate: (gen: Generation) => Promise<void>;
   download: (audioUrl: string) => Promise<void>;
 };
 
 export function useGenerationActions(
-  onReload: () => void,
   onError: (msg: string) => void,
   navigate: (opts: { to: string }) => void,
 ): UseGenerationActionsResult {
-  const deleteGeneration = useCallback(
-    async (gen: Generation) => {
-      try {
-        await apiJson(`/api/generations/${gen.id}`, { method: "DELETE" });
-        onReload();
-      } catch (e) {
-        onError(e instanceof Error ? e.message : "Failed to delete generation.");
-      }
-    },
-    [onReload, onError],
-  );
-
   const regenerate = useCallback(
     async (gen: Generation) => {
       try {
@@ -52,5 +38,5 @@ export function useGenerationActions(
     [onError],
   );
 
-  return { deleteGeneration, regenerate, download };
+  return { regenerate, download };
 }
