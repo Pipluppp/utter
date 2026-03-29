@@ -425,12 +425,10 @@ export function HistoryPage() {
                           aria-label={`View voice ${g.voice_name}`}
                           className="truncate text-sm font-semibold hover:underline"
                         >
-                          <Highlight text={g.voice_name} tokens={tokens} />
+                          {g.voice_name}
                         </AppLink>
                       ) : (
-                        <div className="truncate text-sm font-semibold">
-                          <Highlight text="Unknown voice" tokens={tokens} />
-                        </div>
+                        <div className="truncate text-sm font-semibold">Unknown voice</div>
                       )}
                     </div>
 

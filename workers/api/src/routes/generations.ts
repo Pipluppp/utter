@@ -1,76 +1,79 @@
-import { Hono } from "hono"
+import { Hono } from "hono";
 
-import { requireUser } from "../_shared/auth.ts"
-import { createStorageProvider } from "../_shared/storage.ts"
-import { createAdminClient, createUserClient } from "../_shared/supabase.ts"
-import { GENERATIONS_SORT_ALLOWLIST, validateSort, validateSortDir } from "./sort"
+import { requireUser } from "../_shared/auth.ts";
+import { createStorageProvider } from "../_shared/storage.ts";
+import { createAdminClient, createUserClient } from "../_shared/supabase.ts";
+import { GENERATIONS_SORT_ALLOWLIST, validateSort, validateSortDir } from "./sort";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function jsonDetail(detail: string, status: number) {
   return new Response(JSON.stringify({ detail }), {
     status,
     headers: { "Content-Type": "application/json" },
-  })
+  });
 }
 
 function parsePositiveInt(value: string | null, fallback: number) {
-  const n = Number(value ?? "")
-  if (!Number.isFinite(n) || n < 1) return fallback
-  return Math.floor(n)
+  const n = Number(value ?? "");
+  if (!Number.isFinite(n) || n < 1) return fallback;
+  return Math.floor(n);
 }
 
-export const generationsRoutes = new Hono()
+export const generationsRoutes = new Hono();
 
 generationsRoutes.get("/generations", async (c) => {
-  let supabase: ReturnType<typeof createUserClient>
+  let supabase: ReturnType<typeof createUserClient>;
   try {
-    ;({ supabase } = await requireUser(c.req.raw))
+    ({ supabase } = await requireUser(c.req.raw));
   } catch (e) {
-    if (e instanceof Response) return e
-    return jsonDetail("Unauthorized", 401)
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
   }
 
-  const page = parsePositiveInt(c.req.query("page") ?? null, 1)
-  const perPage = Math.min(100, parsePositiveInt(c.req.query("per_page") ?? null, 20))
-  const search = (c.req.query("search") ?? "").trim()
-  const status = (c.req.query("status") ?? "").trim()
-  const statusFilter = status && status !== "all" ? status : null
+  const page = parsePositiveInt(c.req.query("page") ?? null, 1);
+  const perPage = Math.min(100, parsePositiveInt(c.req.query("per_page") ?? null, 20));
+  const search = (c.req.query("search") ?? "").trim();
+  const status = (c.req.query("status") ?? "").trim();
+  const statusFilter = status && status !== "all" ? status : null;
 
-  const voiceId = (c.req.query("voice_id") ?? "").trim()
-  const validVoiceId = UUID_RE.test(voiceId) ? voiceId : null
+  const voiceId = (c.req.query("voice_id") ?? "").trim();
+  const validVoiceId = UUID_RE.test(voiceId) ? voiceId : null;
 
-  const sort = validateSort(c.req.query("sort"), GENERATIONS_SORT_ALLOWLIST, "created_at")
-  const sortDir = validateSortDir(c.req.query("sort_dir"))
-  const ascending = sortDir === "asc"
+  const sort = validateSort(c.req.query("sort"), GENERATIONS_SORT_ALLOWLIST, "created_at");
+  const sortDir = validateSortDir(c.req.query("sort_dir"));
+  const ascending = sortDir === "asc";
 
-  const from = (page - 1) * perPage
-  const to = from + perPage - 1
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
 
   let q = supabase
     .from("generations")
     .select(
       "id, voice_id, text, duration_seconds, language, status, generation_time_seconds, error_message, created_at, voices(name)",
       { count: "exact" },
-    )
+    );
 
   if (sort === "voice_name") {
-    q = q.order("name", { ascending, referencedTable: "voices" })
+    q = q.order("name", { ascending, referencedTable: "voices" });
   } else {
-    q = q.order(sort, { ascending })
+    q = q.order(sort, { ascending });
   }
 
-  q = q.range(from, to)
+  q = q.range(from, to);
 
-  if (validVoiceId) q = q.eq("voice_id", validVoiceId)
-  if (search) q = q.ilike("text", `%${search}%`)
-  if (statusFilter) q = q.eq("status", statusFilter)
+  if (validVoiceId) q = q.eq("voice_id", validVoiceId);
+  if (search) {
+    const escaped = search.replace(/[%_]/g, (ch: string) => `\\${ch}`);
+    q = q.ilike("text", `%${escaped}%`);
+  }
+  if (statusFilter) q = q.eq("status", statusFilter);
 
-  const { data, error, count } = await q
-  if (error) return jsonDetail("Failed to load generations.", 500)
+  const { data, error, count } = await q;
+  if (error) return jsonDetail("Failed to load generations.", 500);
 
   const generations = (data ?? []).map((row) => {
-    const voices = (row as unknown as { voices?: { name?: string } | null }).voices
+    const voices = (row as unknown as { voices?: { name?: string } | null }).voices;
     return {
       id: (row as { id: string }).id,
       voice_id: (row as { voice_id: string }).voice_id,
@@ -80,132 +83,132 @@ generationsRoutes.get("/generations", async (c) => {
       duration_seconds: (row as { duration_seconds: number | null }).duration_seconds,
       language: (row as { language: string }).language,
       status: (row as { status: string }).status,
-      generation_time_seconds:
-        (row as { generation_time_seconds: number | null }).generation_time_seconds,
+      generation_time_seconds: (row as { generation_time_seconds: number | null })
+        .generation_time_seconds,
       error_message: (row as { error_message: string | null }).error_message,
       created_at: (row as { created_at: string | null }).created_at,
-    }
-  })
+    };
+  });
 
-  const total = count ?? 0
-  const pages = Math.max(1, Math.ceil(total / perPage))
+  const total = count ?? 0;
+  const pages = Math.max(1, Math.ceil(total / perPage));
 
   return c.json({
     generations,
     pagination: { page, per_page: perPage, total, pages },
-  })
-})
+  });
+});
 
 generationsRoutes.get("/generations/:id/audio", async (c) => {
-  let userId: string
-  let supabase: ReturnType<typeof createUserClient>
+  let userId: string;
+  let supabase: ReturnType<typeof createUserClient>;
   try {
-    const { user, supabase: userClient } = await requireUser(c.req.raw)
-    userId = user.id
-    supabase = userClient
+    const { user, supabase: userClient } = await requireUser(c.req.raw);
+    userId = user.id;
+    supabase = userClient;
   } catch (e) {
-    if (e instanceof Response) return e
-    return jsonDetail("Unauthorized", 401)
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
   }
 
-  const generationId = c.req.param("id")
+  const generationId = c.req.param("id");
   const { data: gen, error } = await supabase
     .from("generations")
     .select("id, audio_object_key")
     .eq("id", generationId)
-    .maybeSingle()
+    .maybeSingle();
 
-  if (error) return jsonDetail("Failed to load generation.", 500)
-  if (!gen) return jsonDetail("Generation not found.", 404)
-  const key = (gen as { audio_object_key: string | null }).audio_object_key
-  if (!key) return jsonDetail("Generation audio not available.", 404)
-  if (!key.startsWith(`${userId}/`)) return jsonDetail("Invalid storage object key.", 403)
+  if (error) return jsonDetail("Failed to load generation.", 500);
+  if (!gen) return jsonDetail("Generation not found.", 404);
+  const key = (gen as { audio_object_key: string | null }).audio_object_key;
+  if (!key) return jsonDetail("Generation audio not available.", 404);
+  if (!key.startsWith(`${userId}/`)) return jsonDetail("Invalid storage object key.", 403);
 
-  const admin = createAdminClient()
-  const storage = createStorageProvider({ admin, req: c.req.raw })
+  const admin = createAdminClient();
+  const storage = createStorageProvider({ admin, req: c.req.raw });
   const { data: signed, error: signedError } = await storage.createSignedUrl(
     "generations",
     key,
     3600,
-  )
+  );
 
   if (signedError || !signed?.signedUrl) {
-    return jsonDetail("Failed to create signed URL.", 500)
+    return jsonDetail("Failed to create signed URL.", 500);
   }
 
-  return c.redirect(signed.signedUrl, 302)
-})
+  return c.redirect(signed.signedUrl, 302);
+});
 
 generationsRoutes.delete("/generations/:id", async (c) => {
-  let userId: string
-  let supabase: ReturnType<typeof createUserClient>
+  let userId: string;
+  let supabase: ReturnType<typeof createUserClient>;
   try {
-    const { user, supabase: userClient } = await requireUser(c.req.raw)
-    userId = user.id
-    supabase = userClient
+    const { user, supabase: userClient } = await requireUser(c.req.raw);
+    userId = user.id;
+    supabase = userClient;
   } catch (e) {
-    if (e instanceof Response) return e
-    return jsonDetail("Unauthorized", 401)
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
   }
 
-  const generationId = c.req.param("id")
+  const generationId = c.req.param("id");
   const { data: gen, error } = await supabase
     .from("generations")
     .select("id, audio_object_key")
     .eq("id", generationId)
-    .maybeSingle()
+    .maybeSingle();
 
-  if (error) return jsonDetail("Failed to load generation.", 500)
-  if (!gen) return jsonDetail("Generation not found.", 404)
+  if (error) return jsonDetail("Failed to load generation.", 500);
+  if (!gen) return jsonDetail("Generation not found.", 404);
 
-  const key = (gen as { audio_object_key: string | null }).audio_object_key
-  const admin = createAdminClient()
-  const storage = createStorageProvider({ admin, req: c.req.raw })
+  const key = (gen as { audio_object_key: string | null }).audio_object_key;
+  const admin = createAdminClient();
+  const storage = createStorageProvider({ admin, req: c.req.raw });
   if (key) {
-    await storage.remove("generations", [key])
+    await storage.remove("generations", [key]);
   }
 
   const { error: deleteError } = await admin
     .from("generations")
     .delete()
     .eq("id", generationId)
-    .eq("user_id", userId)
+    .eq("user_id", userId);
 
-  if (deleteError) return jsonDetail("Failed to delete generation.", 500)
-  return c.json({ ok: true })
-})
+  if (deleteError) return jsonDetail("Failed to delete generation.", 500);
+  return c.json({ ok: true });
+});
 
 generationsRoutes.post("/generations/:id/regenerate", async (c) => {
-  let supabase: ReturnType<typeof createUserClient>
+  let supabase: ReturnType<typeof createUserClient>;
   try {
-    ;({ supabase } = await requireUser(c.req.raw))
+    ({ supabase } = await requireUser(c.req.raw));
   } catch (e) {
-    if (e instanceof Response) return e
-    return jsonDetail("Unauthorized", 401)
+    if (e instanceof Response) return e;
+    return jsonDetail("Unauthorized", 401);
   }
 
-  const generationId = c.req.param("id")
+  const generationId = c.req.param("id");
   const { data: gen, error } = await supabase
     .from("generations")
     .select("id, voice_id, text, language")
     .eq("id", generationId)
-    .maybeSingle()
+    .maybeSingle();
 
-  if (error) return jsonDetail("Failed to load generation.", 500)
-  if (!gen) return jsonDetail("Generation not found", 404)
+  if (error) return jsonDetail("Failed to load generation.", 500);
+  if (!gen) return jsonDetail("Generation not found", 404);
 
-  const voiceId = (gen as { voice_id: string | null }).voice_id
-  if (!voiceId) return jsonDetail("Generation has no voice_id.", 400)
+  const voiceId = (gen as { voice_id: string | null }).voice_id;
+  if (!voiceId) return jsonDetail("Generation has no voice_id.", 400);
 
-  const text = (gen as { text: string }).text
-  const language = (gen as { language: string }).language
+  const text = (gen as { text: string }).text;
+  const language = (gen as { language: string }).language;
 
-  const redirectUrl = `/generate?voice=${voiceId}&text=${encodeURIComponent(text)}&language=${encodeURIComponent(language)}`
+  const redirectUrl = `/generate?voice=${voiceId}&text=${encodeURIComponent(text)}&language=${encodeURIComponent(language)}`;
 
   return c.json({
     voice_id: voiceId,
     text,
     language,
     redirect_url: redirectUrl,
-  })
-})
+  });
+});

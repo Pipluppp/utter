@@ -48,15 +48,10 @@ voicesRoutes.get("/voices", async (c) => {
   }
 
   const page = parsePositiveInt(c.req.query("page") ?? null, 1);
-  const perPage = Math.min(
-    100,
-    parsePositiveInt(c.req.query("per_page") ?? null, 20),
-  );
+  const perPage = Math.min(100, parsePositiveInt(c.req.query("per_page") ?? null, 20));
   const search = (c.req.query("search") ?? "").trim();
   const source = c.req.query("source");
-  const sourceFilter = source === "uploaded" || source === "designed"
-    ? source
-    : null;
+  const sourceFilter = source === "uploaded" || source === "designed" ? source : null;
 
   const sort = validateSort(c.req.query("sort"), VOICES_SORT_ALLOWLIST, "created_at");
   const sortDir = validateSortDir(c.req.query("sort_dir"));
@@ -66,18 +61,32 @@ voicesRoutes.get("/voices", async (c) => {
   const from = (page - 1) * perPage;
   const to = from + perPage - 1;
 
+  // Build an OR filter across name, reference_transcript, and description so
+  // highlighting on the frontend matches what the backend actually filters.
+  function applySearch(q: typeof baseQuery, term: string) {
+    const escaped = term.replace(/[%_]/g, (ch) => `\\${ch}`);
+    return q.or(
+      `name.ilike.%${escaped}%,reference_transcript.ilike.%${escaped}%,description.ilike.%${escaped}%`,
+    );
+  }
+
+  // Shared base query shape for type inference and reuse.
+  // Only one branch (generation_count vs standard) executes, so the builder
+  // is never consumed twice.
+  const baseQuery = supabase
+    .from("voices")
+    .select(
+      "id, name, reference_transcript, language, source, description, created_at, tts_provider, is_favorite",
+      { count: "exact" },
+    )
+    .is("deleted_at", null);
+
   // When sorting by generation_count, we need to fetch all matching voices,
   // compute counts, sort in-memory, then paginate.
   if (sort === "generation_count") {
-    let q = supabase
-      .from("voices")
-      .select(
-        "id, name, reference_transcript, language, source, description, created_at, tts_provider, is_favorite",
-        { count: "exact" },
-      )
-      .is("deleted_at", null);
+    let q = baseQuery;
 
-    if (search) q = q.ilike("name", `%${search}%`);
+    if (search) q = applySearch(q, search);
     if (sourceFilter) q = q.eq("source", sourceFilter);
     if (favoritesOnly) q = q.eq("is_favorite", true);
 
@@ -91,13 +100,10 @@ voicesRoutes.get("/voices", async (c) => {
     const voiceIds = allVoices.map((v) => v.id);
     const countMap = await buildGenerationCountMap(supabase, voiceIds);
 
-    // Sort: favorites first, then by generation_count
+    // Sort by generation_count
     const sorted = allVoices
       .map((v) => ({ ...v, generation_count: countMap[v.id] ?? 0 }))
       .sort((a, b) => {
-        // Favorites first
-        if (a.is_favorite !== b.is_favorite) return a.is_favorite ? -1 : 1;
-        // Then by generation_count
         const diff = a.generation_count - b.generation_count;
         return ascending ? diff : -diff;
       });
@@ -112,18 +118,9 @@ voicesRoutes.get("/voices", async (c) => {
   }
 
   // Standard DB-sorted path
-  let q = supabase
-    .from("voices")
-    .select(
-      "id, name, reference_transcript, language, source, description, created_at, tts_provider, is_favorite",
-      { count: "exact" },
-    )
-    .is("deleted_at", null)
-    .order("is_favorite", { ascending: false })
-    .order(sort, { ascending })
-    .range(from, to);
+  let q = baseQuery.order(sort, { ascending }).range(from, to);
 
-  if (search) q = q.ilike("name", `%${search}%`);
+  if (search) q = applySearch(q, search);
   if (sourceFilter) q = q.eq("source", sourceFilter);
   if (favoritesOnly) q = q.eq("is_favorite", true);
 
