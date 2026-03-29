@@ -1,40 +1,21 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Form,
-  Input,
-  Label,
-  ListBox,
-  ListBoxItem,
-  Text,
-  TextArea,
-  TextField,
-} from "react-aria-components";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ListBox, ListBoxItem } from "react-aria-components";
 import { useTasks } from "../../app/TaskProvider";
-import { Button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
-import {
-  AutocompleteSelect,
-  type AutocompleteSelectItem,
-} from "../../components/molecules/AutocompleteSelect";
+import type { AutocompleteSelectItem } from "../../components/molecules/AutocompleteSelect";
 import { GridArtSurface } from "../../components/molecules/GridArt";
 import { InfoTip } from "../../components/molecules/InfoTip";
-import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
 import { DESIGN_TIPS } from "../../data/tips";
 import { useElapsedTick } from "../../hooks/useElapsedTick";
-import { apiForm, apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { SUPPORTED_LANGUAGES } from "../../lib/provider-config";
-import { inputStyles } from "../../lib/styles/input";
 import { formatElapsed } from "../../lib/time";
-import type { DesignPreviewResponse, DesignSaveResponse, StoredTask } from "../../lib/types";
-
-type DesignFormState = {
-  name: string;
-  language: string;
-  text: string;
-  instruct: string;
-};
+import type { StoredTask } from "../../lib/types";
+import { DesignForm } from "./components/DesignForm";
+import { DesignResult } from "./components/DesignResult";
+import type { DesignFormState } from "./hooks/useDesignSubmit";
+import { useDesignSubmit } from "./hooks/useDesignSubmit";
 
 const EXAMPLES: Array<{ title: string; name: string; instruct: string }> = [
   {
@@ -63,7 +44,8 @@ export function DesignPage() {
     () => SUPPORTED_LANGUAGES.map((l) => ({ id: l, label: l })),
     [],
   );
-  const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
+  const { getLatestTask, getTasksByType, getStatusText } = useTasks();
+  const designSubmit = useDesignSubmit();
 
   const designTasks = getTasksByType("design_preview");
   const latestTask = getLatestTask("design_preview");
@@ -79,19 +61,7 @@ export function DesignPage() {
   const [instruct, setInstruct] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [isSubmittingPreview, setIsSubmittingPreview] = useState(false);
-  const [sweepNonce, setSweepNonce] = useState(0);
-  const [isSavingVoice, setIsSavingVoice] = useState(false);
-  const [savedVoiceId, setSavedVoiceId] = useState<string | null>(null);
-  const [savedVoiceName, setSavedVoiceName] = useState<string | null>(null);
-
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const previewBlobRef = useRef<Blob | null>(null);
-  const objectUrlRef = useRef<string | null>(null);
   const restoredRef = useRef(false);
-  const handledTaskKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (
@@ -102,12 +72,7 @@ export function DesignPage() {
     }
   }, [language]);
 
-  useEffect(() => {
-    return () => {
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    };
-  }, []);
-
+  // Auto-select first task when list changes
   useEffect(() => {
     if (selectedTaskId && designTasks.some((task) => task.taskId === selectedTaskId)) {
       return;
@@ -115,6 +80,7 @@ export function DesignPage() {
     setSelectedTaskId(designTasks[0]?.taskId ?? null);
   }, [designTasks, selectedTaskId]);
 
+  // Restore form state from latest task
   useEffect(() => {
     if (restoredRef.current) return;
     restoredRef.current = true;
@@ -134,175 +100,27 @@ export function DesignPage() {
     [designTasks, selectedTaskId],
   );
 
+  // Drive preview state from selected task
   useEffect(() => {
-    if (!selectedTask) {
-      handledTaskKeyRef.current = null;
-      setPreviewUrl(null);
-      previewBlobRef.current = null;
-      setSavedVoiceId(null);
-      setSavedVoiceName(null);
-      setSuccess(null);
-      return;
-    }
-
-    setSavedVoiceId(null);
-    setSavedVoiceName(null);
-    setSuccess(null);
-
-    if (selectedTask.status === "pending" || selectedTask.status === "processing") {
-      handledTaskKeyRef.current = null;
-      setPreviewUrl(null);
-      previewBlobRef.current = null;
-      return;
-    }
-
-    const terminalKey = `${selectedTask.taskId}:${selectedTask.status}`;
-    if (handledTaskKeyRef.current === terminalKey) return;
-    handledTaskKeyRef.current = terminalKey;
-
-    if (selectedTask.status === "completed") {
-      const result = selectedTask.result as { audio_url?: string } | undefined;
-      const audioUrl = result?.audio_url?.trim();
-
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
-      previewBlobRef.current = null;
-
-      if (!audioUrl) {
-        setPreviewUrl(null);
-        setError("Failed to load preview audio.");
-        return;
-      }
-
-      void (async () => {
-        try {
-          const res = await fetch(audioUrl);
-          if (!res.ok) throw new Error("Failed to load preview audio.");
-          const blob = await res.blob();
-          previewBlobRef.current = blob;
-          const objectUrl = URL.createObjectURL(blob);
-          objectUrlRef.current = objectUrl;
-          setPreviewUrl(objectUrl);
-          setError(null);
-        } catch (e) {
-          setPreviewUrl(null);
-          setError(e instanceof Error ? e.message : "Failed to load preview.");
-        }
-      })();
-      return;
-    }
-
-    setPreviewUrl(null);
-    previewBlobRef.current = null;
-
-    if (selectedTask.status === "failed") {
-      setError(selectedTask.error ?? "Failed to generate preview.");
-      return;
-    }
-
-    setError("Preview cancelled.");
-  }, [selectedTask]);
-
-  const saveDesignedVoice = useCallback(
-    async (blob: Blob, snapshot: DesignFormState, taskId: string) => {
-      setIsSavingVoice(true);
-      setSavedVoiceId(null);
-      setSavedVoiceName(null);
-      setSuccess(null);
-
-      try {
-        const form = new FormData();
-        form.set("name", snapshot.name.trim());
-        form.set("text", snapshot.text.trim());
-        form.set("language", snapshot.language);
-        form.set("instruct", snapshot.instruct.trim());
-        form.set("task_id", taskId);
-        form.set(
-          "audio",
-          new File([blob], "preview.wav", {
-            type: "audio/wav",
-          }),
-        );
-
-        const saved = await apiForm<DesignSaveResponse>("/api/voices/design", form, {
-          method: "POST",
-        });
-        setSavedVoiceId(saved.id);
-        setSavedVoiceName(saved.name);
-        setError(null);
-        setSuccess(`Voice "${saved.name}" saved and ready to use.`);
-      } catch (e) {
-        setSavedVoiceId(null);
-        setSavedVoiceName(null);
-        setSuccess(null);
-        const detail = e instanceof Error ? e.message : "Failed to save this preview.";
-        setError(`Preview ready, but save failed. ${detail}`);
-      } finally {
-        setIsSavingVoice(false);
-      }
-    },
-    [],
-  );
+    designSubmit.setPreviewFromTask(
+      selectedTask
+        ? {
+            taskId: selectedTask.taskId,
+            status: selectedTask.status,
+            result: selectedTask.result,
+            error: selectedTask.error,
+          }
+        : null,
+    );
+  }, [selectedTask, designSubmit.setPreviewFromTask]);
 
   async function onPreview() {
-    setError(null);
-    setSuccess(null);
-    setSavedVoiceId(null);
-    setSavedVoiceName(null);
-
-    if (!name.trim()) {
-      setError("Voice name is required.");
-      return;
-    }
-    if (!text.trim()) {
-      setError("Preview text is required.");
-      return;
-    }
-    if (text.length > 500) {
-      setError("Preview text must be 500 characters or less.");
-      return;
-    }
-    if (!instruct.trim()) {
-      setError("Voice description is required.");
-      return;
-    }
-    if (instruct.length > 500) {
-      setError("Voice description must be 500 characters or less.");
-      return;
-    }
-
-    setIsSubmittingPreview(true);
-    setSweepNonce((value) => value + 1);
-
-    try {
-      const snapshot: DesignFormState = { name, language, text, instruct };
-      const res = await apiJson<DesignPreviewResponse>("/api/voices/design/preview", {
-        method: "POST",
-        json: { text, language, instruct, name },
-      });
-      startTask(
-        res.task_id,
-        "design_preview",
-        "/design",
-        `Design preview: ${name.trim()}`,
-        snapshot,
-      );
-      setSelectedTaskId(res.task_id);
-      setPreviewUrl(null);
-      previewBlobRef.current = null;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to start preview.");
-    } finally {
-      setIsSubmittingPreview(false);
-    }
+    const taskId = await designSubmit.submitPreview({ name, language, text, instruct });
+    if (taskId) setSelectedTaskId(taskId);
   }
 
   async function onSaveSelectedPreview() {
     if (!selectedTask?.taskId || selectedTask.status !== "completed") return;
-    if (!previewBlobRef.current) {
-      setError("Preview audio is not ready yet.");
-      return;
-    }
 
     const taskState =
       selectedTask.formState && typeof selectedTask.formState === "object"
@@ -316,7 +134,7 @@ export function DesignPage() {
       instruct: typeof taskState?.instruct === "string" ? taskState.instruct : instruct,
     };
 
-    await saveDesignedVoice(previewBlobRef.current, snapshot, selectedTask.taskId);
+    await designSubmit.savePreview(selectedTask.taskId, snapshot);
   }
 
   const selectedStatusText = selectedTask
@@ -330,8 +148,10 @@ export function DesignPage() {
     (task) => task.status === "pending" || task.status === "processing",
   ).length;
 
+  const displayError = designSubmit.error;
+
   return (
-    <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
+    <GridArtSurface sweepNonce={designSubmit.sweepNonce} contentClassName="space-y-8">
       <div className="flex items-center justify-center gap-2">
         <h2 className="text-balance text-center text-3xl font-pixel font-medium uppercase tracking-[2px] md:text-4xl">
           Design
@@ -339,93 +159,29 @@ export function DesignPage() {
         <InfoTip label="Design tips" tips={DESIGN_TIPS} halftoneImage="fire" />
       </div>
 
-      {error ? <Message variant="error">{error}</Message> : null}
-      {success ? <Message variant="success">{success}</Message> : null}
+      {displayError ? <Message variant="error">{displayError}</Message> : null}
+      {designSubmit.success ? <Message variant="success">{designSubmit.success}</Message> : null}
 
-      <Form
-        className="space-y-6"
-        validationBehavior="aria"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void onPreview();
+      <DesignForm
+        name={name}
+        onNameChange={setName}
+        instruct={instruct}
+        onInstructChange={setInstruct}
+        text={text}
+        onTextChange={setText}
+        languageItems={languageItems}
+        language={language}
+        onLanguageChange={setLanguage}
+        examples={EXAMPLES}
+        isSubmittingPreview={designSubmit.isSubmittingPreview}
+        savedVoiceId={designSubmit.savedVoiceId}
+        isSavingVoice={designSubmit.isSavingVoice}
+        onSubmit={() => void onPreview()}
+        onUseVoice={() => {
+          if (!designSubmit.savedVoiceId) return;
+          void navigate({ to: "/generate", search: { voice: designSubmit.savedVoiceId } });
         }}
-      >
-        <TextField value={name} onChange={setName}>
-          <Label className="mb-2 block label-style">Voice Name</Label>
-          <Input name="name" autoComplete="off" className={inputStyles()} />
-        </TextField>
-
-        <TextField value={instruct} onChange={setInstruct}>
-          <Label className="mb-2 block label-style">Voice Description</Label>
-          <TextArea
-            name="instruct"
-            placeholder="Describe the voice (tone, pacing, timbre, vibe)..."
-            className={inputStyles({ multiline: true })}
-          />
-          <Text
-            slot="description"
-            className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-faint"
-          >
-            <span>{instruct.length}/500</span>
-            <div className="flex flex-wrap gap-2">
-              {EXAMPLES.map((ex) => (
-                <Button
-                  key={ex.title}
-                  variant="secondary"
-                  size="xs"
-                  onPress={() => {
-                    setName(ex.name);
-                    setInstruct(ex.instruct);
-                  }}
-                >
-                  {ex.title}
-                </Button>
-              ))}
-            </div>
-          </Text>
-        </TextField>
-
-        <TextField value={text} onChange={setText}>
-          <Label className="mb-2 block label-style">Preview Text</Label>
-          <TextArea
-            name="text"
-            placeholder="A short line to preview the voice..."
-            className={inputStyles({ multiline: true })}
-          />
-          <Text slot="description" className="mt-2 text-xs text-faint">
-            {text.length}/500
-          </Text>
-        </TextField>
-
-        <AutocompleteSelect
-          label="Language"
-          items={languageItems}
-          selectedKey={language}
-          onSelectionChange={setLanguage}
-          searchLabel="Search languages"
-          searchPlaceholder="Search..."
-        >
-          {(item) => item.label}
-        </AutocompleteSelect>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Button type="submit" block isDisabled={isSubmittingPreview}>
-            {isSubmittingPreview ? "Starting preview..." : "Generate Preview"}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            block
-            onPress={() => {
-              if (!savedVoiceId) return;
-              void navigate({ to: "/generate", search: { voice: savedVoiceId } });
-            }}
-            isDisabled={!savedVoiceId || isSavingVoice}
-          >
-            Use Voice
-          </Button>
-        </div>
-      </Form>
+      />
 
       {selectedTask ? (
         <div className="space-y-4 border border-border bg-subtle p-4 shadow-elevated">
@@ -506,31 +262,19 @@ export function DesignPage() {
         </div>
       ) : null}
 
-      {previewUrl ? (
-        <div className="space-y-4 border border-border bg-background p-4 shadow-elevated">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="text-sm font-medium uppercase tracking-wide">Preview</div>
-              {savedVoiceName ? (
-                <div className="mt-1 text-xs text-faint">{savedVoiceName}</div>
-              ) : null}
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              onPress={() => void onSaveSelectedPreview()}
-              isDisabled={
-                !selectedTask ||
-                selectedTask.status !== "completed" ||
-                !previewBlobRef.current ||
-                isSavingVoice
-              }
-            >
-              {isSavingVoice ? "Saving voice..." : "Save This Preview"}
-            </Button>
-          </div>
-          <WaveformPlayer audioUrl={previewUrl} audioBlob={previewBlobRef.current ?? undefined} />
-        </div>
+      {designSubmit.previewUrl ? (
+        <DesignResult
+          previewUrl={designSubmit.previewUrl}
+          previewBlob={designSubmit.previewBlobRef.current ?? undefined}
+          savedVoiceName={designSubmit.savedVoiceName}
+          isSavingVoice={designSubmit.isSavingVoice}
+          canSave={
+            Boolean(selectedTask) &&
+            selectedTask?.status === "completed" &&
+            Boolean(designSubmit.previewBlobRef.current)
+          }
+          onSave={() => void onSaveSelectedPreview()}
+        />
       ) : null}
     </GridArtSurface>
   );
