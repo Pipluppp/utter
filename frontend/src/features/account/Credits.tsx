@@ -1,20 +1,17 @@
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { Button } from "../../components/atoms/Button";
 import { buttonStyle } from "../../components/atoms/Button.styles";
 import { Link } from "../../components/atoms/Link";
 import { creditPacks } from "../../content/plans";
 import { apiJson } from "../../lib/api";
-import { cn } from "../../lib/cn";
-import { toggleButtonStyles } from "../../lib/styles/toggle-button";
-import { formatCredits, formatUsd, useAccountData } from "./accountData";
+import { formatCredits, useAccountData } from "./accountData";
 import { AccountCreditsSkeleton } from "./accountSkeletons";
-import { AccountEmptyState, AccountNotice, AccountPanel } from "./accountUi";
+import { AccountNotice, AccountPanel } from "./accountUi";
+import { CreditActivityList } from "./components/CreditActivityList";
+import { CreditPackCard } from "./components/CreditPackCard";
 
 const creditsRoute = getRouteApi("/_app/account/credits");
-
-type ActivityFilter = "all" | "purchases" | "usage";
 
 export function AccountCreditsPage() {
   const navigate = useNavigate();
@@ -22,7 +19,6 @@ export function AccountCreditsPage() {
   const { activity, credits, refresh, refreshing } = useAccountData();
   const [activePackId, setActivePackId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
 
   const checkoutStatus = useMemo(() => {
     return checkoutParam === "success" || checkoutParam === "cancel" ? checkoutParam : null;
@@ -33,15 +29,6 @@ export function AccountCreditsPage() {
       void refresh({ background: true });
     }
   }, [checkoutStatus, refresh]);
-
-  const filteredActivity = useMemo(() => {
-    if (activityFilter === "all") {
-      return activity;
-    }
-
-    const category = activityFilter === "purchases" ? "purchase" : "usage";
-    return activity.filter((item) => item.category === category);
-  }, [activity, activityFilter]);
 
   async function startCheckout(packId: string) {
     setCheckoutError(null);
@@ -176,124 +163,17 @@ export function AccountCreditsPage() {
           >
             <div className="grid gap-4 lg:grid-cols-2">
               {creditPacks.map((pack) => (
-                <div
+                <CreditPackCard
                   key={pack.id}
-                  className={cn(
-                    "relative border border-border bg-subtle p-5 shadow-elevated",
-                    pack.featured && "border-border-strong",
-                  )}
-                >
-                  {pack.featured ? (
-                    <div className="absolute -top-3 left-4 border border-border-strong bg-background px-2 py-1 text-[11px] font-pixel font-medium uppercase tracking-wide">
-                      Best value
-                    </div>
-                  ) : null}
-
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                        {pack.name}
-                      </div>
-                      <div className="mt-3 flex flex-wrap items-baseline gap-3">
-                        <div className="text-3xl font-pixel font-medium">
-                          {formatUsd(pack.priceUsd)}
-                        </div>
-                        <div className="text-[15px] leading-6 text-foreground/68">
-                          {formatCredits(pack.credits)} credits
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      onPress={() => void startCheckout(pack.id)}
-                      isPending={activePackId === pack.id}
-                      isDisabled
-                    >
-                      Buy
-                    </Button>
-                  </div>
-
-                  <div className="mt-3 max-w-md text-[15px] leading-7 text-foreground/68">
-                    {pack.blurb}
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {pack.highlights.map((item) => (
-                      <span
-                        key={item}
-                        className="border border-border bg-background px-2 py-1 text-[11px] uppercase tracking-[0.2em] text-muted-foreground"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                  pack={pack}
+                  isPending={activePackId === pack.id}
+                  onBuy={() => void startCheckout(pack.id)}
+                />
               ))}
             </div>
           </AccountPanel>
 
-          <AccountPanel
-            kicker="Recent activity"
-            title="Recent credit activity"
-            description="Purchases and usage are grouped in one timeline."
-          >
-            <ToggleButtonGroup
-              selectionMode="single"
-              disallowEmptySelection
-              selectedKeys={new Set([activityFilter])}
-              onSelectionChange={(keys) => {
-                const next = [...keys][0] as ActivityFilter;
-                if (next) setActivityFilter(next);
-              }}
-              className="flex flex-wrap gap-2"
-            >
-              <ToggleButton id="all" className={toggleButtonStyles({ bordered: true })}>
-                All
-              </ToggleButton>
-              <ToggleButton id="purchases" className={toggleButtonStyles({ bordered: true })}>
-                Purchases
-              </ToggleButton>
-              <ToggleButton id="usage" className={toggleButtonStyles({ bordered: true })}>
-                Usage
-              </ToggleButton>
-            </ToggleButtonGroup>
-
-            <div className="mt-4">
-              {filteredActivity.length === 0 ? (
-                <AccountEmptyState
-                  title="No activity for this filter"
-                  body="Purchases and usage will appear here as soon as they happen."
-                />
-              ) : (
-                <div className="space-y-3">
-                  {filteredActivity.map((item) => (
-                    <div
-                      key={item.id}
-                      className="border border-border bg-subtle px-4 py-4 shadow-elevated"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-[15px] font-medium text-foreground">
-                            {item.title}
-                          </div>
-                          <div className="mt-2 text-[15px] leading-7 text-foreground/68">
-                            {item.detail}
-                          </div>
-                          <div className="mt-3 text-[11px] uppercase tracking-[0.22em] text-foreground/58">
-                            {item.balanceLabel}
-                          </div>
-                        </div>
-                        <div className="text-right text-[15px]">
-                          <div className="font-medium text-foreground">{item.amountLabel}</div>
-                          <div className="mt-2 text-foreground/62">{item.createdLabel}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </AccountPanel>
+          <CreditActivityList activity={activity} />
 
           <AccountPanel
             kicker="Pricing"
