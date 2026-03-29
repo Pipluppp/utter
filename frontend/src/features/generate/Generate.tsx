@@ -1,29 +1,15 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Form,
-  Label,
-  ListBox,
-  ListBoxItem,
-  Text,
-  TextArea,
-  TextField,
-} from "react-aria-components";
+import { ListBox, ListBoxItem } from "react-aria-components";
 import { taskLabel } from "../../app/taskKeys";
 import { useTasks } from "../../app/TaskProvider";
-import { Button } from "../../components/atoms/Button";
 import { Message } from "../../components/atoms/Message";
-import {
-  AutocompleteSelect,
-  type AutocompleteSelectItem,
-} from "../../components/molecules/AutocompleteSelect";
+import type { AutocompleteSelectItem } from "../../components/molecules/AutocompleteSelect";
 import { GridArtSurface } from "../../components/molecules/GridArt";
 import { InfoTip } from "../../components/molecules/InfoTip";
-import { WaveformPlayer } from "../../components/organisms/WaveformPlayer";
 import { getUtterDemo } from "../../content/utterDemo";
 import { GENERATE_TIPS } from "../../data/tips";
 import { useElapsedTick } from "../../hooks/useElapsedTick";
-import { apiJson } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { fetchTextUtf8 } from "../../lib/fetchTextUtf8";
 import { resolveProtectedMediaUrl, triggerDownload } from "../../lib/protectedMedia";
@@ -33,17 +19,15 @@ import {
   SUPPORTED_LANGUAGES,
   TTS_PROVIDER,
 } from "../../lib/provider-config";
-import { inputStyles } from "../../lib/styles/input";
 import { formatElapsed } from "../../lib/time";
-import type { GenerateResponse, StoredTask, VoicesResponse } from "../../lib/types";
+import type { StoredTask } from "../../lib/types";
+import { useVoiceOptions } from "../shared/hooks/useVoiceOptions";
+import { GenerateForm } from "./components/GenerateForm";
+import { GenerateResult } from "./components/GenerateResult";
+import type { GenerateFormState } from "./hooks/useGenerateSubmit";
+import { useGenerateSubmit } from "./hooks/useGenerateSubmit";
 
 const generateRoute = getRouteApi("/_app/generate");
-
-type GenerateFormState = {
-  voiceId: string;
-  language: string;
-  text: string;
-};
 
 export function GeneratePage() {
   const {
@@ -52,12 +36,15 @@ export function GeneratePage() {
     language: languageParam,
     demo: demoParam,
   } = generateRoute.useSearch();
+
   const languageItems: AutocompleteSelectItem[] = useMemo(
     () => SUPPORTED_LANGUAGES.map((l) => ({ id: l, label: l })),
     [],
   );
 
-  const { startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
+  const { startTask: _startTask, getLatestTask, getTasksByType, getStatusText } = useTasks();
+  const { voices: voiceItems, loading: loadingVoices, error: voicesError } = useVoiceOptions();
+  const generateSubmit = useGenerateSubmit();
 
   const generateTasks = getTasksByType("generate");
   const latestTask = getLatestTask("generate");
@@ -67,19 +54,9 @@ export function GeneratePage() {
   );
   const nowMs = useElapsedTick(hasActiveGenerate);
 
-  const [voices, setVoices] = useState<VoicesResponse | null>(null);
-  const [loadingVoices, setLoadingVoices] = useState(true);
-
-  const voiceItems = useMemo(
-    () => (voices?.voices ?? []).map((v) => ({ ...v, label: v.name })),
-    [voices],
-  );
-
   const [voiceId, setVoiceId] = useState("");
   const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
   const [text, setText] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sweepNonce, setSweepNonce] = useState(0);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
@@ -89,27 +66,8 @@ export function GeneratePage() {
   const restoredRef = useRef(false);
   const handledTaskKeyRef = useRef<string | null>(null);
   const loadedDemoRef = useRef<string | null>(null);
-  const submitInFlightRef = useRef(false);
 
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      try {
-        const res = await apiJson<VoicesResponse>("/api/voices");
-        if (!active) return;
-        setVoices(res);
-      } catch (e) {
-        if (!active) return;
-        setError(e instanceof Error ? e.message : "Failed to load voices.");
-      } finally {
-        if (active) setLoadingVoices(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
-
+  // Auto-select first task when list changes
   useEffect(() => {
     if (selectedTaskId && generateTasks.some((task) => task.taskId === selectedTaskId)) {
       return;
@@ -117,6 +75,7 @@ export function GeneratePage() {
     setSelectedTaskId(generateTasks[0]?.taskId ?? null);
   }, [generateTasks, selectedTaskId]);
 
+  // Restore form state from latest task + query params
   useEffect(() => {
     if (restoredRef.current) return;
     restoredRef.current = true;
@@ -158,6 +117,7 @@ export function GeneratePage() {
     [generateTasks, selectedTaskId],
   );
 
+  // Handle selected task status changes → resolve audio URL
   useEffect(() => {
     if (!selectedTask) {
       handledTaskKeyRef.current = null;
@@ -220,16 +180,12 @@ export function GeneratePage() {
     }
   }
 
-  const charCount = text.length;
-  const maxTextChars = MAX_TEXT_CHARS;
   const voicePlaceholder = loadingVoices
     ? "Loading voices..."
-    : !voices
-      ? "Unable to load voices"
-      : voices.voices.length === 0
-        ? "No voices available"
-        : "Select a voice";
-  const selectedVoice = voices?.voices.find((v) => v.id === voiceId) ?? null;
+    : voiceItems.length === 0
+      ? "No voices available"
+      : "Select a voice";
+  const selectedVoice = voiceItems.find((v) => v.id === voiceId) ?? null;
   const selectedVoiceProvider = selectedVoice?.tts_provider ?? "qwen";
   const selectedVoiceCompatible =
     voiceId.length === 0 ? true : Boolean(selectedVoice) && selectedVoiceProvider === TTS_PROVIDER;
@@ -245,13 +201,13 @@ export function GeneratePage() {
     : null;
 
   const canSubmit =
-    Boolean(voices) &&
+    voiceItems.length > 0 &&
     !loadingVoices &&
     Boolean(voiceId) &&
     selectedVoiceCompatible &&
     Boolean(text.trim()) &&
-    charCount <= maxTextChars &&
-    !isSubmitting;
+    text.length <= MAX_TEXT_CHARS &&
+    !generateSubmit.submitting;
 
   const formState: GenerateFormState = useMemo(
     () => ({ voiceId, language, text }),
@@ -259,8 +215,6 @@ export function GeneratePage() {
   );
 
   async function onGenerate() {
-    if (submitInFlightRef.current) return;
-
     setError(null);
     setAudioUrl(null);
     setDownloadUrl(null);
@@ -274,28 +228,14 @@ export function GeneratePage() {
       return;
     }
 
-    submitInFlightRef.current = true;
-    setIsSubmitting(true);
-    setSweepNonce((value) => value + 1);
-
-    try {
-      const res = await apiJson<GenerateResponse>("/api/generate", {
-        method: "POST",
-        json: { voice_id: voiceId, text, language, model: "0.6B" },
-      });
-      const description = `Generate: ${text.slice(0, 50)}${text.length > 50 ? "..." : ""}`;
-      startTask(res.task_id, "generate", "/generate", description, formState);
-      setSelectedTaskId(res.task_id);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to start generation.");
-    } finally {
-      setIsSubmitting(false);
-      submitInFlightRef.current = false;
-    }
+    const taskId = await generateSubmit.submit({ voiceId, text, language, formState });
+    if (taskId) setSelectedTaskId(taskId);
   }
 
+  const displayError = error || voicesError || generateSubmit.error;
+
   return (
-    <GridArtSurface sweepNonce={sweepNonce} contentClassName="space-y-8">
+    <GridArtSurface sweepNonce={generateSubmit.sweepNonce} contentClassName="space-y-8">
       <div className="flex items-center justify-center gap-2">
         <h2 className="text-balance text-center text-3xl font-pixel font-medium uppercase tracking-[2px] md:text-4xl">
           Generate
@@ -303,83 +243,24 @@ export function GeneratePage() {
         <InfoTip label="Generate tips" tips={GENERATE_TIPS} halftoneImage="lilac" />
       </div>
 
-      {error ? <Message variant="error">{error}</Message> : null}
+      {displayError ? <Message variant="error">{displayError}</Message> : null}
 
-      <Form
-        className="space-y-6"
-        validationBehavior="aria"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void onGenerate();
-        }}
-      >
-        <AutocompleteSelect
-          label="Voice"
-          items={voiceItems}
-          selectedKey={voiceId || null}
-          onSelectionChange={(key) => setVoiceId(key)}
-          isDisabled={loadingVoices || !voices || voices.voices.length === 0}
-          placeholder={voicePlaceholder}
-          filterKey="name"
-          searchLabel="Search voices"
-          searchPlaceholder="Search..."
-        >
-          {(v) => {
-            const voiceProvider = v.tts_provider ?? "qwen";
-            const incompatible = voiceProvider !== TTS_PROVIDER;
-            return (
-              <div className={cn("flex flex-col gap-0.5", incompatible && "opacity-50")}>
-                <div className="flex items-center gap-2">
-                  <span className="truncate">{v.name}</span>
-                  {v.language ? (
-                    <span className="shrink-0 border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                      {v.language}
-                    </span>
-                  ) : null}
-                </div>
-                {incompatible ? (
-                  <span className="text-xs text-faint">Not available in this runtime</span>
-                ) : v.description ? (
-                  <span className="truncate text-xs text-faint">{v.description}</span>
-                ) : null}
-              </div>
-            );
-          }}
-        </AutocompleteSelect>
-
-        <AutocompleteSelect
-          label="Language"
-          items={languageItems}
-          selectedKey={language}
-          onSelectionChange={setLanguage}
-          searchLabel="Search languages"
-          searchPlaceholder="Search..."
-        >
-          {(item) => item.label}
-        </AutocompleteSelect>
-
-        <TextField value={text} onChange={setText}>
-          <Label className="mb-2 block label-style">Text</Label>
-          <TextArea
-            name="text"
-            placeholder="Type what you want the voice to say..."
-            className={inputStyles({ multiline: true, className: "min-h-64" })}
-          />
-          <Text
-            slot="description"
-            className="mt-2 flex items-center justify-between text-xs text-faint"
-          >
-            <span className={cn(charCount > maxTextChars && "text-status-error")}>
-              {charCount}/{maxTextChars}
-            </span>
-            <span>Max {maxTextChars.toLocaleString()} characters</span>
-          </Text>
-        </TextField>
-
-        <Button type="submit" block isDisabled={!canSubmit} isPending={isSubmitting}>
-          Generate Speech
-        </Button>
-      </Form>
+      <GenerateForm
+        voiceItems={voiceItems}
+        voiceId={voiceId}
+        onVoiceIdChange={setVoiceId}
+        languageItems={languageItems}
+        language={language}
+        onLanguageChange={setLanguage}
+        text={text}
+        onTextChange={setText}
+        maxTextChars={MAX_TEXT_CHARS}
+        loadingVoices={loadingVoices}
+        canSubmit={canSubmit}
+        isSubmitting={generateSubmit.submitting}
+        onSubmit={() => void onGenerate()}
+        voicePlaceholder={voicePlaceholder}
+      />
 
       {selectedTask ? (
         <div className="space-y-4 border border-border bg-subtle p-4 shadow-elevated">
@@ -458,19 +339,11 @@ export function GeneratePage() {
         </div>
       ) : null}
 
-      {audioUrl ? (
-        <div className="space-y-4 border border-border bg-background p-4 shadow-elevated">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm font-medium uppercase tracking-wide">Result</div>
-            {downloadUrl ? (
-              <Button variant="secondary" size="sm" onPress={() => void onDownload()}>
-                Download
-              </Button>
-            ) : null}
-          </div>
-          <WaveformPlayer audioUrl={audioUrl} />
-        </div>
-      ) : null}
+      <GenerateResult
+        audioUrl={audioUrl}
+        downloadUrl={downloadUrl}
+        onDownload={() => void onDownload()}
+      />
     </GridArtSurface>
   );
 }
