@@ -14,6 +14,7 @@ Canonical docs for the active Cloudflare + Supabase runtime.
 - [backend.md](./backend.md): API Worker routes, queue model, storage and billing touchpoints
 - [cloudflare-security.md](./cloudflare-security.md): active zone-level WAF, bot, and rate-limit protections on `uttervoice.com`
 - [database.md](./database.md): tables, RLS, credit ledger, storage policy model
+- [env-config.md](./env-config.md): env files, Wrangler config, secrets — how dev/staging/production are wired
 - [features.md](./features.md): user-facing flows and where they live in code
 
 ## Package Docs

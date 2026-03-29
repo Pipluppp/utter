@@ -22,8 +22,8 @@ npm --prefix workers/api install
 
 Copy once:
 
-- `workers/api/.dev.vars.example` -> `workers/api/.dev.vars`
-- `frontend/.env.example` -> `frontend/.env.local` if you do not already have one
+- `workers/api/.dev.vars.example` → `workers/api/.dev.vars`
+- `frontend/.env.example` → `frontend/.env.development.local` (local dev overrides)
 
 Required API Worker secrets live in `workers/api/.dev.vars`. At minimum:
 
@@ -33,6 +33,8 @@ Required API Worker secrets live in `workers/api/.dev.vars`. At minimum:
 - `STORAGE_SIGNING_SECRET`
 
 Provider and billing flows need extra keys such as `DASHSCOPE_API_KEY` and Stripe secrets.
+
+See [env-config.md](./env-config.md) for the full env file layout and how Vite modes work.
 
 ## Run
 
@@ -62,7 +64,7 @@ Local URLs:
 ## Local Runtime Notes
 
 - `workers/api` uses `wrangler dev --local`.
-- Queue and R2 bindings are defined at top level in `workers/api/wrangler.toml`.
+- Queue and R2 bindings are defined at top level in `workers/api/wrangler.jsonc`.
 - Wrangler `vars`, `r2_buckets`, and `queues` are non-inheritable. Keep each env explicit.
 - Frontend requests `/api/*` and defaults to the local API Worker origin.
 

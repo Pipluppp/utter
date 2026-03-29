@@ -13,9 +13,11 @@ Read this when you are shipping the current Cloudflare stack.
 ## Key Files
 
 - `package.json`
-- `workers/api/wrangler.toml`
-- `workers/frontend/wrangler.toml`
+- `workers/api/wrangler.jsonc`
+- `workers/frontend/wrangler.jsonc`
 - `frontend/.env.staging`
+- `frontend/.env.development.local` (local dev only, git-ignored)
+- See [env-config.md](./env-config.md) for the full env/config reference.
 
 ## Staging Flow
 
@@ -40,7 +42,7 @@ npm run cf:deploy:frontend:staging
 Domain cutover note:
 
 - the staging frontend Worker is the live app Worker (`utter`)
-- `workers/frontend/wrangler.toml` attaches `uttervoice.com` to that Worker as the custom domain target
+- `workers/frontend/wrangler.jsonc` attaches `uttervoice.com` to that Worker as the custom domain target
 - the `/api/*` proxy path stays on the frontend Worker; no separate public API domain is introduced in this step
 - keep `https://utter.duncanb013.workers.dev` available as a temporary fallback until the branded domain is confirmed live
 - `https://www.uttervoice.com/*` should redirect to `https://uttervoice.com/$1` via a Cloudflare redirect rule
@@ -75,7 +77,7 @@ Use the manual sequence above when you want to guarantee the frontend build comp
 ## Production Status
 
 - Production frontend/API origins are partly wired.
-- Production R2 and queue bindings are still commented out in `workers/api/wrangler.toml`.
+- Production R2 and queue bindings are still commented out in `workers/api/wrangler.jsonc`.
 - Treat production deploy as incomplete until those bindings and secrets are set explicitly.
 
 ## Release Checks
