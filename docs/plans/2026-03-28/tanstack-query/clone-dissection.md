@@ -1,8 +1,10 @@
 # Clone.tsx Dissection
 
-`frontend/src/features/clone/Clone.tsx` — 751 lines, 18 `useState`, 10 `useRef`, 5 `useEffect`.
+> **Status**: COMPLETED. The extraction described in this document was executed on 2026-03-29. Clone.tsx is now 199 lines with co-located hooks and components under `features/clone/hooks/` and `features/clone/components/`. This document is retained as historical context for the TanStack Query migration planning.
 
-The most complex component in the frontend. It mixes six distinct responsibilities into one function. This document breaks down each responsibility, maps every piece of state, and shows before/after for the cleanup.
+`frontend/src/features/clone/Clone.tsx` — was 751 lines, 18 `useState`, 10 `useRef`, 5 `useEffect` (pre-extraction).
+
+The most complex component in the frontend. It mixed six distinct responsibilities into one function. This document breaks down each responsibility, maps every piece of state, and shows before/after for the cleanup.
 
 ## The six responsibilities
 

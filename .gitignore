@@ -86,3 +86,5 @@ workers/api/.dev.vars
 .mcp*
 
 .kiro
+# TanStack Query docs (local agent reference)
+.tanstack-query-docs/

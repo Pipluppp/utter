@@ -1,6 +1,8 @@
 # TanStack Query — Implementation Tips
 
-Sourced from [TkDodo's blog series](https://tkdodo.eu/blog/practical-react-query) and mapped to this codebase.
+Updated 2026-03-30 (post component extraction). Sourced from [TkDodo's blog series](https://tkdodo.eu/blog/practical-react-query) and mapped to this codebase.
+
+> The component extraction pass is complete. Each feature now has co-located hooks (`useVoiceList`, `useGenerationList`, `useVoiceMutations`, etc.) that isolate fetch/mutation logic. The tips below apply to replacing those hook internals with Query, or to creating query factories that the page components call directly.
 
 ## 1. Use `queryOptions()` as the primary abstraction
 
@@ -241,3 +243,72 @@ TanStack Query retries failed queries 3 times with exponential backoff by defaul
 This is generally fine — the 401 refresh is idempotent and the outer retry handles transient network errors. But be aware of it. If you want to disable Query's retry for specific mutations or queries, pass `retry: false`. For mutations, Query already defaults to `retry: 0` (no retries), so this only matters for queries.
 
 Source: [Important Defaults](https://tanstack.com/query/latest/docs/framework/react/guides/important-defaults)
+
+## 12. Replacing `useDeferredLoading` with stale-while-revalidate
+
+The codebase uses `useDeferredLoading(loading, 150)` in `useVoiceList`, `useGenerationList`, and `useTaskList` to prevent flash-of-loading on fast responses. It returns `true` only after `loading` has been `true` for 150ms.
+
+With TanStack Query, this concern is handled natively by stale-while-revalidate:
+
+```ts
+// Current pattern:
+const { data, loading, showLoading } = useVoiceList(filters);
+// showLoading = useDeferredLoading(loading) — delays skeleton appearance
+
+// With Query:
+const voicesQuery = useQuery(voiceQueries.list(filters));
+
+// First load (no cached data): voicesQuery.isPending === true → show skeleton
+// Filter change (has cached data): voicesQuery.data still available, voicesQuery.isFetching === true
+//   → show stale data with a subtle loading indicator (opacity, spinner) instead of skeleton
+```
+
+The key insight: Query keeps the previous `data` available while refetching. So when filters change, the UI shows stale data immediately (no flash) and updates when the new data arrives. The `showLoading` pattern becomes:
+
+```ts
+// Show skeleton only on first load (no data yet)
+if (voicesQuery.isPending) return <VoicesSkeleton />;
+
+// Show stale data with loading indicator during refetch
+const isRefetching = voicesQuery.isFetching && !voicesQuery.isPending;
+<div className={isRefetching ? "pointer-events-none opacity-60" : ""}>
+  {/* render voicesQuery.data */}
+</div>
+```
+
+Additionally, `placeholderData: keepPreviousData` can be used to keep the previous filter's data visible while the new filter loads:
+
+```ts
+import { keepPreviousData } from "@tanstack/react-query";
+
+const voicesQuery = useQuery({
+  ...voiceQueries.list(filters),
+  placeholderData: keepPreviousData,
+});
+// voicesQuery.isPlaceholderData === true while showing previous data
+```
+
+This is a strictly better UX than the current `useDeferredLoading` approach.
+
+## 13. Per-item mutation busy state
+
+The current `useVoiceMutations` tracks which specific voice ID is busy via `busyDelete`/`busyFavorite`/`busyRename` string state. With `useMutation`, `isPending` is a boolean for the whole hook instance.
+
+To track per-item busy state, use `mutation.variables`:
+
+```ts
+const deleteVoice = useMutation({
+  mutationKey: voiceQueries.all(),
+  mutationFn: (id: string) => apiJson(`/api/voices/${id}`, { method: "DELETE" }),
+});
+
+// In JSX — check both isPending AND which item is in-flight:
+<VoiceCard
+  busyDelete={deleteVoice.isPending && deleteVoice.variables === voice.id}
+  onDelete={() => deleteVoice.mutate(voice.id)}
+/>
+```
+
+This works because `useMutation` stores the latest `variables` passed to `mutate()`. When `isPending` is true, `variables` tells you which item triggered it.
+
+For multiple simultaneous mutations of the same type (unlikely in this UI but possible), use `useMutationState` to track all in-flight mutations.
