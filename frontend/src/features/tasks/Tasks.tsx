@@ -1,3 +1,4 @@
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTasks } from "../../app/TaskProvider";
 import { Button } from "../../components/atoms/Button";
@@ -6,30 +7,58 @@ import { SegmentedControl } from "../../components/molecules/SegmentedControl";
 import type { TaskListType } from "../../lib/types";
 import { TaskCard } from "./components/TaskCard";
 import { TasksSkeleton } from "./components/TasksSkeleton";
-import { useTaskList } from "./hooks/useTaskList";
+import { taskQueries } from "./queries";
 
 export function TasksPage() {
   const { cancelTask, dismissTask, getStatusText } = useTasks();
+  const queryClient = useQueryClient();
   const [typeFilter, setTypeFilter] = useState<TaskListType>("all");
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const taskList = useTaskList(typeFilter);
+  const tasksQuery = useInfiniteQuery({
+    ...taskQueries.list({ status: "active", type: typeFilter }),
+    refetchInterval: (query) => {
+      const firstPage = query.state.data?.pages[0];
+      return firstPage && firstPage.tasks.length > 0 ? 5000 : false;
+    },
+    refetchIntervalInBackground: false,
+  });
+
+  const tasks = tasksQuery.data?.pages.flatMap((page) => page.tasks) ?? [];
+  const displayError = tasksQuery.error?.message ?? actionError ?? null;
+  const isBackgroundRefetching =
+    tasksQuery.isFetching && !tasksQuery.isPending && !tasksQuery.isFetchingNextPage;
 
   async function onCancel(taskId: string) {
+    setActionError(null);
     const ok = await cancelTask(taskId);
     if (!ok) {
-      taskList.setError("Failed to cancel job.");
+      setActionError("Failed to cancel job.");
       return;
     }
-    await taskList.refreshAfterAction();
+    await queryClient.invalidateQueries({ queryKey: taskQueries.all() });
   }
 
   async function onDismiss(taskId: string) {
+    setActionError(null);
+    queryClient.setQueryData(
+      taskQueries.list({ status: "active", type: typeFilter }).queryKey,
+      (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            tasks: page.tasks.filter((t) => t.id !== taskId),
+          })),
+        };
+      },
+    );
     const ok = await dismissTask(taskId);
     if (!ok) {
-      taskList.setError("Failed to dismiss job.");
-      return;
+      setActionError("Failed to dismiss job.");
+      await queryClient.invalidateQueries({ queryKey: taskQueries.all() });
     }
-    taskList.removeTask(taskId);
   }
 
   return (
@@ -44,7 +73,7 @@ export function TasksPage() {
         </p>
       </div>
 
-      {taskList.error ? <Message variant="error">{taskList.error}</Message> : null}
+      {displayError ? <Message variant="error">{displayError}</Message> : null}
 
       <div className="flex flex-wrap items-center gap-2">
         <SegmentedControl
@@ -59,19 +88,19 @@ export function TasksPage() {
         />
       </div>
 
-      {taskList.loading && taskList.tasks.length === 0 ? <TasksSkeleton /> : null}
+      {tasksQuery.isPending ? <TasksSkeleton /> : null}
 
-      {!taskList.loading && taskList.tasks.length === 0 ? (
+      {tasksQuery.isSuccess && tasks.length === 0 ? (
         <div className="flex min-h-[50dvh] items-center justify-center border border-border bg-subtle p-6 text-center text-sm text-muted-foreground shadow-elevated">
           No jobs in this view.
         </div>
       ) : null}
 
-      {taskList.tasks.length > 0 ? (
+      {tasks.length > 0 ? (
         <div
-          className={`grid min-h-[50dvh] content-start gap-3${taskList.showLoading ? " pointer-events-none opacity-60" : ""}`}
+          className={`grid min-h-[50dvh] content-start gap-3${isBackgroundRefetching ? " pointer-events-none opacity-60" : ""}`}
         >
-          {taskList.tasks.map((task) => (
+          {tasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
@@ -81,15 +110,15 @@ export function TasksPage() {
             />
           ))}
 
-          {taskList.nextBefore ? (
+          {tasksQuery.hasNextPage ? (
             <div>
               <Button
                 type="button"
                 variant="secondary"
-                onPress={() => void taskList.loadMore()}
-                isDisabled={taskList.loadingMore}
+                onPress={() => void tasksQuery.fetchNextPage()}
+                isDisabled={tasksQuery.isFetchingNextPage || tasksQuery.isFetching}
               >
-                {taskList.loadingMore ? "Loading more..." : "Load Older Jobs"}
+                {tasksQuery.isFetchingNextPage ? "Loading more..." : "Load Older Jobs"}
               </Button>
             </div>
           ) : null}
