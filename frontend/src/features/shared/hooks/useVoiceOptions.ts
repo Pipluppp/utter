@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { apiJson } from "../../../lib/api";
-import type { Voice, VoicesResponse } from "../../../lib/types";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import type { Voice } from "../../../lib/types";
+import { voiceQueries } from "../../voices/queries";
 
 export type VoiceOptionItem = Voice & { label: string };
 
@@ -11,30 +12,16 @@ export type UseVoiceOptionsResult = {
 };
 
 export function useVoiceOptions(): UseVoiceOptionsResult {
-  const [data, setData] = useState<VoicesResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery(voiceQueries.options());
 
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      try {
-        const res = await apiJson<VoicesResponse>("/api/voices");
-        if (!active) return;
-        setData(res);
-      } catch (e) {
-        if (!active) return;
-        setError(e instanceof Error ? e.message : "Failed to load voices.");
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
+  const voices = useMemo(
+    () => (query.data?.voices ?? []).map((v) => ({ ...v, label: v.name })),
+    [query.data],
+  );
 
-  const voices = useMemo(() => (data?.voices ?? []).map((v) => ({ ...v, label: v.name })), [data]);
-
-  return { voices, loading, error };
+  return {
+    voices,
+    loading: query.isPending,
+    error: query.error?.message ?? null,
+  };
 }

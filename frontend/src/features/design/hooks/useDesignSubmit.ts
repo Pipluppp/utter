@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTasks } from "../../../app/TaskProvider";
 import { apiForm, apiJson } from "../../../lib/api";
+import { queryClient } from "../../../lib/queryClient";
 import type { DesignPreviewResponse, DesignSaveResponse } from "../../../lib/types";
+import { voiceQueries } from "../../voices/queries";
 
 export type DesignFormState = {
   name: string;
@@ -217,6 +219,7 @@ export function useDesignSubmit(): UseDesignSubmitResult {
           method: "POST",
         });
         setSavedVoiceId(saved.id);
+        queryClient.invalidateQueries({ queryKey: voiceQueries.all() });
         setSavedVoiceName(saved.name);
         setError(null);
         setSuccess(`Voice "${saved.name}" saved and ready to use.`);

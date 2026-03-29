@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiJson } from "../../../lib/api";
+import { queryClient } from "../../../lib/queryClient";
 import { formatElapsed } from "../../../lib/time";
 import type { CloneResponse } from "../../../lib/types";
+import { voiceQueries } from "../../voices/queries";
 // -- Mock mode: VITE_MOCK_CLONE=true skips real API calls (see useCloneSubmit.mock.ts)
 import { mockCloneSubmit } from "./useCloneSubmit.mock";
 const MOCK_CLONE = import.meta.env.VITE_MOCK_CLONE === "true";
@@ -69,6 +71,7 @@ export function useCloneSubmit(): CloneSubmitResult {
         // Mock: simulates upload-url → upload → finalize with realistic delays
         const res = await mockCloneSubmit(name);
         setCreated(res);
+        queryClient.invalidateQueries({ queryKey: voiceQueries.all() });
       } else {
         const { voice_id, upload_url } = await apiJson<{
           voice_id: string;
@@ -102,6 +105,7 @@ export function useCloneSubmit(): CloneSubmitResult {
           },
         });
         setCreated(res);
+        queryClient.invalidateQueries({ queryKey: voiceQueries.all() });
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to clone voice.");
