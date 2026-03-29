@@ -4,6 +4,7 @@ import WaveSurfer from "wavesurfer.js";
 import { useTheme } from "../../app/theme/ThemeProvider";
 import { cn } from "../../lib/cn";
 import { resolveProtectedMediaUrl } from "../../lib/protectedMedia";
+import { waveformColors } from "../../lib/waveformColors";
 
 const WAVEFORM_PLAY_EVENT = "utter:waveform-play";
 
@@ -72,17 +73,7 @@ export function WaveformPlayer({
     setTimeLabel("0:00");
     setLoadError(null);
 
-    const styles = getComputedStyle(document.documentElement);
-    const foreground =
-      styles.getPropertyValue("--color-foreground").trim() ||
-      (resolvedTheme === "dark" ? "#f5f5f5" : "#111111");
-    const mutedForeground =
-      styles.getPropertyValue("--color-muted-foreground").trim() ||
-      (resolvedTheme === "dark" ? "#b3b3b3" : "#555555");
-    const faint = styles.getPropertyValue("--color-faint").trim() || "#888888";
-
-    const waveColor = resolvedTheme === "dark" ? foreground : faint;
-    const progressColor = resolvedTheme === "dark" ? mutedForeground : foreground;
+    const { waveColor, progressColor } = waveformColors.resolve(resolvedTheme);
 
     const ws = WaveSurfer.create({
       container: el,

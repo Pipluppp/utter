@@ -10,7 +10,7 @@ import {
 } from "react";
 import { ApiError, apiJson } from "../lib/api";
 import { readJson, writeJson } from "../lib/storage";
-import { formatElapsed } from "../lib/time";
+import * as taskStatusHelpers from "../lib/taskStatus";
 import type { BackendTask, StoredTask, TaskStatus, TaskType } from "../lib/types";
 import {
   coerceTaskType,
@@ -413,35 +413,6 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return () => window.clearInterval(id);
   }, [replaceStore]);
 
-  const getStatusText = useCallback(
-    (status: TaskStatus, modalStatus?: string | null, providerStatus?: string | null) => {
-      if (status === "completed") return "Completed";
-      if (status === "failed") return "Failed";
-      if (status === "cancelled") return "Cancelled";
-      const effectiveStatus = (providerStatus ?? modalStatus ?? "").toLowerCase();
-      if (effectiveStatus === "provider_submitting") return "Submitting...";
-      if (effectiveStatus === "provider_queued" || effectiveStatus === "queued")
-        return "Waiting for GPU...";
-      if (effectiveStatus === "provider_synthesizing") return "Synthesizing...";
-      if (effectiveStatus === "provider_downloading") return "Downloading...";
-      if (effectiveStatus === "provider_persisting") return "Finalizing...";
-      if (effectiveStatus === "processing") return "Generating...";
-      if (effectiveStatus === "sending") return "Starting generation...";
-      if (modalStatus === "queued" || status === "pending") return "Waiting for GPU...";
-      if (modalStatus === "processing" || status === "processing") return "Generating...";
-      if (modalStatus === "sending") return "Starting generation...";
-      return "Processing...";
-    },
-    [],
-  );
-
-  const formatTaskElapsed = useCallback((task: StoredTask) => {
-    if (task.status === "completed") return "Ready";
-    if (task.status === "failed") return "Failed";
-    if (task.status === "cancelled") return "Cancelled";
-    return formatElapsed(task.startedAt);
-  }, []);
-
   const startTask = useCallback(
     (
       taskId: string | null,
@@ -581,19 +552,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       clearTask,
       getLatestTask: (taskType) => tasks.find((task) => task.type === taskType) ?? null,
       getTasksByType: (taskType) => tasks.filter((task) => task.type === taskType),
-      getStatusText,
-      formatTaskElapsed,
+      getStatusText: taskStatusHelpers.getStatusText,
+      formatTaskElapsed: taskStatusHelpers.formatTaskElapsed,
     };
-  }, [
-    cancelTask,
-    clearTask,
-    dismissTask,
-    formatTaskElapsed,
-    getStatusText,
-    startTask,
-    state.byId,
-    tasks,
-  ]);
+  }, [cancelTask, clearTask, dismissTask, startTask, state.byId, tasks]);
 
   return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;
 }
