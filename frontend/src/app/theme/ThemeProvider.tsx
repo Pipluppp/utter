@@ -74,7 +74,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme(theme === "dark" ? "light" : "dark");
+    const next = theme === "dark" ? "light" : "dark";
+    if (!document.startViewTransition) {
+      setTheme(next);
+      return;
+    }
+    document.startViewTransition(() => {
+      applyResolvedTheme(next);
+      setTheme(next);
+    });
   }, [setTheme, theme]);
 
   const value = useMemo<ThemeContextValue>(
