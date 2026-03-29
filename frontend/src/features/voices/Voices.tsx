@@ -61,7 +61,6 @@ export function VoicesPage() {
   const [playState, setPlayState] = useState<Record<string, PlayState>>({});
   const waveRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset paging when search/source/sort/filter changes
   useEffect(() => setPage(1), [debounced, source, sort, sortDir, favorites]);
 
   // Highlight + scroll to voice when voice_id param is present

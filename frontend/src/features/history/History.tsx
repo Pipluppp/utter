@@ -71,7 +71,6 @@ export function HistoryPage() {
   const [playState, setPlayState] = useState<Record<string, PlayState>>({});
   const waveRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset paging when search/status/filter/sort changes
   useEffect(() => setPage(1), [debounced, status, voiceId, sort, sortDir]);
 
   useEffect(() => {

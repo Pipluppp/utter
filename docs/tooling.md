@@ -38,7 +38,7 @@ uv run -p .venv uvicorn main:app --reload --port 8000
 | Language | Tool | Config |
 |----------|------|--------|
 | Python | None enforced (yet) | - |
-| JS/TS/JSON/CSS (frontend) | Biome | `frontend/biome.json` (see `docs/biome.md`) |
+| JS/TS/JSON/CSS (frontend) | Oxc (oxfmt + oxlint) | `frontend/.oxfmtrc.jsonc`, `frontend/.oxlintrc.json` |
 
 ---
 

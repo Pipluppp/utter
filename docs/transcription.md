@@ -105,7 +105,7 @@ Transcription should not depend on active `MISTRAL_*` env vars after the Qwen cu
 - API route: `workers/api/src/routes/transcriptions.ts`
 - Clone finalize route: `workers/api/src/routes/clone.ts`
 - Languages metadata route: `workers/api/src/routes/languages.ts`
-- Clone page: `frontend/src/pages/Clone.tsx`
+- Clone page: `frontend/src/features/clone/Clone.tsx`
 - Audio helpers: `frontend/src/lib/audio.ts`
 
 ## Implementation plan

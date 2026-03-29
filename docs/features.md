@@ -30,7 +30,7 @@ Router source:
 
 ### Clone a voice
 
-- UI: `frontend/src/pages/Clone.tsx`
+- UI: `frontend/src/features/clone/Clone.tsx`
 - API: `POST /api/clone/upload-url`, `POST /api/clone/finalize`
 - Data: inserts `voices`, touches credits/trials, stores reference audio in `references`
 
@@ -41,7 +41,7 @@ Notes:
 
 ### Generate audio
 
-- UI: `frontend/src/pages/Generate.tsx`
+- UI: `frontend/src/features/generate/Generate.tsx`
 - API: `POST /api/generate`, `GET /api/tasks/:id`, `GET /api/generations/:id/audio`
 - Data: inserts `generations` + `tasks`, debits credits, stores audio in `generations`
 
@@ -52,7 +52,7 @@ Notes:
 
 ### Design a voice
 
-- UI: `frontend/src/pages/Design.tsx`
+- UI: `frontend/src/features/design/Design.tsx`
 - API: `POST /api/voices/design/preview`, `POST /api/voices/design`
 - Data: design preview task, preview audio in `references`, eventual `voices` insert on save
 
@@ -63,12 +63,12 @@ Notes:
 
 ### Manage voices and history
 
-- UI: `frontend/src/pages/Voices.tsx`, `frontend/src/pages/History.tsx`, `frontend/src/pages/Tasks.tsx`
+- UI: `frontend/src/features/voices/Voices.tsx`, `frontend/src/features/history/History.tsx`, `frontend/src/features/tasks/Tasks.tsx`
 - API: `GET /api/voices`, `GET /api/generations`, `GET /api/tasks`, delete and preview routes
 
 ### Auth, account, credits
 
-- UI: `frontend/src/pages/Auth.tsx`, `frontend/src/pages/account/*`
+- UI: `frontend/src/features/auth/Auth.tsx`, `frontend/src/features/account/*`
 - API: `GET /api/me`, `PATCH /api/profile`, `GET /api/credits/usage`
 
 Notes:
@@ -89,7 +89,7 @@ Notes:
 ## Shared Frontend Building Blocks
 
 - auth state: `frontend/src/app/auth/AuthStateProvider.tsx`
-- task state: `frontend/src/components/tasks/TaskProvider.tsx`
+- task state: `frontend/src/app/TaskProvider.tsx`
 - API client: `frontend/src/lib/api.ts`
 - protected media helpers: `frontend/src/lib/protectedMedia.ts`
 

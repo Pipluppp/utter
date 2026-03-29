@@ -181,7 +181,6 @@ export function WaveformPlayer({
       <div ref={containerRef} />
 
       {loadError && audioUrl && !isReady ? (
-        // biome-ignore lint/a11y/useMediaCaption: Generated previews have no caption track; this is a fallback for playback when WaveSurfer fails.
         <audio controls preload="metadata" className="w-full" src={audioUrl} />
       ) : null}
     </div>

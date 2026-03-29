@@ -96,7 +96,6 @@ export function AutocompleteSelect<T extends AutocompleteSelectItem>({
             : styles.popover({ className: `flex flex-col ${popoverClassName ?? ""}` })
         }
       >
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: trap single-char keys so global shortcuts don't fire */}
         <div
           className="flex flex-col"
           onKeyDown={(e: React.KeyboardEvent) => {
