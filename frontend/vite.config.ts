@@ -9,6 +9,15 @@ const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN ?? "http://127.0.0.1:8787";
 
 export default defineConfig({
   plugins: [TanStackRouterVite({ autoCodeSplitting: true }), react(), tailwindcss()],
+  build: {
+    // Never inline JS assets as data: URIs — AudioWorklet modules loaded via
+    // `new URL(…, import.meta.url)` must be served as real files so they
+    // satisfy the Content-Security-Policy `script-src 'self'` directive.
+    assetsInlineLimit: (filePath: string) => {
+      if (filePath.endsWith(".js")) return false;
+      // Fall through to Vite default (4096) for other asset types
+    },
+  },
   server: {
     port: 5173,
     strictPort: true,

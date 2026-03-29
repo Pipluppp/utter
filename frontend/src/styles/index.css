@@ -335,3 +335,31 @@
     mask-size: 350vmax;
   }
 }
+
+/* ── Text shimmer: sweeping highlight for recording guide ── */
+
+@keyframes text-shimmer {
+  0% {
+    background-position: -300% center;
+  }
+
+  100% {
+    background-position: 300% center;
+  }
+}
+
+@layer utilities {
+  .animate-text-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      currentColor 0%,
+      var(--color-faint) 50%,
+      currentColor 100%
+    );
+    background-size: 150% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: text-shimmer 14s linear infinite;
+  }
+}
